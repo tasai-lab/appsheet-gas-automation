@@ -1,0 +1,2265 @@
+{
+  "spreadsheetId": "1S3Gsxu9kEa4M9uZpWuIRLvPVjpCOoj2lo7GhSIA5I0I",
+  "properties": {
+    "title": "訪問看護_利用者管理",
+    "locale": "ja_JP",
+    "autoRecalc": "ON_CHANGE",
+    "timeZone": "Asia/Tokyo",
+    "defaultFormat": {
+      "backgroundColor": {
+        "red": 1,
+        "green": 1,
+        "blue": 1
+      },
+      "padding": {
+        "top": 2,
+        "right": 3,
+        "bottom": 2,
+        "left": 3
+      },
+      "verticalAlignment": "BOTTOM",
+      "wrapStrategy": "OVERFLOW_CELL",
+      "textFormat": {
+        "foregroundColor": {},
+        "fontFamily": "arial,sans,sans-serif",
+        "fontSize": 10,
+        "bold": false,
+        "italic": false,
+        "strikethrough": false,
+        "underline": false,
+        "foregroundColorStyle": {
+          "rgbColor": {}
+        }
+      },
+      "backgroundColorStyle": {
+        "rgbColor": {
+          "red": 1,
+          "green": 1,
+          "blue": 1
+        }
+      }
+    },
+    "spreadsheetTheme": {
+      "primaryFontFamily": "Arial",
+      "themeColors": [
+        {
+          "colorType": "TEXT",
+          "color": {
+            "rgbColor": {}
+          }
+        },
+        {
+          "colorType": "BACKGROUND",
+          "color": {
+            "rgbColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            }
+          }
+        },
+        {
+          "colorType": "ACCENT1",
+          "color": {
+            "rgbColor": {
+              "red": 0.25882354,
+              "green": 0.52156866,
+              "blue": 0.95686275
+            }
+          }
+        },
+        {
+          "colorType": "ACCENT2",
+          "color": {
+            "rgbColor": {
+              "red": 0.91764706,
+              "green": 0.2627451,
+              "blue": 0.20784314
+            }
+          }
+        },
+        {
+          "colorType": "ACCENT3",
+          "color": {
+            "rgbColor": {
+              "red": 0.9843137,
+              "green": 0.7372549,
+              "blue": 0.015686275
+            }
+          }
+        },
+        {
+          "colorType": "ACCENT4",
+          "color": {
+            "rgbColor": {
+              "red": 0.20392157,
+              "green": 0.65882355,
+              "blue": 0.3254902
+            }
+          }
+        },
+        {
+          "colorType": "ACCENT5",
+          "color": {
+            "rgbColor": {
+              "red": 1,
+              "green": 0.42745098,
+              "blue": 0.003921569
+            }
+          }
+        },
+        {
+          "colorType": "ACCENT6",
+          "color": {
+            "rgbColor": {
+              "red": 0.27450982,
+              "green": 0.7411765,
+              "blue": 0.7764706
+            }
+          }
+        },
+        {
+          "colorType": "LINK",
+          "color": {
+            "rgbColor": {
+              "red": 0.06666667,
+              "green": 0.33333334,
+              "blue": 0.8
+            }
+          }
+        }
+      ]
+    }
+  },
+  "sheets": [
+    {
+      "properties": {
+        "sheetId": 0,
+        "title": "Clients",
+        "index": 0,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 1000,
+          "columnCount": 56,
+          "frozenRowCount": 1
+        }
+      },
+      "basicFilter": {
+        "range": {
+          "startRowIndex": 0,
+          "endRowIndex": 1000,
+          "startColumnIndex": 0,
+          "endColumnIndex": 56
+        },
+        "sortSpecs": [
+          {
+            "dimensionIndex": 0,
+            "sortOrder": "ASCENDING"
+          }
+        ],
+        "tableId": "1772806229"
+      },
+      "bandedRanges": [
+        {
+          "bandedRangeId": 1772806229,
+          "range": {
+            "startRowIndex": 0,
+            "endRowIndex": 1000,
+            "startColumnIndex": 0,
+            "endColumnIndex": 56
+          },
+          "rowProperties": {
+            "headerColor": {
+              "red": 0.20784314,
+              "green": 0.40784314,
+              "blue": 0.32941177
+            },
+            "firstBandColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            },
+            "secondBandColor": {
+              "red": 0.9647059,
+              "green": 0.972549,
+              "blue": 0.9764706
+            },
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "bandedRangeReference": "1772806229"
+        }
+      ],
+      "tables": [
+        {
+          "tableId": "1772806229",
+          "name": "表_2",
+          "range": {
+            "startRowIndex": 0,
+            "endRowIndex": 1000,
+            "startColumnIndex": 0,
+            "endColumnIndex": 56
+          },
+          "rowsProperties": {
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "columnProperties": [
+            {
+              "columnName": "client_id"
+            },
+            {
+              "columnIndex": 1,
+              "columnName": "status"
+            },
+            {
+              "columnIndex": 2,
+              "columnName": "date_of_death"
+            },
+            {
+              "columnIndex": 3,
+              "columnName": "contract_id"
+            },
+            {
+              "columnIndex": 4,
+              "columnName": "request_id"
+            },
+            {
+              "columnIndex": 5,
+              "columnName": "initial_visit_date"
+            },
+            {
+              "columnIndex": 6,
+              "columnName": "end_of_visit_date"
+            },
+            {
+              "columnIndex": 7,
+              "columnName": "service_period"
+            },
+            {
+              "columnIndex": 8,
+              "columnName": "contract_office"
+            },
+            {
+              "columnIndex": 9,
+              "columnName": "provider_office"
+            },
+            {
+              "columnIndex": 10,
+              "columnName": "insurance_type"
+            },
+            {
+              "columnIndex": 11,
+              "columnName": "is_welfare_recipient"
+            },
+            {
+              "columnIndex": 12,
+              "columnName": "care_level_name"
+            },
+            {
+              "columnIndex": 13,
+              "columnName": "care_level_id"
+            },
+            {
+              "columnIndex": 14,
+              "columnName": "independence_level"
+            },
+            {
+              "columnIndex": 15,
+              "columnName": "applicable_additions"
+            },
+            {
+              "columnIndex": 16,
+              "columnName": "mhlw_annex7_disease"
+            },
+            {
+              "columnIndex": 17,
+              "columnName": "billing_code",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 18,
+              "columnName": "full_name"
+            },
+            {
+              "columnIndex": 19,
+              "columnName": "last_name"
+            },
+            {
+              "columnIndex": 20,
+              "columnName": "first_name"
+            },
+            {
+              "columnIndex": 21,
+              "columnName": "full_name_kana"
+            },
+            {
+              "columnIndex": 22,
+              "columnName": "last_name_kana"
+            },
+            {
+              "columnIndex": 23,
+              "columnName": "first_name_kana"
+            },
+            {
+              "columnIndex": 24,
+              "columnName": "gender"
+            },
+            {
+              "columnIndex": 25,
+              "columnName": "birth_date"
+            },
+            {
+              "columnIndex": 26,
+              "columnName": "birth_date_wareki"
+            },
+            {
+              "columnIndex": 27,
+              "columnName": "birth_date_nengo"
+            },
+            {
+              "columnIndex": 28,
+              "columnName": "birth_date_nengo_year"
+            },
+            {
+              "columnIndex": 29,
+              "columnName": "age"
+            },
+            {
+              "columnIndex": 30,
+              "columnName": "image1"
+            },
+            {
+              "columnIndex": 31,
+              "columnName": "image2"
+            },
+            {
+              "columnIndex": 32,
+              "columnName": "address_label"
+            },
+            {
+              "columnIndex": 33,
+              "columnName": "address_id"
+            },
+            {
+              "columnIndex": 34,
+              "columnName": "phone1"
+            },
+            {
+              "columnIndex": 35,
+              "columnName": "phone1_destination"
+            },
+            {
+              "columnIndex": 36,
+              "columnName": "phone2"
+            },
+            {
+              "columnIndex": 37,
+              "columnName": "phone2_destination"
+            },
+            {
+              "columnIndex": 38,
+              "columnName": "email"
+            },
+            {
+              "columnIndex": 39,
+              "columnName": "primary_contact_person"
+            },
+            {
+              "columnIndex": 40,
+              "columnName": "clinic_id"
+            },
+            {
+              "columnIndex": 41,
+              "columnName": "doctor_id"
+            },
+            {
+              "columnIndex": 42,
+              "columnName": "support_office_id"
+            },
+            {
+              "columnIndex": 43,
+              "columnName": "care_manager_id"
+            },
+            {
+              "columnIndex": 44,
+              "columnName": "service_type"
+            },
+            {
+              "columnIndex": 45,
+              "columnName": "main_staff"
+            },
+            {
+              "columnIndex": 46,
+              "columnName": "sub_staff"
+            },
+            {
+              "columnIndex": 47,
+              "columnName": "special_notes"
+            },
+            {
+              "columnIndex": 48,
+              "columnName": "lock_key"
+            },
+            {
+              "columnIndex": 49,
+              "columnName": "update_key"
+            },
+            {
+              "columnIndex": 50,
+              "columnName": "client_label"
+            },
+            {
+              "columnIndex": 51,
+              "columnName": "chat_thread_id"
+            },
+            {
+              "columnIndex": 52,
+              "columnName": "created_at"
+            },
+            {
+              "columnIndex": 53,
+              "columnName": "created_by"
+            },
+            {
+              "columnIndex": 54,
+              "columnName": "updated_at"
+            },
+            {
+              "columnIndex": 55,
+              "columnName": "updated_by"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "properties": {
+        "sheetId": 1015543591,
+        "title": "Client_Bank_Accounts",
+        "index": 1,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 997,
+          "columnCount": 21,
+          "frozenRowCount": 1
+        }
+      },
+      "bandedRanges": [
+        {
+          "bandedRangeId": 1022966954,
+          "range": {
+            "sheetId": 1015543591,
+            "startRowIndex": 0,
+            "endRowIndex": 997,
+            "startColumnIndex": 0,
+            "endColumnIndex": 21
+          },
+          "rowProperties": {
+            "headerColor": {
+              "red": 0.20784314,
+              "green": 0.40784314,
+              "blue": 0.32941177
+            },
+            "firstBandColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            },
+            "secondBandColor": {
+              "red": 0.9647059,
+              "green": 0.972549,
+              "blue": 0.9764706
+            },
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "bandedRangeReference": "1022966954"
+        }
+      ],
+      "tables": [
+        {
+          "tableId": "1022966954",
+          "name": "表_6",
+          "range": {
+            "sheetId": 1015543591,
+            "startRowIndex": 0,
+            "endRowIndex": 997,
+            "startColumnIndex": 0,
+            "endColumnIndex": 21
+          },
+          "rowsProperties": {
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "columnProperties": [
+            {
+              "columnName": "bank_account_id"
+            },
+            {
+              "columnIndex": 1,
+              "columnName": "client_id"
+            },
+            {
+              "columnIndex": 2,
+              "columnName": "source_document_id"
+            },
+            {
+              "columnIndex": 3,
+              "columnName": "status"
+            },
+            {
+              "columnIndex": 4,
+              "columnName": "bank_code"
+            },
+            {
+              "columnIndex": 5,
+              "columnName": "bank_name_kana"
+            },
+            {
+              "columnIndex": 6,
+              "columnName": "branch_code"
+            },
+            {
+              "columnIndex": 7,
+              "columnName": "account_type"
+            },
+            {
+              "columnIndex": 8,
+              "columnName": "account_number"
+            },
+            {
+              "columnIndex": 9,
+              "columnName": "account_holder_name_kana"
+            },
+            {
+              "columnIndex": 10,
+              "columnName": "handling_date",
+              "columnType": "DATE"
+            },
+            {
+              "columnIndex": 11,
+              "columnName": "terminal_number"
+            },
+            {
+              "columnIndex": 12,
+              "columnName": "voucher_number"
+            },
+            {
+              "columnIndex": 13,
+              "columnName": "biller_client_number"
+            },
+            {
+              "columnIndex": 14,
+              "columnName": "biller_name_kana"
+            },
+            {
+              "columnIndex": 15,
+              "columnName": "biller_number"
+            },
+            {
+              "columnIndex": 16,
+              "columnName": "biller_specific_code"
+            },
+            {
+              "columnIndex": 17,
+              "columnName": "created_at",
+              "columnType": "DATE_TIME"
+            },
+            {
+              "columnIndex": 18,
+              "columnName": "created_by"
+            },
+            {
+              "columnIndex": 19,
+              "columnName": "updated_at",
+              "columnType": "DATE_TIME"
+            },
+            {
+              "columnIndex": 20,
+              "columnName": "updated_by"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "properties": {
+        "sheetId": 2001078368,
+        "title": "Client_Requests",
+        "index": 2,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 997,
+          "columnCount": 27,
+          "frozenRowCount": 1
+        }
+      },
+      "bandedRanges": [
+        {
+          "bandedRangeId": 2023623224,
+          "range": {
+            "sheetId": 2001078368,
+            "startRowIndex": 0,
+            "endRowIndex": 997,
+            "startColumnIndex": 0,
+            "endColumnIndex": 27
+          },
+          "rowProperties": {
+            "headerColor": {
+              "red": 0.20784314,
+              "green": 0.40784314,
+              "blue": 0.32941177
+            },
+            "firstBandColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            },
+            "secondBandColor": {
+              "red": 0.9647059,
+              "green": 0.972549,
+              "blue": 0.9764706
+            },
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "bandedRangeReference": "2023623224"
+        }
+      ],
+      "tables": [
+        {
+          "tableId": "2023623224",
+          "name": "表_3",
+          "range": {
+            "sheetId": 2001078368,
+            "startRowIndex": 0,
+            "endRowIndex": 997,
+            "startColumnIndex": 0,
+            "endColumnIndex": 27
+          },
+          "rowsProperties": {
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "columnProperties": [
+            {
+              "columnName": "request_id"
+            },
+            {
+              "columnIndex": 1,
+              "columnName": "status"
+            },
+            {
+              "columnIndex": 2,
+              "columnName": "priority"
+            },
+            {
+              "columnIndex": 3,
+              "columnName": "request_type"
+            },
+            {
+              "columnIndex": 4,
+              "columnName": "request_date"
+            },
+            {
+              "columnIndex": 5,
+              "columnName": "request_time"
+            },
+            {
+              "columnIndex": 6,
+              "columnName": "request_reason"
+            },
+            {
+              "columnIndex": 7,
+              "columnName": "channel"
+            },
+            {
+              "columnIndex": 8,
+              "columnName": "requester_org_id"
+            },
+            {
+              "columnIndex": 9,
+              "columnName": "requester_id"
+            },
+            {
+              "columnIndex": 10,
+              "columnName": "provider_office"
+            },
+            {
+              "columnIndex": 11,
+              "columnName": "client_name_temp"
+            },
+            {
+              "columnIndex": 12,
+              "columnName": "client_info_temp"
+            },
+            {
+              "columnIndex": 13,
+              "columnName": "basic_document"
+            },
+            {
+              "columnIndex": 14,
+              "columnName": "document_file_id"
+            },
+            {
+              "columnIndex": 15,
+              "columnName": "document_file_url"
+            },
+            {
+              "columnIndex": 16,
+              "columnName": "next_action_date"
+            },
+            {
+              "columnIndex": 17,
+              "columnName": "next_action_details"
+            },
+            {
+              "columnIndex": 18,
+              "columnName": "cancellation_reason"
+            },
+            {
+              "columnIndex": 19,
+              "columnName": "call_record_id"
+            },
+            {
+              "columnIndex": 20,
+              "columnName": "service_start_date"
+            },
+            {
+              "columnIndex": 21,
+              "columnName": "request_ym"
+            },
+            {
+              "columnIndex": 22,
+              "columnName": "service_start_ym"
+            },
+            {
+              "columnIndex": 23,
+              "columnName": "created_at"
+            },
+            {
+              "columnIndex": 24,
+              "columnName": "created_by"
+            },
+            {
+              "columnIndex": 25,
+              "columnName": "updated_at"
+            },
+            {
+              "columnIndex": 26,
+              "columnName": "updated_by"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "properties": {
+        "sheetId": 1115136071,
+        "title": "Client_Contracts",
+        "index": 3,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 998,
+          "columnCount": 33,
+          "frozenRowCount": 1
+        }
+      },
+      "bandedRanges": [
+        {
+          "bandedRangeId": 1004820039,
+          "range": {
+            "sheetId": 1115136071,
+            "startRowIndex": 0,
+            "endRowIndex": 998,
+            "startColumnIndex": 0,
+            "endColumnIndex": 33
+          },
+          "rowProperties": {
+            "headerColor": {
+              "red": 0.20784314,
+              "green": 0.40784314,
+              "blue": 0.32941177
+            },
+            "firstBandColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            },
+            "secondBandColor": {
+              "red": 0.9647059,
+              "green": 0.972549,
+              "blue": 0.9764706
+            },
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "bandedRangeReference": "1004820039"
+        }
+      ],
+      "tables": [
+        {
+          "tableId": "1004820039",
+          "name": "表_5",
+          "range": {
+            "sheetId": 1115136071,
+            "startRowIndex": 0,
+            "endRowIndex": 998,
+            "startColumnIndex": 0,
+            "endColumnIndex": 33
+          },
+          "rowsProperties": {
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "columnProperties": [
+            {
+              "columnName": "contract_id"
+            },
+            {
+              "columnIndex": 1,
+              "columnName": "client_id"
+            },
+            {
+              "columnIndex": 2,
+              "columnName": "status"
+            },
+            {
+              "columnIndex": 3,
+              "columnName": "contract_type"
+            },
+            {
+              "columnIndex": 4,
+              "columnName": "previous_contract_id"
+            },
+            {
+              "columnIndex": 5,
+              "columnName": "contract_date_actual"
+            },
+            {
+              "columnIndex": 6,
+              "columnName": "service_start_date"
+            },
+            {
+              "columnIndex": 7,
+              "columnName": "contract_end_date"
+            },
+            {
+              "columnIndex": 8,
+              "columnName": "agreed_surcharges_ltci"
+            },
+            {
+              "columnIndex": 9,
+              "columnName": "agreed_surcharges_medical"
+            },
+            {
+              "columnIndex": 10,
+              "columnName": "consent_for_pr_photos"
+            },
+            {
+              "columnIndex": 11,
+              "columnName": "appointment_date"
+            },
+            {
+              "columnIndex": 12,
+              "columnName": "appointment_time"
+            },
+            {
+              "columnIndex": 13,
+              "columnName": "duration_minutes"
+            },
+            {
+              "columnIndex": 14,
+              "columnName": "gcal_event_id"
+            },
+            {
+              "columnIndex": 15,
+              "columnName": "gcal_event_url"
+            },
+            {
+              "columnIndex": 16,
+              "columnName": "contract_office"
+            },
+            {
+              "columnIndex": 17,
+              "columnName": "provider_office"
+            },
+            {
+              "columnIndex": 18,
+              "columnName": "staff_in_charge"
+            },
+            {
+              "columnIndex": 19,
+              "columnName": "companion_staff"
+            },
+            {
+              "columnIndex": 20,
+              "columnName": "generated_contract_id"
+            },
+            {
+              "columnIndex": 21,
+              "columnName": "generated_contract_url"
+            },
+            {
+              "columnIndex": 22,
+              "columnName": "signed_contract_form"
+            },
+            {
+              "columnIndex": 23,
+              "columnName": "signed_surcharge_form_ltci"
+            },
+            {
+              "columnIndex": 24,
+              "columnName": "signed_surcharge_form_medical"
+            },
+            {
+              "columnIndex": 25,
+              "columnName": "signed_privacy_form"
+            },
+            {
+              "columnIndex": 26,
+              "columnName": "bank_transfer_form"
+            },
+            {
+              "columnIndex": 27,
+              "columnName": "remarks"
+            },
+            {
+              "columnIndex": 28,
+              "columnName": "lock_key"
+            },
+            {
+              "columnIndex": 29,
+              "columnName": "created_at"
+            },
+            {
+              "columnIndex": 30,
+              "columnName": "created_by"
+            },
+            {
+              "columnIndex": 31,
+              "columnName": "updated_at"
+            },
+            {
+              "columnIndex": 32,
+              "columnName": "updated_by"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "properties": {
+        "sheetId": 776871873,
+        "title": "Client_Status_History",
+        "index": 4,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 1000,
+          "columnCount": 28
+        }
+      }
+    },
+    {
+      "properties": {
+        "sheetId": 469265314,
+        "title": "Client_Analytics",
+        "index": 5,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 1000,
+          "columnCount": 16,
+          "frozenRowCount": 1
+        }
+      },
+      "bandedRanges": [
+        {
+          "bandedRangeId": 1848684586,
+          "range": {
+            "sheetId": 469265314,
+            "startRowIndex": 0,
+            "endRowIndex": 1000,
+            "startColumnIndex": 0,
+            "endColumnIndex": 16
+          },
+          "rowProperties": {
+            "headerColor": {
+              "red": 0.20784314,
+              "green": 0.40784314,
+              "blue": 0.32941177
+            },
+            "firstBandColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            },
+            "secondBandColor": {
+              "red": 0.9647059,
+              "green": 0.972549,
+              "blue": 0.9764706
+            },
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "bandedRangeReference": "1848684586"
+        }
+      ],
+      "tables": [
+        {
+          "tableId": "1848684586",
+          "name": "表_7",
+          "range": {
+            "sheetId": 469265314,
+            "startRowIndex": 0,
+            "endRowIndex": 1000,
+            "startColumnIndex": 0,
+            "endColumnIndex": 16
+          },
+          "rowsProperties": {
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "columnProperties": [
+            {
+              "columnName": "analysis_id"
+            },
+            {
+              "columnIndex": 1,
+              "columnName": "client_id"
+            },
+            {
+              "columnIndex": 2,
+              "columnName": "analysis_type"
+            },
+            {
+              "columnIndex": 3,
+              "columnName": "status"
+            },
+            {
+              "columnIndex": 4,
+              "columnName": "prompt_text"
+            },
+            {
+              "columnIndex": 5,
+              "columnName": "response_text"
+            },
+            {
+              "columnIndex": 6,
+              "columnName": "summary"
+            },
+            {
+              "columnIndex": 7,
+              "columnName": "notes"
+            },
+            {
+              "columnIndex": 8,
+              "columnName": "source_type"
+            },
+            {
+              "columnIndex": 9,
+              "columnName": "data_start_date"
+            },
+            {
+              "columnIndex": 10,
+              "columnName": "data_end_date"
+            },
+            {
+              "columnIndex": 11,
+              "columnName": "is_thread_shared"
+            },
+            {
+              "columnIndex": 12,
+              "columnName": "thread_id"
+            },
+            {
+              "columnIndex": 13,
+              "columnName": "scheduled_post_time"
+            },
+            {
+              "columnIndex": 14,
+              "columnName": "created_at"
+            },
+            {
+              "columnIndex": 15,
+              "columnName": "created_by"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "properties": {
+        "sheetId": 396901096,
+        "title": "Client_Family_Members",
+        "index": 6,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 996,
+          "columnCount": 33
+        }
+      }
+    },
+    {
+      "properties": {
+        "sheetId": 1388655312,
+        "title": "Client_Tasks",
+        "index": 7,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 1000,
+          "columnCount": 28
+        }
+      }
+    },
+    {
+      "properties": {
+        "sheetId": 379242071,
+        "title": "Client_Face_Sheets",
+        "index": 8,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 999,
+          "columnCount": 54
+        }
+      },
+      "bandedRanges": [
+        {
+          "bandedRangeId": 117176259,
+          "range": {
+            "sheetId": 379242071,
+            "startRowIndex": 0,
+            "endRowIndex": 999,
+            "startColumnIndex": 0,
+            "endColumnIndex": 54
+          },
+          "rowProperties": {
+            "headerColor": {
+              "red": 0.20784314,
+              "green": 0.40784314,
+              "blue": 0.32941177
+            },
+            "firstBandColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            },
+            "secondBandColor": {
+              "red": 0.9647059,
+              "green": 0.972549,
+              "blue": 0.9764706
+            },
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "bandedRangeReference": "117176259"
+        }
+      ],
+      "tables": [
+        {
+          "tableId": "117176259",
+          "name": "表_4",
+          "range": {
+            "sheetId": 379242071,
+            "startRowIndex": 0,
+            "endRowIndex": 999,
+            "startColumnIndex": 0,
+            "endColumnIndex": 54
+          },
+          "rowsProperties": {
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "columnProperties": [
+            {
+              "columnName": "face_sheet_id"
+            },
+            {
+              "columnIndex": 1,
+              "columnName": "client_id"
+            },
+            {
+              "columnIndex": 2,
+              "columnName": "status"
+            },
+            {
+              "columnIndex": 3,
+              "columnName": "creation_date"
+            },
+            {
+              "columnIndex": 4,
+              "columnName": "version_number"
+            },
+            {
+              "columnIndex": 5,
+              "columnName": "next_review_date"
+            },
+            {
+              "columnIndex": 6,
+              "columnName": "gender_name"
+            },
+            {
+              "columnIndex": 7,
+              "columnName": "postal_code"
+            },
+            {
+              "columnIndex": 8,
+              "columnName": "address"
+            },
+            {
+              "columnIndex": 9,
+              "columnName": "phone_number"
+            },
+            {
+              "columnIndex": 10,
+              "columnName": "service_type"
+            },
+            {
+              "columnIndex": 11,
+              "columnName": "family_structure"
+            },
+            {
+              "columnIndex": 12,
+              "columnName": "cohabiting_family"
+            },
+            {
+              "columnIndex": 13,
+              "columnName": "separate_family"
+            },
+            {
+              "columnIndex": 14,
+              "columnName": "main_caregiver"
+            },
+            {
+              "columnIndex": 15,
+              "columnName": "key_person"
+            },
+            {
+              "columnIndex": 16,
+              "columnName": "main_disease_name"
+            },
+            {
+              "columnIndex": 17,
+              "columnName": "present_illness_history"
+            },
+            {
+              "columnIndex": 18,
+              "columnName": "past_illness_history"
+            },
+            {
+              "columnIndex": 19,
+              "columnName": "medical_condition"
+            },
+            {
+              "columnIndex": 20,
+              "columnName": "life_history"
+            },
+            {
+              "columnIndex": 21,
+              "columnName": "purpose_of_visit"
+            },
+            {
+              "columnIndex": 22,
+              "columnName": "has_drug_allergy"
+            },
+            {
+              "columnIndex": 23,
+              "columnName": "drug_allergy_details"
+            },
+            {
+              "columnIndex": 24,
+              "columnName": "has_food_allergy"
+            },
+            {
+              "columnIndex": 25,
+              "columnName": "food_allergy_details"
+            },
+            {
+              "columnIndex": 26,
+              "columnName": "adl_mobility",
+              "columnType": "DROPDOWN",
+              "dataValidationRule": {
+                "condition": {
+                  "type": "ONE_OF_LIST",
+                  "values": [
+                    {
+                      "userEnteredValue": "自立"
+                    },
+                    {
+                      "userEnteredValue": "一部介助"
+                    },
+                    {
+                      "userEnteredValue": "全面介助"
+                    },
+                    {
+                      "userEnteredValue": "その他"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "columnIndex": 27,
+              "columnName": "adl_eating",
+              "columnType": "DROPDOWN",
+              "dataValidationRule": {
+                "condition": {
+                  "type": "ONE_OF_LIST",
+                  "values": [
+                    {
+                      "userEnteredValue": "自立"
+                    },
+                    {
+                      "userEnteredValue": "一部介助"
+                    },
+                    {
+                      "userEnteredValue": "全面介助"
+                    },
+                    {
+                      "userEnteredValue": "その他"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "columnIndex": 28,
+              "columnName": "adl_excretion",
+              "columnType": "DROPDOWN",
+              "dataValidationRule": {
+                "condition": {
+                  "type": "ONE_OF_LIST",
+                  "values": [
+                    {
+                      "userEnteredValue": "自立"
+                    },
+                    {
+                      "userEnteredValue": "一部介助"
+                    },
+                    {
+                      "userEnteredValue": "全面介助"
+                    },
+                    {
+                      "userEnteredValue": "その他"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "columnIndex": 29,
+              "columnName": "adl_bathing",
+              "columnType": "DROPDOWN",
+              "dataValidationRule": {
+                "condition": {
+                  "type": "ONE_OF_LIST",
+                  "values": [
+                    {
+                      "userEnteredValue": "自立"
+                    },
+                    {
+                      "userEnteredValue": "一部介助"
+                    },
+                    {
+                      "userEnteredValue": "全面介助"
+                    },
+                    {
+                      "userEnteredValue": "その他"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "columnIndex": 30,
+              "columnName": "adl_dressing",
+              "columnType": "DROPDOWN",
+              "dataValidationRule": {
+                "condition": {
+                  "type": "ONE_OF_LIST",
+                  "values": [
+                    {
+                      "userEnteredValue": "自立"
+                    },
+                    {
+                      "userEnteredValue": "一部介助"
+                    },
+                    {
+                      "userEnteredValue": "全面介助"
+                    },
+                    {
+                      "userEnteredValue": "その他"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "columnIndex": 31,
+              "columnName": "adl_grooming",
+              "columnType": "DROPDOWN",
+              "dataValidationRule": {
+                "condition": {
+                  "type": "ONE_OF_LIST",
+                  "values": [
+                    {
+                      "userEnteredValue": "自立"
+                    },
+                    {
+                      "userEnteredValue": "一部介助"
+                    },
+                    {
+                      "userEnteredValue": "全面介助"
+                    },
+                    {
+                      "userEnteredValue": "その他"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "columnIndex": 32,
+              "columnName": "adl_communication",
+              "columnType": "DROPDOWN",
+              "dataValidationRule": {
+                "condition": {
+                  "type": "ONE_OF_LIST",
+                  "values": [
+                    {
+                      "userEnteredValue": "自立"
+                    },
+                    {
+                      "userEnteredValue": "一部介助"
+                    },
+                    {
+                      "userEnteredValue": "全面介助"
+                    },
+                    {
+                      "userEnteredValue": "その他"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "columnIndex": 33,
+              "columnName": "physical_condition",
+              "columnType": "DROPDOWN",
+              "dataValidationRule": {
+                "condition": {
+                  "type": "ONE_OF_LIST",
+                  "values": [
+                    {
+                      "userEnteredValue": "特記なし"
+                    },
+                    {
+                      "userEnteredValue": "麻痺"
+                    },
+                    {
+                      "userEnteredValue": "疼痛"
+                    },
+                    {
+                      "userEnteredValue": "褥瘡"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "columnIndex": 34,
+              "columnName": "physical_vision",
+              "columnType": "DROPDOWN",
+              "dataValidationRule": {
+                "condition": {
+                  "type": "ONE_OF_LIST",
+                  "values": [
+                    {
+                      "userEnteredValue": "普通"
+                    },
+                    {
+                      "userEnteredValue": "弱視"
+                    },
+                    {
+                      "userEnteredValue": "全盲"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "columnIndex": 35,
+              "columnName": "physical_hearing",
+              "columnType": "DROPDOWN",
+              "dataValidationRule": {
+                "condition": {
+                  "type": "ONE_OF_LIST",
+                  "values": [
+                    {
+                      "userEnteredValue": "普通"
+                    },
+                    {
+                      "userEnteredValue": "やや難聴"
+                    },
+                    {
+                      "userEnteredValue": "難聴"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "columnIndex": 36,
+              "columnName": "physical_speech",
+              "columnType": "DROPDOWN",
+              "dataValidationRule": {
+                "condition": {
+                  "type": "ONE_OF_LIST",
+                  "values": [
+                    {
+                      "userEnteredValue": "普通"
+                    },
+                    {
+                      "userEnteredValue": "少し不自由"
+                    },
+                    {
+                      "userEnteredValue": "不自由"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "columnIndex": 37,
+              "columnName": "physical_bedsore",
+              "columnType": "DROPDOWN",
+              "dataValidationRule": {
+                "condition": {
+                  "type": "ONE_OF_LIST",
+                  "values": [
+                    {
+                      "userEnteredValue": "なし"
+                    },
+                    {
+                      "userEnteredValue": "経度"
+                    },
+                    {
+                      "userEnteredValue": "中度"
+                    },
+                    {
+                      "userEnteredValue": "重度"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "columnIndex": 38,
+              "columnName": "physical_diaper_use",
+              "columnType": "DROPDOWN",
+              "dataValidationRule": {
+                "condition": {
+                  "type": "ONE_OF_LIST",
+                  "values": [
+                    {
+                      "userEnteredValue": "なし"
+                    },
+                    {
+                      "userEnteredValue": "夜間"
+                    },
+                    {
+                      "userEnteredValue": "ときどき"
+                    },
+                    {
+                      "userEnteredValue": "常時"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "columnIndex": 39,
+              "columnName": "special_notes"
+            },
+            {
+              "columnIndex": 40,
+              "columnName": "clinic_id"
+            },
+            {
+              "columnIndex": 41,
+              "columnName": "doctor_id"
+            },
+            {
+              "columnIndex": 42,
+              "columnName": "support_office_id"
+            },
+            {
+              "columnIndex": 43,
+              "columnName": "care_manager_id"
+            },
+            {
+              "columnIndex": 44,
+              "columnName": "other_services_info"
+            },
+            {
+              "columnIndex": 45,
+              "columnName": "is_issuable"
+            },
+            {
+              "columnIndex": 46,
+              "columnName": "is_issued"
+            },
+            {
+              "columnIndex": 47,
+              "columnName": "file_id"
+            },
+            {
+              "columnIndex": 48,
+              "columnName": "file_url"
+            },
+            {
+              "columnIndex": 49,
+              "columnName": "created_at"
+            },
+            {
+              "columnIndex": 50,
+              "columnName": "created_by"
+            },
+            {
+              "columnIndex": 51,
+              "columnName": "updated_at"
+            },
+            {
+              "columnIndex": 52,
+              "columnName": "updated_by"
+            },
+            {
+              "columnIndex": 53,
+              "columnName": "lock_key"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "properties": {
+        "sheetId": 1412252042,
+        "title": "Client_Documents",
+        "index": 9,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 1082,
+          "columnCount": 21,
+          "frozenRowCount": 1
+        }
+      },
+      "bandedRanges": [
+        {
+          "bandedRangeId": 189677636,
+          "range": {
+            "sheetId": 1412252042,
+            "startRowIndex": 0,
+            "endRowIndex": 1082,
+            "startColumnIndex": 0,
+            "endColumnIndex": 21
+          },
+          "rowProperties": {
+            "headerColor": {
+              "red": 0.20784314,
+              "green": 0.40784314,
+              "blue": 0.32941177
+            },
+            "firstBandColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            },
+            "secondBandColor": {
+              "red": 0.9647059,
+              "green": 0.972549,
+              "blue": 0.9764706
+            },
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "bandedRangeReference": "189677636"
+        }
+      ],
+      "tables": [
+        {
+          "tableId": "189677636",
+          "name": "表_1",
+          "range": {
+            "sheetId": 1412252042,
+            "startRowIndex": 0,
+            "endRowIndex": 1082,
+            "startColumnIndex": 0,
+            "endColumnIndex": 21
+          },
+          "rowsProperties": {
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "columnProperties": [
+            {
+              "columnName": "document_id"
+            },
+            {
+              "columnIndex": 1,
+              "columnName": "client_id",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 2,
+              "columnName": "ref_id"
+            },
+            {
+              "columnIndex": 3,
+              "columnName": "document_type"
+            },
+            {
+              "columnIndex": 4,
+              "columnName": "title"
+            },
+            {
+              "columnIndex": 5,
+              "columnName": "image"
+            },
+            {
+              "columnIndex": 6,
+              "columnName": "summary"
+            },
+            {
+              "columnIndex": 7,
+              "columnName": "ocr_text"
+            },
+            {
+              "columnIndex": 8,
+              "columnName": "is_original"
+            },
+            {
+              "columnIndex": 9,
+              "columnName": "status"
+            },
+            {
+              "columnIndex": 10,
+              "columnName": "file_location"
+            },
+            {
+              "columnIndex": 11,
+              "columnName": "file_id"
+            },
+            {
+              "columnIndex": 12,
+              "columnName": "file_url"
+            },
+            {
+              "columnIndex": 13,
+              "columnName": "share_to_thread_key"
+            },
+            {
+              "columnIndex": 14,
+              "columnName": "thread_id"
+            },
+            {
+              "columnIndex": 15,
+              "columnName": "notes"
+            },
+            {
+              "columnIndex": 16,
+              "columnName": "processing_key"
+            },
+            {
+              "columnIndex": 17,
+              "columnName": "created_at"
+            },
+            {
+              "columnIndex": 18,
+              "columnName": "created_by"
+            },
+            {
+              "columnIndex": 19,
+              "columnName": "updated_at"
+            },
+            {
+              "columnIndex": 20,
+              "columnName": "updated_by"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "properties": {
+        "sheetId": 1826510735,
+        "title": "Clients_Menu",
+        "index": 10,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 1000,
+          "columnCount": 26
+        }
+      }
+    },
+    {
+      "properties": {
+        "sheetId": 1791652047,
+        "title": "Buildings",
+        "index": 11,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 998,
+          "columnCount": 28
+        }
+      }
+    },
+    {
+      "properties": {
+        "sheetId": 1797492774,
+        "title": "Building_Residences",
+        "index": 12,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 1000,
+          "columnCount": 14,
+          "frozenRowCount": 1
+        }
+      },
+      "bandedRanges": [
+        {
+          "bandedRangeId": 745459848,
+          "range": {
+            "sheetId": 1797492774,
+            "startRowIndex": 0,
+            "endRowIndex": 1000,
+            "startColumnIndex": 0,
+            "endColumnIndex": 14
+          },
+          "rowProperties": {
+            "headerColor": {
+              "red": 0.20784314,
+              "green": 0.40784314,
+              "blue": 0.32941177
+            },
+            "firstBandColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            },
+            "secondBandColor": {
+              "red": 0.9647059,
+              "green": 0.972549,
+              "blue": 0.9764706
+            },
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "bandedRangeReference": "745459848"
+        }
+      ],
+      "tables": [
+        {
+          "tableId": "745459848",
+          "name": "表_8",
+          "range": {
+            "sheetId": 1797492774,
+            "startRowIndex": 0,
+            "endRowIndex": 1000,
+            "startColumnIndex": 0,
+            "endColumnIndex": 14
+          },
+          "rowsProperties": {
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "columnProperties": [
+            {
+              "columnName": "residence_link_id"
+            },
+            {
+              "columnIndex": 1,
+              "columnName": "building_id"
+            },
+            {
+              "columnIndex": 2,
+              "columnName": "client_id"
+            },
+            {
+              "columnIndex": 3,
+              "columnName": "room_number"
+            },
+            {
+              "columnIndex": 4,
+              "columnName": "residence_type"
+            },
+            {
+              "columnIndex": 5,
+              "columnName": "address_label"
+            },
+            {
+              "columnIndex": 6,
+              "columnName": "effective_start_date"
+            },
+            {
+              "columnIndex": 7,
+              "columnName": "effective_end_date"
+            },
+            {
+              "columnIndex": 8,
+              "columnName": "is_current_residence"
+            },
+            {
+              "columnIndex": 9,
+              "columnName": "created_at"
+            },
+            {
+              "columnIndex": 10,
+              "columnName": "created_by"
+            },
+            {
+              "columnIndex": 11,
+              "columnName": "updated_at"
+            },
+            {
+              "columnIndex": 12,
+              "columnName": "updated_by"
+            },
+            {
+              "columnIndex": 13,
+              "columnName": "Column 14"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "properties": {
+        "sheetId": 1433278168,
+        "title": "Building_Parking_Lots",
+        "index": 13,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 997,
+          "columnCount": 25
+        }
+      }
+    },
+    {
+      "properties": {
+        "sheetId": 991823120,
+        "title": "Client_Other_Agencies",
+        "index": 14,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 1000,
+          "columnCount": 22
+        }
+      }
+    }
+  ],
+  "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/1S3Gsxu9kEa4M9uZpWuIRLvPVjpCOoj2lo7GhSIA5I0I/edit?ouid=115875753981822839683"
+}

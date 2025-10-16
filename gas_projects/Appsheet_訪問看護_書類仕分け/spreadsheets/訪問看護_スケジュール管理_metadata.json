@@ -1,0 +1,913 @@
+{
+  "spreadsheetId": "11ciS14lVjl1Ka_QyysD_ZPGLe6wRx9iBhxFkmr8a1Kc",
+  "properties": {
+    "title": "訪問看護_スケジュール管理",
+    "locale": "ja_JP",
+    "autoRecalc": "ON_CHANGE",
+    "timeZone": "Asia/Tokyo",
+    "defaultFormat": {
+      "backgroundColor": {
+        "red": 1,
+        "green": 1,
+        "blue": 1
+      },
+      "padding": {
+        "top": 2,
+        "right": 3,
+        "bottom": 2,
+        "left": 3
+      },
+      "verticalAlignment": "BOTTOM",
+      "wrapStrategy": "OVERFLOW_CELL",
+      "textFormat": {
+        "foregroundColor": {},
+        "fontFamily": "arial,sans,sans-serif",
+        "fontSize": 10,
+        "bold": false,
+        "italic": false,
+        "strikethrough": false,
+        "underline": false,
+        "foregroundColorStyle": {
+          "rgbColor": {}
+        }
+      },
+      "backgroundColorStyle": {
+        "rgbColor": {
+          "red": 1,
+          "green": 1,
+          "blue": 1
+        }
+      }
+    },
+    "spreadsheetTheme": {
+      "primaryFontFamily": "Arial",
+      "themeColors": [
+        {
+          "colorType": "TEXT",
+          "color": {
+            "rgbColor": {}
+          }
+        },
+        {
+          "colorType": "BACKGROUND",
+          "color": {
+            "rgbColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            }
+          }
+        },
+        {
+          "colorType": "ACCENT1",
+          "color": {
+            "rgbColor": {
+              "red": 0.25882354,
+              "green": 0.52156866,
+              "blue": 0.95686275
+            }
+          }
+        },
+        {
+          "colorType": "ACCENT2",
+          "color": {
+            "rgbColor": {
+              "red": 0.91764706,
+              "green": 0.2627451,
+              "blue": 0.20784314
+            }
+          }
+        },
+        {
+          "colorType": "ACCENT3",
+          "color": {
+            "rgbColor": {
+              "red": 0.9843137,
+              "green": 0.7372549,
+              "blue": 0.015686275
+            }
+          }
+        },
+        {
+          "colorType": "ACCENT4",
+          "color": {
+            "rgbColor": {
+              "red": 0.20392157,
+              "green": 0.65882355,
+              "blue": 0.3254902
+            }
+          }
+        },
+        {
+          "colorType": "ACCENT5",
+          "color": {
+            "rgbColor": {
+              "red": 1,
+              "green": 0.42745098,
+              "blue": 0.003921569
+            }
+          }
+        },
+        {
+          "colorType": "ACCENT6",
+          "color": {
+            "rgbColor": {
+              "red": 0.27450982,
+              "green": 0.7411765,
+              "blue": 0.7764706
+            }
+          }
+        },
+        {
+          "colorType": "LINK",
+          "color": {
+            "rgbColor": {
+              "red": 0.06666667,
+              "green": 0.33333334,
+              "blue": 0.8
+            }
+          }
+        }
+      ]
+    }
+  },
+  "sheets": [
+    {
+      "properties": {
+        "sheetId": 0,
+        "title": "Schedule_Master",
+        "index": 0,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 1000,
+          "columnCount": 27,
+          "frozenRowCount": 1
+        }
+      },
+      "bandedRanges": [
+        {
+          "bandedRangeId": 1907761128,
+          "range": {
+            "startRowIndex": 0,
+            "endRowIndex": 1000,
+            "startColumnIndex": 0,
+            "endColumnIndex": 27
+          },
+          "rowProperties": {
+            "headerColor": {
+              "red": 0.20784314,
+              "green": 0.40784314,
+              "blue": 0.32941177
+            },
+            "firstBandColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            },
+            "secondBandColor": {
+              "red": 0.9647059,
+              "green": 0.972549,
+              "blue": 0.9764706
+            },
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "bandedRangeReference": "1907761128"
+        }
+      ],
+      "tables": [
+        {
+          "tableId": "1907761128",
+          "name": "表_2",
+          "range": {
+            "startRowIndex": 0,
+            "endRowIndex": 1000,
+            "startColumnIndex": 0,
+            "endColumnIndex": 27
+          },
+          "rowsProperties": {
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "columnProperties": [
+            {
+              "columnName": "master_id"
+            },
+            {
+              "columnIndex": 1,
+              "columnName": "status"
+            },
+            {
+              "columnIndex": 2,
+              "columnName": "is_active"
+            },
+            {
+              "columnIndex": 3,
+              "columnName": "client_id"
+            },
+            {
+              "columnIndex": 4,
+              "columnName": "client_name_temporary"
+            },
+            {
+              "columnIndex": 5,
+              "columnName": "job_type"
+            },
+            {
+              "columnIndex": 6,
+              "columnName": "insurance_type"
+            },
+            {
+              "columnIndex": 7,
+              "columnName": "service_duration_minutes"
+            },
+            {
+              "columnIndex": 8,
+              "columnName": "frequency"
+            },
+            {
+              "columnIndex": 9,
+              "columnName": "day_of_week"
+            },
+            {
+              "columnIndex": 10,
+              "columnName": "target_week"
+            },
+            {
+              "columnIndex": 11,
+              "columnName": "start_time"
+            },
+            {
+              "columnIndex": 12,
+              "columnName": "end_time"
+            },
+            {
+              "columnIndex": 13,
+              "columnName": "visitor_name"
+            },
+            {
+              "columnIndex": 14,
+              "columnName": "companion_names"
+            },
+            {
+              "columnIndex": 15,
+              "columnName": "route_category"
+            },
+            {
+              "columnIndex": 16,
+              "columnName": "route_tag"
+            },
+            {
+              "columnIndex": 17,
+              "columnName": "apply_start_date"
+            },
+            {
+              "columnIndex": 18,
+              "columnName": "apply_end_date"
+            },
+            {
+              "columnIndex": 19,
+              "columnName": "generation_count"
+            },
+            {
+              "columnIndex": 20,
+              "columnName": "batch_delete_date"
+            },
+            {
+              "columnIndex": 21,
+              "columnName": "schedule_key"
+            },
+            {
+              "columnIndex": 22,
+              "columnName": "display_key"
+            },
+            {
+              "columnIndex": 23,
+              "columnName": "created_at"
+            },
+            {
+              "columnIndex": 24,
+              "columnName": "created_by"
+            },
+            {
+              "columnIndex": 25,
+              "columnName": "updated_at"
+            },
+            {
+              "columnIndex": 26,
+              "columnName": "updated_by"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "properties": {
+        "sheetId": 617946258,
+        "title": "Schedule_Plan",
+        "index": 1,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 998,
+          "columnCount": 34,
+          "frozenRowCount": 1
+        }
+      },
+      "bandedRanges": [
+        {
+          "bandedRangeId": 783626308,
+          "range": {
+            "sheetId": 617946258,
+            "startRowIndex": 0,
+            "endRowIndex": 998,
+            "startColumnIndex": 0,
+            "endColumnIndex": 34
+          },
+          "rowProperties": {
+            "headerColor": {
+              "red": 0.20784314,
+              "green": 0.40784314,
+              "blue": 0.32941177
+            },
+            "firstBandColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            },
+            "secondBandColor": {
+              "red": 0.9647059,
+              "green": 0.972549,
+              "blue": 0.9764706
+            },
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "bandedRangeReference": "783626308"
+        }
+      ],
+      "tables": [
+        {
+          "tableId": "783626308",
+          "name": "表_1",
+          "range": {
+            "sheetId": 617946258,
+            "startRowIndex": 0,
+            "endRowIndex": 998,
+            "startColumnIndex": 0,
+            "endColumnIndex": 34
+          },
+          "rowsProperties": {
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "columnProperties": [
+            {
+              "columnName": "plan_id"
+            },
+            {
+              "columnIndex": 1,
+              "columnName": "status"
+            },
+            {
+              "columnIndex": 2,
+              "columnName": "client_id"
+            },
+            {
+              "columnIndex": 3,
+              "columnName": "provider_office"
+            },
+            {
+              "columnIndex": 4,
+              "columnName": "job_type"
+            },
+            {
+              "columnIndex": 5,
+              "columnName": "insurance_type"
+            },
+            {
+              "columnIndex": 6,
+              "columnName": "is_regular_visit"
+            },
+            {
+              "columnIndex": 7,
+              "columnName": "is_discharge_day"
+            },
+            {
+              "columnIndex": 8,
+              "columnName": "is_emergency"
+            },
+            {
+              "columnIndex": 9,
+              "columnName": "emergency_reason"
+            },
+            {
+              "columnIndex": 10,
+              "columnName": "visit_date"
+            },
+            {
+              "columnIndex": 11,
+              "columnName": "day_of_week"
+            },
+            {
+              "columnIndex": 12,
+              "columnName": "start_time"
+            },
+            {
+              "columnIndex": 13,
+              "columnName": "end_time"
+            },
+            {
+              "columnIndex": 14,
+              "columnName": "duration_minutes"
+            },
+            {
+              "columnIndex": 15,
+              "columnName": "visitor_name"
+            },
+            {
+              "columnIndex": 16,
+              "columnName": "companion_names"
+            },
+            {
+              "columnIndex": 17,
+              "columnName": "route_category"
+            },
+            {
+              "columnIndex": 18,
+              "columnName": "route_tag"
+            },
+            {
+              "columnIndex": 19,
+              "columnName": "client_name_label"
+            },
+            {
+              "columnIndex": 20,
+              "columnName": "schedule_label"
+            },
+            {
+              "columnIndex": 21,
+              "columnName": "master_id"
+            },
+            {
+              "columnIndex": 22,
+              "columnName": "service_form_id"
+            },
+            {
+              "columnIndex": 23,
+              "columnName": "has_record"
+            },
+            {
+              "columnIndex": 24,
+              "columnName": "gcal_event_id"
+            },
+            {
+              "columnIndex": 25,
+              "columnName": "gcal_event_url"
+            },
+            {
+              "columnIndex": 26,
+              "columnName": "gcal_start_time",
+              "columnType": "DATE_TIME"
+            },
+            {
+              "columnIndex": 27,
+              "columnName": "gcal_end_time",
+              "columnType": "DATE_TIME"
+            },
+            {
+              "columnIndex": 28,
+              "columnName": "gcal_owner"
+            },
+            {
+              "columnIndex": 29,
+              "columnName": "lock_key"
+            },
+            {
+              "columnIndex": 30,
+              "columnName": "created_at"
+            },
+            {
+              "columnIndex": 31,
+              "columnName": "created_by"
+            },
+            {
+              "columnIndex": 32,
+              "columnName": "updated_at"
+            },
+            {
+              "columnIndex": 33,
+              "columnName": "updated_by"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "properties": {
+        "sheetId": 1776673238,
+        "title": "Service_Provision_Form",
+        "index": 2,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 1000,
+          "columnCount": 13,
+          "frozenRowCount": 1
+        }
+      },
+      "bandedRanges": [
+        {
+          "bandedRangeId": 363056437,
+          "range": {
+            "sheetId": 1776673238,
+            "startRowIndex": 0,
+            "endRowIndex": 1000,
+            "startColumnIndex": 0,
+            "endColumnIndex": 13
+          },
+          "rowProperties": {
+            "headerColor": {
+              "red": 0.20784314,
+              "green": 0.40784314,
+              "blue": 0.32941177
+            },
+            "firstBandColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            },
+            "secondBandColor": {
+              "red": 0.9647059,
+              "green": 0.972549,
+              "blue": 0.9764706
+            },
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "bandedRangeReference": "363056437"
+        }
+      ],
+      "tables": [
+        {
+          "tableId": "363056437",
+          "name": "表_5",
+          "range": {
+            "sheetId": 1776673238,
+            "startRowIndex": 0,
+            "endRowIndex": 1000,
+            "startColumnIndex": 0,
+            "endColumnIndex": 13
+          },
+          "rowsProperties": {
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "columnProperties": [
+            {
+              "columnName": "form_id"
+            },
+            {
+              "columnIndex": 1,
+              "columnName": "status"
+            },
+            {
+              "columnIndex": 2,
+              "columnName": "client_id"
+            },
+            {
+              "columnIndex": 3,
+              "columnName": "applicable_month"
+            },
+            {
+              "columnIndex": 4,
+              "columnName": "source_document_id"
+            },
+            {
+              "columnIndex": 5,
+              "columnName": "total_planned_units"
+            },
+            {
+              "columnIndex": 6,
+              "columnName": "creation_date"
+            },
+            {
+              "columnIndex": 7,
+              "columnName": "org_id"
+            },
+            {
+              "columnIndex": 8,
+              "columnName": "care_manager_id"
+            },
+            {
+              "columnIndex": 9,
+              "columnName": "created_at"
+            },
+            {
+              "columnIndex": 10,
+              "columnName": "created_by"
+            },
+            {
+              "columnIndex": 11,
+              "columnName": "updated_at"
+            },
+            {
+              "columnIndex": 12,
+              "columnName": "updated_by"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "properties": {
+        "sheetId": 786507741,
+        "title": "Service_Form_Details",
+        "index": 3,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 976,
+          "columnCount": 16,
+          "frozenRowCount": 1
+        }
+      },
+      "bandedRanges": [
+        {
+          "bandedRangeId": 1998132080,
+          "range": {
+            "sheetId": 786507741,
+            "startRowIndex": 0,
+            "endRowIndex": 976,
+            "startColumnIndex": 0,
+            "endColumnIndex": 16
+          },
+          "rowProperties": {
+            "headerColor": {
+              "red": 0.20784314,
+              "green": 0.40784314,
+              "blue": 0.32941177
+            },
+            "firstBandColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            },
+            "secondBandColor": {
+              "red": 0.9647059,
+              "green": 0.972549,
+              "blue": 0.9764706
+            },
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "bandedRangeReference": "1998132080"
+        }
+      ],
+      "tables": [
+        {
+          "tableId": "1998132080",
+          "name": "表_4",
+          "range": {
+            "sheetId": 786507741,
+            "startRowIndex": 0,
+            "endRowIndex": 976,
+            "startColumnIndex": 0,
+            "endColumnIndex": 16
+          },
+          "rowsProperties": {
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "columnProperties": [
+            {
+              "columnName": "detail_id"
+            },
+            {
+              "columnIndex": 1,
+              "columnName": "status"
+            },
+            {
+              "columnIndex": 2,
+              "columnName": "form_id"
+            },
+            {
+              "columnIndex": 3,
+              "columnName": "client_id"
+            },
+            {
+              "columnIndex": 4,
+              "columnName": "item_category"
+            },
+            {
+              "columnIndex": 5,
+              "columnName": "service_date"
+            },
+            {
+              "columnIndex": 6,
+              "columnName": "planned_start_time"
+            },
+            {
+              "columnIndex": 7,
+              "columnName": "planned_end_time"
+            },
+            {
+              "columnIndex": 8,
+              "columnName": "service_code"
+            },
+            {
+              "columnIndex": 9,
+              "columnName": "service_name"
+            },
+            {
+              "columnIndex": 10,
+              "columnName": "service_units"
+            },
+            {
+              "columnIndex": 11,
+              "columnName": "service_count"
+            },
+            {
+              "columnIndex": 12,
+              "columnName": "created_at"
+            },
+            {
+              "columnIndex": 13,
+              "columnName": "created_by"
+            },
+            {
+              "columnIndex": 14,
+              "columnName": "updated_at"
+            },
+            {
+              "columnIndex": 15,
+              "columnName": "updated_by"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "properties": {
+        "sheetId": 1364660289,
+        "title": "Event_Audit_Log",
+        "index": 4,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 5397,
+          "columnCount": 26
+        }
+      }
+    }
+  ],
+  "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/11ciS14lVjl1Ka_QyysD_ZPGLe6wRx9iBhxFkmr8a1Kc/edit?ouid=115875753981822839683"
+}

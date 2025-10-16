@@ -1,0 +1,440 @@
+{
+  "spreadsheetId": "1QDMA3DP4Y9XSFRWY9ewwP3Vih2NJEpq7NmNRRgASqRY",
+  "properties": {
+    "title": "勤怠管理",
+    "locale": "ja_JP",
+    "autoRecalc": "ON_CHANGE",
+    "timeZone": "Asia/Tokyo",
+    "defaultFormat": {
+      "backgroundColor": {
+        "red": 1,
+        "green": 1,
+        "blue": 1
+      },
+      "padding": {
+        "top": 2,
+        "right": 3,
+        "bottom": 2,
+        "left": 3
+      },
+      "verticalAlignment": "BOTTOM",
+      "wrapStrategy": "OVERFLOW_CELL",
+      "textFormat": {
+        "foregroundColor": {},
+        "fontFamily": "arial,sans,sans-serif",
+        "fontSize": 10,
+        "bold": false,
+        "italic": false,
+        "strikethrough": false,
+        "underline": false,
+        "foregroundColorStyle": {
+          "rgbColor": {}
+        }
+      },
+      "backgroundColorStyle": {
+        "rgbColor": {
+          "red": 1,
+          "green": 1,
+          "blue": 1
+        }
+      }
+    },
+    "spreadsheetTheme": {
+      "primaryFontFamily": "Arial",
+      "themeColors": [
+        {
+          "colorType": "TEXT",
+          "color": {
+            "rgbColor": {}
+          }
+        },
+        {
+          "colorType": "BACKGROUND",
+          "color": {
+            "rgbColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            }
+          }
+        },
+        {
+          "colorType": "ACCENT1",
+          "color": {
+            "rgbColor": {
+              "red": 0.25882354,
+              "green": 0.52156866,
+              "blue": 0.95686275
+            }
+          }
+        },
+        {
+          "colorType": "ACCENT2",
+          "color": {
+            "rgbColor": {
+              "red": 0.91764706,
+              "green": 0.2627451,
+              "blue": 0.20784314
+            }
+          }
+        },
+        {
+          "colorType": "ACCENT3",
+          "color": {
+            "rgbColor": {
+              "red": 0.9843137,
+              "green": 0.7372549,
+              "blue": 0.015686275
+            }
+          }
+        },
+        {
+          "colorType": "ACCENT4",
+          "color": {
+            "rgbColor": {
+              "red": 0.20392157,
+              "green": 0.65882355,
+              "blue": 0.3254902
+            }
+          }
+        },
+        {
+          "colorType": "ACCENT5",
+          "color": {
+            "rgbColor": {
+              "red": 1,
+              "green": 0.42745098,
+              "blue": 0.003921569
+            }
+          }
+        },
+        {
+          "colorType": "ACCENT6",
+          "color": {
+            "rgbColor": {
+              "red": 0.27450982,
+              "green": 0.7411765,
+              "blue": 0.7764706
+            }
+          }
+        },
+        {
+          "colorType": "LINK",
+          "color": {
+            "rgbColor": {
+              "red": 0.06666667,
+              "green": 0.33333334,
+              "blue": 0.8
+            }
+          }
+        }
+      ]
+    }
+  },
+  "sheets": [
+    {
+      "properties": {
+        "sheetId": 1008046635,
+        "title": "勤務_予定",
+        "index": 0,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 1000,
+          "columnCount": 31,
+          "frozenRowCount": 1
+        }
+      },
+      "basicFilter": {
+        "range": {
+          "sheetId": 1008046635,
+          "startRowIndex": 0,
+          "endRowIndex": 1000,
+          "startColumnIndex": 0,
+          "endColumnIndex": 31
+        },
+        "sortSpecs": [
+          {
+            "dimensionIndex": 0,
+            "sortOrder": "ASCENDING"
+          },
+          {
+            "dimensionIndex": 15,
+            "sortOrder": "ASCENDING"
+          },
+          {
+            "dimensionIndex": 1,
+            "sortOrder": "ASCENDING"
+          }
+        ],
+        "tableId": "1598928561"
+      },
+      "bandedRanges": [
+        {
+          "bandedRangeId": 1598928561,
+          "range": {
+            "sheetId": 1008046635,
+            "startRowIndex": 0,
+            "endRowIndex": 1000,
+            "startColumnIndex": 0,
+            "endColumnIndex": 31
+          },
+          "rowProperties": {
+            "headerColor": {
+              "red": 0.20784314,
+              "green": 0.40784314,
+              "blue": 0.32941177
+            },
+            "firstBandColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            },
+            "secondBandColor": {
+              "red": 0.9647059,
+              "green": 0.972549,
+              "blue": 0.9764706
+            },
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "bandedRangeReference": "1598928561"
+        }
+      ],
+      "tables": [
+        {
+          "tableId": "1598928561",
+          "name": "表_1",
+          "range": {
+            "sheetId": 1008046635,
+            "startRowIndex": 0,
+            "endRowIndex": 1000,
+            "startColumnIndex": 0,
+            "endColumnIndex": 31
+          },
+          "rowsProperties": {
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "columnProperties": [
+            {
+              "columnName": "ID"
+            },
+            {
+              "columnIndex": 1,
+              "columnName": "年月日"
+            },
+            {
+              "columnIndex": 2,
+              "columnName": "曜日"
+            },
+            {
+              "columnIndex": 3,
+              "columnName": "区分"
+            },
+            {
+              "columnIndex": 4,
+              "columnName": "始業時刻_予定",
+              "columnType": "TIME"
+            },
+            {
+              "columnIndex": 5,
+              "columnName": "終業時刻_予定",
+              "columnType": "TIME"
+            },
+            {
+              "columnIndex": 6,
+              "columnName": "休憩時間/分_予定"
+            },
+            {
+              "columnIndex": 7,
+              "columnName": "所定労働時間/日_予定"
+            },
+            {
+              "columnIndex": 8,
+              "columnName": "始業時刻_実績",
+              "columnType": "TIME"
+            },
+            {
+              "columnIndex": 9,
+              "columnName": "終業時刻_実績",
+              "columnType": "TIME"
+            },
+            {
+              "columnIndex": 10,
+              "columnName": "休憩時間/分_実績"
+            },
+            {
+              "columnIndex": 11,
+              "columnName": "所定労働時間/日_実績",
+              "columnType": "DOUBLE"
+            },
+            {
+              "columnIndex": 12,
+              "columnName": "位置情報_始業"
+            },
+            {
+              "columnIndex": 13,
+              "columnName": "位置情報_終業"
+            },
+            {
+              "columnIndex": 14,
+              "columnName": "社員"
+            },
+            {
+              "columnIndex": 15,
+              "columnName": "最終更新日時"
+            },
+            {
+              "columnIndex": 16,
+              "columnName": "最終更新者"
+            },
+            {
+              "columnIndex": 17,
+              "columnName": "希望休"
+            },
+            {
+              "columnIndex": 18,
+              "columnName": "有休"
+            },
+            {
+              "columnIndex": 19,
+              "columnName": "オンコール"
+            },
+            {
+              "columnIndex": 20,
+              "columnName": "ロック_key"
+            },
+            {
+              "columnIndex": 21,
+              "columnName": "更新_key"
+            },
+            {
+              "columnIndex": 22,
+              "columnName": "社員ロック_key"
+            },
+            {
+              "columnIndex": 23,
+              "columnName": "年月",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 24,
+              "columnName": "不在イベントID"
+            },
+            {
+              "columnIndex": 25,
+              "columnName": "列 1"
+            },
+            {
+              "columnIndex": 26,
+              "columnName": "列 2"
+            },
+            {
+              "columnIndex": 27,
+              "columnName": "列 3"
+            },
+            {
+              "columnIndex": 28,
+              "columnName": "列 4"
+            },
+            {
+              "columnIndex": 29,
+              "columnName": "列 5"
+            },
+            {
+              "columnIndex": 30,
+              "columnName": "列 6"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "properties": {
+        "sheetId": 1433755393,
+        "title": "勤務_実績_履歴",
+        "index": 1,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 999,
+          "columnCount": 29
+        }
+      }
+    },
+    {
+      "properties": {
+        "sheetId": 413091218,
+        "title": "有休_付与",
+        "index": 2,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 1000,
+          "columnCount": 25
+        }
+      }
+    },
+    {
+      "properties": {
+        "sheetId": 354787699,
+        "title": "有休_設定",
+        "index": 3,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 1000,
+          "columnCount": 26
+        }
+      }
+    },
+    {
+      "properties": {
+        "sheetId": 112537373,
+        "title": "就業_実績",
+        "index": 4,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 1000,
+          "columnCount": 29
+        }
+      }
+    }
+  ],
+  "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/1QDMA3DP4Y9XSFRWY9ewwP3Vih2NJEpq7NmNRRgASqRY/edit?ouid=115875753981822839683"
+}

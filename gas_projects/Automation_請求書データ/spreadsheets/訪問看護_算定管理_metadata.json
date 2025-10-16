@@ -1,0 +1,1875 @@
+{
+  "spreadsheetId": "1KL31iZLNu1pnKH8BMlJ8434TiwNvvJHVcsde33UZ7n8",
+  "properties": {
+    "title": "訪問看護_算定管理",
+    "locale": "ja_JP",
+    "autoRecalc": "ON_CHANGE",
+    "timeZone": "Asia/Tokyo",
+    "defaultFormat": {
+      "backgroundColor": {
+        "red": 1,
+        "green": 1,
+        "blue": 1
+      },
+      "padding": {
+        "top": 2,
+        "right": 3,
+        "bottom": 2,
+        "left": 3
+      },
+      "verticalAlignment": "BOTTOM",
+      "wrapStrategy": "OVERFLOW_CELL",
+      "textFormat": {
+        "foregroundColor": {},
+        "fontFamily": "arial,sans,sans-serif",
+        "fontSize": 10,
+        "bold": false,
+        "italic": false,
+        "strikethrough": false,
+        "underline": false,
+        "foregroundColorStyle": {
+          "rgbColor": {}
+        }
+      },
+      "backgroundColorStyle": {
+        "rgbColor": {
+          "red": 1,
+          "green": 1,
+          "blue": 1
+        }
+      }
+    },
+    "spreadsheetTheme": {
+      "primaryFontFamily": "Arial",
+      "themeColors": [
+        {
+          "colorType": "TEXT",
+          "color": {
+            "rgbColor": {}
+          }
+        },
+        {
+          "colorType": "BACKGROUND",
+          "color": {
+            "rgbColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            }
+          }
+        },
+        {
+          "colorType": "ACCENT1",
+          "color": {
+            "rgbColor": {
+              "red": 0.25882354,
+              "green": 0.52156866,
+              "blue": 0.95686275
+            }
+          }
+        },
+        {
+          "colorType": "ACCENT2",
+          "color": {
+            "rgbColor": {
+              "red": 0.91764706,
+              "green": 0.2627451,
+              "blue": 0.20784314
+            }
+          }
+        },
+        {
+          "colorType": "ACCENT3",
+          "color": {
+            "rgbColor": {
+              "red": 0.9843137,
+              "green": 0.7372549,
+              "blue": 0.015686275
+            }
+          }
+        },
+        {
+          "colorType": "ACCENT4",
+          "color": {
+            "rgbColor": {
+              "red": 0.20392157,
+              "green": 0.65882355,
+              "blue": 0.3254902
+            }
+          }
+        },
+        {
+          "colorType": "ACCENT5",
+          "color": {
+            "rgbColor": {
+              "red": 1,
+              "green": 0.42745098,
+              "blue": 0.003921569
+            }
+          }
+        },
+        {
+          "colorType": "ACCENT6",
+          "color": {
+            "rgbColor": {
+              "red": 0.27450982,
+              "green": 0.7411765,
+              "blue": 0.7764706
+            }
+          }
+        },
+        {
+          "colorType": "LINK",
+          "color": {
+            "rgbColor": {
+              "red": 0.06666667,
+              "green": 0.33333334,
+              "blue": 0.8
+            }
+          }
+        }
+      ]
+    }
+  },
+  "sheets": [
+    {
+      "properties": {
+        "sheetId": 2055474786,
+        "title": "Billing_Master",
+        "index": 0,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 1997,
+          "columnCount": 99,
+          "frozenRowCount": 1,
+          "frozenColumnCount": 3
+        }
+      },
+      "conditionalFormats": [
+        {
+          "ranges": [
+            {
+              "sheetId": 2055474786,
+              "startRowIndex": 0,
+              "endRowIndex": 1997,
+              "startColumnIndex": 1,
+              "endColumnIndex": 99
+            }
+          ],
+          "booleanRule": {
+            "condition": {
+              "type": "CUSTOM_FORMULA",
+              "values": [
+                {
+                  "userEnteredValue": "= $BW1 = TRUE"
+                }
+              ]
+            },
+            "format": {
+              "backgroundColor": {
+                "red": 0.91764706,
+                "green": 0.6,
+                "blue": 0.6
+              },
+              "backgroundColorStyle": {
+                "rgbColor": {
+                  "red": 0.91764706,
+                  "green": 0.6,
+                  "blue": 0.6
+                }
+              }
+            }
+          }
+        },
+        {
+          "ranges": [
+            {
+              "sheetId": 2055474786,
+              "startRowIndex": 0,
+              "endRowIndex": 1997,
+              "startColumnIndex": 0,
+              "endColumnIndex": 99
+            }
+          ],
+          "booleanRule": {
+            "condition": {
+              "type": "CUSTOM_FORMULA",
+              "values": [
+                {
+                  "userEnteredValue": "= $BB1 = \"医療\""
+                }
+              ]
+            },
+            "format": {
+              "backgroundColor": {
+                "red": 0.6431373,
+                "green": 0.7607843,
+                "blue": 0.95686275
+              },
+              "backgroundColorStyle": {
+                "rgbColor": {
+                  "red": 0.6431373,
+                  "green": 0.7607843,
+                  "blue": 0.95686275
+                }
+              }
+            }
+          }
+        },
+        {
+          "ranges": [
+            {
+              "sheetId": 2055474786,
+              "startRowIndex": 0,
+              "endRowIndex": 1997,
+              "startColumnIndex": 0,
+              "endColumnIndex": 99
+            }
+          ],
+          "booleanRule": {
+            "condition": {
+              "type": "CUSTOM_FORMULA",
+              "values": [
+                {
+                  "userEnteredValue": "= $BB1 = \"介護\""
+                }
+              ]
+            },
+            "format": {
+              "backgroundColor": {
+                "red": 0.7176471,
+                "green": 0.88235295,
+                "blue": 0.8039216
+              },
+              "backgroundColorStyle": {
+                "rgbColor": {
+                  "red": 0.7176471,
+                  "green": 0.88235295,
+                  "blue": 0.8039216
+                }
+              }
+            }
+          }
+        },
+        {
+          "ranges": [
+            {
+              "sheetId": 2055474786,
+              "startRowIndex": 0,
+              "endRowIndex": 1997,
+              "startColumnIndex": 0,
+              "endColumnIndex": 99
+            }
+          ],
+          "booleanRule": {
+            "condition": {
+              "type": "CUSTOM_FORMULA",
+              "values": [
+                {
+                  "userEnteredValue": "= $BB1 = \"精神\""
+                }
+              ]
+            },
+            "format": {
+              "backgroundColor": {
+                "red": 0.8509804,
+                "green": 0.8235294,
+                "blue": 0.9137255
+              },
+              "backgroundColorStyle": {
+                "rgbColor": {
+                  "red": 0.8509804,
+                  "green": 0.8235294,
+                  "blue": 0.9137255
+                }
+              }
+            }
+          }
+        }
+      ],
+      "basicFilter": {
+        "range": {
+          "sheetId": 2055474786,
+          "startRowIndex": 0,
+          "endRowIndex": 1997,
+          "startColumnIndex": 0,
+          "endColumnIndex": 99
+        },
+        "sortSpecs": [
+          {
+            "dimensionIndex": 25,
+            "sortOrder": "ASCENDING"
+          },
+          {
+            "dimensionIndex": 2,
+            "sortOrder": "ASCENDING"
+          },
+          {
+            "dimensionIndex": 53,
+            "sortOrder": "ASCENDING"
+          },
+          {
+            "dimensionIndex": 27,
+            "sortOrder": "ASCENDING"
+          },
+          {
+            "dimensionIndex": 0,
+            "sortOrder": "ASCENDING"
+          },
+          {
+            "dimensionIndex": 12,
+            "sortOrder": "ASCENDING"
+          },
+          {
+            "dimensionIndex": 95,
+            "sortOrder": "ASCENDING"
+          }
+        ],
+        "criteria": {
+          "0": {},
+          "2": {},
+          "53": {},
+          "25": {
+            "hiddenValues": [
+              "",
+              "2025/06/05",
+              "2025/06/11",
+              "2025/06/12",
+              "2025/06/13",
+              "2025/06/14",
+              "2025/06/16",
+              "2025/06/18",
+              "2025/06/19",
+              "2025/06/20",
+              "2025/06/21",
+              "2025/06/23",
+              "2025/06/26",
+              "2025/06/28",
+              "2025/06/30",
+              "2025/07/03",
+              "2025/07/05",
+              "2025/07/07",
+              "2025/07/10",
+              "2025/07/12",
+              "2025/07/13",
+              "2025/07/14",
+              "2025/07/15",
+              "2025/07/16",
+              "2025/07/17",
+              "2025/07/18",
+              "2025/07/19",
+              "2025/07/20",
+              "2025/07/21",
+              "2025/07/22",
+              "2025/07/23",
+              "2025/07/24",
+              "2025/07/25",
+              "2025/07/26",
+              "2025/07/27",
+              "2025/07/28",
+              "2025/07/30",
+              "2025/07/31",
+              "2025/08/01",
+              "2025/08/02",
+              "2025/08/03",
+              "2025/08/04",
+              "2025/08/05",
+              "2025/08/06",
+              "2025/08/07",
+              "2025/08/08",
+              "2025/08/09",
+              "2025/08/10",
+              "2025/08/11",
+              "2025/08/12",
+              "2025/08/13",
+              "2025/08/14",
+              "2025/08/15",
+              "2025/08/16",
+              "2025/08/17",
+              "2025/08/18",
+              "2025/08/19",
+              "2025/08/20",
+              "2025/08/21",
+              "2025/08/22",
+              "2025/08/23",
+              "2025/08/24",
+              "2025/08/25",
+              "2025/08/26",
+              "2025/08/27",
+              "2025/08/28",
+              "2025/08/29",
+              "2025/08/30",
+              "2025/08/31",
+              "2025/09/01",
+              "2025/09/02",
+              "2025/09/03",
+              "2025/09/04",
+              "2025/09/05",
+              "2025/09/06",
+              "2025/09/07",
+              "2025/09/08",
+              "2025/09/09",
+              "2025/09/10",
+              "2025/09/11",
+              "2025/09/12",
+              "2025/09/13",
+              "2025/09/14",
+              "2025/09/15",
+              "2025/09/16",
+              "2025/09/17",
+              "2025/09/18",
+              "2025/09/19",
+              "2025/09/21",
+              "2025/09/22",
+              "2025/09/23",
+              "2025/09/24",
+              "2025/09/25",
+              "2025/09/26",
+              "2025/09/27",
+              "2025/09/28",
+              "2025/09/29",
+              "2025/09/30",
+              "2025/10/01",
+              "2025/10/02",
+              "2025/10/03",
+              "2025/10/04",
+              "2025/10/05",
+              "2025/10/06",
+              "2025/10/07",
+              "2025/10/08"
+            ]
+          },
+          "91": {}
+        },
+        "filterSpecs": [
+          {
+            "columnIndex": 2,
+            "filterCriteria": {}
+          },
+          {
+            "columnIndex": 0,
+            "filterCriteria": {}
+          },
+          {
+            "columnIndex": 91,
+            "filterCriteria": {}
+          },
+          {
+            "columnIndex": 53,
+            "filterCriteria": {}
+          },
+          {
+            "columnIndex": 25,
+            "filterCriteria": {
+              "hiddenValues": [
+                "",
+                "2025/06/05",
+                "2025/06/11",
+                "2025/06/12",
+                "2025/06/13",
+                "2025/06/14",
+                "2025/06/16",
+                "2025/06/18",
+                "2025/06/19",
+                "2025/06/20",
+                "2025/06/21",
+                "2025/06/23",
+                "2025/06/26",
+                "2025/06/28",
+                "2025/06/30",
+                "2025/07/03",
+                "2025/07/05",
+                "2025/07/07",
+                "2025/07/10",
+                "2025/07/12",
+                "2025/07/13",
+                "2025/07/14",
+                "2025/07/15",
+                "2025/07/16",
+                "2025/07/17",
+                "2025/07/18",
+                "2025/07/19",
+                "2025/07/20",
+                "2025/07/21",
+                "2025/07/22",
+                "2025/07/23",
+                "2025/07/24",
+                "2025/07/25",
+                "2025/07/26",
+                "2025/07/27",
+                "2025/07/28",
+                "2025/07/30",
+                "2025/07/31",
+                "2025/08/01",
+                "2025/08/02",
+                "2025/08/03",
+                "2025/08/04",
+                "2025/08/05",
+                "2025/08/06",
+                "2025/08/07",
+                "2025/08/08",
+                "2025/08/09",
+                "2025/08/10",
+                "2025/08/11",
+                "2025/08/12",
+                "2025/08/13",
+                "2025/08/14",
+                "2025/08/15",
+                "2025/08/16",
+                "2025/08/17",
+                "2025/08/18",
+                "2025/08/19",
+                "2025/08/20",
+                "2025/08/21",
+                "2025/08/22",
+                "2025/08/23",
+                "2025/08/24",
+                "2025/08/25",
+                "2025/08/26",
+                "2025/08/27",
+                "2025/08/28",
+                "2025/08/29",
+                "2025/08/30",
+                "2025/08/31",
+                "2025/09/01",
+                "2025/09/02",
+                "2025/09/03",
+                "2025/09/04",
+                "2025/09/05",
+                "2025/09/06",
+                "2025/09/07",
+                "2025/09/08",
+                "2025/09/09",
+                "2025/09/10",
+                "2025/09/11",
+                "2025/09/12",
+                "2025/09/13",
+                "2025/09/14",
+                "2025/09/15",
+                "2025/09/16",
+                "2025/09/17",
+                "2025/09/18",
+                "2025/09/19",
+                "2025/09/21",
+                "2025/09/22",
+                "2025/09/23",
+                "2025/09/24",
+                "2025/09/25",
+                "2025/09/26",
+                "2025/09/27",
+                "2025/09/28",
+                "2025/09/29",
+                "2025/09/30",
+                "2025/10/01",
+                "2025/10/02",
+                "2025/10/03",
+                "2025/10/04",
+                "2025/10/05",
+                "2025/10/06",
+                "2025/10/07",
+                "2025/10/08"
+              ]
+            }
+          }
+        ],
+        "tableId": "1821357641"
+      },
+      "bandedRanges": [
+        {
+          "bandedRangeId": 1821357641,
+          "range": {
+            "sheetId": 2055474786,
+            "startRowIndex": 0,
+            "endRowIndex": 1997,
+            "startColumnIndex": 0,
+            "endColumnIndex": 99
+          },
+          "rowProperties": {
+            "headerColor": {
+              "red": 0.20784314,
+              "green": 0.40784314,
+              "blue": 0.32941177
+            },
+            "firstBandColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            },
+            "secondBandColor": {
+              "red": 0.9647059,
+              "green": 0.972549,
+              "blue": 0.9764706
+            },
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "bandedRangeReference": "1821357641"
+        }
+      ],
+      "tables": [
+        {
+          "tableId": "1821357641",
+          "name": "表",
+          "range": {
+            "sheetId": 2055474786,
+            "startRowIndex": 0,
+            "endRowIndex": 1997,
+            "startColumnIndex": 0,
+            "endColumnIndex": 99
+          },
+          "rowsProperties": {
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "columnProperties": [
+            {
+              "columnName": "record_id"
+            },
+            {
+              "columnIndex": 1,
+              "columnName": "plan_id"
+            },
+            {
+              "columnIndex": 2,
+              "columnName": "client_id"
+            },
+            {
+              "columnIndex": 3,
+              "columnName": "ltci_provider_office_no"
+            },
+            {
+              "columnIndex": 4,
+              "columnName": "address_id"
+            },
+            {
+              "columnIndex": 5,
+              "columnName": "provider_office"
+            },
+            {
+              "columnIndex": 6,
+              "columnName": "enhanced_fee_type"
+            },
+            {
+              "columnIndex": 7,
+              "columnName": "management_fee_type"
+            },
+            {
+              "columnIndex": 8,
+              "columnName": "status"
+            },
+            {
+              "columnIndex": 9,
+              "columnName": "cancellation_reason"
+            },
+            {
+              "columnIndex": 10,
+              "columnName": "date_of_birth"
+            },
+            {
+              "columnIndex": 11,
+              "columnName": "gender_code",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 12,
+              "columnName": "start_of_care_date"
+            },
+            {
+              "columnIndex": 13,
+              "columnName": "visit_location_code",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 14,
+              "columnName": "user_info_code",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 15,
+              "columnName": "default_insurance_type"
+            },
+            {
+              "columnIndex": 16,
+              "columnName": "medical_insurance_id"
+            },
+            {
+              "columnIndex": 17,
+              "columnName": "public_subsidy_1_id"
+            },
+            {
+              "columnIndex": 18,
+              "columnName": "public_subsidy_2_id"
+            },
+            {
+              "columnIndex": 19,
+              "columnName": "public_subsidy_3_id"
+            },
+            {
+              "columnIndex": 20,
+              "columnName": "ltci_insurance_id"
+            },
+            {
+              "columnIndex": 21,
+              "columnName": "copay_cert_id"
+            },
+            {
+              "columnIndex": 22,
+              "columnName": "other_agency_1_id"
+            },
+            {
+              "columnIndex": 23,
+              "columnName": "other_agency_2_id"
+            },
+            {
+              "columnIndex": 24,
+              "columnName": "job_type"
+            },
+            {
+              "columnIndex": 25,
+              "columnName": "execution_date"
+            },
+            {
+              "columnIndex": 26,
+              "columnName": "day_of_week"
+            },
+            {
+              "columnIndex": 27,
+              "columnName": "start_time"
+            },
+            {
+              "columnIndex": 28,
+              "columnName": "end_time"
+            },
+            {
+              "columnIndex": 29,
+              "columnName": "duration_minutes"
+            },
+            {
+              "columnIndex": 30,
+              "columnName": "visitor_name"
+            },
+            {
+              "columnIndex": 31,
+              "columnName": "visitor_job_type_code",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 32,
+              "columnName": "companion_names"
+            },
+            {
+              "columnIndex": 33,
+              "columnName": "companion_job_type_codes",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 34,
+              "columnName": "client_insurance_id"
+            },
+            {
+              "columnIndex": 35,
+              "columnName": "eligibility_check_status"
+            },
+            {
+              "columnIndex": 36,
+              "columnName": "care_level_code",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 37,
+              "columnName": "care_plan_creation_category"
+            },
+            {
+              "columnIndex": 38,
+              "columnName": "nursing_record"
+            },
+            {
+              "columnIndex": 39,
+              "columnName": "gaf_score",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 40,
+              "columnName": "rehab_months"
+            },
+            {
+              "columnIndex": 41,
+              "columnName": "is_evaluation_visit"
+            },
+            {
+              "columnIndex": 42,
+              "columnName": "next_evaluation_date"
+            },
+            {
+              "columnIndex": 43,
+              "columnName": "evaluation_record"
+            },
+            {
+              "columnIndex": 44,
+              "columnName": "evaluator_name"
+            },
+            {
+              "columnIndex": 45,
+              "columnName": "disease_code_main"
+            },
+            {
+              "columnIndex": 46,
+              "columnName": "notified_disease_category",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 47,
+              "columnName": "notified_disease_codes",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 48,
+              "columnName": "gaf_score_date"
+            },
+            {
+              "columnIndex": 49,
+              "columnName": "instruction_form_id"
+            },
+            {
+              "columnIndex": 50,
+              "columnName": "iv_instruction_form_id"
+            },
+            {
+              "columnIndex": 51,
+              "columnName": "special_instruction_form_id"
+            },
+            {
+              "columnIndex": 52,
+              "columnName": "has_special_instruction"
+            },
+            {
+              "columnIndex": 53,
+              "columnName": "billing_insurance_type"
+            },
+            {
+              "columnIndex": 54,
+              "columnName": "nhm_service_code"
+            },
+            {
+              "columnIndex": 55,
+              "columnName": "nhb_service_code"
+            },
+            {
+              "columnIndex": 56,
+              "columnName": "nhb_addition_codes",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 57,
+              "columnName": "nhb_deduction_codes"
+            },
+            {
+              "columnIndex": 58,
+              "columnName": "ltci_service_code"
+            },
+            {
+              "columnIndex": 59,
+              "columnName": "ltci_service_units"
+            },
+            {
+              "columnIndex": 60,
+              "columnName": "ltci_service_times"
+            },
+            {
+              "columnIndex": 61,
+              "columnName": "ltci_addition_codes"
+            },
+            {
+              "columnIndex": 62,
+              "columnName": "ltci_deduction_codes"
+            },
+            {
+              "columnIndex": 63,
+              "columnName": "total_amount",
+              "columnType": "DOUBLE"
+            },
+            {
+              "columnIndex": 64,
+              "columnName": "is_discharge_day"
+            },
+            {
+              "columnIndex": 65,
+              "columnName": "is_multi_staff"
+            },
+            {
+              "columnIndex": 66,
+              "columnName": "is_off_hours"
+            },
+            {
+              "columnIndex": 67,
+              "columnName": "off_hours_category"
+            },
+            {
+              "columnIndex": 68,
+              "columnName": "special_mgmt_addition_input"
+            },
+            {
+              "columnIndex": 69,
+              "columnName": "has_special_mgmt_addition"
+            },
+            {
+              "columnIndex": 70,
+              "columnName": "has_terminal_care_addition"
+            },
+            {
+              "columnIndex": 71,
+              "columnName": "specialized_training_code"
+            },
+            {
+              "columnIndex": 72,
+              "columnName": "procedure_manual_date"
+            },
+            {
+              "columnIndex": 73,
+              "columnName": "has_emergency_contract"
+            },
+            {
+              "columnIndex": 74,
+              "columnName": "is_emergency_addition"
+            },
+            {
+              "columnIndex": 75,
+              "columnName": "emergency_reason"
+            },
+            {
+              "columnIndex": 76,
+              "columnName": "emergency_call_id"
+            },
+            {
+              "columnIndex": 77,
+              "columnName": "transcribe_reason_key"
+            },
+            {
+              "columnIndex": 78,
+              "columnName": "daily_client_visit_count"
+            },
+            {
+              "columnIndex": 79,
+              "columnName": "monthly_visit_days",
+              "columnType": "DOUBLE"
+            },
+            {
+              "columnIndex": 80,
+              "columnName": "weekly_visit_days",
+              "columnType": "DOUBLE"
+            },
+            {
+              "columnIndex": 81,
+              "columnName": "all_visit_count",
+              "columnType": "DOUBLE"
+            },
+            {
+              "columnIndex": 82,
+              "columnName": "monthly_visit_count",
+              "columnType": "DOUBLE"
+            },
+            {
+              "columnIndex": 83,
+              "columnName": "monthly_emergency_days",
+              "columnType": "DOUBLE"
+            },
+            {
+              "columnIndex": 84,
+              "columnName": "monthly_emergency_count"
+            },
+            {
+              "columnIndex": 85,
+              "columnName": "sameday_building_count",
+              "columnType": "DOUBLE"
+            },
+            {
+              "columnIndex": 86,
+              "columnName": "death_date"
+            },
+            {
+              "columnIndex": 87,
+              "columnName": "death_time"
+            },
+            {
+              "columnIndex": 88,
+              "columnName": "death_reason"
+            },
+            {
+              "columnIndex": 89,
+              "columnName": "death_location_code",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 90,
+              "columnName": "end_of_care_status",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 91,
+              "columnName": "record_ym",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 92,
+              "columnName": "billing_ym"
+            },
+            {
+              "columnIndex": 93,
+              "columnName": "billing_status"
+            },
+            {
+              "columnIndex": 94,
+              "columnName": "lock_key"
+            },
+            {
+              "columnIndex": 95,
+              "columnName": "created_at"
+            },
+            {
+              "columnIndex": 96,
+              "columnName": "created_by"
+            },
+            {
+              "columnIndex": 97,
+              "columnName": "updated_at"
+            },
+            {
+              "columnIndex": 98,
+              "columnName": "updated_by"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "properties": {
+        "sheetId": 475677397,
+        "title": "Billing_Items",
+        "index": 1,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 902,
+          "columnCount": 10,
+          "frozenRowCount": 1
+        }
+      },
+      "basicFilter": {
+        "range": {
+          "sheetId": 475677397,
+          "startRowIndex": 0,
+          "endRowIndex": 902,
+          "startColumnIndex": 0,
+          "endColumnIndex": 10
+        },
+        "sortSpecs": [
+          {
+            "dimensionIndex": 1,
+            "sortOrder": "ASCENDING"
+          },
+          {
+            "dimensionIndex": 4,
+            "sortOrder": "ASCENDING"
+          },
+          {
+            "dimensionIndex": 3,
+            "sortOrder": "ASCENDING"
+          }
+        ],
+        "criteria": {
+          "1": {}
+        },
+        "filterSpecs": [
+          {
+            "columnIndex": 1,
+            "filterCriteria": {}
+          }
+        ],
+        "tableId": "1113888910"
+      },
+      "bandedRanges": [
+        {
+          "bandedRangeId": 1113888910,
+          "range": {
+            "sheetId": 475677397,
+            "startRowIndex": 0,
+            "endRowIndex": 902,
+            "startColumnIndex": 0,
+            "endColumnIndex": 10
+          },
+          "rowProperties": {
+            "headerColor": {
+              "red": 0.20784314,
+              "green": 0.40784314,
+              "blue": 0.32941177
+            },
+            "firstBandColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            },
+            "secondBandColor": {
+              "red": 0.9647059,
+              "green": 0.972549,
+              "blue": 0.9764706
+            },
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "bandedRangeReference": "1113888910"
+        }
+      ],
+      "tables": [
+        {
+          "tableId": "1113888910",
+          "name": "表_4",
+          "range": {
+            "sheetId": 475677397,
+            "startRowIndex": 0,
+            "endRowIndex": 902,
+            "startColumnIndex": 0,
+            "endColumnIndex": 10
+          },
+          "rowsProperties": {
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "columnProperties": [
+            {
+              "columnName": "item_id"
+            },
+            {
+              "columnIndex": 1,
+              "columnName": "client_id",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 2,
+              "columnName": "insurance_type"
+            },
+            {
+              "columnIndex": 3,
+              "columnName": "record_ym"
+            },
+            {
+              "columnIndex": 4,
+              "columnName": "billing_ym"
+            },
+            {
+              "columnIndex": 5,
+              "columnName": "service_count"
+            },
+            {
+              "columnIndex": 6,
+              "columnName": "service_name"
+            },
+            {
+              "columnIndex": 7,
+              "columnName": "service_code"
+            },
+            {
+              "columnIndex": 8,
+              "columnName": "service_units"
+            },
+            {
+              "columnIndex": 9,
+              "columnName": "amount"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "properties": {
+        "sheetId": 120120009,
+        "title": "Billing_Medi_Items",
+        "index": 2,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 736,
+          "columnCount": 19,
+          "frozenRowCount": 1
+        }
+      },
+      "bandedRanges": [
+        {
+          "bandedRangeId": 879613942,
+          "range": {
+            "sheetId": 120120009,
+            "startRowIndex": 0,
+            "endRowIndex": 736,
+            "startColumnIndex": 0,
+            "endColumnIndex": 19
+          },
+          "rowProperties": {
+            "headerColor": {
+              "red": 0.20784314,
+              "green": 0.40784314,
+              "blue": 0.32941177
+            },
+            "firstBandColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            },
+            "secondBandColor": {
+              "red": 0.9647059,
+              "green": 0.972549,
+              "blue": 0.9764706
+            },
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "bandedRangeReference": "879613942"
+        }
+      ],
+      "tables": [
+        {
+          "tableId": "879613942",
+          "name": "表_2",
+          "range": {
+            "sheetId": 120120009,
+            "startRowIndex": 0,
+            "endRowIndex": 736,
+            "startColumnIndex": 0,
+            "endColumnIndex": 19
+          },
+          "rowsProperties": {
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "columnProperties": [
+            {
+              "columnName": "item_id"
+            },
+            {
+              "columnIndex": 1,
+              "columnName": "status"
+            },
+            {
+              "columnIndex": 2,
+              "columnName": "record_id"
+            },
+            {
+              "columnIndex": 3,
+              "columnName": "client_id"
+            },
+            {
+              "columnIndex": 4,
+              "columnName": "visitor_id"
+            },
+            {
+              "columnIndex": 5,
+              "columnName": "companion_ids",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 6,
+              "columnName": "billing_date",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 7,
+              "columnName": "record_ym",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 8,
+              "columnName": "billing_ym"
+            },
+            {
+              "columnIndex": 9,
+              "columnName": "billing_category"
+            },
+            {
+              "columnIndex": 10,
+              "columnName": "fee_name"
+            },
+            {
+              "columnIndex": 11,
+              "columnName": "fee_code"
+            },
+            {
+              "columnIndex": 12,
+              "columnName": "amount"
+            },
+            {
+              "columnIndex": 13,
+              "columnName": "instruction_type_name"
+            },
+            {
+              "columnIndex": 14,
+              "columnName": "record_identifier"
+            },
+            {
+              "columnIndex": 15,
+              "columnName": "copayment_category_code",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 16,
+              "columnName": "staff_job_type_code",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 17,
+              "columnName": "sameday_visit_count",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 18,
+              "columnName": "instruction_type_code",
+              "columnType": "TEXT"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "properties": {
+        "sheetId": 399415761,
+        "title": "Billing_Care_Items",
+        "index": 3,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 736,
+          "columnCount": 17,
+          "frozenRowCount": 1
+        }
+      },
+      "bandedRanges": [
+        {
+          "bandedRangeId": 1522650710,
+          "range": {
+            "sheetId": 399415761,
+            "startRowIndex": 0,
+            "endRowIndex": 736,
+            "startColumnIndex": 0,
+            "endColumnIndex": 17
+          },
+          "rowProperties": {
+            "headerColor": {
+              "red": 0.20784314,
+              "green": 0.40784314,
+              "blue": 0.32941177
+            },
+            "firstBandColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            },
+            "secondBandColor": {
+              "red": 0.9647059,
+              "green": 0.972549,
+              "blue": 0.9764706
+            },
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "bandedRangeReference": "1522650710"
+        }
+      ],
+      "tables": [
+        {
+          "tableId": "1522650710",
+          "name": "表_1",
+          "range": {
+            "sheetId": 399415761,
+            "startRowIndex": 0,
+            "endRowIndex": 736,
+            "startColumnIndex": 0,
+            "endColumnIndex": 17
+          },
+          "rowsProperties": {
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "columnProperties": [
+            {
+              "columnName": "care_item_id"
+            },
+            {
+              "columnIndex": 1,
+              "columnName": "record_id"
+            },
+            {
+              "columnIndex": 2,
+              "columnName": "client_id"
+            },
+            {
+              "columnIndex": 3,
+              "columnName": "service_code"
+            },
+            {
+              "columnIndex": 4,
+              "columnName": "status"
+            },
+            {
+              "columnIndex": 5,
+              "columnName": "billing_category"
+            },
+            {
+              "columnIndex": 6,
+              "columnName": "service_name"
+            },
+            {
+              "columnIndex": 7,
+              "columnName": "service_units"
+            },
+            {
+              "columnIndex": 8,
+              "columnName": "amount"
+            },
+            {
+              "columnIndex": 9,
+              "columnName": "billing_office"
+            },
+            {
+              "columnIndex": 10,
+              "columnName": "visitor_id",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 11,
+              "columnName": "companion_ids",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 12,
+              "columnName": "billing_date"
+            },
+            {
+              "columnIndex": 13,
+              "columnName": "start_time",
+              "columnType": "TIME"
+            },
+            {
+              "columnIndex": 14,
+              "columnName": "end_time",
+              "columnType": "TIME"
+            },
+            {
+              "columnIndex": 15,
+              "columnName": "record_ym"
+            },
+            {
+              "columnIndex": 16,
+              "columnName": "billing_ym"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "properties": {
+        "sheetId": 929351832,
+        "title": "Mbs_Master",
+        "index": 4,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 1000,
+          "columnCount": 26
+        }
+      }
+    },
+    {
+      "properties": {
+        "sheetId": 1942455330,
+        "title": "Client_Billings",
+        "index": 5,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 1000,
+          "columnCount": 24,
+          "frozenRowCount": 1
+        }
+      },
+      "bandedRanges": [
+        {
+          "bandedRangeId": 761324124,
+          "range": {
+            "sheetId": 1942455330,
+            "startRowIndex": 0,
+            "endRowIndex": 1000,
+            "startColumnIndex": 0,
+            "endColumnIndex": 24
+          },
+          "rowProperties": {
+            "headerColor": {
+              "red": 0.20784314,
+              "green": 0.40784314,
+              "blue": 0.32941177
+            },
+            "firstBandColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            },
+            "secondBandColor": {
+              "red": 0.9647059,
+              "green": 0.972549,
+              "blue": 0.9764706
+            },
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "bandedRangeReference": "761324124"
+        }
+      ],
+      "tables": [
+        {
+          "tableId": "761324124",
+          "name": "表_3",
+          "range": {
+            "sheetId": 1942455330,
+            "startRowIndex": 0,
+            "endRowIndex": 1000,
+            "startColumnIndex": 0,
+            "endColumnIndex": 24
+          },
+          "rowsProperties": {
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "columnProperties": [
+            {
+              "columnName": "billing_id"
+            },
+            {
+              "columnIndex": 1,
+              "columnName": "status"
+            },
+            {
+              "columnIndex": 2,
+              "columnName": "client_id"
+            },
+            {
+              "columnIndex": 3,
+              "columnName": "record_ym"
+            },
+            {
+              "columnIndex": 4,
+              "columnName": "billing_ym"
+            },
+            {
+              "columnIndex": 5,
+              "columnName": "insurance_type"
+            },
+            {
+              "columnIndex": 6,
+              "columnName": "service_count"
+            },
+            {
+              "columnIndex": 7,
+              "columnName": "total_units"
+            },
+            {
+              "columnIndex": 8,
+              "columnName": "total_amount"
+            },
+            {
+              "columnIndex": 9,
+              "columnName": "copay_rate"
+            },
+            {
+              "columnIndex": 10,
+              "columnName": "subsidy_1_rate"
+            },
+            {
+              "columnIndex": 11,
+              "columnName": "subsidy_2_rate"
+            },
+            {
+              "columnIndex": 12,
+              "columnName": "subsidy_3_rate"
+            },
+            {
+              "columnIndex": 13,
+              "columnName": "copay_amount"
+            },
+            {
+              "columnIndex": 14,
+              "columnName": "bank_account_id"
+            },
+            {
+              "columnIndex": 15,
+              "columnName": "scheduled_debit_date"
+            },
+            {
+              "columnIndex": 16,
+              "columnName": "payment_due_date"
+            },
+            {
+              "columnIndex": 17,
+              "columnName": "payment_date"
+            },
+            {
+              "columnIndex": 18,
+              "columnName": "file_id"
+            },
+            {
+              "columnIndex": 19,
+              "columnName": "file_url"
+            },
+            {
+              "columnIndex": 20,
+              "columnName": "created_at"
+            },
+            {
+              "columnIndex": 21,
+              "columnName": "created_by"
+            },
+            {
+              "columnIndex": 22,
+              "columnName": "updated_at"
+            },
+            {
+              "columnIndex": 23,
+              "columnName": "updated_by"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "properties": {
+        "sheetId": 1819630080,
+        "title": "Client_Billing_Periods",
+        "index": 6,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 1000,
+          "columnCount": 26
+        }
+      }
+    },
+    {
+      "properties": {
+        "sheetId": 14697276,
+        "title": "Client_Billing_Surcharges",
+        "index": 7,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 1000,
+          "columnCount": 27
+        }
+      }
+    },
+    {
+      "properties": {
+        "sheetId": 642910526,
+        "title": "OperationLog",
+        "index": 8,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 1000,
+          "columnCount": 26,
+          "frozenRowCount": 1
+        }
+      }
+    },
+    {
+      "properties": {
+        "sheetId": 1436045005,
+        "title": "ReturnData",
+        "index": 9,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 1000,
+          "columnCount": 26,
+          "frozenRowCount": 1
+        }
+      }
+    }
+  ],
+  "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/1KL31iZLNu1pnKH8BMlJ8434TiwNvvJHVcsde33UZ7n8/edit?ouid=115875753981822839683"
+}

@@ -1,0 +1,961 @@
+{
+  "spreadsheetId": "1iMmlw-A7K1v-CfksGUutap2xYPNLiL1bWaBg8BRO-1M",
+  "properties": {
+    "title": "医療保険_マスター",
+    "locale": "ja_JP",
+    "autoRecalc": "ON_CHANGE",
+    "timeZone": "America/Los_Angeles",
+    "defaultFormat": {
+      "backgroundColor": {
+        "red": 1,
+        "green": 1,
+        "blue": 1
+      },
+      "padding": {
+        "right": 3,
+        "left": 3
+      },
+      "verticalAlignment": "BOTTOM",
+      "wrapStrategy": "OVERFLOW_CELL",
+      "textFormat": {
+        "foregroundColor": {},
+        "fontFamily": "Arial",
+        "fontSize": 10,
+        "bold": false,
+        "italic": false,
+        "strikethrough": false,
+        "underline": false,
+        "foregroundColorStyle": {
+          "rgbColor": {}
+        }
+      },
+      "backgroundColorStyle": {
+        "rgbColor": {
+          "red": 1,
+          "green": 1,
+          "blue": 1
+        }
+      }
+    },
+    "spreadsheetTheme": {
+      "primaryFontFamily": "Arial",
+      "themeColors": [
+        {
+          "colorType": "TEXT",
+          "color": {
+            "rgbColor": {}
+          }
+        },
+        {
+          "colorType": "BACKGROUND",
+          "color": {
+            "rgbColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            }
+          }
+        },
+        {
+          "colorType": "ACCENT1",
+          "color": {
+            "rgbColor": {
+              "red": 0.25882354,
+              "green": 0.52156866,
+              "blue": 0.95686275
+            }
+          }
+        },
+        {
+          "colorType": "ACCENT2",
+          "color": {
+            "rgbColor": {
+              "red": 0.91764706,
+              "green": 0.2627451,
+              "blue": 0.20784314
+            }
+          }
+        },
+        {
+          "colorType": "ACCENT3",
+          "color": {
+            "rgbColor": {
+              "red": 0.9843137,
+              "green": 0.7372549,
+              "blue": 0.015686275
+            }
+          }
+        },
+        {
+          "colorType": "ACCENT4",
+          "color": {
+            "rgbColor": {
+              "red": 0.20392157,
+              "green": 0.65882355,
+              "blue": 0.3254902
+            }
+          }
+        },
+        {
+          "colorType": "ACCENT5",
+          "color": {
+            "rgbColor": {
+              "red": 1,
+              "green": 0.42745098,
+              "blue": 0.003921569
+            }
+          }
+        },
+        {
+          "colorType": "ACCENT6",
+          "color": {
+            "rgbColor": {
+              "red": 0.27450982,
+              "green": 0.7411765,
+              "blue": 0.7764706
+            }
+          }
+        },
+        {
+          "colorType": "LINK",
+          "color": {
+            "rgbColor": {
+              "red": 0.06666667,
+              "green": 0.33333334,
+              "blue": 0.8
+            }
+          }
+        }
+      ]
+    }
+  },
+  "sheets": [
+    {
+      "properties": {
+        "sheetId": 1382123135,
+        "title": "医療_傷病名マスターb",
+        "index": 0,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 27520,
+          "columnCount": 47,
+          "frozenRowCount": 1
+        }
+      }
+    },
+    {
+      "properties": {
+        "sheetId": 561062395,
+        "title": "医療_修飾語コードz",
+        "index": 1,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 2360,
+          "columnCount": 20,
+          "frozenRowCount": 1
+        }
+      }
+    },
+    {
+      "properties": {
+        "sheetId": 1855966813,
+        "title": "医療_職種等コード（単）",
+        "index": 2,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 1000,
+          "columnCount": 26
+        }
+      }
+    },
+    {
+      "properties": {
+        "sheetId": 973698720,
+        "title": "医療_職種等コード（複）",
+        "index": 3,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 1000,
+          "columnCount": 26
+        }
+      }
+    },
+    {
+      "properties": {
+        "sheetId": 1248880351,
+        "title": "医療_コメントマスターck",
+        "index": 4,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 14737,
+          "columnCount": 18,
+          "frozenRowCount": 1
+        }
+      },
+      "basicFilter": {
+        "range": {
+          "sheetId": 1248880351,
+          "startRowIndex": 0,
+          "endRowIndex": 14737,
+          "startColumnIndex": 0,
+          "endColumnIndex": 18
+        },
+        "sortSpecs": [
+          {
+            "dimensionIndex": 7,
+            "sortOrder": "ASCENDING"
+          },
+          {
+            "dimensionIndex": 5,
+            "sortOrder": "ASCENDING"
+          }
+        ],
+        "criteria": {
+          "1": {}
+        },
+        "filterSpecs": [
+          {
+            "columnIndex": 1,
+            "filterCriteria": {}
+          }
+        ],
+        "tableId": "1679819723"
+      },
+      "bandedRanges": [
+        {
+          "bandedRangeId": 1679819723,
+          "range": {
+            "sheetId": 1248880351,
+            "startRowIndex": 0,
+            "endRowIndex": 14737,
+            "startColumnIndex": 0,
+            "endColumnIndex": 18
+          },
+          "rowProperties": {
+            "headerColor": {
+              "red": 0.20784314,
+              "green": 0.40784314,
+              "blue": 0.32941177
+            },
+            "firstBandColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            },
+            "secondBandColor": {
+              "red": 0.9647059,
+              "green": 0.972549,
+              "blue": 0.9764706
+            },
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "bandedRangeReference": "1679819723"
+        }
+      ],
+      "tables": [
+        {
+          "tableId": "1679819723",
+          "name": "表_2",
+          "range": {
+            "sheetId": 1248880351,
+            "startRowIndex": 0,
+            "endRowIndex": 14737,
+            "startColumnIndex": 0,
+            "endColumnIndex": 18
+          },
+          "rowsProperties": {
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "columnProperties": [
+            {
+              "columnName": "変更区分",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 1,
+              "columnName": "コメント記載通知等",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 2,
+              "columnName": "項番",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 3,
+              "columnName": "区分",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 4,
+              "columnName": "枝番",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 5,
+              "columnName": "診療(調剤)行為コード",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 6,
+              "columnName": "加算コード",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 7,
+              "columnName": "省略漢字名称",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 8,
+              "columnName": "コメントコード",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 9,
+              "columnName": "患者の状態コード",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 10,
+              "columnName": "コメント文",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 11,
+              "columnName": "変更年月日",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 12,
+              "columnName": "廃止年月日",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 13,
+              "columnName": "条件区分",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 14,
+              "columnName": "非算定理由コメント",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 15,
+              "columnName": "入外区分",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 16,
+              "columnName": "算定回数",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 17,
+              "columnName": "公表順序番号",
+              "columnType": "TEXT"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "properties": {
+        "sheetId": 1337236595,
+        "title": "医療_基本テーブルr",
+        "index": 5,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 1001,
+          "columnCount": 72,
+          "frozenRowCount": 1
+        }
+      },
+      "basicFilter": {
+        "range": {
+          "sheetId": 1337236595,
+          "startRowIndex": 0,
+          "endRowIndex": 1001,
+          "startColumnIndex": 0,
+          "endColumnIndex": 72
+        },
+        "sortSpecs": [
+          {
+            "dimensionIndex": 52,
+            "sortOrder": "ASCENDING"
+          },
+          {
+            "dimensionIndex": 53,
+            "sortOrder": "ASCENDING"
+          },
+          {
+            "dimensionIndex": 54,
+            "sortOrder": "ASCENDING"
+          },
+          {
+            "dimensionIndex": 6,
+            "sortOrder": "ASCENDING"
+          },
+          {
+            "dimensionIndex": 2,
+            "sortOrder": "ASCENDING"
+          }
+        ],
+        "tableId": "266778598"
+      },
+      "bandedRanges": [
+        {
+          "bandedRangeId": 266778598,
+          "range": {
+            "sheetId": 1337236595,
+            "startRowIndex": 0,
+            "endRowIndex": 1001,
+            "startColumnIndex": 0,
+            "endColumnIndex": 72
+          },
+          "rowProperties": {
+            "headerColor": {
+              "red": 0.20784314,
+              "green": 0.40784314,
+              "blue": 0.32941177
+            },
+            "firstBandColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            },
+            "secondBandColor": {
+              "red": 0.9647059,
+              "green": 0.972549,
+              "blue": 0.9764706
+            },
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "bandedRangeReference": "266778598"
+        }
+      ],
+      "tables": [
+        {
+          "tableId": "266778598",
+          "name": "表_1",
+          "range": {
+            "sheetId": 1337236595,
+            "startRowIndex": 0,
+            "endRowIndex": 1001,
+            "startColumnIndex": 0,
+            "endColumnIndex": 72
+          },
+          "rowsProperties": {
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "columnProperties": [
+            {
+              "columnName": "変更区分",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 1,
+              "columnName": "マスター種別",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 2,
+              "columnName": "訪問看護療養費コード",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 3,
+              "columnName": "区分番号",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 4,
+              "columnName": "枝番",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 5,
+              "columnName": "項番",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 6,
+              "columnName": "基本名称",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 7,
+              "columnName": "省略名称有効桁数",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 8,
+              "columnName": "省略名称",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 9,
+              "columnName": "省略カナ名称有効桁数",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 10,
+              "columnName": "省略カナ名称",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 11,
+              "columnName": "データ規格コード",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 12,
+              "columnName": "漢字有効桁数",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 13,
+              "columnName": "漢字名称",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 14,
+              "columnName": "金額識別-新",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 15,
+              "columnName": "新又は現金額",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 16,
+              "columnName": "金額識別-旧",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 17,
+              "columnName": "旧金額",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 18,
+              "columnName": "きざみ値計算識別",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 19,
+              "columnName": "下限値",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 20,
+              "columnName": "上限値",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 21,
+              "columnName": "きざみ値",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 22,
+              "columnName": "きざみ金額",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 23,
+              "columnName": "上下限エラー処理",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 24,
+              "columnName": "下限年齢",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 25,
+              "columnName": "上限年齢",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 26,
+              "columnName": "後期高齢者医療適用区分",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 27,
+              "columnName": "医療観察法対象区分",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 28,
+              "columnName": "職種区分1",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 29,
+              "columnName": "職種区分2",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 30,
+              "columnName": "職種区分3",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 31,
+              "columnName": "職種区分4",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 32,
+              "columnName": "職種区分5",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 33,
+              "columnName": "職種区分6",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 34,
+              "columnName": "職種区分7",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 35,
+              "columnName": "職種区分8",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 36,
+              "columnName": "職種区分9",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 37,
+              "columnName": "職種区分10",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 38,
+              "columnName": "職種区分11",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 39,
+              "columnName": "職種区分12",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 40,
+              "columnName": "職種区分13",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 41,
+              "columnName": "職種区分14",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 42,
+              "columnName": "職種区分15",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 43,
+              "columnName": "実施回数区分",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 44,
+              "columnName": "訪問看護指示区分",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 45,
+              "columnName": "特別訪問看護指示区分",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 46,
+              "columnName": "加算単独算定区分",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 47,
+              "columnName": "加算グループ",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 48,
+              "columnName": "施設基準グループ",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 49,
+              "columnName": "基本・加算対応テーブル関連識別",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 50,
+              "columnName": "算定回数限度テーブル関連識別",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 51,
+              "columnName": "併算定背反テーブル関連識別",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 52,
+              "columnName": "レセプト表示欄",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 53,
+              "columnName": "レセプト表示項",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 54,
+              "columnName": "レセプト表示連番",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 55,
+              "columnName": "レセプト表示用記号①",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 56,
+              "columnName": "レセプト表示用記号②",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 57,
+              "columnName": "レセプト表示用記号③",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 58,
+              "columnName": "レセプト表示用記号④",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 59,
+              "columnName": "レセプト表示用記号⑤",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 60,
+              "columnName": "レセプト表示用記号⑥",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 61,
+              "columnName": "レセプト表示用記号⑦",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 62,
+              "columnName": "レセプト表示用記号⑧",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 63,
+              "columnName": "レセプト表示用記号⑨",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 64,
+              "columnName": "予備",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 65,
+              "columnName": "公表順序番号",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 66,
+              "columnName": "訪問看護療養費種類",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 67,
+              "columnName": "予備 ",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 68,
+              "columnName": "予備 ",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 69,
+              "columnName": "予備 ",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 70,
+              "columnName": "変更年月日",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 71,
+              "columnName": "廃止年月日",
+              "columnType": "TEXT"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "properties": {
+        "sheetId": 847784050,
+        "title": "医療_基本・基本加算対応テーブルr2",
+        "index": 6,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 1000,
+          "columnCount": 26
+        }
+      },
+      "basicFilter": {
+        "range": {
+          "sheetId": 847784050,
+          "startRowIndex": 0,
+          "endRowIndex": 108,
+          "startColumnIndex": 0,
+          "endColumnIndex": 26
+        },
+        "sortSpecs": [
+          {
+            "dimensionIndex": 4,
+            "sortOrder": "ASCENDING"
+          }
+        ]
+      }
+    },
+    {
+      "properties": {
+        "sheetId": 426706603,
+        "title": "医療_算定回数限度テーブルr3",
+        "index": 7,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 1000,
+          "columnCount": 26
+        }
+      }
+    },
+    {
+      "properties": {
+        "sheetId": 127821624,
+        "title": "医療_併算定背反テーブルr4",
+        "index": 8,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 4341,
+          "columnCount": 13
+        }
+      }
+    },
+    {
+      "properties": {
+        "sheetId": 604183822,
+        "title": "医療_施設基準テーブルr5",
+        "index": 9,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 1000,
+          "columnCount": 26
+        }
+      }
+    }
+  ],
+  "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/1iMmlw-A7K1v-CfksGUutap2xYPNLiL1bWaBg8BRO-1M/edit?ouid=115875753981822839683"
+}

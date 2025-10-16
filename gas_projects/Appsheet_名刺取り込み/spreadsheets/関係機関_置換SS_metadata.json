@@ -1,0 +1,873 @@
+{
+  "spreadsheetId": "1ctSjcAlu9VSloPT9S9hsTyTd7yCw5XvNtF7-URyBeKo",
+  "properties": {
+    "title": "関係機関_置換SS",
+    "locale": "ja_JP",
+    "autoRecalc": "ON_CHANGE",
+    "timeZone": "Asia/Tokyo",
+    "defaultFormat": {
+      "backgroundColor": {
+        "red": 1,
+        "green": 1,
+        "blue": 1
+      },
+      "padding": {
+        "top": 2,
+        "right": 3,
+        "bottom": 2,
+        "left": 3
+      },
+      "verticalAlignment": "BOTTOM",
+      "wrapStrategy": "OVERFLOW_CELL",
+      "textFormat": {
+        "foregroundColor": {},
+        "fontFamily": "arial,sans,sans-serif",
+        "fontSize": 10,
+        "bold": false,
+        "italic": false,
+        "strikethrough": false,
+        "underline": false,
+        "foregroundColorStyle": {
+          "rgbColor": {}
+        }
+      },
+      "backgroundColorStyle": {
+        "rgbColor": {
+          "red": 1,
+          "green": 1,
+          "blue": 1
+        }
+      }
+    },
+    "spreadsheetTheme": {
+      "primaryFontFamily": "Arial",
+      "themeColors": [
+        {
+          "colorType": "TEXT",
+          "color": {
+            "rgbColor": {}
+          }
+        },
+        {
+          "colorType": "BACKGROUND",
+          "color": {
+            "rgbColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            }
+          }
+        },
+        {
+          "colorType": "ACCENT1",
+          "color": {
+            "rgbColor": {
+              "red": 0.25882354,
+              "green": 0.52156866,
+              "blue": 0.95686275
+            }
+          }
+        },
+        {
+          "colorType": "ACCENT2",
+          "color": {
+            "rgbColor": {
+              "red": 0.91764706,
+              "green": 0.2627451,
+              "blue": 0.20784314
+            }
+          }
+        },
+        {
+          "colorType": "ACCENT3",
+          "color": {
+            "rgbColor": {
+              "red": 0.9843137,
+              "green": 0.7372549,
+              "blue": 0.015686275
+            }
+          }
+        },
+        {
+          "colorType": "ACCENT4",
+          "color": {
+            "rgbColor": {
+              "red": 0.20392157,
+              "green": 0.65882355,
+              "blue": 0.3254902
+            }
+          }
+        },
+        {
+          "colorType": "ACCENT5",
+          "color": {
+            "rgbColor": {
+              "red": 1,
+              "green": 0.42745098,
+              "blue": 0.003921569
+            }
+          }
+        },
+        {
+          "colorType": "ACCENT6",
+          "color": {
+            "rgbColor": {
+              "red": 0.27450982,
+              "green": 0.7411765,
+              "blue": 0.7764706
+            }
+          }
+        },
+        {
+          "colorType": "LINK",
+          "color": {
+            "rgbColor": {
+              "red": 0.06666667,
+              "green": 0.33333334,
+              "blue": 0.8
+            }
+          }
+        }
+      ]
+    }
+  },
+  "sheets": [
+    {
+      "properties": {
+        "sheetId": 408628117,
+        "title": "Organizations",
+        "index": 0,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 2505,
+          "columnCount": 33,
+          "frozenRowCount": 1
+        }
+      },
+      "bandedRanges": [
+        {
+          "bandedRangeId": 856274486,
+          "range": {
+            "sheetId": 408628117,
+            "startRowIndex": 0,
+            "endRowIndex": 2505,
+            "startColumnIndex": 0,
+            "endColumnIndex": 33
+          },
+          "rowProperties": {
+            "headerColor": {
+              "red": 0.20784314,
+              "green": 0.40784314,
+              "blue": 0.32941177
+            },
+            "firstBandColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            },
+            "secondBandColor": {
+              "red": 0.9647059,
+              "green": 0.972549,
+              "blue": 0.9764706
+            },
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "bandedRangeReference": "856274486"
+        }
+      ],
+      "tables": [
+        {
+          "tableId": "856274486",
+          "name": "表_2",
+          "range": {
+            "sheetId": 408628117,
+            "startRowIndex": 0,
+            "endRowIndex": 2505,
+            "startColumnIndex": 0,
+            "endColumnIndex": 33
+          },
+          "rowsProperties": {
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "columnProperties": [
+            {
+              "columnName": "org_id"
+            },
+            {
+              "columnIndex": 1,
+              "columnName": "old_id"
+            },
+            {
+              "columnIndex": 2,
+              "columnName": "org_type"
+            },
+            {
+              "columnIndex": 3,
+              "columnName": "billing_code"
+            },
+            {
+              "columnIndex": 4,
+              "columnName": "official_name"
+            },
+            {
+              "columnIndex": 5,
+              "columnName": "common_name"
+            },
+            {
+              "columnIndex": 6,
+              "columnName": "name_label"
+            },
+            {
+              "columnIndex": 7,
+              "columnName": "manager_name"
+            },
+            {
+              "columnIndex": 8,
+              "columnName": "postal_code",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 9,
+              "columnName": "address"
+            },
+            {
+              "columnIndex": 10,
+              "columnName": "latlong"
+            },
+            {
+              "columnIndex": 11,
+              "columnName": "main_phone"
+            },
+            {
+              "columnIndex": 12,
+              "columnName": "emergency_phone"
+            },
+            {
+              "columnIndex": 13,
+              "columnName": "fax_number"
+            },
+            {
+              "columnIndex": 14,
+              "columnName": "website_url"
+            },
+            {
+              "columnIndex": 15,
+              "columnName": "operating_hours"
+            },
+            {
+              "columnIndex": 16,
+              "columnName": "has_home_visit_care"
+            },
+            {
+              "columnIndex": 17,
+              "columnName": "sales_priority"
+            },
+            {
+              "columnIndex": 18,
+              "columnName": "average_sales_score"
+            },
+            {
+              "columnIndex": 19,
+              "columnName": "allows_inperson_visit"
+            },
+            {
+              "columnIndex": 20,
+              "columnName": "requires_appointment"
+            },
+            {
+              "columnIndex": 21,
+              "columnName": "sales_caution_notes"
+            },
+            {
+              "columnIndex": 22,
+              "columnName": "sharable_information"
+            },
+            {
+              "columnIndex": 23,
+              "columnName": "handed_flyers"
+            },
+            {
+              "columnIndex": 24,
+              "columnName": "primary_contact_person"
+            },
+            {
+              "columnIndex": 25,
+              "columnName": "last_contact_date"
+            },
+            {
+              "columnIndex": 26,
+              "columnName": "relationship_status"
+            },
+            {
+              "columnIndex": 27,
+              "columnName": "integration_tool"
+            },
+            {
+              "columnIndex": 28,
+              "columnName": "info_accuracy"
+            },
+            {
+              "columnIndex": 29,
+              "columnName": "created_at"
+            },
+            {
+              "columnIndex": 30,
+              "columnName": "created_by"
+            },
+            {
+              "columnIndex": 31,
+              "columnName": "updated_at"
+            },
+            {
+              "columnIndex": 32,
+              "columnName": "updated_by"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "properties": {
+        "sheetId": 744339816,
+        "title": "シート26",
+        "index": 1,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 2533,
+          "columnCount": 26,
+          "frozenRowCount": 1
+        }
+      },
+      "bandedRanges": [
+        {
+          "bandedRangeId": 716445663,
+          "range": {
+            "sheetId": 744339816,
+            "startRowIndex": 0,
+            "endRowIndex": 2533,
+            "startColumnIndex": 0,
+            "endColumnIndex": 25
+          },
+          "rowProperties": {
+            "headerColor": {
+              "red": 0.20784314,
+              "green": 0.40784314,
+              "blue": 0.32941177
+            },
+            "firstBandColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            },
+            "secondBandColor": {
+              "red": 0.9647059,
+              "green": 0.972549,
+              "blue": 0.9764706
+            },
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "bandedRangeReference": "716445663"
+        }
+      ],
+      "tables": [
+        {
+          "tableId": "716445663",
+          "name": "表_3",
+          "range": {
+            "sheetId": 744339816,
+            "startRowIndex": 0,
+            "endRowIndex": 2533,
+            "startColumnIndex": 0,
+            "endColumnIndex": 25
+          },
+          "rowsProperties": {
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "columnProperties": [
+            {
+              "columnName": "ID"
+            },
+            {
+              "columnIndex": 1,
+              "columnName": "種別",
+              "columnType": "DROPDOWN",
+              "dataValidationRule": {
+                "condition": {
+                  "type": "ONE_OF_RANGE",
+                  "values": [
+                    {
+                      "userEnteredValue": "=Organization_Type!$A$2:$A$998"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "columnIndex": 2,
+              "columnName": "コード"
+            },
+            {
+              "columnIndex": 3,
+              "columnName": "名称"
+            },
+            {
+              "columnIndex": 4,
+              "columnName": "郵便番号"
+            },
+            {
+              "columnIndex": 5,
+              "columnName": "所在地"
+            },
+            {
+              "columnIndex": 6,
+              "columnName": "TEL"
+            },
+            {
+              "columnIndex": 7,
+              "columnName": "TEL_緊急"
+            },
+            {
+              "columnIndex": 8,
+              "columnName": "FAX"
+            },
+            {
+              "columnIndex": 9,
+              "columnName": "ドメイン"
+            },
+            {
+              "columnIndex": 10,
+              "columnName": "対応エリア"
+            },
+            {
+              "columnIndex": 11,
+              "columnName": "営業時間"
+            },
+            {
+              "columnIndex": 12,
+              "columnName": "HP"
+            },
+            {
+              "columnIndex": 13,
+              "columnName": "緯度経度"
+            },
+            {
+              "columnIndex": 14,
+              "columnName": "管理者"
+            },
+            {
+              "columnIndex": 15,
+              "columnName": "備考"
+            },
+            {
+              "columnIndex": 16,
+              "columnName": "訪問診療の有無"
+            },
+            {
+              "columnIndex": 17,
+              "columnName": "病床数"
+            },
+            {
+              "columnIndex": 18,
+              "columnName": "営業_対面可否"
+            },
+            {
+              "columnIndex": 19,
+              "columnName": "営業_アポ必要性"
+            },
+            {
+              "columnIndex": 20,
+              "columnName": "営業_注意点"
+            },
+            {
+              "columnIndex": 21,
+              "columnName": "営業優先度"
+            },
+            {
+              "columnIndex": 22,
+              "columnName": "情報_正誤"
+            },
+            {
+              "columnIndex": 23,
+              "columnName": "PlaceID"
+            },
+            {
+              "columnIndex": 24,
+              "columnName": "正式名称"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "properties": {
+        "sheetId": 1742828250,
+        "title": "Organization_Contacts",
+        "index": 2,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 851,
+          "columnCount": 35,
+          "frozenRowCount": 1
+        }
+      },
+      "bandedRanges": [
+        {
+          "bandedRangeId": 1416245719,
+          "range": {
+            "sheetId": 1742828250,
+            "startRowIndex": 0,
+            "endRowIndex": 851,
+            "startColumnIndex": 0,
+            "endColumnIndex": 35
+          },
+          "rowProperties": {
+            "headerColor": {
+              "red": 0.20784314,
+              "green": 0.40784314,
+              "blue": 0.32941177
+            },
+            "firstBandColor": {
+              "red": 1,
+              "green": 1,
+              "blue": 1
+            },
+            "secondBandColor": {
+              "red": 0.9647059,
+              "green": 0.972549,
+              "blue": 0.9764706
+            },
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "bandedRangeReference": "1416245719"
+        }
+      ],
+      "tables": [
+        {
+          "tableId": "1416245719",
+          "name": "表_1",
+          "range": {
+            "sheetId": 1742828250,
+            "startRowIndex": 0,
+            "endRowIndex": 851,
+            "startColumnIndex": 0,
+            "endColumnIndex": 35
+          },
+          "rowsProperties": {
+            "headerColorStyle": {
+              "rgbColor": {
+                "red": 0.20784314,
+                "green": 0.40784314,
+                "blue": 0.32941177
+              }
+            },
+            "firstBandColorStyle": {
+              "rgbColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+              }
+            },
+            "secondBandColorStyle": {
+              "rgbColor": {
+                "red": 0.9647059,
+                "green": 0.972549,
+                "blue": 0.9764706
+              }
+            }
+          },
+          "columnProperties": [
+            {
+              "columnName": "contact_id"
+            },
+            {
+              "columnIndex": 1,
+              "columnName": "old_id"
+            },
+            {
+              "columnIndex": 2,
+              "columnName": "org_id",
+              "columnType": "TEXT"
+            },
+            {
+              "columnIndex": 3,
+              "columnName": "status"
+            },
+            {
+              "columnIndex": 4,
+              "columnName": "full_name"
+            },
+            {
+              "columnIndex": 5,
+              "columnName": "last_name"
+            },
+            {
+              "columnIndex": 6,
+              "columnName": "first_name"
+            },
+            {
+              "columnIndex": 7,
+              "columnName": "full_name_kana"
+            },
+            {
+              "columnIndex": 8,
+              "columnName": "last_name_kana"
+            },
+            {
+              "columnIndex": 9,
+              "columnName": "first_name_kana"
+            },
+            {
+              "columnIndex": 10,
+              "columnName": "job_type"
+            },
+            {
+              "columnIndex": 11,
+              "columnName": "job_title"
+            },
+            {
+              "columnIndex": 12,
+              "columnName": "name_and_org_label"
+            },
+            {
+              "columnIndex": 13,
+              "columnName": "phone_number"
+            },
+            {
+              "columnIndex": 14,
+              "columnName": "email"
+            },
+            {
+              "columnIndex": 15,
+              "columnName": "business_card_common_filename"
+            },
+            {
+              "columnIndex": 16,
+              "columnName": "business_card_front"
+            },
+            {
+              "columnIndex": 17,
+              "columnName": "front_file_id"
+            },
+            {
+              "columnIndex": 18,
+              "columnName": "front_file_url"
+            },
+            {
+              "columnIndex": 19,
+              "columnName": "business_card_back"
+            },
+            {
+              "columnIndex": 20,
+              "columnName": "back_file_id"
+            },
+            {
+              "columnIndex": 21,
+              "columnName": "back_file_url"
+            },
+            {
+              "columnIndex": 22,
+              "columnName": "business_card_notes"
+            },
+            {
+              "columnIndex": 23,
+              "columnName": "card_org_name"
+            },
+            {
+              "columnIndex": 24,
+              "columnName": "card_org_code"
+            },
+            {
+              "columnIndex": 25,
+              "columnName": "card_org_postal_code"
+            },
+            {
+              "columnIndex": 26,
+              "columnName": "card_org_address"
+            },
+            {
+              "columnIndex": 27,
+              "columnName": "card_org_phone"
+            },
+            {
+              "columnIndex": 28,
+              "columnName": "card_org_fax"
+            },
+            {
+              "columnIndex": 29,
+              "columnName": "card_org_website"
+            },
+            {
+              "columnIndex": 30,
+              "columnName": "special_notes"
+            },
+            {
+              "columnIndex": 31,
+              "columnName": "created_at"
+            },
+            {
+              "columnIndex": 32,
+              "columnName": "created_by"
+            },
+            {
+              "columnIndex": 33,
+              "columnName": "updated_at"
+            },
+            {
+              "columnIndex": 34,
+              "columnName": "updated_by"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "properties": {
+        "sheetId": 1512213267,
+        "title": "Organization_Merges",
+        "index": 3,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 1000,
+          "columnCount": 27
+        }
+      }
+    },
+    {
+      "properties": {
+        "sheetId": 774674146,
+        "title": "Contact_Merges",
+        "index": 4,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 1000,
+          "columnCount": 26
+        }
+      }
+    },
+    {
+      "properties": {
+        "sheetId": 1604978023,
+        "title": "Organization_Type",
+        "index": 5,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 975,
+          "columnCount": 23
+        }
+      }
+    },
+    {
+      "properties": {
+        "sheetId": 1573875237,
+        "title": "Mailing_Labels",
+        "index": 6,
+        "sheetType": "GRID",
+        "gridProperties": {
+          "rowCount": 1000,
+          "columnCount": 30
+        }
+      }
+    }
+  ],
+  "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/1ctSjcAlu9VSloPT9S9hsTyTd7yCw5XvNtF7-URyBeKo/edit?ouid=115875753981822839683"
+}
