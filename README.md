@@ -12,62 +12,62 @@ Professional automation toolkit for managing Google Apps Script (GAS) projects i
 - 📊 **[実行ログ管理](docs/ja/実行ログ管理.md)** - ログシステム
 - 🚀 **[デプロイガイド](docs/ja/デプロイガイド.md)** - デプロイ手順
 
-## Project Overview
+## プロジェクト概要
 
-This toolkit manages 32 Google Apps Script projects for AppSheet integration and automation:
-- 30 AppSheet integration scripts
-- 2 Automation scripts (Receipt & Invoice processing)
-- Centralized execution logging
-- Duplicate request prevention
-- Gemini API optimization
+このツールキットは、AppSheet統合と自動化のための32個のGoogle Apps Scriptプロジェクトを管理します：
+- 30個のAppSheet統合スクリプト
+- 2個の自動化スクリプト（レシート・請求書処理）
+- 一元化された実行ログ記録
+- 重複リクエスト防止機能
+- Gemini API最適化
 
-## Key Features
+## 主要機能
 
-- 🔄 **Automatic GAS Retrieval** - Download and organize all scripts from Google Drive
-- 🛡️ **Duplicate Prevention** - Prevent duplicate webhook executions
-- 📊 **Centralized Logging** - Track all executions in a single spreadsheet
-- 🤖 **Gemini API Integration** - Optimized model selection and usage
-- 🚀 **Automated Deployment** - Deploy and version management tools
+- 🔄 **自動GAS取得** - Google Driveから全スクリプトをダウンロード・整理
+- 🛡️ **重複防止** - Webhook実行の重複を防止
+- 📊 **一元化ログ** - 単一スプレッドシートで全実行を追跡
+- 🤖 **Gemini API統合** - 最適化されたモデル選択と使用
+- 🚀 **自動デプロイ** - デプロイとバージョン管理ツール
 
-## Quick Start
+## クイックスタート
 
 ```bash
-# Install dependencies
+# 依存関係のインストール
 pip install -r requirements.txt
 
-# Retrieve all GAS projects
+# 全GASプロジェクトの取得
 python gas_retriever.py
 
-# Optimize scripts
+# スクリプトの最適化
 python optimize_all_appsheet_scripts.py
 
-# Deploy to GAS
+# GASへのデプロイ
 python deploy_all_to_gas.py
 ```
 
-## Documentation
+## ドキュメント
 
-All documentation is maintained in Japanese under `docs/ja/`:
+全てのドキュメントは `docs/ja/` 配下に日本語で管理されています：
 
-- **README.md** - Complete project documentation
-- **Geminiモデル仕様.md** - Gemini API specification
-- **重複防止機能.md** - Duplicate prevention system
-- **実行ログ管理.md** - Execution logging system  
-- **デプロイガイド.md** - Deployment procedures
+- **README.md** - プロジェクト全体のドキュメント
+- **Geminiモデル仕様.md** - Gemini API仕様
+- **重複防止機能.md** - 重複防止システム
+- **実行ログ管理.md** - 実行ログシステム  
+- **デプロイガイド.md** - デプロイ手順
 
-## Project Structure
+## プロジェクト構成
 
 ```
 all-gas/
-├── docs/ja/              # Japanese documentation (primary)
-├── gas_projects/         # Retrieved GAS projects (32 projects)
-├── src/                  # Common libraries
-├── ツール/                # Python automation tools
+├── docs/ja/              # 日本語ドキュメント（メイン）
+├── gas_projects/         # 取得したGASプロジェクト（32プロジェクト）
+├── src/                  # 共通ライブラリ
+├── ツール/                # Python自動化ツール
 │   ├── gas_retriever.py
 │   ├── optimize_all_appsheet_scripts.py
 │   └── deploy_all_to_gas.py
-├── credentials.json      # Google OAuth credentials
-└── requirements.txt      # Python dependencies
+├── credentials.json      # Google OAuth認証情報
+└── requirements.txt      # Python依存関係
 ```
 
 ## License
