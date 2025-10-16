@@ -1,9 +1,17 @@
 /*******************************************************************************
 * 設定・定数
 *******************************************************************************/
+// Gemini API設定
+const GEMINI_API_KEY = 'AIzaSyDUKFlE6_NYGehDYOxiRQcHpjG2l7GZmTY';
+const GEMINI_MODEL_PRO = 'gemini-2.0-flash-thinking-exp-01-21';
+const GEMINI_API_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL_PRO}:generateContent`;
+
+// 実行ログスプレッドシート
+const EXECUTION_LOG_SPREADSHEET_ID = '16UHnMlSUlnUy-67gbwuvjeeU73AwDomqzJwGi6L4rVA';
+const EXECUTION_LOG_SHEET_NAME = '実行履歴';
+
 // スクリプトプロパティキー
 const PROP_KEYS = {
-  GEMINI_API_KEY: 'GEMINI_API_KEY',
   RECEIPT_FOLDER_ID: 'RECEIPT_FOLDER_ID',
   TARGET_FOLDER_ID: 'TARGET_FOLDER_ID',
   CORPORATE_RECEIPT_FOLDER_ID: 'CORPORATE_RECEIPT_FOLDER_ID',
@@ -12,14 +20,8 @@ const PROP_KEYS = {
   SHEET_NAME: 'SHEET_NAME',
 };
 
-// APIエンドポイント (Geminiのみ)
-const GEMINI_API_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent';
-
 // Gemini APIがサポートするMIMEタイプ
 const SUPPORTED_MIME_TYPES = [ 'application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif' ];
-
-// メール送付用の定数
-const EXPENSE_APP_URL = 'https://www.appsheet.com/start/2b3450d2-a819-426e-a853-8517371cf6d7';
 
 // スプレッドシート列定義
 const SHEET_COLUMNS = [
@@ -46,27 +48,83 @@ const TAX_CATEGORIES = ["対象外", "不明", "課税仕入 10%", "課税仕入
 *******************************************************************************/
 function mainProcessPersonalReceipts() {
   const FN = 'mainProcessPersonalReceipts';
-  Logger.log(`情報 [${FN}]: 個人用レシート処理を開始します。`);
-  const props = getScriptProperties_();
-  if (!props) return;
-
-  const config = {
-    geminiApiKey: props.geminiApiKey,
-    sourceFolderId: props.receiptFolderId,
-    targetFolderId: props.targetFolderId,
-    spreadsheetId: props.spreadsheetId,
-    sheetName: props.sheetName,
-  };
-
-  if (!config.sourceFolderId || config.sourceFolderId.startsWith('YOUR_')) {
-    Logger.log(`エラー [${FN}]: 個人用のレシートフォルダID (RECEIPT_FOLDER_ID) が正しく設定されていません。`);
-    return;
+  const timer = new ExecutionTimer();
+  const requestId = Utilities.getUuid();
+  
+  Logger.log(`情報 [${FN}]: 個人用レシート処理を開始します。RequestID: ${requestId}`);
+  
+  // 重複実行チェック（スクリプトプロパティで実行中フラグを使用）
+  const lockKey = 'personal_receipt_processing';
+  const scriptProperties = PropertiesService.getScriptProperties();
+  const existingLock = scriptProperties.getProperty(lockKey);
+  
+  if (existingLock) {
+    const lockTime = new Date(existingLock);
+    const now = new Date();
+    if ((now - lockTime) < 300000) { // 5分以内
+      Logger.log(`警告 [${FN}]: 処理実行中のためスキップします`);
+      logToExecutionSheet('Automation_レシート(個人)', 'スキップ', requestId, {
+        summary: '他の処理が実行中のためスキップ',
+        processingTime: timer.getElapsedSeconds()
+      });
+      return;
+    }
   }
-  if (!config.targetFolderId || config.targetFolderId.startsWith('YOUR_')) {
-    Logger.log(`エラー [${FN}]: 個人用の移動先フォルダID (TARGET_FOLDER_ID) が正しく設定されていません。`);
-    return;
+  
+  // ロック設定
+  scriptProperties.setProperty(lockKey, new Date().toISOString());
+  
+  try {
+    const props = getScriptProperties_();
+    if (!props) {
+      logToExecutionSheet('Automation_レシート(個人)', '失敗', requestId, {
+        errorMessage: 'スクリプトプロパティが未設定',
+        processingTime: timer.getElapsedSeconds()
+      });
+      return;
+    }
+
+    const config = {
+      sourceFolderId: props.receiptFolderId,
+      targetFolderId: props.targetFolderId,
+      spreadsheetId: props.spreadsheetId,
+      sheetName: props.sheetName,
+    };
+
+    if (!config.sourceFolderId || config.sourceFolderId.startsWith('YOUR_')) {
+      Logger.log(`エラー [${FN}]: 個人用のレシートフォルダID (RECEIPT_FOLDER_ID) が正しく設定されていません。`);
+      logToExecutionSheet('Automation_レシート(個人)', '失敗', requestId, {
+        errorMessage: 'レシートフォルダIDが未設定',
+        processingTime: timer.getElapsedSeconds()
+      });
+      return;
+    }
+    if (!config.targetFolderId || config.targetFolderId.startsWith('YOUR_')) {
+      Logger.log(`エラー [${FN}]: 個人用の移動先フォルダID (TARGET_FOLDER_ID) が正しく設定されていません。`);
+      logToExecutionSheet('Automation_レシート(個人)', '失敗', requestId, {
+        errorMessage: '移動先フォルダIDが未設定',
+        processingTime: timer.getElapsedSeconds()
+      });
+      return;
+    }
+    
+    processReceiptsByType_(config, "personal", requestId, timer);
+    
+    logToExecutionSheet('Automation_レシート(個人)', '成功', requestId, {
+      summary: '個人用レシート処理完了',
+      processingTime: timer.getElapsedSeconds()
+    });
+    
+  } catch (e) {
+    Logger.log(`エラー [${FN}]: ${e.message}\n${e.stack}`);
+    logToExecutionSheet('Automation_レシート(個人)', '失敗', requestId, {
+      errorMessage: e.message,
+      processingTime: timer.getElapsedSeconds()
+    });
+  } finally {
+    // ロック解除
+    scriptProperties.deleteProperty(lockKey);
   }
-  processReceiptsByType_(config, "personal");
 }
 
 /*******************************************************************************
@@ -74,27 +132,83 @@ function mainProcessPersonalReceipts() {
 *******************************************************************************/
 function mainProcessCorporateReceipts() {
   const FN = 'mainProcessCorporateReceipts';
-  Logger.log(`情報 [${FN}]: 法人用レシート処理を開始します。`);
-  const props = getScriptProperties_();
-  if (!props) return;
-
-  const config = {
-    geminiApiKey: props.geminiApiKey,
-    sourceFolderId: props.corporateReceiptFolderId,
-    targetFolderId: props.corporateTargetFolderId,
-    spreadsheetId: props.spreadsheetId,
-    sheetName: props.sheetName,
-  };
-
-  if (!config.sourceFolderId || config.sourceFolderId.startsWith('YOUR_')) {
-    Logger.log(`エラー [${FN}]: 法人用のレシートフォルダID (CORPORATE_RECEIPT_FOLDER_ID) が正しく設定されていません。`);
-    return;
+  const timer = new ExecutionTimer();
+  const requestId = Utilities.getUuid();
+  
+  Logger.log(`情報 [${FN}]: 法人用レシート処理を開始します。RequestID: ${requestId}`);
+  
+  // 重複実行チェック
+  const lockKey = 'corporate_receipt_processing';
+  const scriptProperties = PropertiesService.getScriptProperties();
+  const existingLock = scriptProperties.getProperty(lockKey);
+  
+  if (existingLock) {
+    const lockTime = new Date(existingLock);
+    const now = new Date();
+    if ((now - lockTime) < 300000) { // 5分以内
+      Logger.log(`警告 [${FN}]: 処理実行中のためスキップします`);
+      logToExecutionSheet('Automation_レシート(法人)', 'スキップ', requestId, {
+        summary: '他の処理が実行中のためスキップ',
+        processingTime: timer.getElapsedSeconds()
+      });
+      return;
+    }
   }
-  if (!config.targetFolderId || config.targetFolderId.startsWith('YOUR_')) {
-    Logger.log(`エラー [${FN}]: 法人用の移動先フォルダID (CORPORATE_TARGET_FOLDER_ID) が正しく設定されていません。`);
-    return;
+  
+  // ロック設定
+  scriptProperties.setProperty(lockKey, new Date().toISOString());
+  
+  try {
+    const props = getScriptProperties_();
+    if (!props) {
+      logToExecutionSheet('Automation_レシート(法人)', '失敗', requestId, {
+        errorMessage: 'スクリプトプロパティが未設定',
+        processingTime: timer.getElapsedSeconds()
+      });
+      return;
+    }
+
+    const config = {
+      sourceFolderId: props.corporateReceiptFolderId,
+      targetFolderId: props.corporateTargetFolderId,
+      spreadsheetId: props.spreadsheetId,
+      sheetName: props.sheetName,
+    };
+
+    if (!config.sourceFolderId || config.sourceFolderId.startsWith('YOUR_')) {
+      Logger.log(`エラー [${FN}]: 法人用のレシートフォルダID (CORPORATE_RECEIPT_FOLDER_ID) が正しく設定されていません。`);
+      logToExecutionSheet('Automation_レシート(法人)', '失敗', requestId, {
+        errorMessage: 'レシートフォルダIDが未設定',
+        processingTime: timer.getElapsedSeconds()
+      });
+      return;
+    }
+    if (!config.targetFolderId || config.targetFolderId.startsWith('YOUR_')) {
+      Logger.log(`エラー [${FN}]: 法人用の移動先フォルダID (CORPORATE_TARGET_FOLDER_ID) が正しく設定されていません。`);
+      logToExecutionSheet('Automation_レシート(法人)', '失敗', requestId, {
+        errorMessage: '移動先フォルダIDが未設定',
+        processingTime: timer.getElapsedSeconds()
+      });
+      return;
+    }
+    
+    processReceiptsByType_(config, "corporate", requestId, timer);
+    
+    logToExecutionSheet('Automation_レシート(法人)', '成功', requestId, {
+      summary: '法人用レシート処理完了',
+      processingTime: timer.getElapsedSeconds()
+    });
+    
+  } catch (e) {
+    Logger.log(`エラー [${FN}]: ${e.message}\n${e.stack}`);
+    logToExecutionSheet('Automation_レシート(法人)', '失敗', requestId, {
+      errorMessage: e.message,
+      processingTime: timer.getElapsedSeconds()
+    });
+  } finally {
+    // ロック解除
+    scriptProperties.deleteProperty(lockKey);
   }
-  processReceiptsByType_(config, "corporate");
 }
 
 
@@ -102,23 +216,31 @@ function mainProcessCorporateReceipts() {
 * 共通レシート処理ロジック
 * ★変更点: 処理結果をユーザーごとに集計し、最後にメールを送信するロジックを追加
 *******************************************************************************/
-function processReceiptsByType_(config, processingType) {
+function processReceiptsByType_(config, processingType, requestId, timer) {
   const FN = 'processReceiptsByType_';
   Logger.log(`情報 [${FN}]: タイプ '${processingType}' の処理を開始。ソースフォルダ: ${config.sourceFolderId}`);
 
-  // ★変更点: IDだけでなくシートの全データを取得
   const { existingIds, existingData } = getExistingDataFromSheet_(config.spreadsheetId, config.sheetName);
-  if (existingIds === null) return;
+  if (existingIds === null) {
+    logToExecutionSheet(`Automation_レシート(${processingType})`, '失敗', requestId, {
+      errorMessage: '既存データの取得に失敗',
+      processingTime: timer.getElapsedSeconds()
+    });
+    return;
+  }
   Logger.log(`情報 [${FN}]: ${existingIds.size} 件の既存ID、${existingData.length} 件の既存データを取得しました。`);
 
   const files = getFilesInFolder_(config.sourceFolderId);
   if (!files || files.length === 0) {
     Logger.log(`情報 [${FN}]: フォルダ [${config.sourceFolderId}] 内に処理対象ファイルはありませんでした。`);
+    logToExecutionSheet(`Automation_レシート(${processingType})`, '成功', requestId, {
+      summary: '処理対象ファイルなし',
+      processingTime: timer.getElapsedSeconds()
+    });
     return;
   }
   Logger.log(`情報 [${FN}]: フォルダ [${config.sourceFolderId}] 内に ${files.length} 件のファイルが見つかりました。`);
 
-  // ★追加: ユーザーごとの処理結果を格納するオブジェクト
   const processedResultsByUser = {};
 
   for (const file of files) {
@@ -127,10 +249,9 @@ function processReceiptsByType_(config, processingType) {
       config,
       processingType,
       existingIds,
-      existingData // ★変更点: 既存データを渡す
+      existingData
     );
 
-    // ★追加: 処理結果をユーザーごとに集計
     if (result && result.payerEmail) {
       if (!processedResultsByUser[result.payerEmail]) {
         processedResultsByUser[result.payerEmail] = { processed: [], skipped: [] };
@@ -143,11 +264,16 @@ function processReceiptsByType_(config, processingType) {
     }
   }
 
-  // ★追加: ユーザーごとに結果をメールで送信
+  // メール送信をログ出力に置き換え
   for (const email in processedResultsByUser) {
     const results = processedResultsByUser[email];
     if (results.processed.length > 0 || results.skipped.length > 0) {
-      sendSummaryEmail_(email, results.processed, results.skipped);
+      logToExecutionSheet(`Automation_レシート(${processingType})`, '成功', requestId, {
+        summary: `処理完了: 成功${results.processed.length}件, スキップ${results.skipped.length}件`,
+        user: email,
+        processingTime: timer.getElapsedSeconds(),
+        outputSummary: `成功: ${results.processed.map(r => r.fileName).join(', ')}`
+      });
     }
   }
 
@@ -192,7 +318,7 @@ function processSingleFile_(fileObject, config, processingType, existingIds, exi
     }
     Logger.log(`情報 [${FN}]: ファイル [${fileObject.id}] 内容取得成功。`);
 
-    const extractedInfo = extractInfoWithGemini_(fileContentBase64, mimeType, originalFileNameForCatch, config.geminiApiKey);
+    const extractedInfo = extractInfoWithGemini_(fileContentBase64, mimeType, originalFileNameForCatch);
     if (!extractedInfo) {
       Logger.log(`警告 [${FN}]: ファイル [${fileObject.id}] 情報抽出失敗。スキップ。`);
       return null;
@@ -405,101 +531,11 @@ function isDuplicateEntry_(date, time, amount, payer, existingData) {
   }
 }
 
-// ★追加: 結果通知メール送信関数
 /*******************************************************************************
-* 処理結果をまとめたサマリーメールを送信する
-*******************************************************************************/
-function sendSummaryEmail_(recipientEmail, processedList, skippedList) {
-  const FN = 'sendSummaryEmail_';
-  try {
-    const today = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy/MM/dd');
-    const subject = `【F経費】レシート取込結果のご連絡 (${today})`;
-
-    let htmlBody = `
-      <html>
-      <body style="font-family: Arial, sans-serif; font-size: 14px; color: #333;">
-        <p>${recipientEmail} 様</p>
-        <p>本日分のレシートの取り込み処理が完了しましたので、結果をご連絡いたします。</p>
-        <p>内容をご確認の上、以下のボタンからF経費アプリで確認・申請処理をお願いいたします。</p>
-        <a href="${EXPENSE_APP_URL}" style="display: inline-block; padding: 10px 20px; font-size: 16px; color: #fff; background-color: #007bff; text-decoration: none; border-radius: 5px; margin: 10px 0;">F経費で確認申請する</a>
-        <hr>
-    `;
-
-    // 正常に取り込まれたレシート
-    if (processedList.length > 0) {
-      htmlBody += `
-        <h2>取り込みに成功したレシート (${processedList.length}件)</h2>
-        <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; width: 100%;">
-          <tr style="background-color: #f2f2f2;">
-            <th>支払日</th>
-            <th>支払先</th>
-            <th>支払金額</th>
-            <th>ファイル名</th>
-          </tr>
-      `;
-      processedList.forEach(item => {
-        htmlBody += `
-          <tr>
-            <td>${item.date || '不明'}</td>
-            <td>${item.storeName || '不明'}</td>
-            <td style="text-align: right;">${item.amount ? item.amount.toLocaleString() : '0'} 円</td>
-            <td>${item.fileName || '不明'}</td>
-          </tr>
-        `;
-      });
-      htmlBody += `</table>`;
-    }
-
-    // スキップされたレシート
-    if (skippedList.length > 0) {
-      htmlBody += `
-        <h2 style="margin-top: 30px; color: #dc3545;">取り込みがスキップされたレシート (${skippedList.length}件)</h2>
-        <p>以下のレシートは、既に同じ内容（支払日、時間、金額、支払者）のデータが存在したため、処理をスキップしました。</p>
-        <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; width: 100%;">
-          <tr style="background-color: #f2f2f2;">
-            <th>元ファイル名</th>
-            <th>支払日</th>
-            <th>支払金額</th>
-          </tr>
-      `;
-      skippedList.forEach(item => {
-        htmlBody += `
-          <tr>
-            <td>${item.fileName || '不明'}</td>
-            <td>${item.date || '不明'}</td>
-            <td style="text-align: right;">${item.amount ? item.amount.toLocaleString() : '0'} 円</td>
-          </tr>
-        `;
-      });
-      htmlBody += `</table>`;
-    }
-
-    htmlBody += `
-        <hr style="margin-top: 30px;">
-        <p style="font-size: 12px; color: #777;">※このメールはシステムにより自動送信されています。</p>
-      </body>
-      </html>
-    `;
-
-    MailApp.sendEmail({
-      to: recipientEmail,
-      subject: subject,
-      htmlBody: htmlBody
-    });
-
-    Logger.log(`情報 [${FN}]: ${recipientEmail} 宛に結果通知メールを送信しました。`);
-
-  } catch (e) {
-    Logger.log(`エラー [${FN}]: メール送信中に例外発生: ${e.message}\n${e.stack}`);
-  }
-}
-
-/*******************************************************************************
-* 設定関連ヘルパー関数 (変更なし)
+* 設定関連ヘルパー関数
 *******************************************************************************/
 function setScriptProperties_() {
   const scriptProperties = PropertiesService.getScriptProperties();
-  scriptProperties.setProperty(PROP_KEYS.GEMINI_API_KEY, 'YOUR_GEMINI_API_KEY');
   scriptProperties.setProperty(PROP_KEYS.RECEIPT_FOLDER_ID, 'YOUR_PERSONAL_RECEIPT_FOLDER_ID');
   scriptProperties.setProperty(PROP_KEYS.TARGET_FOLDER_ID, 'YOUR_PERSONAL_TARGET_FOLDER_ID');
   scriptProperties.setProperty(PROP_KEYS.CORPORATE_RECEIPT_FOLDER_ID, 'YOUR_CORPORATE_RECEIPT_FOLDER_ID');
@@ -514,7 +550,7 @@ function getScriptProperties_() {
   const FN = 'getScriptProperties_';
   const props = PropertiesService.getScriptProperties().getProperties();
   const baseRequiredKeys = [
-    PROP_KEYS.GEMINI_API_KEY, PROP_KEYS.SPREADSHEET_ID, PROP_KEYS.SHEET_NAME,
+    PROP_KEYS.SPREADSHEET_ID, PROP_KEYS.SHEET_NAME,
   ];
 
   for (const key of baseRequiredKeys) {
@@ -526,7 +562,6 @@ function getScriptProperties_() {
 
   Logger.log(`情報 [${FN}]: スクリプトプロパティ正常読み込み。`);
   return {
-    geminiApiKey: props[PROP_KEYS.GEMINI_API_KEY],
     receiptFolderId: props[PROP_KEYS.RECEIPT_FOLDER_ID],
     targetFolderId: props[PROP_KEYS.TARGET_FOLDER_ID],
     corporateReceiptFolderId: props[PROP_KEYS.CORPORATE_RECEIPT_FOLDER_ID],
@@ -534,6 +569,59 @@ function getScriptProperties_() {
     spreadsheetId: props[PROP_KEYS.SPREADSHEET_ID],
     sheetName: props[PROP_KEYS.SHEET_NAME]
   };
+}
+
+/**
+ * 実行時間計測クラス
+ */
+class ExecutionTimer {
+  constructor() {
+    this.startTime = new Date();
+  }
+  
+  getElapsedSeconds() {
+    const endTime = new Date();
+    return ((endTime - this.startTime) / 1000).toFixed(2);
+  }
+}
+
+/**
+ * 実行ログを記録
+ */
+function logToExecutionSheet(scriptName, status, requestId, details = {}) {
+  try {
+    const sheet = SpreadsheetApp.openById(EXECUTION_LOG_SPREADSHEET_ID)
+      .getSheetByName(EXECUTION_LOG_SHEET_NAME);
+    
+    if (!sheet) {
+      Logger.log(`警告: 実行ログシート "${EXECUTION_LOG_SHEET_NAME}" が見つかりません`);
+      return;
+    }
+    
+    const timestamp = new Date();
+    const row = [
+      Utilities.formatDate(timestamp, Session.getScriptTimeZone(), 'yyyy/MM/dd HH:mm:ss'),
+      scriptName,
+      status,
+      requestId || '',
+      details.summary || '',
+      details.errorMessage || '',
+      details.user || Session.getActiveUser().getEmail(),
+      details.processingTime || '',
+      details.apiUsed || 'Gemini API',
+      details.modelName || GEMINI_MODEL_PRO,
+      details.tokens || '',
+      details.responseSize || '',
+      details.inputSummary || '',
+      details.outputSummary || '',
+      details.notes || ''
+    ];
+    
+    sheet.appendRow(row);
+    
+  } catch (e) {
+    Logger.log(`エラー: ログ記録失敗 - ${e.message}`);
+  }
 }
 
 /*******************************************************************************
@@ -680,11 +768,11 @@ function getExistingDataFromSheet_(spreadsheetId, sheetName) {
 
 
 /*******************************************************************************
-* Gemini API 関連ヘルパー関数 (変更なし)
+* Gemini API 関連ヘルパー関数
 *******************************************************************************/
-function extractInfoWithGemini_(fileContentBase64, mimeType, originalFileName, apiKey) {
+function extractInfoWithGemini_(fileContentBase64, mimeType, originalFileName) {
   const FN = 'extractInfoWithGemini_';
-  const url = `${GEMINI_API_ENDPOINT}?key=${apiKey}`;
+  const url = `${GEMINI_API_ENDPOINT}?key=${GEMINI_API_KEY}`;
 
   const promptText = `あなたは経費精算の専門家です。添付されたレシート（または請求書PDF）から以下の情報を抽出し、指定されたJSON形式で厳密に回答してください。JSON以外のテキスト（説明文、マークダウンなど）は一切含めないでください。駐車場代については、必ず旅費交通費としてください。\n\n抽出項目:\n- 年月日 (YYYY-MM-DD形式)\n- 時間 (HH:MM形式, 24時間表記)\n- 支払先 (店舗名のみ、支店名は含めない)\n- 支払先_支店名 (店舗の支店名、なければ空文字列 "")\n- 支払金額 (数値のみ、通貨記号やカンマなし。整数または小数点付き数値)\n- 購入品_内訳 (品目と金額を改行(\\n)区切りで記述。例: "食料品 500\\n雑貨 300")\n- 支払方法 (「現金」「クレジットカード」「電子マネー」など、具体的な支払い手段を文字列で記述)\n- 勘定科目 (以下のリストから最も適切なものを1つ選択):\n ${ACCOUNT_TITLES.join(', ')}\n- 税区分 (以下のリストから最も適切なものを1つ選択):\n ${TAX_CATEGORIES.join(', ')}\n\n勘定科目リスト:\n${ACCOUNT_TITLES.join('\n')}\n\n税区分リスト:\n${TAX_CATEGORIES.join('\n')}\n\n出力形式 (JSONのみ):\n{\n "date": "YYYY-MM-DD",\n "time": "HH:MM",\n "storeName": "支払先",\n "storeBranchName": "支払先_支店名",\n "totalAmount": 金額 (数値),\n "items": "購入品_内訳",\n "paymentMethod": "支払方法",\n "accountTitle": "勘定科目",\n "taxCategory": "税区分"\n}\n\n情報が読み取れない場合は、該当項目に "不明" または空文字列 "" を入れてください。\n支払金額は必ず数値で返してください。 カンマは含めないでください。\n元のファイル名は ${originalFileName} です。`;
 
@@ -709,7 +797,17 @@ function extractInfoWithGemini_(fileContentBase64, mimeType, originalFileName, a
           try {
             return JSON.parse(jsonText);
           } catch (parseError) {
-            Logger.log(`エラー [${FN}]: Gemini APIレスポンスJSONパース失敗。Text: [\n${jsonText}\n], Error: ${parseError.message}, Stack: ${parseError.stack}`);
+            const errorMsg = `Gemini APIレスポンスJSONパース失敗。Error: ${parseError.message}`;
+            Logger.log(`エラー [${FN}]: ${errorMsg}`);
+            
+            // ログに記録
+            logToExecutionSheet('Automation_レシート', '警告', '', {
+              summary: `JSONパース失敗: ${originalFileName}`,
+              errorMessage: errorMsg,
+              inputSummary: `ファイル: ${originalFileName}`,
+              notes: `レスポンステキスト: ${jsonText.substring(0, 200)}...`
+            });
+            
             if(result.candidates[0].finishReason) Logger.log(`警告 [${FN}]: Gemini Finish Reason: ${result.candidates[0].finishReason}`);
             if(result.candidates[0].safetyRatings) Logger.log(`警告 [${FN}]: Gemini Safety Ratings: ${JSON.stringify(result.candidates[0].safetyRatings)}`);
             return null;
