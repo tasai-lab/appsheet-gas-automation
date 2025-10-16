@@ -1,10 +1,8 @@
 # Google Apps Script 自動化プロジェクト
 
-> **日本語ドキュメント**: [docs/ja/README.md](docs/ja/README.md) をご覧ください
+Google Drive上のGoogle Apps Script (GAS)プロジェクトを管理するためのプロフェッショナルな自動化ツールキット
 
-Professional automation toolkit for managing Google Apps Script (GAS) projects in Google Drive.
-
-## Quick Links
+## クイックリンク
 
 - 📚 **[日本語ドキュメント（メイン）](docs/ja/README.md)** - プロジェクト全体の詳細
 - 🤖 **[Geminiモデル仕様](docs/ja/Geminiモデル仕様.md)** - API使用ガイド
@@ -36,13 +34,10 @@ Professional automation toolkit for managing Google Apps Script (GAS) projects i
 pip install -r requirements.txt
 
 # 全GASプロジェクトの取得
-python gas_retriever.py
-
-# スクリプトの最適化
-python optimize_all_appsheet_scripts.py
+python retrieve_gas.py
 
 # GASへのデプロイ
-python deploy_all_to_gas.py
+python src/deploy_to_gas.py
 ```
 
 ## ドキュメント
