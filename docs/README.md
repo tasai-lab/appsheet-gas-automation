@@ -1,189 +1,194 @@
-# ドキュメント目次
+# ドキュメント総合インデックス
 
-## 📚 包括的ドキュメント
+このディレクトリには、Google Apps Script自動化プロジェクトの全てのドキュメントが含まれています。
 
-GAS Retriever v2.0 の完全なドキュメントセットへようこそ。
+## 📚 メインドキュメント
 
-### 🎯 クイックスタート
+### 🎯 推奨: 日本語ドキュメント
+
+**[ja/README.md](ja/README.md)** ⭐ - プロジェクト総合ドキュメント
+- プロジェクト概要と管理対象32プロジェクト
+- システム構成とセットアップ手順
+- 使用方法とトラブルシューティング
 
 新規ユーザーは以下の順序で読むことをお勧めします：
 
-1. [README.md](../README_NEW.md) - プロジェクト概要とクイックスタート
-2. [ARCHITECTURE.md](ARCHITECTURE.md) - システムアーキテクチャ全体像
-3. [RETRIEVE_GAS_SPEC.md](RETRIEVE_GAS_SPEC.md) または [APPLY_DEDUP_SPEC.md](APPLY_DEDUP_SPEC.md) - 使用するツールの詳細仕様
+1. **[ja/README.md](ja/README.md)** - プロジェクト全体を理解
+2. **[ja/Geminiモデル仕様.md](ja/Geminiモデル仕様.md)** - Gemini APIの使い方を学習
+3. **[ja/デプロイガイド.md](ja/デプロイガイド.md)** - デプロイ方法を習得
 
-### 📖 ドキュメント一覧
 
-#### システム設計
+## 🔧 技術ドキュメント
 
-| ドキュメント | 説明 | 対象読者 |
-|-------------|------|---------|
-| [ARCHITECTURE.md](ARCHITECTURE.md) | システム全体のアーキテクチャ、レイヤー構成、シーケンス図 | 開発者、アーキテクト |
-| [DATA_MODELS.md](DATA_MODELS.md) | データモデル仕様、クラス図、ER図 | 開発者 |
-| [SERVICE_CLASSES.md](SERVICE_CLASSES.md) | サービスクラスの詳細仕様、メソッドAPI | 開発者 |
+### Gemini API関連
 
-#### ツール仕様書
+**[ja/Geminiモデル仕様.md](ja/Geminiモデル仕様.md)** ⭐
+- 最新モデル情報（2025年1月時点）
+- モデル選択ガイド（Flash vs Thinking）
+- API仕様、パラメータ調整、エラーハンドリング
 
-| ドキュメント | 説明 | 対象読者 |
-|-------------|------|---------|
-| [RETRIEVE_GAS_SPEC.md](RETRIEVE_GAS_SPEC.md) | GAS取得ツールの完全仕様 | ユーザー、開発者 |
-| [APPLY_DEDUP_SPEC.md](APPLY_DEDUP_SPEC.md) | 重複防止適用ツールの完全仕様 | ユーザー、開発者 |
+**[GEMINI_VS_VERTEX_COMPARISON.md](../GEMINI_VS_VERTEX_COMPARISON.md)** ※英語参照用
+- Gemini API vs Vertex AI の比較分析
 
-#### ガイド・レポート
+**[GEMINI_MODEL_REFERENCE.md](GEMINI_MODEL_REFERENCE.md)** ※英語参照用
+- Gemini APIの詳細リファレンス
 
-| ドキュメント | 説明 | 対象読者 |
-|-------------|------|---------|
-| [DUPLICATION_PREVENTION_GUIDE.md](../DUPLICATION_PREVENTION_GUIDE.md) | 重複防止ライブラリ使用ガイド | 開発者 |
-| [IMPLEMENTATION_REPORT.md](../IMPLEMENTATION_REPORT.md) | 重複防止実装レポート | 管理者、開発者 |
-| [REFACTORING_REPORT.md](../REFACTORING_REPORT.md) | コードリファクタリングレポート | 開発者 |
-| [SETUP_GUIDE_JP.md](../SETUP_GUIDE_JP.md) | セットアップガイド（日本語） | ユーザー |
+### システム機能
 
-### 🗺️ ドキュメントマップ
+**[ja/重複防止機能.md](ja/重複防止機能.md)** ⭐
+- Webhook重複実行の解決策
+- リクエストID方式の実装
+- パフォーマンス考慮事項
 
-```mermaid
-graph TD
-    START[開始] --> Q1{目的は?}
-    
-    Q1 -->|使い方を知りたい| README[README.md]
-    Q1 -->|仕組みを知りたい| ARCH[ARCHITECTURE.md]
-    Q1 -->|開発したい| DEV[開発者向け]
-    
-    README --> Q2{どのツール?}
-    Q2 -->|GAS取得| RETRIEVE[RETRIEVE_GAS_SPEC.md]
-    Q2 -->|重複防止| DEDUP[APPLY_DEDUP_SPEC.md]
-    
-    ARCH --> MODELS[DATA_MODELS.md]
-    ARCH --> SERVICES[SERVICE_CLASSES.md]
-    
-    DEV --> MODELS
-    DEV --> SERVICES
-    DEV --> REFACTOR[REFACTORING_REPORT.md]
-    
-    RETRIEVE --> SETUP[SETUP_GUIDE_JP.md]
-    DEDUP --> DEDUPGUIDE[DUPLICATION_PREVENTION_GUIDE.md]
+**[DUPLICATION_PREVENTION_GUIDE.md](../DUPLICATION_PREVENTION_GUIDE.md)** ※英語参照用
+- 重複防止ライブラリ使用ガイド
+
+**[ja/実行ログ管理.md](ja/実行ログ管理.md)** ⭐
+- 実行ログシステムの完全ガイド
+- スプレッドシート構造とログ記録
+- ログ活用とメンテナンス
+
+### デプロイメント
+
+**[ja/デプロイガイド.md](ja/デプロイガイド.md)** ⭐
+- デプロイ手順（手動・自動）
+- バージョン管理とロールバック
+- Webhook URL管理
+
+## 🛠️ 開発者向けドキュメント
+
+### システム設計
+
+**[ARCHITECTURE.md](ARCHITECTURE.md)** ※英語
+- システム全体のアーキテクチャ
+- レイヤー構成とモジュール詳細
+- シーケンス図、データフロー図
+
+**[DATA_MODELS.md](DATA_MODELS.md)** ※英語
+- データモデル仕様（GASFile, SpreadsheetInfo等）
+- クラス図、ER図
+
+**[SERVICE_CLASSES.md](SERVICE_CLASSES.md)** ※英語
+- サービスクラスの詳細仕様
+- AuthService, DriveService, ScriptService等
+
+### ツール仕様書
+
+**[RETRIEVE_GAS_SPEC.md](RETRIEVE_GAS_SPEC.md)** ※英語
+- GAS取得ツールの完全仕様
+- コマンドライン引数、処理フロー
+
+**[APPLY_DEDUP_SPEC.md](APPLY_DEDUP_SPEC.md)** ※英語
+- 重複防止適用ツールの完全仕様
+- 分析ロジック、適用条件
+
+
+## 📂 フォルダー構造
+
+```
+docs/
+├── ja/                                    # 日本語ドキュメント（メイン） ⭐
+│   ├── README.md                         # プロジェクト総合ドキュメント
+│   ├── Geminiモデル仕様.md               # Gemini API完全ガイド
+│   ├── 重複防止機能.md                   # 重複防止システム
+│   ├── 実行ログ管理.md                   # ログ管理システム
+│   └── デプロイガイド.md                 # デプロイ手順
+│
+├── README.md                              # このファイル（総合インデックス）
+├── ARCHITECTURE.md                        # システムアーキテクチャ（英語）
+├── API_REFERENCE.md                       # APIリファレンス（英語）
+├── DATA_MODELS.md                         # データモデル（英語）
+├── SERVICE_CLASSES.md                     # サービスクラス（英語）
+├── GEMINI_MODEL_REFERENCE.md              # Geminiモデルリファレンス（英語）
+├── GEMINI_VS_VERTEX_AI.md                 # Gemini vs Vertex比較（英語）
+├── RETRIEVE_GAS_SPEC.md                   # GAS取得仕様（英語）
+└── APPLY_DEDUP_SPEC.md                    # 重複防止仕様（英語）
 ```
 
-### 📊 ドキュメント詳細
+## 🗺️ ドキュメントナビゲーション
 
-#### ARCHITECTURE.md
+### 目的別ガイド
 
-**内容**:
-- システム全体構成図
-- レイヤー構成
-- モジュール詳細
-- シーケンス図（GAS取得、重複防止適用、認証）
-- データフロー図
-- エラーハンドリングフロー
+**初めての方**
+1. [ja/README.md](ja/README.md) - プロジェクト概要
+2. [SETUP_GUIDE_JP.md](../SETUP_GUIDE_JP.md) - セットアップ手順
 
-**ページ数**: 約15ページ相当
+**API使用方法を知りたい**
+- [ja/Geminiモデル仕様.md](ja/Geminiモデル仕様.md) - Gemini API完全ガイド
+- [API_REFERENCE.md](API_REFERENCE.md) - 全般的なAPI（英語）
 
-**図表**: 10以上のMermaid図
+**システムを理解したい開発者**
+1. [ARCHITECTURE.md](ARCHITECTURE.md) - アーキテクチャ
+2. [DATA_MODELS.md](DATA_MODELS.md) - データ構造
+3. [SERVICE_CLASSES.md](SERVICE_CLASSES.md) - サービスクラス
 
-#### DATA_MODELS.md
+**デプロイ・運用担当者**
+1. [ja/デプロイガイド.md](ja/デプロイガイド.md) - デプロイ手順
+2. [ja/実行ログ管理.md](ja/実行ログ管理.md) - ログ運用
 
-**内容**:
-- GASFile クラス
-- SpreadsheetInfo クラス
-- GASProject クラス
-- ProjectAnalysis クラス
-- MigrationGuide クラス
-- データ関係図（ER図）
+**トラブルシューティング**
+- [ja/README.md](ja/README.md) - よくある問題
+- [ja/デプロイガイド.md](ja/デプロイガイド.md) - デプロイ関連
+- [ja/重複防止機能.md](ja/重複防止機能.md) - 重複問題
 
-**ページ数**: 約12ページ相当
 
-**図表**: 5つのクラス図、1つのER図
+## 🔍 よくある質問（FAQ）
 
-#### SERVICE_CLASSES.md
+| 質問 | ドキュメント |
+|-----|-------------|
+| プロジェクト全体を知りたい | [ja/README.md](ja/README.md) |
+| Gemini APIの使い方は? | [ja/Geminiモデル仕様.md](ja/Geminiモデル仕様.md) |
+| デプロイ方法は? | [ja/デプロイガイド.md](ja/デプロイガイド.md) |
+| 重複実行を防ぐには? | [ja/重複防止機能.md](ja/重複防止機能.md) |
+| ログを確認したい | [ja/実行ログ管理.md](ja/実行ログ管理.md) |
+| システム構造を理解したい | [ARCHITECTURE.md](ARCHITECTURE.md) |
+| データ構造は? | [DATA_MODELS.md](DATA_MODELS.md) |
+| カスタマイズしたい | [SERVICE_CLASSES.md](SERVICE_CLASSES.md) |
 
-**内容**:
-- AuthService
-- DriveService
-- ScriptService
-- SheetsService
-- GASRetriever
-- ProjectSaver
-- ProjectAnalyzer
-- DedupApplicator
+## ✅ ドキュメント品質管理
 
-**ページ数**: 約18ページ相当
-
-**図表**: 8つのクラス図、複数のフロー図
-
-#### RETRIEVE_GAS_SPEC.md
-
-**内容**:
-- 機能仕様
-- コマンドライン引数
-- 処理フロー
-- 入出力仕様
-- エラーハンドリング
-- パフォーマンス仕様
-- セキュリティ
-- トラブルシューティング
-
-**ページ数**: 約10ページ相当
-
-#### APPLY_DEDUP_SPEC.md
-
-**内容**:
-- 機能仕様
-- 分析ロジック
-- 適用条件
-- 処理フロー
-- 入出力仕様
-- ベストプラクティス
-
-**ページ数**: 約12ページ相当
-
-### 🔍 検索ガイド
-
-#### よくある質問と対応ドキュメント
-
-| 質問 | ドキュメント | セクション |
-|-----|-------------|-----------|
-| 認証の仕組みは? | ARCHITECTURE.md | 認証フロー詳細 |
-| どうやって使うの? | RETRIEVE_GAS_SPEC.md | 使用例 |
-| エラーが出た | RETRIEVE_GAS_SPEC.md | トラブルシューティング |
-| データ構造は? | DATA_MODELS.md | 全セクション |
-| カスタマイズしたい | SERVICE_CLASSES.md | 該当サービス |
-| 重複防止の実装方法 | DUPLICATION_PREVENTION_GUIDE.md | 実装パターン |
-| コードの歴史を知りたい | REFACTORING_REPORT.md | ビフォーアフター |
-
-### 📝 表記規則
-
-#### コードブロック
-
-- Python: ` ```python `
-- Bash: ` ```bash `
-- JSON: ` ```json `
-- Markdown: ` ```markdown `
-
-#### 図表
-
-- フローチャート: Mermaid `flowchart`
-- シーケンス図: Mermaid `sequenceDiagram`
-- クラス図: Mermaid `classDiagram`
-- 状態遷移図: Mermaid `stateDiagram-v2`
-- ER図: Mermaid `erDiagram`
-
-#### 強調表示
-
-- **重要**: 太字
-- `コード`: インラインコード
-- > 引用: ブロッククォート
-
-### 🔄 ドキュメント更新履歴
+### 更新履歴
 
 | 日付 | バージョン | 変更内容 |
 |-----|-----------|---------|
+| 2025-10-16 | 3.0 | 日本語ドキュメントに統合・整理 |
 | 2025-10-16 | 2.0 | リファクタリング後の全ドキュメント作成 |
 | 2025-10-16 | 1.0 | 初版（モノリシック版） |
 
-### 🤝 コントリビューション
+### 統合・整理の詳細
 
-ドキュメントの改善提案は Issues でお願いします。
+**削除されたドキュメント（内容は統合済み）:**
+- GEMINI_LATEST_MODELS_2025.md → Geminiモデル仕様.mdに統合
+- GEMINI_MODEL_INFO.md → Geminiモデル仕様.mdに統合
+- GEMINI_MODEL_OPTIMIZATION_LOG.md → 不要（実装完了）
+- GEMINI_MODEL_OPTIMIZATION_RECORD.md → 不要（実装完了）
+- GEMINI_MODEL_UPDATE_LOG.md → 不要（実装完了）
+- GEMINI_OPTIMIZATION_IMPLEMENTATION.md → 不要（実装完了）
+- GEMINI_OPTIMIZATION_REPORT.md → 不要（実装完了）
+- IMPLEMENTATION_REPORT.md → README.mdに統合
+- IMPLEMENTATION_SUMMARY.md → README.mdに統合
+- MIGRATION_ANALYSIS.md → README.mdに統合
+- OPTIMIZATION_COMPLETION_REPORT.md → README.mdに統合
+- OPTIMIZATION_PLAN.md → README.mdに統合
+- PROJECT_COMPLETION_REPORT.md → README.mdに統合
+- REFACTORING_REPORT.md → README.mdに統合
+- README_NEW.md → README.mdに統合
+
+**保持されたドキュメント:**
+- GEMINI_VS_VERTEX_COMPARISON.md → 参照用として保持
+- DUPLICATION_PREVENTION_GUIDE.md → 英語参照用として保持
+- SETUP_GUIDE_JP.md → セットアップガイドとして保持
+
+## 📧 フィードバック
+
+ドキュメントの改善提案や誤りの報告は、実行ログスプレッドシートまたは開発チームまでお願いします。
+
+## 🤝 コントリビューション
+
+ドキュメントの改善提案はIssuesでお願いします。
 
 ---
 
-**最終更新**: 2025-10-16  
-**バージョン**: 2.0
+**Last Updated**: 2025-10-16  
+**Version**: 3.0  
+**Maintainer**: Development Team

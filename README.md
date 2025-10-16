@@ -1,117 +1,75 @@
-# Google Apps Script Retriever
+# Google Apps Script 自動化プロジェクト
 
-Professional tool to retrieve Google Apps Script (GAS) files containing "Appsheet" from Google Drive and organize them with their referenced spreadsheet data.
+> **日本語ドキュメント**: [docs/ja/README.md](docs/ja/README.md) をご覧ください
 
-## Features
+Professional automation toolkit for managing Google Apps Script (GAS) projects in Google Drive.
 
-- 🔍 Searches for all GAS files containing "Appsheet" in the specified Google Drive folder
-- 📥 Downloads complete script content (all .gs, .html, and .json files)
-- 📊 Automatically detects and retrieves referenced spreadsheet metadata
-- 📁 Organizes each GAS project in a professional folder structure
-- 📝 Generates comprehensive README files for each project
+## Quick Links
 
-## Folder Structure
+- 📚 **[日本語ドキュメント（メイン）](docs/ja/README.md)** - プロジェクト全体の詳細
+- 🤖 **[Geminiモデル仕様](docs/ja/Geminiモデル仕様.md)** - API使用ガイド
+- 🔒 **[重複防止機能](docs/ja/重複防止機能.md)** - Webhook重複対策
+- 📊 **[実行ログ管理](docs/ja/実行ログ管理.md)** - ログシステム
+- 🚀 **[デプロイガイド](docs/ja/デプロイガイド.md)** - デプロイ手順
 
-Each retrieved GAS project is organized as follows:
+## Project Overview
 
-```
-gas_projects/
-└── [Project Name]/
-    ├── README.md                    # Project overview and documentation
-    ├── project_metadata.json        # Complete project metadata
-    ├── appsscript.json             # Apps Script manifest
-    ├── scripts/                     # All script files
-    │   ├── Code.gs
-    │   ├── Utils.gs
-    │   └── Page.html
-    └── spreadsheets/                # Referenced spreadsheet metadata
-        └── [Spreadsheet Name]_metadata.json
-```
+This toolkit manages 32 Google Apps Script projects for AppSheet integration and automation:
+- 30 AppSheet integration scripts
+- 2 Automation scripts (Receipt & Invoice processing)
+- Centralized execution logging
+- Duplicate request prevention
+- Gemini API optimization
 
-## Setup Instructions
+## Key Features
 
-### 1. Install Dependencies
+- 🔄 **Automatic GAS Retrieval** - Download and organize all scripts from Google Drive
+- 🛡️ **Duplicate Prevention** - Prevent duplicate webhook executions
+- 📊 **Centralized Logging** - Track all executions in a single spreadsheet
+- 🤖 **Gemini API Integration** - Optimized model selection and usage
+- 🚀 **Automated Deployment** - Deploy and version management tools
+
+## Quick Start
 
 ```bash
+# Install dependencies
 pip install -r requirements.txt
-```
 
-### 2. Set Up Google Cloud Project
-
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project or select an existing one
-3. Enable the following APIs:
-   - Google Drive API
-   - Google Apps Script API
-   - Google Sheets API
-4. Create OAuth 2.0 credentials:
-   - Go to "APIs & Services" > "Credentials"
-   - Click "Create Credentials" > "OAuth client ID"
-   - Choose "Desktop app" as the application type
-   - Download the credentials JSON file
-   - Save it as `credentials.json` in this directory
-
-### 3. Run the Script
-
-```bash
+# Retrieve all GAS projects
 python gas_retriever.py
+
+# Optimize scripts
+python optimize_all_appsheet_scripts.py
+
+# Deploy to GAS
+python deploy_all_to_gas.py
 ```
 
-On first run, the script will:
-- Open your browser for Google authentication
-- Request permissions to read your Drive files, Apps Script projects, and Spreadsheets
-- Save authentication token in `token.pickle` for future use
+## Documentation
 
-## Configuration
+All documentation is maintained in Japanese under `docs/ja/`:
 
-To search a different folder, modify the `FOLDER_ID` variable in `gas_retriever.py`:
+- **README.md** - Complete project documentation
+- **Geminiモデル仕様.md** - Gemini API specification
+- **重複防止機能.md** - Duplicate prevention system
+- **実行ログ管理.md** - Execution logging system  
+- **デプロイガイド.md** - Deployment procedures
 
-```python
-FOLDER_ID = '16swPUizvdlyPxUjbDpVl9-VBDJZO91kX'  # Replace with your folder ID
+## Project Structure
+
 ```
-
-To change the output directory:
-
-```python
-OUTPUT_DIR = 'gas_projects'  # Replace with desired directory name
+all-gas/
+├── docs/ja/              # Japanese documentation (primary)
+├── gas_projects/         # Retrieved GAS projects (32 projects)
+├── src/                  # Common libraries
+├── ツール/                # Python automation tools
+│   ├── gas_retriever.py
+│   ├── optimize_all_appsheet_scripts.py
+│   └── deploy_all_to_gas.py
+├── credentials.json      # Google OAuth credentials
+└── requirements.txt      # Python dependencies
 ```
-
-## Output
-
-The script will:
-1. Search the specified Google Drive folder
-2. Find all GAS files with "Appsheet" in the name
-3. Download each GAS project's content
-4. Extract spreadsheet IDs from the code
-5. Retrieve metadata for each referenced spreadsheet
-6. Organize everything in professional folder structures
-7. Generate documentation for each project
-
-## Troubleshooting
-
-### "credentials.json not found"
-- Make sure you've downloaded the OAuth credentials from Google Cloud Console
-- Save the file as `credentials.json` in the same directory as the script
-
-### "Authentication failed"
-- Delete `token.pickle` and run the script again
-- Make sure you're using the correct Google account
-
-### "Permission denied" errors
-- Ensure all required APIs are enabled in Google Cloud Console
-- Check that your OAuth consent screen is properly configured
-
-### No files found
-- Verify the folder ID is correct
-- Ensure the folder contains GAS files with "Appsheet" in the name
-- Check that you have access to the folder with the authenticated account
-
-## Security Notes
-
-- Never commit `credentials.json` or `token.pickle` to version control
-- Add these files to `.gitignore`
-- Keep your credentials secure and private
 
 ## License
 
-MIT License - Feel free to use and modify as needed.
+MIT License
