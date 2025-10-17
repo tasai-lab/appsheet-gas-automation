@@ -29,6 +29,19 @@ function logExecution(status, callId, details = {}) {
     }
     
     const timestamp = new Date();
+    
+    // ユーザー情報を安全に取得
+    let userEmail = 'システム';
+    try {
+      const activeUser = Session.getActiveUser().getEmail();
+      if (activeUser) {
+        userEmail = activeUser;
+      }
+    } catch (e) {
+      // ユーザー情報取得失敗時はデフォルト値を使用
+      userEmail = 'システム';
+    }
+    
     const row = [
       Utilities.formatDate(timestamp, 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss'),
       SCRIPT_NAME,
@@ -43,7 +56,7 @@ function logExecution(status, callId, details = {}) {
       details.errorMessage || '',
       details.modelName || '',
       details.fileSize || '',
-      Session.getActiveUser().getEmail() || 'システム',
+      userEmail,
       details.notes || ''
     ];
     

@@ -70,6 +70,13 @@ appsscript.jsonに新しいスコープを追加したため、再認証が必�
 5. 「詳細」をクリック → 「安全ではないページに移動」をクリック
 6. すべての権限を確認して「許可」をクリック
 
+**必要な権限:**
+- ✅ Google ドライブのファイルの表示、編集、作成、削除
+- ✅ Google スプレッドシートの表示、編集、作成、削除
+- ✅ メールアドレスの表示
+- ✅ Google Cloud Platform サービスの管理
+- ✅ Cloud Storage の読み取りと書き込み
+
 ### 5. Script Propertiesの設定確認
 
 Apps Scriptエディタで `setupScriptProperties()` を実行して設定を確認：
