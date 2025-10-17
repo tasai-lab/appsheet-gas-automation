@@ -16,15 +16,66 @@
  * @param {GoogleAppsScript.Events.DoPost} e
  */
 function doPost(e) {
-  return executeWebhookWithDuplicationPrevention(e, processCallSummary, {
-    recordIdField: 'callId',
-    enableFingerprint: true,
-    metadata: { 
-      processor: 'vertex_ai',
-      version: '3.0.0',
-      scriptName: 'Appsheet_通話_要約生成'
+  try {
+    return executeWebhookWithDuplicationPrevention(e, processCallSummaryWithErrorHandling, {
+      recordIdField: 'callId',
+      enableFingerprint: true,
+      metadata: { 
+        processor: 'vertex_ai',
+        version: '3.0.0',
+        scriptName: 'Appsheet_通話_要約生成'
+      }
+    });
+  } catch (error) {
+    Logger.log(`[doPost] エラー: ${error.message}`);
+    
+    // パラメータからcallIdを取得（可能な場合）
+    let callId = 'ID不明';
+    try {
+      const params = JSON.parse(e.postData.contents);
+      callId = params.callId || 'ID不明';
+    } catch (e) {
+      // パース失敗時は無視
     }
-  });
+    
+    // エラーログを記録
+    logFailure(callId, error, {
+      notes: 'doPost実行エラー'
+    });
+    
+    throw error;
+  }
+}
+
+/**
+ * エラーハンドリング付きの通話要約処理
+ * @param {Object} params - Webhookパラメータ
+ * @return {Object} 処理結果
+ */
+function processCallSummaryWithErrorHandling(params) {
+  const callId = params.callId || 'ID不明';
+  
+  try {
+    return processCallSummary(params);
+  } catch (error) {
+    Logger.log(`[エラー] 通話ID: ${callId}, エラー: ${error.message}`);
+    
+    // エラーログを記録
+    logFailure(callId, error, {
+      filePath: params.filePath,
+      fileId: params.fileId
+    });
+    
+    // AppSheetにエラー記録
+    try {
+      const config = getConfig();
+      recordError(callId, error.message, config);
+    } catch (e) {
+      Logger.log(`[エラー記録失敗] ${e.message}`);
+    }
+    
+    throw error;
+  }
 }
 
 /**
@@ -97,6 +148,7 @@ function testProcessRequest() {
  * @return {Object} 処理結果
  */
 function processCallSummary(params) {
+  const timer = new ExecutionTimer();
   const config = getConfig();
   const callId = params.callId;
   const callDatetime = params.callDatetime;
@@ -107,6 +159,13 @@ function processCallSummary(params) {
   const clientId = params.clientId;
   
   Logger.log(`[処理開始] 通話ID: ${callId}`);
+  
+  // 処理開始をログ記録
+  logStart(callId, {
+    filePath: filePath,
+    fileId: fileId,
+    modelName: config.vertexAIModel
+  });
 
   // パラメータ検証
   if (!callId || !callDatetime) {
@@ -168,6 +227,18 @@ function processCallSummary(params) {
 
   // 成功通知
   sendSuccessNotification(callId, analysisResult.summary, config);
+
+  // 成功ログを記録
+  logSuccess(callId, {
+    filePath: filePath,
+    fileId: resolvedFileId,
+    summary: analysisResult.summary.substring(0, 200) + '...',
+    transcriptLength: analysisResult.transcript.length,
+    actionsCount: analysisResult.actions.length,
+    processingTime: timer.getElapsedSeconds(),
+    modelName: config.vertexAIModel,
+    fileSize: analysisResult.fileSize
+  });
 
   // 処理結果を返す（自動的に完了マークされる）
   return {

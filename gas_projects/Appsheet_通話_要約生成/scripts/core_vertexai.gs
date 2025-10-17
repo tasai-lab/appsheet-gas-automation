@@ -39,7 +39,9 @@ function analyzeAudioWithVertexAI(fileId, callDatetime, callContextText, userInf
 
   const audioFile = getAudioFile(fileId);
 
-  Logger.log(`[Vertex AI] ファイルサイズ: ${(audioFile.blob.getBytes().length / 1024 / 1024).toFixed(2)}MB`);
+  const fileSizeMB = (audioFile.blob.getBytes().length / 1024 / 1024).toFixed(2);
+
+  Logger.log(`[Vertex AI] ファイルサイズ: ${fileSizeMB}MB`);
 
   // プロンプト生成
 
@@ -60,6 +62,10 @@ function analyzeAudioWithVertexAI(fileId, callDatetime, callContextText, userInf
     // JSON抽出と検証
 
     const result = extractAndValidateJSON(apiResponse);
+
+    // ファイルサイズ情報を追加
+
+    result.fileSize = `${fileSizeMB}MB`;
 
     return result;
 
@@ -223,19 +229,18 @@ ${contextSection}${userInfoSection}
 
 - 包括: 地域包括支援センター, サ担会議: サービス担当者会議
 
-# JSON出力仕様
+# JSON出力仕様（厳守）
 
-以下の構造のJSONを生成:
+**重要: 必ず以下の3つのキーすべてを含むJSONを返してください**
 
 {
-
-  "summary": "Markdown形式の要約",
-
-  "transcript": "話者別の全文文字起こし",
-
-  "actions": [アクション配列]
-
+  "summary": "Markdown形式の要約（文字列型、必須）",
+  "transcript": "話者別の全文文字起こし（文字列型、必須）",
+  "actions": [アクション配列（配列型、必須、空配列可）]
 }
+
+⚠️ summary, transcript, actionsの3つのキーは必ず含めてください。
+⚠️ アクションがない場合でも actions: [] として空配列を返してください。
 
 # 要約作成ルール (summaryキー)
 
@@ -296,6 +301,15 @@ Markdown形式で以下のグループごとに整理:
 }
 
 アクションがなければ空配列 [] を返す。
+
+# 最終確認
+
+出力前に必ず確認してください:
+✓ "summary" キーが存在し、文字列型である
+✓ "transcript" キーが存在し、文字列型である  
+✓ "actions" キーが存在し、配列型である（空配列可）
+✓ 3つのキーすべてが含まれている
+✓ 有効なJSON形式である
 
 `;
 
@@ -713,17 +727,13 @@ function extractAndValidateJSON(responseText) {
 
   const result = extractJSONFromText(contentText);
 
-  // 構造検証
+  // 構造検証と修復
 
-  if (!result.summary || !result.transcript || !Array.isArray(result.actions)) {
+  const validatedResult = validateAndFixJSONStructure(result, contentText);
 
-    throw new Error('JSONの構造が不正です (summary, transcript, actionsが必要)');
+  Logger.log(`[Vertex AI] JSON抽出成功 (アクション数: ${validatedResult.actions.length})`);
 
-  }
-
-  Logger.log(`[Vertex AI] JSON抽出成功 (アクション数: ${result.actions.length})`);
-
-  return result;
+  return validatedResult;
 
 }
 
@@ -804,4 +814,73 @@ function extractJSONFromText(text) {
 
   throw new Error('有効なJSONが見つかりませんでした');
 
+}
+
+/**
+ * JSON構造を検証して修復
+ * 不足しているキーがあれば補完する
+ * @param {Object} result - 抽出されたJSONオブジェクト
+ * @param {string} originalText - 元のテキスト（デバッグ用）
+ * @return {Object} 検証・修復済みのJSONオブジェクト
+ */
+function validateAndFixJSONStructure(result, originalText) {
+  Logger.log('[JSON検証] 構造チェック開始');
+  
+  // 結果オブジェクトが存在しない場合
+  if (!result || typeof result !== 'object') {
+    Logger.log('[JSON検証] ❌ 結果がオブジェクトではありません');
+    Logger.log(`元のテキスト (先頭1000文字): ${originalText.substring(0, 1000)}`);
+    throw new Error('JSONの構造が不正です: オブジェクトが取得できません');
+  }
+  
+  // 各必須キーの存在確認とログ出力
+  const hasSummary = result.hasOwnProperty('summary');
+  const hasTranscript = result.hasOwnProperty('transcript');
+  const hasActions = result.hasOwnProperty('actions');
+  
+  Logger.log(`[JSON検証] summary: ${hasSummary ? '✓' : '✗'} (型: ${typeof result.summary})`);
+  Logger.log(`[JSON検証] transcript: ${hasTranscript ? '✓' : '✗'} (型: ${typeof result.transcript})`);
+  Logger.log(`[JSON検証] actions: ${hasActions ? '✓' : '✗'} (型: ${typeof result.actions}, 配列: ${Array.isArray(result.actions)})`);
+  
+  // 利用可能なキーを表示
+  const availableKeys = Object.keys(result);
+  Logger.log(`[JSON検証] 利用可能なキー: ${availableKeys.join(', ')}`);
+  
+  // 修復処理
+  let fixed = false;
+  const repairedResult = { ...result };
+  
+  // summaryの修復
+  if (!hasSummary || typeof result.summary !== 'string') {
+    Logger.log('[JSON修復] summary を補完');
+    repairedResult.summary = '要約情報が取得できませんでした。';
+    fixed = true;
+  }
+  
+  // transcriptの修復
+  if (!hasTranscript || typeof result.transcript !== 'string') {
+    Logger.log('[JSON修復] transcript を補完');
+    repairedResult.transcript = '文字起こし情報が取得できませんでした。';
+    fixed = true;
+  }
+  
+  // actionsの修復
+  if (!hasActions || !Array.isArray(result.actions)) {
+    Logger.log('[JSON修復] actions を補完');
+    repairedResult.actions = [];
+    fixed = true;
+  }
+  
+  // 修復が必要だった場合は警告ログを出力
+  if (fixed) {
+    Logger.log('[JSON修復] ⚠️ JSON構造を修復しました');
+    Logger.log(`[JSON修復] 元のJSON: ${JSON.stringify(result).substring(0, 500)}`);
+    Logger.log(`[JSON修復] 修復後のJSON: ${JSON.stringify(repairedResult).substring(0, 500)}`);
+    Logger.log('[JSON修復] ⚠️ Vertex AIのレスポンスを確認してください');
+    Logger.log(`[JSON修復] 元のテキスト (全文): ${originalText}`);
+  } else {
+    Logger.log('[JSON検証] ✓ 構造は正常です');
+  }
+  
+  return repairedResult;
 }
