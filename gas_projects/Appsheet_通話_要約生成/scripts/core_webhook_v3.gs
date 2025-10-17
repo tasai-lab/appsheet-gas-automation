@@ -1,72 +1,29 @@
 /**
-
  * Webhook受信処理（新ライブラリ対応版）
-
  * AppSheetからのWebhookを受け取り、通話音声ファイルをVertex AIで処理する
-
  * @author Fractal Group
-
  * @version 3.0.0 - 統一重複防止ライブラリ適用
-
  * @date 2025-10-16
-
+ * 
  * 変更点:
-
  * - executeWebhookWithDuplicationPreventionを使用
-
  * - より強固な重複防止（フィンガープリント + ロック）
-
  * - エラーハンドリング強化
-
  */
 
 /**
-
  * WebアプリのPOSTリクエストエントリーポイント
-
- * 重複リクエスト対策（v3.0の機能）:
-
- * - レコードIDベースの重複チェック
-
- * - Webhookフィンガープリント検証
-
- * - LockService による排他制御
-
- * - 自動エラーハンドリング
-
- */
-
-/**
- * AppSheet Webhook エントリーポイント
  * @param {GoogleAppsScript.Events.DoPost} e
  */
 function doPost(e) {
-  return CommonWebhook.handleDoPost(e, function(params) {
-    params.scriptName = 'Appsheet_通話_要約生成';
-    return processRequest(params.callId || params.data?.callId, params.callDatetime || params.data?.callDatetime, params.filePath || params.data?.filePath, params.fileId || params.data?.fileId, params.callContextText || params.data?.callContextText, params.userInfoText || params.data?.userInfoText, params.clientId || params.data?.clientId);
-  });
-}
-
-/**
- * メイン処理関数（引数ベース）
- * @param {Object} params - リクエストパラメータ
- * @returns {Object} - 処理結果
- */
-function processRequest(callId, callDatetime, filePath, fileId, callContextText, userInfoText, clientId) {
   return executeWebhookWithDuplicationPrevention(e, processCallSummary, {
-
     recordIdField: 'callId',
-
     enableFingerprint: true,
-
     metadata: { 
-
       processor: 'vertex_ai',
-
-      version: '3.0.0' 
-
+      version: '3.0.0',
+      scriptName: 'Appsheet_通話_要約生成'
     }
-
   });
 }
 
@@ -75,311 +32,110 @@ function processRequest(callId, callDatetime, filePath, fileId, callContextText,
  * GASエディタから直接実行してテスト可能
  */
 function testProcessRequest() {
-  // TODO: テストデータを設定してください
   const testParams = {
-    // 例: action: "test",
-    // 例: data: "sample"
+    callId: "test_" + new Date().getTime(),
+    callDatetime: new Date().toISOString(),
+    filePath: "test/audio.m4a",
+    callContextText: "テスト通話",
+    userInfoText: "テストユーザー",
+    clientId: "test_client"
   };
-
-  return CommonTest.runTest((params) => processRequest(params.callId, params.callDatetime, params.filePath, params.fileId, params.callContextText, params.userInfoText, params.clientId), testParams, 'Appsheet_通話_要約生成');
+  
+  Logger.log('[テスト] パラメータ:', JSON.stringify(testParams, null, 2));
+  
+  const result = processCallSummary(testParams);
+  
+  Logger.log('[テスト] 結果:', JSON.stringify(result, null, 2));
+  
+  return result;
 }
 
 /**
-
  * 通話要約の実処理
-
  * executeWebhookWithDuplicationPreventionから呼び出される
-
  * @param {Object} params - Webhookパラメータ
-
  * @return {Object} 処理結果
-
  */
-
 function processCallSummary(params) {
-
   const config = getConfig();
+  const callId = params.callId;
+  const callDatetime = params.callDatetime;
+  const filePath = params.filePath;
+  const fileId = params.fileId;
+  const callContextText = params.callContextText;
+  const userInfoText = params.userInfoText;
+  const clientId = params.clientId;
+  
   Logger.log(`[処理開始] 通話ID: ${callId}`);
 
   // パラメータ検証
-
-  validateRequiredParams(params);
+  if (!callId || !callDatetime) {
+    throw new Error('必須パラメータが不足: callId, callDatetime');
+  }
 
   // file_pathからファイルIDとURLを取得
-
-  let fileId, fileUrl;
-
+  let resolvedFileId, fileUrl;
+  
   if (filePath) {
-
     Logger.log(`[ファイル解決] ファイルパス: ${filePath}`);
-
     const fileInfo = getFileIdFromPath(filePath, config.sharedDriveFolderId);
-
-    fileId = fileInfo.fileId;
-
+    resolvedFileId = fileInfo.fileId;
     fileUrl = fileInfo.fileUrl;
-
-    Logger.log(`[ファイル解決] ファイルID: ${fileId}`);
-
+    Logger.log(`[ファイル解決] ファイルID: ${resolvedFileId}`);
   } else if (fileId) {
     const file = DriveApp.getFileById(fileId);
-
+    resolvedFileId = fileId;
     fileUrl = file.getUrl();
-
-    Logger.log(`[ファイル解決] 直接指定 - ファイルID: ${fileId}`);
-
+    Logger.log(`[ファイル解決] 直接指定 - ファイルID: ${resolvedFileId}`);
   } else {
-
     throw new Error('filePath または fileId が必要です');
-
   }
 
   // Vertex AIで音声解析
-
   const analysisResult = analyzeAudioWithVertexAI(
-
-    fileId,
-
+    resolvedFileId,
     callDatetime,
-
     callContextText,
-
     userInfoText,
-
     config
-
   );
 
   // 結果の検証
-
-  validateAnalysisResult(analysisResult);
+  if (!analysisResult || !analysisResult.summary || !analysisResult.transcript || !Array.isArray(analysisResult.actions)) {
+    throw new Error('解析結果に必須キー (summary, transcript, actions) が不足しています');
+  }
 
   // ファイル情報を結果に追加
-
-  analysisResult.recording_file_id = fileId;
-
+  analysisResult.recording_file_id = resolvedFileId;
   analysisResult.recording_file_url = fileUrl;
 
   // AppSheet更新
-
   updateCallLog(
-
     callId, 
-
     analysisResult.transcript, 
-
     analysisResult.summary,
-
     analysisResult.recording_file_id,
-
     analysisResult.recording_file_url,
-
     config
-
   );
 
   // アクション追加
-
   if (analysisResult.actions.length > 0) {
-
     addCallActions(callId, clientId, analysisResult.actions, config);
-
   }
 
   Logger.log(`[処理完了] 通話ID: ${callId}`);
 
   // 成功通知
-
   sendSuccessNotification(callId, analysisResult.summary, config);
 
   // 処理結果を返す（自動的に完了マークされる）
-
   return {
-
     success: true,
-
     callId: callId,
-
-    recording_file_id: fileId,
-
+    recording_file_id: resolvedFileId,
     recording_file_url: fileUrl,
-
     summary_length: analysisResult.summary.length,
-
     actions_count: analysisResult.actions.length
-
   };
-
-}
-
-/**
-
- * 必須パラメータの検証
-
- */
-
-function validateRequiredParams(params) {
-
-  const requiredFields = ['callId', 'callDatetime'];
-
-  const missingFields = requiredFields.filter(key => !params[key]);
-
-  if (missingFields.length > 0) {
-
-    throw new Error(`必須パラメータが不足: ${missingFields.join(', ')}`);
-
-  }
-
-  // filePath または fileId のいずれかが必要
-
-  if (!filePath && !fileId) {
-
-    throw new Error('filePath または fileId が必要です');
-
-  }
-
-}
-
-/**
-
- * 解析結果の検証
-
- */
-
-function validateAnalysisResult(result) {
-
-  if (typeof result !== 'object' || result === null) {
-
-    throw new Error('解析結果が不正です');
-
-  }
-
-  if (!result.summary || !result.transcript || !Array.isArray(result.actions)) {
-
-    throw new Error('解析結果に必須キー (summary, transcript, actions) が不足しています');
-
-  }
-
-}
-
-// ======================================================
-
-// 以下、旧版の関数（後方互換性のため残す）
-
-// 新規プロジェクトでは使用しないでください
-
-// ======================================================
-
-/**
-
- * @deprecated v3.0でexecuteWebhookWithDuplicationPreventionに統合
-
- */
-
-function parseRequest(e) {
-
-  try {
-
-    return JSON.parse(e.postData.contents);
-
-  } catch (error) {
-
-    throw new Error(`リクエストの解析に失敗: ${error.message}`);
-
-  }
-
-}
-
-/**
-
- * @deprecated v3.0でcheckDuplicateRequestに統合
-
- */
-
-function isDuplicateRequest(callId) {
-
-  const dupCheck = checkDuplicateRequest(callId);
-
-  return dupCheck.isDuplicate;
-
-}
-
-/**
-
- * @deprecated v3.0でmarkAsProcessingWithLockに統合
-
- */
-
-function markAsProcessing(callId) {
-
-  return markAsProcessingWithLock(callId);
-
-}
-
-/**
-
- * @deprecated v3.0で自動処理に統合
-
- */
-
-function createSuccessResponse(callId, fileId, fileUrl) {
-
-  return ContentService.createTextOutput(JSON.stringify({
-
-    status: 'success',
-
-    callId: callId,
-
-    recording_file_id: fileId,
-
-    recording_file_url: fileUrl,
-
-    timestamp: new Date().toISOString()
-
-  })).setMimeType(ContentService.MimeType.JSON);
-
-}
-
-/**
-
- * @deprecated v3.0でcreateErrorResponseに統合
-
- */
-
-function createErrorResponse_old(callId, error) {
-
-  return ContentService.createTextOutput(JSON.stringify({
-
-    status: 'error',
-
-    callId: callId,
-
-    error: error.toString(),
-
-    timestamp: new Date().toISOString()
-
-  })).setMimeType(ContentService.MimeType.JSON);
-
-}
-
-/**
-
- * @deprecated v3.0でcreateDuplicateResponseに統合
-
- */
-
-function createDuplicateResponse_old(callId) {
-
-  return ContentService.createTextOutput(JSON.stringify({
-
-    status: 'duplicate',
-
-    callId: callId,
-
-    message: '処理中または処理済みです',
-
-    timestamp: new Date().toISOString()
-
-  })).setMimeType(ContentService.MimeType.JSON);
-
 }
