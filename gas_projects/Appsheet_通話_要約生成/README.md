@@ -38,15 +38,37 @@ v100では、処理モードの条件分岐機能が追加され、新規依頼�
 
 ## Structure
 
-- `scripts/`: Contains all GAS script files
-  - `core_webhook_v3.gs`: Webhook処理（処理モード分岐）
-  - `core_vertexai.gs`: Vertex AI音声解析（統合プロンプト）
-  - `core_config.gs`: 設定管理
-  - `core_appsheet.gs`: AppSheet API連携
-- `spreadsheets/`: Contains metadata for referenced spreadsheets
-- `appsscript.json`: Project manifest
-- `project_metadata.json`: Complete project metadata
-- `_backup/`: Backup files (excluded from clasp push)
+### スクリプトファイル構成（役割別）
+
+#### エントリーポイント
+- `webhook.gs`: Webhookリクエスト受信・エラーハンドリング
+
+#### メイン処理
+- `call_summary_processor.gs`: 通話要約メイン処理ロジック
+- `vertex_ai_service.gs`: Vertex AI音声解析（統合プロンプト）
+- `request_manager.gs`: 依頼作成・更新・ID生成
+
+#### API連携
+- `appsheet_api.gs`: AppSheet API呼び出し（依頼用）
+- `appsheet_service.gs`: AppSheet API連携（通話ログ・アクション）
+
+#### ユーティリティ
+- `config.gs`: 設定管理
+- `notification_service.gs`: 通知サービス
+- `execution_logger.gs`: 実行ログ記録
+- `drive_utils.gs`: Google Drive操作
+- `duplication_prevention.gs`: 重複防止
+- `vertex_ai_utils.gs`: Vertex AI汎用ヘルパー
+- `timing_utils.gs`: 実行時間計測
+
+#### テスト
+- `test_functions.gs`: テスト関数（3モード）
+
+### その他
+- `appsscript.json`: プロジェクトマニフェスト
+- `project_metadata.json`: プロジェクトメタデータ
+- `spreadsheets/`: 参照スプレッドシートメタデータ
+- `_backup/`: バックアップファイル（clasp pushから除外）
 
 ## Referenced Spreadsheets
 
