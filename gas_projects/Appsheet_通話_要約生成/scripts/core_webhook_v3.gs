@@ -20,7 +20,6 @@
 
  */
 
-
 /**
 
  * WebアプリのPOSTリクエストエントリーポイント
@@ -44,17 +43,16 @@
 function doPost(e) {
   return CommonWebhook.handleDoPost(e, function(params) {
     params.scriptName = 'Appsheet_通話_要約生成';
-    return processRequest(params);
+    return processRequest(params.callId || params.data?.callId, params.callDatetime || params.data?.callDatetime, params.filePath || params.data?.filePath, params.fileId || params.data?.fileId, params.callContextText || params.data?.callContextText, params.userInfoText || params.data?.userInfoText, params.clientId || params.data?.clientId);
   });
 }
-
 
 /**
  * メイン処理関数（引数ベース）
  * @param {Object} params - リクエストパラメータ
  * @returns {Object} - 処理結果
  */
-function processRequest(params) {
+function processRequest(callId, callDatetime, filePath, fileId, callContextText, userInfoText, clientId) {
   return executeWebhookWithDuplicationPrevention(e, processCallSummary, {
 
     recordIdField: 'callId',
@@ -72,7 +70,6 @@ function processRequest(params) {
   });
 }
 
-
 /**
  * テスト用関数
  * GASエディタから直接実行してテスト可能
@@ -84,9 +81,8 @@ function testProcessRequest() {
     // 例: data: "sample"
   };
 
-  return CommonTest.runTest(processRequest, testParams, 'Appsheet_通話_要約生成');
+  return CommonTest.runTest((params) => processRequest(params.callId, params.callDatetime, params.filePath, params.fileId, params.callContextText, params.userInfoText, params.clientId), testParams, 'Appsheet_通話_要約生成');
 }
-
 
 /**
 
@@ -103,9 +99,6 @@ function testProcessRequest() {
 function processCallSummary(params) {
 
   const config = getConfig();
-
-  const callId = params.callId;
-
   Logger.log(`[処理開始] 通話ID: ${callId}`);
 
   // パラメータ検証
@@ -116,11 +109,11 @@ function processCallSummary(params) {
 
   let fileId, fileUrl;
 
-  if (params.filePath) {
+  if (filePath) {
 
-    Logger.log(`[ファイル解決] ファイルパス: ${params.filePath}`);
+    Logger.log(`[ファイル解決] ファイルパス: ${filePath}`);
 
-    const fileInfo = getFileIdFromPath(params.filePath, config.sharedDriveFolderId);
+    const fileInfo = getFileIdFromPath(filePath, config.sharedDriveFolderId);
 
     fileId = fileInfo.fileId;
 
@@ -128,10 +121,7 @@ function processCallSummary(params) {
 
     Logger.log(`[ファイル解決] ファイルID: ${fileId}`);
 
-  } else if (params.fileId) {
-
-    fileId = params.fileId;
-
+  } else if (fileId) {
     const file = DriveApp.getFileById(fileId);
 
     fileUrl = file.getUrl();
@@ -150,11 +140,11 @@ function processCallSummary(params) {
 
     fileId,
 
-    params.callDatetime,
+    callDatetime,
 
-    params.callContextText,
+    callContextText,
 
-    params.userInfoText,
+    userInfoText,
 
     config
 
@@ -192,7 +182,7 @@ function processCallSummary(params) {
 
   if (analysisResult.actions.length > 0) {
 
-    addCallActions(callId, params.clientId, analysisResult.actions, config);
+    addCallActions(callId, clientId, analysisResult.actions, config);
 
   }
 
@@ -242,14 +232,13 @@ function validateRequiredParams(params) {
 
   // filePath または fileId のいずれかが必要
 
-  if (!params.filePath && !params.fileId) {
+  if (!filePath && !fileId) {
 
     throw new Error('filePath または fileId が必要です');
 
   }
 
 }
-
 
 /**
 
@@ -273,7 +262,6 @@ function validateAnalysisResult(result) {
 
 }
 
-
 // ======================================================
 
 // 以下、旧版の関数（後方互換性のため残す）
@@ -281,7 +269,6 @@ function validateAnalysisResult(result) {
 // 新規プロジェクトでは使用しないでください
 
 // ======================================================
-
 
 /**
 
@@ -303,7 +290,6 @@ function parseRequest(e) {
 
 }
 
-
 /**
 
  * @deprecated v3.0でcheckDuplicateRequestに統合
@@ -318,7 +304,6 @@ function isDuplicateRequest(callId) {
 
 }
 
-
 /**
 
  * @deprecated v3.0でmarkAsProcessingWithLockに統合
@@ -330,7 +315,6 @@ function markAsProcessing(callId) {
   return markAsProcessingWithLock(callId);
 
 }
-
 
 /**
 

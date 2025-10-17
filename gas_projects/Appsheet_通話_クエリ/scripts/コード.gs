@@ -6,7 +6,6 @@
 
  */
 
-
 // --- 1. 基本設定 ---
 
 const SETTINGS = {
@@ -19,11 +18,9 @@ const SETTINGS = {
 
   ACCESS_KEY: 'V2-I1zMZ-90iua-47BBk-RBjO1-N0mUo-kY25j-VsI4H-eRvwT', // AppSheet APIのアクセスキー
 
-
   // --- AppSheetテーブル名 ---
 
   QUERIES_TABLE_NAME: 'Call_Queries', // 質疑応答テーブル
-
 
   // --- デバッグ & ログ機能 ---
 
@@ -31,13 +28,11 @@ const SETTINGS = {
 
   LOG_EMAIL: 't.asai@fractal-group.co.jp', // デバッグログを送信するメールアドレス
 
-
   // --- メール件名用設定 ---
 
   SCRIPT_NAME: '通話関連クエリ', // メール件名に表示するスクリリプトの名前
 
   ID_LABEL: 'query_id',         // メール件名に表示するIDの名称 (例: QueryID, RecordID など)
-
 
   // --- Geminiモデル設定 ---
 
@@ -56,7 +51,6 @@ const SETTINGS = {
   DEFAULT_MODEL_KEYWORD: "しっかり"
 
 };
-
 
 /**
 
@@ -79,7 +73,6 @@ function log(logCollector, message) {
   logCollector.push(logMessage);
 
 }
-
 
 /**
 
@@ -145,7 +138,6 @@ function sendDebugLog(logCollector, subject) {
 
 }
 
-
 /**
 
  * AppSheetのWebhookからPOSTリクエストを受け取るメイン関数
@@ -161,17 +153,16 @@ function sendDebugLog(logCollector, subject) {
 function doPost(e) {
   return CommonWebhook.handleDoPost(e, function(params) {
     params.scriptName = 'Appsheet_通話_クエリ';
-    return processRequest(params);
+    return processRequest(params.queryId || params.data?.queryId, params.promptText || params.data?.promptText, params.callSummary || params.data?.callSummary, params.callTranscript || params.data?.callTranscript, params.call_info || params.data?.call_info, params.modelKeyword || params.data?.modelKeyword);
   });
 }
-
 
 /**
  * メイン処理関数（引数ベース）
  * @param {Object} params - リクエストパラメータ
  * @returns {Object} - 処理結果
  */
-function processRequest(params) {
+function processRequest(queryId, promptText, callSummary, callTranscript, call_info, modelKeyword) {
   const logCollector = [];
 
   const startTime = new Date();
@@ -189,9 +180,6 @@ function processRequest(params) {
     const paramsForLog = truncateObjectValuesForLogging(params, keysToTruncate, 200);
 
     log(logCollector, `受信したWebhookペイロード: ${JSON.stringify(paramsForLog, null, 2)}`);
-
-    queryId = params.queryId;
-
     const { promptText, callSummary, callTranscript, call_info, modelKeyword } = params;
 
     if (!queryId || !promptText) {
@@ -261,7 +249,6 @@ function processRequest(params) {
   }
 }
 
-
 /**
  * テスト用関数
  * GASエディタから直接実行してテスト可能
@@ -273,9 +260,8 @@ function testProcessRequest() {
     // 例: data: "sample"
   };
 
-  return CommonTest.runTest(processRequest, testParams, 'Appsheet_通話_クエリ');
+  return CommonTest.runTest((params) => processRequest(params.queryId, params.promptText, params.callSummary, params.callTranscript, params.call_info, params.modelKeyword), testParams, 'Appsheet_通話_クエリ');
 }
-
 
 /**
 
@@ -454,7 +440,6 @@ function updateQueryStatusToError(logCollector, queryId, errorMessage) {
   callAppSheetApi(logCollector, payload);
 
 }
-
 
 /**
 

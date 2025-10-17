@@ -16,7 +16,6 @@ const ACCESS_KEY = 'V2-s6fif-zteYn-AGhoC-EhNLX-NNwgP-nHXAr-hHGZp-XxyPY';      //
 
 const APP_NAME = '訪問看護_利用者管理-575936796'; // ★ AppSheetのアプリ名
 
-
 // --- メール通知設定 ---
 
 // エラー発生時や処理全体のログを送信する宛先
@@ -26,7 +25,6 @@ const ERROR_NOTIFICATION_EMAIL = "t.asai@fractal-group.co.jp";
 // 処理完了時に確認を促すHTMLメールを送信する宛先（カンマ区切りで複数指定可）
 
 const COMPLETION_NOTIFICATION_EMAILS = "t.asai@fractal-group.co.jp, m.iwaizako@fractal-group.co.jp"; 
-
 
 // --- AppSheet テーブル名 ---
 
@@ -48,7 +46,6 @@ const DETAILS_TABLE_NAME = 'Service_Form_Details';                 // サービ�
 
 const COPAYMENT_TABLE_NAME = 'Client_LTCI_Copayment_Certificates';   // 介護保険負担割合証テーブル
 
-
 // --- 外部マスタースプレッドシート設定 ---
 
 // ★★★【新規追加】提供票のデータが格納されているスプレッドシート ★★★
@@ -66,7 +63,6 @@ const PUBLIC_SUBSIDY_MASTER_SHEET_NAME = 'Public_Subsidy_Master';
 const SERVICE_MASTER_SS_ID = '1r-ehIg7KMrSPBCI3K1wA8UFvBnKvqp1kmb8r7MCH1tQ';
 
 const SERVICE_MASTER_SHEET_NAME = '介護_基本・加算マスター';
-
 
 // --- AppSheetの各詳細ビューへのディープリンク設定 ---
 
@@ -90,7 +86,6 @@ const VIEW_NAME_MAP = {
 
 };
 
-
 /**
 
  * ===================================================================================
@@ -101,9 +96,7 @@ const VIEW_NAME_MAP = {
 
  */
 
-
 // (既存の VIEW_NAME_MAP の下などに追加)
-
 
 // ★★★【新規追加】メールに表示する項目名を日本語に変換するためのマップ ★★★
 
@@ -145,7 +138,6 @@ const KEY_TO_JAPANESE_MAP = {
 
   'reduction_cert_expiration_date': '減免証明書有効期限',
 
-  
   // 介護保険証
 
   'insured_person_number': '被保険者番号',
@@ -159,7 +151,6 @@ const KEY_TO_JAPANESE_MAP = {
   'cert_end_date': '認定有効期間（終了）',
 
   'next_renewal_check_date': '次回更新確認日',
-
 
   // 公費
 
@@ -183,7 +174,6 @@ const KEY_TO_JAPANESE_MAP = {
 
   'monthly_visit_limit': '月間上限回数',
 
-  
   // 口座情報
 
   'bank_code': '金融機関コード',
@@ -198,7 +188,6 @@ const KEY_TO_JAPANESE_MAP = {
 
   'account_holder_name_kana': '口座名義人（カナ）',
 
-  
   // 指示書
 
   'instructionType': '指示書区分',
@@ -227,13 +216,11 @@ const KEY_TO_JAPANESE_MAP = {
 
   'diseaseMedicalCode3': '傷病名コード3',
 
-  
   // 負担割合証
 
   'copayment_rate': '負担割合'
 
 };
-
 
 /**
 
@@ -252,17 +239,16 @@ const KEY_TO_JAPANESE_MAP = {
 function doPost(e) {
   return CommonWebhook.handleDoPost(e, function(params) {
     params.scriptName = 'Appsheet_訪問看護_書類仕分け';
-    return processRequest(params);
+    return processRequest(params.documentId || params.data?.documentId, params.clientId || params.data?.clientId, params.documentType || params.data?.documentType, params.staffId || params.data?.staffId, params.ocrText || params.data?.ocrText, params.driveFileId || params.data?.driveFileId, params.clientBirthDate || params.data?.clientBirthDate, params.clientName || params.data?.clientName, params.staffName || params.data?.staffName);
   });
 }
-
 
 /**
  * メイン処理関数（引数ベース）
  * @param {Object} params - リクエストパラメータ
  * @returns {Object} - 処理結果
  */
-function processRequest(params) {
+function processRequest(documentId, clientId, documentType, staffId, ocrText, driveFileId, clientBirthDate, clientName, staffName) {
   let documentId = "N/A";
 
   const logCollector = [];
@@ -549,9 +535,8 @@ function testProcessRequest() {
     // 例: data: "sample"
   };
 
-  return CommonTest.runTest(processRequest, testParams, 'Appsheet_訪問看護_書類仕分け');
+  return CommonTest.runTest((params) => processRequest(params.documentId, params.clientId, params.documentType, params.staffId, params.ocrText, params.driveFileId, params.clientBirthDate, params.clientName, params.staffName), testParams, 'Appsheet_訪問看護_書類仕分け');
 }
-
 
 /**
 
@@ -562,7 +547,6 @@ function testProcessRequest() {
  * ===================================================================================
 
  */
-
 
 // --- A: 医療保険証 ---
 
@@ -876,7 +860,6 @@ function createMedicalInsuranceRecord(context, extractedInfo, log) {
 
 }
 
-
 // --- B: 介護保険証 ---
 
 function extractLtciInsuranceInfo(ocrText, log) {
@@ -1006,7 +989,6 @@ function createLtciInsuranceRecord(context, extractedInfo, log) {
   return newId;
 
 }
-
 
 // --- C: 公費受給者証 ---
 
@@ -1246,7 +1228,6 @@ function createSubsidyRecord(context, extractedInfo, log) {
 
 }
 
-
 // --- D: 口座振替依頼書 ---
 
 function extractBankAccountInfo(ocrText, log) {
@@ -1414,7 +1395,6 @@ function createBankAccountRecord(context, extractedInfo, log) {
   return newId;
 
 }
-
 
 // --- E: 訪問看護指示書 ---
 
@@ -1625,7 +1605,6 @@ function createInstructionRecord(context, extractedInfo, log) {
   return newId;
 
 }
-
 
 // --- F: 介護サービス提供票 ---
 
@@ -1933,7 +1912,6 @@ function createNewServiceFormAndDetails(context, extractedData, serviceMasterMap
 
 }
 
-
 // --- G: 介護保険負担割合証 ---
 
 function extractCopayInfo(ocrText, log) {
@@ -2034,7 +2012,6 @@ function createCopayCertificateRecord(context, extractedInfo, log) {
 
 }
 
-
 /**
 
  * ===================================================================================
@@ -2044,7 +2021,6 @@ function createCopayCertificateRecord(context, extractedInfo, log) {
  * ===================================================================================
 
  */
-
 
 /**
 
@@ -2200,7 +2176,6 @@ function callGeminiApi(prompt, log, model = 'gemini-2.5-pro') {
 
 }
 
-
 // --- AppSheet API 呼び出し共通関数 ---
 
 function callAppSheetApi(tableName, payload, log) {
@@ -2243,7 +2218,6 @@ function callAppSheetApi(tableName, payload, log) {
 
 }
 
-
 // --- ドキュメントステータス更新関数 ---
 
 function updateDocumentStatus(documentId, status, errorMessage, log) {
@@ -2261,7 +2235,6 @@ function updateDocumentStatus(documentId, status, errorMessage, log) {
   callAppSheetApi(DOCUMENTS_TABLE_NAME, payload, log);
 
 }
-
 
 /**
 
@@ -2315,7 +2288,6 @@ function sendProcessLogEmail(documentId, documentTypeJP, status, errorInfo, logC
 
 }
 
-
 // --- 公費マスター取得 ---
 
 function getPublicSubsidyMasterAsText(log) {
@@ -2333,7 +2305,6 @@ function getPublicSubsidyMasterAsText(log) {
   return data.map(row => `- "${row[0]}": ${row[3]}`).join('\n');
 
 }
-
 
 // --- サービスマスター取得 (キャッシュ付き) ---
 
@@ -2460,7 +2431,6 @@ function getEndDateOrDefault(dateString) {
   return dateString;
 
 }
-
 
 /**
 
@@ -2705,7 +2675,6 @@ function sendCompletionNotificationEmail(context, documentTypeJP, extractedData,
   }
 
 }
-
 
 /**
 

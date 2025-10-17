@@ -12,7 +12,6 @@
 
  */
 
-
 /**
 
  * WebアプリのPOSTリクエストエントリーポイント
@@ -36,17 +35,16 @@
 function doPost(e) {
   return CommonWebhook.handleDoPost(e, function(params) {
     params.scriptName = 'Appsheet_通話_要約生成';
-    return processRequest(params);
+    return processRequest(params.callId || params.data?.callId, params.callDatetime || params.data?.callDatetime, params.filePath || params.data?.filePath, params.fileId || params.data?.fileId, params.callContextText || params.data?.callContextText, params.userInfoText || params.data?.userInfoText, params.clientId || params.data?.clientId);
   });
 }
-
 
 /**
  * メイン処理関数（引数ベース）
  * @param {Object} params - リクエストパラメータ
  * @returns {Object} - 処理結果
  */
-function processRequest(params) {
+function processRequest(callId, callDatetime, filePath, fileId, callContextText, userInfoText, clientId) {
   const config = getConfig();
 
   let callId = 'ID解析不能';
@@ -55,7 +53,7 @@ function processRequest(params) {
 
     // パラメータから callId を取得
 
-    callId = params.callId || 'ID不明';
+    callId = callId || 'ID不明';
 
     // パラメータ検証
 
@@ -81,11 +79,11 @@ function processRequest(params) {
 
     let fileId, fileUrl;
 
-    if (params.filePath) {
+    if (filePath) {
 
-      Logger.log(`[ファイル解決] ファイルパス: ${params.filePath}`);
+      Logger.log(`[ファイル解決] ファイルパス: ${filePath}`);
 
-      const fileInfo = getFileIdFromPath(params.filePath, config.sharedDriveFolderId);
+      const fileInfo = getFileIdFromPath(filePath, config.sharedDriveFolderId);
 
       fileId = fileInfo.fileId;
 
@@ -95,12 +93,9 @@ function processRequest(params) {
 
       Logger.log(`[ファイル解決] ファイルURL: ${fileUrl}`);
 
-    } else if (params.fileId) {
+    } else if (fileId) {
 
       // 後方互換性: fileIdが直接指定された場合
-
-      fileId = params.fileId;
-
       const file = DriveApp.getFileById(fileId);
 
       fileUrl = file.getUrl();
@@ -119,11 +114,11 @@ function processRequest(params) {
 
       fileId,
 
-      params.callDatetime,
+      callDatetime,
 
-      params.callContextText,
+      callContextText,
 
-      params.userInfoText,
+      userInfoText,
 
       config
 
@@ -159,7 +154,7 @@ function processRequest(params) {
 
     if (analysisResult.actions.length > 0) {
 
-      addCallActions(callId, params.clientId, analysisResult.actions, config);
+      addCallActions(callId, clientId, analysisResult.actions, config);
 
     }
 
@@ -203,9 +198,8 @@ function testProcessRequest() {
     // 例: data: "sample"
   };
 
-  return CommonTest.runTest(processRequest, testParams, 'Appsheet_通話_要約生成');
+  return CommonTest.runTest((params) => processRequest(params.callId, params.callDatetime, params.filePath, params.fileId, params.callContextText, params.userInfoText, params.clientId), testParams, 'Appsheet_通話_要約生成');
 }
-
 
 /**
 
@@ -227,7 +221,6 @@ function parseRequest(e) {
 
 }
 
-
 /**
 
  * 必須パラメータの検証
@@ -248,14 +241,13 @@ function validateRequiredParams(params) {
 
   // filePath または fileId のいずれかが必要
 
-  if (!params.filePath && !params.fileId) {
+  if (!filePath && !fileId) {
 
     throw new Error('filePath または fileId が必要です');
 
   }
 
 }
-
 
 /**
 
@@ -278,7 +270,6 @@ function validateAnalysisResult(result) {
   }
 
 }
-
 
 /**
 
@@ -382,7 +373,6 @@ function isDuplicateRequest(callId) {
 
 }
 
-
 /**
 
  * 処理中としてマーク
@@ -413,7 +403,6 @@ function markAsProcessing(callId) {
 
 }
 
-
 /**
 
  * 処理完了としてマーク
@@ -443,7 +432,6 @@ function markAsCompleted(callId) {
   Logger.log(`[重複防止] 処理完了マーク設定: ${callId} (6時間保持)`);
 
 }
-
 
 /**
 

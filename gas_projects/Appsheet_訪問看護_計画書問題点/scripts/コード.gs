@@ -8,11 +8,9 @@ const ACCESS_KEY = 'V2-s6fif-zteYn-AGhoC-EhNLX-NNwgP-nHXAr-hHGZp-XxyPY'; // AppS
 
 const ERROR_NOTIFICATION_EMAIL = "t.asai@fractal-group.co.jp"; // ★ エラー通知先のメールアドレス
 
-
 // テーブル名
 
 const PROBLEMS_TABLE_NAME = 'VN_Plan_Problems';
-
 
 /**
 
@@ -27,19 +25,16 @@ const PROBLEMS_TABLE_NAME = 'VN_Plan_Problems';
 function doPost(e) {
   return CommonWebhook.handleDoPost(e, function(params) {
     params.scriptName = 'Appsheet_訪問看護_計画書問題点';
-    return processRequest(params);
+    return processRequest(params.problemId || params.data?.problemId, params.contextText || params.data?.contextText, params.problemPoint || params.data?.problemPoint, params.problemIdentifiedDate || params.data?.problemIdentifiedDate);
   });
 }
-
 
 /**
  * メイン処理関数（引数ベース）
  * @param {Object} params - リクエストパラメータ
  * @returns {Object} - 処理結果
  */
-function processRequest(params) {
-  const problemId = params.problemId;
-
+function processRequest(problemId, contextText, problemPoint, problemIdentifiedDate) {
   try {
 
     const { contextText, problemPoint, problemIdentifiedDate } = params;
@@ -77,7 +72,6 @@ function processRequest(params) {
   }
 }
 
-
 /**
  * テスト用関数
  * GASエディタから直接実行してテスト可能
@@ -89,9 +83,8 @@ function testProcessRequest() {
     // 例: data: "sample"
   };
 
-  return CommonTest.runTest(processRequest, testParams, 'Appsheet_訪問看護_計画書問題点');
+  return CommonTest.runTest((params) => processRequest(params.problemId, params.contextText, params.problemPoint, params.problemIdentifiedDate), testParams, 'Appsheet_訪問看護_計画書問題点');
 }
-
 
 /**
 
@@ -189,7 +182,6 @@ ${problemPoint}
 
 }
 
-
 /**
 
  * AppSheetのVN_Plan_Problemsテーブルを更新する
@@ -243,7 +235,6 @@ function updatePlanInAppSheet(problemId, planData) {
   }
 
 }
-
 
 /**
 

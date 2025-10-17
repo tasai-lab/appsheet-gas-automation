@@ -6,11 +6,9 @@ const APP_ID = '27bceb6f-9a2c-4ab6-9438-31fec25a495e'; // AppSheetのアプリID
 
 const ACCESS_KEY = 'V2-A0207-tnP4i-YwteT-Cg55O-7YBvg-zMXQX-sS4Xv-XuaKP'; // AppSheet APIのアクセスキー
 
-
 // テーブル名
 
 const ACTIVITIES_TABLE_NAME = 'Sales_Activities';
-
 
 /**
 
@@ -25,17 +23,16 @@ const ACTIVITIES_TABLE_NAME = 'Sales_Activities';
 function doPost(e) {
   return CommonWebhook.handleDoPost(e, function(params) {
     params.scriptName = 'Appsheet_営業_音声記録';
-    return processRequest(params);
+    return processRequest(params.recordId || params.data?.recordId, params.fileId || params.data?.fileId, params.salesmanId || params.data?.salesmanId, params.customerInfo || params.data?.customerInfo);
   });
 }
-
 
 /**
  * メイン処理関数（引数ベース）
  * @param {Object} params - リクエストパラメータ
  * @returns {Object} - 処理結果
  */
-function processRequest(params) {
+function processRequest(recordId, fileId, salesmanId, customerInfo) {
   const activityId = params.activityId;
 
   try {
@@ -79,7 +76,6 @@ function processRequest(params) {
   }
 }
 
-
 /**
  * テスト用関数
  * GASエディタから直接実行してテスト可能
@@ -91,9 +87,8 @@ function testProcessRequest() {
     // 例: data: "sample"
   };
 
-  return CommonTest.runTest(processRequest, testParams, 'Appsheet_営業_音声記録');
+  return CommonTest.runTest((params) => processRequest(params.recordId, params.fileId, params.salesmanId, params.customerInfo), testParams, 'Appsheet_営業_音声記録');
 }
-
 
 /**
 
@@ -369,13 +364,11 @@ function analyzeSalesCallWithGemini(context) {
 
 }
 
-
 // =================================================================
 
 // AppSheet更新用ヘルパー関数群
 
 // =================================================================
-
 
 /**
 
@@ -413,7 +406,6 @@ function updateActivityOnSuccess(activityId, resultData) {
 
 }
 
-
 function updateActivityOnError(activityId, errorMessage) {
 
   const payload = {
@@ -437,7 +429,6 @@ function updateActivityOnError(activityId, errorMessage) {
   callAppSheetApi(payload);
 
 }
-
 
 function callAppSheetApi(payload) {
 

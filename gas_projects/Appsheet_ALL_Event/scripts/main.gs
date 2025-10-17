@@ -13,17 +13,16 @@
 function doPost(e) {
   return CommonWebhook.handleDoPost(e, function(params) {
     params.scriptName = 'Appsheet_ALL_Event';
-    return processRequest(params);
+    return processRequest(params.eventType || params.data?.eventType, params.eventData || params.data?.eventData, params.timestamp || params.data?.timestamp);
   });
 }
-
 
 /**
  * メイン処理関数（引数ベース）
  * @param {Object} params - リクエストパラメータ
  * @returns {Object} - 処理結果
  */
-function processRequest(params) {
+function processRequest(eventType, eventData, timestamp) {
   try {
 
     Logger.info('Webhook受信', { params });
@@ -99,7 +98,6 @@ function processRequest(params) {
   }
 }
 
-
 /**
  * テスト用関数
  * GASエディタから直接実行してテスト可能
@@ -111,9 +109,8 @@ function testProcessRequest() {
     // 例: data: "sample"
   };
 
-  return CommonTest.runTest(processRequest, testParams, 'Appsheet_ALL_Event');
+  return CommonTest.runTest((params) => processRequest(params.eventType, params.eventData, params.timestamp), testParams, 'Appsheet_ALL_Event');
 }
-
 
 /**
 

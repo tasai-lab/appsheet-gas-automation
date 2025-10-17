@@ -4,7 +4,6 @@
 
 // ================================================================================================
 
-
 /**
 
  * スクリプト全体の設定を管理するオブジェクト
@@ -109,7 +108,6 @@ const CONFIG = {
 
 };
 
-
 const STATUS = {
 
   COMPLETED: '完了',
@@ -118,13 +116,11 @@ const STATUS = {
 
 };
 
-
 // ================================================================================================
 
 // 2. Main Entry Points (doPost / doGet)
 
 // ================================================================================================
-
 
 /**
  * AppSheet Webhook エントリーポイント
@@ -133,17 +129,16 @@ const STATUS = {
 function doPost(e) {
   return CommonWebhook.handleDoPost(e, function(params) {
     params.scriptName = 'Appsheet_ALL_スレッド投稿';
-    return processRequest(params);
+    return processRequest(params.threadId || params.data?.threadId, params.messageText || params.data?.messageText, params.userId || params.data?.userId);
   });
 }
-
 
 /**
  * メイン処理関数（引数ベース）
  * @param {Object} params - リクエストパラメータ
  * @returns {Object} - 処理結果
  */
-function processRequest(params) {
+function processRequest(threadId, messageText, userId) {
   const startTime = new Date();
 
   const responsePayload = {
@@ -213,7 +208,6 @@ function processRequest(params) {
   }
 }
 
-
 /**
  * テスト用関数
  * GASエディタから直接実行してテスト可能
@@ -225,9 +219,8 @@ function testProcessRequest() {
     // 例: data: "sample"
   };
 
-  return CommonTest.runTest(processRequest, testParams, 'Appsheet_ALL_スレッド投稿');
+  return CommonTest.runTest((params) => processRequest(params.threadId, params.messageText, params.userId), testParams, 'Appsheet_ALL_スレッド投稿');
 }
-
 
 function doGet(e) {
 
@@ -277,7 +270,6 @@ function doGet(e) {
 
 }
 
-
 function parseAndValidateRequest(e) {
 
   if (!e || !e.postData || !e.postData.contents) throw new Error("Invalid request body.");
@@ -316,13 +308,11 @@ function parseAndValidateRequest(e) {
 
 }
 
-
 // ================================================================================================
 
 // 3. Async Task Management (キュー管理とスケジューリング)
 
 // ================================================================================================
-
 
 function scheduleAsyncTask(requestId, params) {
 
@@ -375,7 +365,6 @@ function scheduleAsyncTask(requestId, params) {
   triggerWorkerAsynchronously();
 
 }
-
 
 function triggerWorkerAsynchronously() {
 
@@ -447,13 +436,11 @@ function getNextTaskFromQueue() {
 
 }
 
-
 // ================================================================================================
 
 // 4. Background Worker (ワーカー関数 - 非同期実行)
 
 // ================================================================================================
-
 
 function processTaskQueueWorker() {
 
@@ -512,7 +499,6 @@ function processTaskQueueWorker() {
   }
 
 }
-
 
 function executeTask(requestId, params) {
 
@@ -588,19 +574,17 @@ function executeTask(requestId, params) {
 
 }
 
-
 // ================================================================================================
 
 // 5. Google Chat Integration (Chat連携機能) - [RESTORED] 復元セクション
 
 // ================================================================================================
 
-
 function postMessageToChat(params) {
 
   try {
 
-    const cleanedMessageText = (params.messageText || '')
+    const cleanedMessageText = (messageText || '')
 
       .replace(/<br>/g, '\n').replace(/\\n/g, '\n').replace(/\*\*/g, '*').replace(/\* /g, '* ');
 
@@ -619,7 +603,6 @@ function postMessageToChat(params) {
   }
 
 }
-
 
 function buildChatApiPayload(targetThreadId, targetSpaceId, messageText) {
 
@@ -697,7 +680,6 @@ function buildChatApiPayload(targetThreadId, targetSpaceId, messageText) {
 
 }
 
-
 function executeChatPost(apiUrl, messageResource, impersonatingUserEmail) {
 
   const chatService = createOAuth2ServiceForUser(impersonatingUserEmail, CONFIG.AUTH.CHAT_SCOPES, 'ChatImpersonation');
@@ -724,13 +706,11 @@ function executeChatPost(apiUrl, messageResource, impersonatingUserEmail) {
 
 }
 
-
 // ================================================================================================
 
 // 6. AppSheet Integration (AppSheet連携機能)
 
 // ================================================================================================
-
 
 function writeResultToAppSheet(configName, returnConfig, dataToUpdate) {
 
@@ -796,13 +776,11 @@ function writeResultToAppSheet(configName, returnConfig, dataToUpdate) {
 
 }
 
-
 // ================================================================================================
 
 // 7. Authentication (OAuth2認証ヘルパー) - [RESTORED] 復元セクション
 
 // ================================================================================================
-
 
 function createOAuth2ServiceForUser(userEmail, scopes, serviceNamePrefix) {
 
@@ -858,7 +836,6 @@ function getAccessToken(service) {
 
 }
 
-
 function authCallback(request) {
 
   const service = OAuth2.getService();
@@ -869,13 +846,11 @@ function authCallback(request) {
 
 }
 
-
 // ================================================================================================
 
 // 8. Utilities (ユーティリティ関数)
 
 // ================================================================================================
-
 
 // --- 冪等性ヘルパー (PropertiesService版) ---
 
@@ -932,7 +907,6 @@ function deleteIdempotencyState(requestId) {
     scriptProperties.deleteProperty(key);
 
 }
-
 
 // --- 非同期ヘルパー ---
 

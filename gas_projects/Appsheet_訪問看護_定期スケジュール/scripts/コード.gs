@@ -8,11 +8,9 @@ const APP_ID = 'f40c4b11-b140-4e31-a60c-600f3c9637c8';
 
 const ACCESS_KEY = 'V2-s6fif-zteYn-AGhoC-EhNLX-NNwgP-nHXAr-hHGZp-XxyPY';
 
-
 const MASTER_TABLE_NAME = 'Schedule_Master'; // ★ マスターテーブル名を追加
 
 const PLAN_TABLE_NAME = 'Schedule_Plan';
-
 
 /**
 
@@ -27,17 +25,16 @@ const PLAN_TABLE_NAME = 'Schedule_Plan';
 function doPost(e) {
   return CommonWebhook.handleDoPost(e, function(params) {
     params.scriptName = 'Appsheet_訪問看護_定期スケジュール';
-    return processRequest(params);
+    return processRequest(params.scheduleId || params.data?.scheduleId, params.clientId || params.data?.clientId, params.visitPattern || params.data?.visitPattern, params.startDate || params.data?.startDate, params.endDate || params.data?.endDate);
   });
 }
-
 
 /**
  * メイン処理関数（引数ベース）
  * @param {Object} params - リクエストパラメータ
  * @returns {Object} - 処理結果
  */
-function processRequest(params) {
+function processRequest(scheduleId, clientId, visitPattern, startDate, endDate) {
   let masterId = null;
 
   try {
@@ -103,7 +100,6 @@ function processRequest(params) {
   }
 }
 
-
 /**
  * テスト用関数
  * GASエディタから直接実行してテスト可能
@@ -115,9 +111,8 @@ function testProcessRequest() {
     // 例: data: "sample"
   };
 
-  return CommonTest.runTest(processRequest, testParams, 'Appsheet_訪問看護_定期スケジュール');
+  return CommonTest.runTest((params) => processRequest(params.scheduleId, params.clientId, params.visitPattern, params.startDate, params.endDate), testParams, 'Appsheet_訪問看護_定期スケジュール');
 }
-
 
 /**
 
@@ -188,7 +183,6 @@ function getExistingScheduleData() {
   return { masterKeys, visitorMap };
 
 }
-
 
 // =================================================================
 

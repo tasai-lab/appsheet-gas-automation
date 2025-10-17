@@ -38,17 +38,16 @@ const CONFIG = {
 function doPost(e) {
   return CommonWebhook.handleDoPost(e, function(params) {
     params.scriptName = 'Appsheet_通話_クエリ';
-    return processRequest(params);
+    return processRequest(params.queryId || params.data?.queryId, params.promptText || params.data?.promptText, params.callSummary || params.data?.callSummary, params.callTranscript || params.data?.callTranscript, params.call_info || params.data?.call_info, params.modelKeyword || params.data?.modelKeyword);
   });
 }
-
 
 /**
  * メイン処理関数（引数ベース）
  * @param {Object} params - リクエストパラメータ
  * @returns {Object} - 処理結果
  */
-function processRequest(params) {
+function processRequest(queryId, promptText, callSummary, callTranscript, call_info, modelKeyword) {
   // ロガー初期化
   const logger = createLogger(CONFIG.SCRIPT_NAME);
   logger.info('=== Webhook受信 ===');
@@ -59,14 +58,14 @@ function processRequest(params) {
   try {
     // パラメータ情報をログ出力
     logger.info('リクエストパース成功', {
-      queryId: params.queryId,
-      hasPrompt: !!params.promptText
+      queryId: queryId,
+      hasPrompt: !!promptText
     });
     
-    recordId = params.queryId;
+    recordId = queryId;
     
     // 必須パラメータチェック
-    if (!recordId || !params.promptText) {
+    if (!recordId || !promptText) {
       throw new Error('必須パラメータ不足: queryId, promptText が必要です');
     }
     
@@ -121,7 +120,6 @@ function processRequest(params) {
   }
 }
 
-
 /**
  * テスト用関数
  * GASエディタから直接実行してテスト可能
@@ -133,9 +131,8 @@ function testProcessRequest() {
     // 例: data: "sample"
   };
 
-  return CommonTest.runTest(processRequest, testParams, 'Appsheet_通話_クエリ');
+  return CommonTest.runTest((params) => processRequest(params.queryId, params.promptText, params.callSummary, params.callTranscript, params.call_info, params.modelKeyword), testParams, 'Appsheet_通話_クエリ');
 }
-
 
 /**
  * クエリ処理メイン

@@ -6,25 +6,21 @@ const MAIN_APP_ID = '4762f34f-3dbc-4fca-9f84-5b6e809c3f5f';
 
 const MAIN_APP_ACCESS_KEY = 'V2-I1zMZ-90iua-47BBk-RBjO1-N0mUo-kY25j-VsI4H-eRvwT';
 
-
 // ▼ 依頼作成先アプリ（Client_Requests）の情報
 
 const REQUESTS_APP_ID = 'f40c4b11-b140-4e31-a60c-600f3c9637c8'; 
 
 const REQUESTS_APP_ACCESS_KEY = 'V2-s6fif-zteYn-AGhoC-EhNLX-NNwgP-nHXAr-hHGZp-XxyPY';
 
-
 // Gemini APIキー
 
 const GEMINI_API_KEY = 'AIzaSyDUKFlE6_NYGehDYOxiRQcHpjG2l7GZmTY'; 
-
 
 // テーブル名
 
 const LOGS_TABLE_NAME = 'Call_Logs';
 
 const REQUESTS_TABLE_NAME = 'Client_Requests';
-
 
 /**
 
@@ -39,22 +35,19 @@ const REQUESTS_TABLE_NAME = 'Client_Requests';
 function doPost(e) {
   return CommonWebhook.handleDoPost(e, function(params) {
     params.scriptName = 'Appsheet_通話_新規依頼作成';
-    return processRequest(params);
+    return processRequest(params.callId || params.data?.callId, params.callDatetime || params.data?.callDatetime, params.summary || params.data?.summary, params.fullTranscript || params.data?.fullTranscript, params.request_ids || params.data?.request_ids, params.requesterOrgId || params.data?.requesterOrgId, params.requesterId || params.data?.requesterId, params.creatorId || params.data?.creatorId, params.existing_request_reason || params.data?.existing_request_reason, params.existing_client_info || params.data?.existing_client_info, params.existing_next_action || params.data?.existing_next_action);
   });
 }
-
 
 /**
  * メイン処理関数（引数ベース）
  * @param {Object} params - リクエストパラメータ
  * @returns {Object} - 処理結果
  */
-function processRequest(params) {
-  const callId = params.callId;
-
+function processRequest(callId, callDatetime, summary, fullTranscript, request_ids, requesterOrgId, requesterId, creatorId, existing_request_reason, existing_client_info, existing_next_action) {
   try {
 
-    if (!callId || !params.callDatetime || !params.summary || !params.fullTranscript) {
+    if (!callId || !callDatetime || !summary || !fullTranscript) {
 
       throw new Error("必須パラメータが不足しています。");
 
@@ -64,17 +57,17 @@ function processRequest(params) {
 
     // ★ request_idsの有無で処理を分岐 ★
 
-    if (params.request_ids && params.request_ids.trim() !== "") {
+    if (request_ids && request_ids.trim() !== "") {
 
       // --- 上書き更新の処理 ---
 
-      console.log(`既存の依頼を更新します: ${params.request_ids}`);
+      console.log(`既存の依頼を更新します: ${request_ids}`);
 
       const updatedDetails = updateRequestDetailsWithGemini(params);
 
       if (!updatedDetails) throw new Error("AIからの応答(更新)が不正でした。");
 
-      const targetRequestId = params.request_ids.split(',')[0].trim(); // リストの先頭IDを対象とする
+      const targetRequestId = request_ids.split(',')[0].trim(); // リストの先頭IDを対象とする
 
       updateExistingRequest(targetRequestId, params, updatedDetails);
 
@@ -86,9 +79,9 @@ function processRequest(params) {
 
       console.log("新しい依頼を作成します。");
 
-      const requestId = generateRequestId(params.callDatetime);
+      const requestId = generateRequestId(callDatetime);
 
-      const extractedDetails = extractNewRequestDetailsWithGemini(params.summary, params.fullTranscript);
+      const extractedDetails = extractNewRequestDetailsWithGemini(summary, fullTranscript);
 
       if (!extractedDetails) throw new Error("AIからの応答(新規)が不正でした。");
 
@@ -113,7 +106,6 @@ function processRequest(params) {
   }
 }
 
-
 /**
  * テスト用関数
  * GASエディタから直接実行してテスト可能
@@ -125,16 +117,14 @@ function testProcessRequest() {
     // 例: data: "sample"
   };
 
-  return CommonTest.runTest(processRequest, testParams, 'Appsheet_通話_新規依頼作成');
+  return CommonTest.runTest((params) => processRequest(params.callId, params.callDatetime, params.summary, params.fullTranscript, params.request_ids, params.requesterOrgId, params.requesterId, params.creatorId, params.existing_request_reason, params.existing_client_info, params.existing_next_action), testParams, 'Appsheet_通話_新規依頼作成');
 }
-
 
 // =================================================================
 
 // Gemini API 呼び出し関数群 (新規用と更新用)
 
 // =================================================================
-
 
 /**
 
@@ -206,17 +196,17 @@ function updateRequestDetailsWithGemini(params) {
 
 # 既存の依頼情報
 
-- 依頼理由: ${params.existing_request_reason || '未記載'}
+- 依頼理由: ${existing_request_reason || '未記載'}
 
-- 利用者情報: ${params.existing_client_info || '未記載'}
+- 利用者情報: ${existing_client_info || '未記載'}
 
-- 次回アクション: ${params.existing_next_action || '未記載'}
+- 次回アクション: ${existing_next_action || '未記載'}
 
 # 今回の通話内容
 
-## 通話の要約: ${params.summary}
+## 通話の要約: ${summary}
 
-## 通話の全文: ${params.fullTranscript}
+## 通話の全文: ${fullTranscript}
 
 # 抽出・更新ルール
 
@@ -290,13 +280,11 @@ function callGemini(prompt) {
 
 }
 
-
 // =================================================================
 
 // AppSheet API 呼び出し関数群
 
 // =================================================================
-
 
 /**
 
@@ -306,7 +294,7 @@ function callGemini(prompt) {
 
 function createNewRequest(params, requestId, extractedDetails) {
 
-  const date = new Date(params.callDatetime);
+  const date = new Date(callDatetime);
 
   const rowData = {
 
@@ -320,7 +308,7 @@ function createNewRequest(params, requestId, extractedDetails) {
 
       "request_reason": extractedDetails.request_reason,
 
-      "requester_org_id": params.requesterOrgId, "requester_id": params.requesterId,
+      "requester_org_id": requesterOrgId, "requester_id": requesterId,
 
       "client_name_temp": extractedDetails.client_name_temp,
 
@@ -330,11 +318,11 @@ function createNewRequest(params, requestId, extractedDetails) {
 
       "next_action_details": extractedDetails.next_action_details,
 
-      "call_record_id": params.callId,
+      "call_record_id": callId,
 
       "service_start_date": extractedDetails.service_start_date,
 
-      "created_by": params.creatorId, "updated_by": params.creatorId
+      "created_by": creatorId, "updated_by": creatorId
 
   };
 
@@ -343,7 +331,6 @@ function createNewRequest(params, requestId, extractedDetails) {
   callAppSheetApi(REQUESTS_APP_ID, REQUESTS_APP_ACCESS_KEY, REQUESTS_TABLE_NAME, payload);
 
 }
-
 
 /**
 
@@ -373,7 +360,7 @@ function updateExistingRequest(requestId, params, updatedDetails) {
 
         "service_start_date": updatedDetails.service_start_date,
 
-        "updated_by": params.creatorId // 更新者のみ設定
+        "updated_by": creatorId // 更新者のみ設定
 
     };
 
@@ -382,7 +369,6 @@ function updateExistingRequest(requestId, params, updatedDetails) {
     callAppSheetApi(REQUESTS_APP_ID, REQUESTS_APP_ACCESS_KEY, REQUESTS_TABLE_NAME, payload);
 
 }
-
 
 /**
 
@@ -407,7 +393,6 @@ function updateCallLogOnSuccess(callId, newRequestId) {
   callAppSheetApi(MAIN_APP_ID, MAIN_APP_ACCESS_KEY, LOGS_TABLE_NAME, payload);
 
 }
-
 
 /**
 
@@ -438,7 +423,6 @@ function updateCallLogOnError(callId, errorMessage) {
   callAppSheetApi(MAIN_APP_ID, MAIN_APP_ACCESS_KEY, LOGS_TABLE_NAME, payload);
 
 }
-
 
 /**
 
@@ -471,7 +455,6 @@ function callAppSheetApi(appId, accessKey, tableName, payload) {
   }
 
 }
-
 
 // 依頼ID生成関数
 

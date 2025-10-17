@@ -18,18 +18,16 @@ const DEFAULT_OAUTH_CALLBACK_FUNCTION = 'authCallback';
 function doPost(e) {
   return CommonWebhook.handleDoPost(e, function(params) {
     params.scriptName = 'Appsheet_通話_スレッド投稿';
-    return processRequest(params);
+    return processRequest(params.queryId || params.data?.queryId, params.targetThreadId || params.data?.targetThreadId, params.targetSpaceId || params.data?.targetSpaceId, params.questionText || params.data?.questionText, params.answerText || params.data?.answerText, params.posterName || params.data?.posterName, params.posterEmail || params.data?.posterEmail, params.rowUrl || params.data?.rowUrl);
   });
 }
-
 
 /**
  * メイン処理関数（引数ベース）
  * @param {Object} params - リクエストパラメータ
  * @returns {Object} - 処理結果
  */
-function processRequest(params) {
-  const queryId = params.queryId;
+function processRequest(queryId, targetThreadId, targetSpaceId, questionText, answerText, posterName, posterEmail, rowUrl) {
   Logger.log(`Webhook受信: ${JSON.stringify(params)}`);
 
   try {
@@ -69,7 +67,6 @@ function processRequest(params) {
   }
 }
 
-
 /**
  * テスト用関数
  * GASエディタから直接実行してテスト可能
@@ -81,9 +78,8 @@ function testProcessRequest() {
     // 例: data: "sample"
   };
 
-  return CommonTest.runTest(processRequest, testParams, 'Appsheet_通話_スレッド投稿');
+  return CommonTest.runTest((params) => processRequest(params.queryId, params.targetThreadId, params.targetSpaceId, params.questionText, params.answerText, params.posterName, params.posterEmail, params.rowUrl), testParams, 'Appsheet_通話_スレッド投稿');
 }
-
 
 /**
  * 条件に応じてChatに投稿する

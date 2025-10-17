@@ -8,11 +8,9 @@ const ACCESS_KEY = 'V2-s6fif-zteYn-AGhoC-EhNLX-NNwgP-nHXAr-hHGZp-XxyPY'; // AppS
 
 const ERROR_NOTIFICATION_EMAIL = "t.asai@fractal-group.co.jp"; // ★ エラー通知先のメールアドレス
 
-
 // テーブル名
 
 const REPORTS_TABLE_NAME = 'VN_Reports';
-
 
 /**
 
@@ -27,19 +25,16 @@ const REPORTS_TABLE_NAME = 'VN_Reports';
 function doPost(e) {
   return CommonWebhook.handleDoPost(e, function(params) {
     params.scriptName = 'Appsheet_訪問看護_報告書';
-    return processRequest(params);
+    return processRequest(params.reportId || params.data?.reportId, params.clientId || params.data?.clientId, params.reportMonth || params.data?.reportMonth, params.recordsText || params.data?.recordsText, params.staffId || params.data?.staffId);
   });
 }
-
 
 /**
  * メイン処理関数（引数ベース）
  * @param {Object} params - リクエストパラメータ
  * @returns {Object} - 処理結果
  */
-function processRequest(params) {
-  const reportId = params.reportId;
-
+function processRequest(reportId, clientId, reportMonth, recordsText, staffId) {
   try {
 
     const { clientName, targetMonth, visitRecords } = params;
@@ -83,7 +78,6 @@ function processRequest(params) {
   }
 }
 
-
 /**
  * テスト用関数
  * GASエディタから直接実行してテスト可能
@@ -95,9 +89,8 @@ function testProcessRequest() {
     // 例: data: "sample"
   };
 
-  return CommonTest.runTest(processRequest, testParams, 'Appsheet_訪問看護_報告書');
+  return CommonTest.runTest((params) => processRequest(params.reportId, params.clientId, params.reportMonth, params.recordsText, params.staffId), testParams, 'Appsheet_訪問看護_報告書');
 }
-
 
 /**
 
@@ -217,7 +210,6 @@ ${context.visitRecords}
 
 }
 
-
 /**
 
  * 成功時にAppSheetのテーブルを更新する
@@ -242,7 +234,6 @@ function updateReportOnSuccess(reportId, reportText) {
 
 }
 
-
 /**
 
  * 失敗時にAppSheetのテーブルを更新する
@@ -266,7 +257,6 @@ function updateReportOnError(reportId, errorMessage) {
   callAppSheetApi(payload);
 
 }
-
 
 /**
 
@@ -299,7 +289,6 @@ function callAppSheetApi(payload) {
   }
 
 }
-
 
 /**
 

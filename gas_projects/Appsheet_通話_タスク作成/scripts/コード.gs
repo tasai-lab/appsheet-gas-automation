@@ -6,7 +6,6 @@ const ACCESS_KEY = 'V2-I1zMZ-90iua-47BBk-RBjO1-N0mUo-kY25j-VsI4H-eRvwT'; // AppS
 
 const ACTIONS_TABLE_NAME = 'Call_Actions'; // アクションテーブル
 
-
 // サービスアカウントキーを保存しているスクリプトプロパティのキー名
 
 const DEFAULT_SERVICE_ACCOUNT_JSON_KEY = 'SERVICE_ACCOUNT_JSON';
@@ -14,7 +13,6 @@ const DEFAULT_SERVICE_ACCOUNT_JSON_KEY = 'SERVICE_ACCOUNT_JSON';
 // OAuth2コールバック関数名
 
 const DEFAULT_OAUTH_CALLBACK_FUNCTION = 'authCallback';
-
 
 /**
 
@@ -29,19 +27,16 @@ const DEFAULT_OAUTH_CALLBACK_FUNCTION = 'authCallback';
 function doPost(e) {
   return CommonWebhook.handleDoPost(e, function(params) {
     params.scriptName = 'Appsheet_通話_タスク作成';
-    return processRequest(params);
+    return processRequest(params.actionId || params.data?.actionId, params.title || params.data?.title, params.details || params.data?.details, params.dueDateTime || params.data?.dueDateTime, params.assigneeEmail || params.data?.assigneeEmail);
   });
 }
-
 
 /**
  * メイン処理関数（引数ベース）
  * @param {Object} params - リクエストパラメータ
  * @returns {Object} - 処理結果
  */
-function processRequest(params) {
-  const actionId = params.actionId;
-
+function processRequest(actionId, title, details, dueDateTime, assigneeEmail) {
   Logger.log(`Webhook受信: ${JSON.stringify(params)}`);
 
   try {
@@ -85,7 +80,6 @@ function processRequest(params) {
   }
 }
 
-
 /**
  * テスト用関数
  * GASエディタから直接実行してテスト可能
@@ -97,9 +91,8 @@ function testProcessRequest() {
     // 例: data: "sample"
   };
 
-  return CommonTest.runTest(processRequest, testParams, 'Appsheet_通話_タスク作成');
+  return CommonTest.runTest((params) => processRequest(params.actionId, params.title, params.details, params.dueDateTime, params.assigneeEmail), testParams, 'Appsheet_通話_タスク作成');
 }
-
 
 /**
 
@@ -191,13 +184,11 @@ function createGoogleTask(params) {
 
 }
 
-
 // =================================================================
 
 // AppSheet更新用ヘルパー関数群
 
 // =================================================================
-
 
 function updateActionOnSuccess(actionId, taskId, taskUrl) {
 
@@ -249,7 +240,6 @@ function updateActionOnError(actionId, errorMessage) {
 
 }
 
-
 function callAppSheetApi(payload) {
 
   const apiUrl = `https://api.appsheet.com/api/v2/apps/${APP_ID}/tables/${ACTIONS_TABLE_NAME}/Action`;
@@ -280,13 +270,11 @@ function callAppSheetApi(payload) {
 
 }
 
-
 // =================================================================
 
 // 認証ヘルパー関数群 (Chat投稿用GASから流用)
 
 // =================================================================
-
 
 function createOAuth2ServiceForUser(userEmail, scopes, serviceNamePrefix, serviceAccountJsonKey = DEFAULT_SERVICE_ACCOUNT_JSON_KEY, callbackFunctionName = DEFAULT_OAUTH_CALLBACK_FUNCTION) {
 
@@ -339,7 +327,6 @@ function getAccessToken(service) {
   return accessToken;
 
 }
-
 
 function authCallback(request) {
 

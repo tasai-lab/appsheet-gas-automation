@@ -6,11 +6,9 @@ const APP_ID = '27bceb6f-9a2c-4ab6-9438-31fec25a495e'; // AppSheetのアプリID
 
 const ACCESS_KEY = 'V2-A0207-tnP4i-YwteT-Cg55O-7YBvg-zMXQX-sS4Xv-XuaKP'; // AppSheet APIのアクセスキー
 
-
 // テーブル名
 
 const ORGS_TABLE_NAME = 'Organizations';
-
 
 /**
 
@@ -25,19 +23,16 @@ const ORGS_TABLE_NAME = 'Organizations';
 function doPost(e) {
   return CommonWebhook.handleDoPost(e, function(params) {
     params.scriptName = 'Appsheet_関係機関_作成';
-    return processRequest(params);
+    return processRequest(params.orgId || params.data?.orgId, params.commonName || params.data?.commonName, params.fullAddress || params.data?.fullAddress);
   });
 }
-
 
 /**
  * メイン処理関数（引数ベース）
  * @param {Object} params - リクエストパラメータ
  * @returns {Object} - 処理結果
  */
-function processRequest(params) {
-  const orgId = params.orgId;
-
+function processRequest(orgId, commonName, fullAddress) {
   try {
 
     const { commonName, fullAddress } = params;
@@ -81,7 +76,6 @@ function processRequest(params) {
   }
 }
 
-
 /**
  * テスト用関数
  * GASエディタから直接実行してテスト可能
@@ -93,9 +87,8 @@ function testProcessRequest() {
     // 例: data: "sample"
   };
 
-  return CommonTest.runTest(processRequest, testParams, 'Appsheet_関係機関_作成');
+  return CommonTest.runTest((params) => processRequest(params.orgId, params.commonName, params.fullAddress), testParams, 'Appsheet_関係機関_作成');
 }
-
 
 /**
 
@@ -245,7 +238,6 @@ function formatOpeningHours(openingHoursData) {
 
 }
 
-
 /**
 
  * 成功時にAppSheetのOrganizationsテーブルを更新する
@@ -273,7 +265,6 @@ function updateOrganizationOnSuccess(orgId, placeData) {
   callAppSheetApi(payload);
 
 }
-
 
 /**
 

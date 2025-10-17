@@ -6,7 +6,6 @@ const DEFAULT_SERVICE_ACCOUNT_JSON_KEY = 'SERVICE_ACCOUNT_JSON';
 
 const DEFAULT_OAUTH_CALLBACK_FUNCTION = 'authCallback';
 
-
 /**
 
  * AppSheetなどからのWebhook POSTリクエストを受け取るメイン関数
@@ -20,17 +19,16 @@ const DEFAULT_OAUTH_CALLBACK_FUNCTION = 'authCallback';
 function doPost(e) {
   return CommonWebhook.handleDoPost(e, function(params) {
     params.scriptName = 'Appsheet_ALL_スレッド更新';
-    return processRequest(params);
+    return processRequest(params.threadId || params.data?.threadId, params.updateText || params.data?.updateText, params.userId || params.data?.userId);
   });
 }
-
 
 /**
  * メイン処理関数（引数ベース）
  * @param {Object} params - リクエストパラメータ
  * @returns {Object} - 処理結果
  */
-function processRequest(params) {
+function processRequest(threadId, updateText, userId) {
   let result = { status: "error", updatedMessageId: null, errorMessage: null };
 
   try {
@@ -118,7 +116,6 @@ function processRequest(params) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-
 /**
  * テスト用関数
  * GASエディタから直接実行してテスト可能
@@ -130,9 +127,8 @@ function testProcessRequest() {
     // 例: data: "sample"
   };
 
-  return CommonTest.runTest(processRequest, testParams, 'Appsheet_ALL_スレッド更新');
+  return CommonTest.runTest((params) => processRequest(params.threadId, params.updateText, params.userId), testParams, 'Appsheet_ALL_スレッド更新');
 }
-
 
 /**
 
@@ -268,13 +264,11 @@ function updateChatMessage(messageName, newText, email) {
 
 }
 
-
 // =================================================================
 
 // 認証ヘルパー関数群 (他のスクリプトから流用)
 
 // =================================================================
-
 
 function createOAuth2ServiceForUser(userEmail, scopes, serviceNamePrefix, serviceAccountJsonKey = DEFAULT_SERVICE_ACCOUNT_JSON_KEY, callbackFunctionName = DEFAULT_OAUTH_CALLBACK_FUNCTION) {
 

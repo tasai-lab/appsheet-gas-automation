@@ -2,7 +2,6 @@
 
 const ERROR_NOTIFICATION_EMAIL = "t.asai@fractal-group.co.jp";
 
-
 /**
  * AppSheet Webhook エントリーポイント
  * @param {GoogleAppsScript.Events.DoPost} e
@@ -10,17 +9,16 @@ const ERROR_NOTIFICATION_EMAIL = "t.asai@fractal-group.co.jp";
 function doPost(e) {
   return CommonWebhook.handleDoPost(e, function(params) {
     params.scriptName = 'Appsheet_All_ファイル検索＋ID挿入';
-    return processRequest(params);
+    return processRequest(params.searchQuery || params.data?.searchQuery, params.folderId || params.data?.folderId, params.targetTable || params.data?.targetTable);
   });
 }
-
 
 /**
  * メイン処理関数（引数ベース）
  * @param {Object} params - リクエストパラメータ
  * @returns {Object} - 処理結果
  */
-function processRequest(params) {
+function processRequest(searchQuery, folderId, targetTable) {
   Utilities.sleep(15000);
 
   const { appsheetConfig, jobs } = params;
@@ -126,7 +124,6 @@ function processRequest(params) {
   return ContentService.createTextOutput(JSON.stringify({ status: "Processed" }));
 }
 
-
 /**
  * テスト用関数
  * GASエディタから直接実行してテスト可能
@@ -138,9 +135,8 @@ function testProcessRequest() {
     // 例: data: "sample"
   };
 
-  return CommonTest.runTest(processRequest, testParams, 'Appsheet_All_ファイル検索＋ID挿入');
+  return CommonTest.runTest((params) => processRequest(params.searchQuery, params.folderId, params.targetTable), testParams, 'Appsheet_All_ファイル検索＋ID挿入');
 }
-
 
 function callAppSheetApi(config, tableName, payload) {
 
@@ -167,7 +163,6 @@ function callAppSheetApi(config, tableName, payload) {
   }
 
 }
-
 
 // =================================================================
 

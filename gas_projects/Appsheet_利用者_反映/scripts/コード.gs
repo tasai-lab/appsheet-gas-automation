@@ -6,18 +6,15 @@ const REQUESTS_APP_ID = 'f40c4b11-b140-4e31-a60c-600f3c9637c8';
 
 const REQUESTS_APP_ACCESS_KEY = 'V2-s6fif-zteYn-AGhoC-EhNLX-NNwgP-nHXAr-hHGZp-XxyPY';
 
-
 // ▼ 利用者情報アプリの情報 (もし同じなら、上記と同じID/KEYを設定)
 
 const CLIENTS_APP_ID = 'f40c4b11-b140-4e31-a60c-600f3c9637c8'; 
 
 const CLIENTS_APP_ACCESS_KEY = 'V2-s6fif-zteYn-AGhoC-EhNLX-NNwgP-nHXAr-hHGZp-XxyPY';
 
-
 // Gemini APIキー
 
 const GEMINI_API_KEY = 'AIzaSyDUKFlE6_NYGehDYOxiRQcHpjG2l7GZmTY'; 
-
 
 // テーブル名
 
@@ -26,7 +23,6 @@ const REQUESTS_TABLE_NAME = 'Client_Requests';
 const CLIENTS_TABLE_NAME = 'Clients';
 
 const DOCUMENTS_TABLE_NAME = 'Client_Documents';
-
 
 /**
 
@@ -41,17 +37,16 @@ const DOCUMENTS_TABLE_NAME = 'Client_Documents';
 function doPost(e) {
   return CommonWebhook.handleDoPost(e, function(params) {
     params.scriptName = 'Appsheet_利用者_反映';
-    return processRequest(params);
+    return processRequest(params.userId || params.data?.userId, params.sourceData || params.data?.sourceData, params.targetTable || params.data?.targetTable);
   });
 }
-
 
 /**
  * メイン処理関数（引数ベース）
  * @param {Object} params - リクエストパラメータ
  * @returns {Object} - 処理結果
  */
-function processRequest(params) {
+function processRequest(userId, sourceData, targetTable) {
   const requestId = params.requestId;
 
   try {
@@ -101,7 +96,6 @@ function processRequest(params) {
   }
 }
 
-
 /**
  * テスト用関数
  * GASエディタから直接実行してテスト可能
@@ -113,9 +107,8 @@ function testProcessRequest() {
     // 例: data: "sample"
   };
 
-  return CommonTest.runTest(processRequest, testParams, 'Appsheet_利用者_反映');
+  return CommonTest.runTest((params) => processRequest(params.userId, params.sourceData, params.targetTable), testParams, 'Appsheet_利用者_反映');
 }
-
 
 /**
 
@@ -144,7 +137,6 @@ function getNewClientId() {
   return `CL-${newIdNumber}`;
 
 }
-
 
 /**
 
@@ -258,7 +250,6 @@ ${clientInfoTemp}
 
 }
 
-
 /**
 
  * AppSheetのClientsテーブルに新しい行を作成する
@@ -319,7 +310,6 @@ function createClientInAppSheet(clientId, extractedInfo, params) {
 
 }
 
-
 /**
 
  * 元の依頼レコードのステータスを更新する
@@ -343,7 +333,6 @@ function updateRequestStatus(requestId, status, errorMessage) {
   callAppSheetApi(REQUESTS_APP_ID, REQUESTS_APP_ACCESS_KEY, REQUESTS_TABLE_NAME, payload);
 
 }
-
 
 /**
 
@@ -380,7 +369,6 @@ function callAppSheetApi(appId, accessKey, tableName, payload) {
   return responseText; // FindアクションのためにresponseTextを返す
 
 }
-
 
 /**
 
@@ -430,7 +418,6 @@ function createClientInAppSheet(clientId, extractedInfo, params) {
 
   // ★★★★★★★★★★★★★★★★★★★★★★
 
-
   const rowData = {
 
     "client_id": clientId,
@@ -478,7 +465,6 @@ function createClientInAppSheet(clientId, extractedInfo, params) {
     "updated_by": params.staffId
 
   };
-
 
   const payload = { Action: "Add", Properties: { "Locale": "ja-JP" }, Rows: [rowData] };
 

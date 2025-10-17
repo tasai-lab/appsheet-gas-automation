@@ -6,11 +6,9 @@ const APP_ID = 'f40c4b11-b140-4e31-a60c-600f3c9637c8'; // AppSheetのアプリID
 
 const ACCESS_KEY = 'V2-s6fif-zteYn-AGhoC-EhNLX-NNwgP-nHXAr-hHGZp-XxyPY'; // AppSheet APIのアクセスキー
 
-
 // テーブル名
 
 const PROBLEMS_TABLE_NAME = 'VN_Plan_Problems';
-
 
 /**
 
@@ -25,19 +23,16 @@ const PROBLEMS_TABLE_NAME = 'VN_Plan_Problems';
 function doPost(e) {
   return CommonWebhook.handleDoPost(e, function(params) {
     params.scriptName = 'Appsheet_訪問看護_計画書問題点_評価';
-    return processRequest(params);
+    return processRequest(params.problemId || params.data?.problemId, params.planText || params.data?.planText, params.latestRecords || params.data?.latestRecords, params.statusToSet || params.data?.statusToSet, params.staffId || params.data?.staffId);
   });
 }
-
 
 /**
  * メイン処理関数（引数ベース）
  * @param {Object} params - リクエストパラメータ
  * @returns {Object} - 処理結果
  */
-function processRequest(params) {
-  const problemId = params.problemId;
-
+function processRequest(problemId, planText, latestRecords, statusToSet, staffId) {
   try {
 
     const { planText, latestRecords, statusToSet, staffId } = params;
@@ -75,7 +70,6 @@ function processRequest(params) {
   }
 }
 
-
 /**
  * テスト用関数
  * GASエディタから直接実行してテスト可能
@@ -87,9 +81,8 @@ function testProcessRequest() {
     // 例: data: "sample"
   };
 
-  return CommonTest.runTest(processRequest, testParams, 'Appsheet_訪問看護_計画書問題点_評価');
+  return CommonTest.runTest((params) => processRequest(params.problemId, params.planText, params.latestRecords, params.statusToSet, params.staffId), testParams, 'Appsheet_訪問看護_計画書問題点_評価');
 }
-
 
 /**
 
@@ -170,7 +163,6 @@ ${latestRecords}
   return JSON.parse(content.substring(startIndex, endIndex + 1));
 
 }
-
 
 /**
 

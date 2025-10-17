@@ -6,7 +6,6 @@ const TABLE_NAME = 'Sales_Activities';   // ★対象テーブル名を変更
 
 const ACCESS_KEY = 'V2-A0207-tnP4i-YwteT-Cg55O-7YBvg-zMXQX-sS4Xv-XuaKP'; // AppSheet APIのアクセスキー
 
-
 /**
 
  * スクリプト実行時エラーをAppSheetに記録する関数
@@ -37,7 +36,6 @@ function handleScriptError(recordId, errorMessage) {
   });
 }
 
-
 /**
 
  * AppSheetのWebhookからPOSTリクエストを受け取るメイン関数
@@ -53,25 +51,21 @@ function handleScriptError(recordId, errorMessage) {
 function doPost(e) {
   return CommonWebhook.handleDoPost(e, function(params) {
     params.scriptName = 'Appsheet_営業_ファイルID取得';
-    return processRequest(params);
+    return processRequest(params.recordId || params.data?.recordId, params.folderId || params.data?.folderId, params.fileName || params.data?.fileName);
   });
 }
-
 
 /**
  * メイン処理関数（引数ベース）
  * @param {Object} params - リクエストパラメータ
  * @returns {Object} - 処理結果
  */
-function processRequest(params) {
+function processRequest(recordId, folderId, fileName) {
   let activityId = null;
 
   try {
 
     activityId = params.activityId; // ★変数名を変更
-
-    const folderId = params.folderId;
-
     if (!activityId || !folderId) {
 
       throw new Error('必要なパラメータ (activityId, folderId) が不足しています。');
@@ -179,7 +173,6 @@ function processRequest(params) {
   }
 }
 
-
 /**
  * テスト用関数
  * GASエディタから直接実行してテスト可能
@@ -191,9 +184,8 @@ function testProcessRequest() {
     // 例: data: "sample"
   };
 
-  return CommonTest.runTest(processRequest, testParams, 'Appsheet_営業_ファイルID取得');
+  return CommonTest.runTest((params) => processRequest(params.recordId, params.folderId, params.fileName), testParams, 'Appsheet_営業_ファイルID取得');
 }
-
 
 /**
 
@@ -246,7 +238,6 @@ function findFileInSubfolders(folder, partOfFileName) {
     }
 
   }
-
 
   searchRecursively(folder);
 

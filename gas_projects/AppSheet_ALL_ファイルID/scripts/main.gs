@@ -10,13 +10,11 @@
 
  */
 
-
 // =================================================================================
 
 // 1. 設定セクション (ここを修正するだけで動作をカスタマイズできます)
 
 // =================================================================================
-
 
 /**
 
@@ -62,7 +60,6 @@ const APPSHEET_CONFIGS = {
 
 };
 
-
 /**
 
  * AppSheet WebhookからのPOSTリクエストを処理するメイン関数。
@@ -80,17 +77,16 @@ const APPSHEET_CONFIGS = {
 function doPost(e) {
   return CommonWebhook.handleDoPost(e, function(params) {
     params.scriptName = 'AppSheet_ALL_ファイルID';
-    return processRequest(params);
+    return processRequest(params.fileName || params.data?.fileName, params.folderId || params.data?.folderId);
   });
 }
-
 
 /**
  * メイン処理関数（引数ベース）
  * @param {Object} params - リクエストパラメータ
  * @returns {Object} - 処理結果
  */
-function processRequest(params) {
+function processRequest(fileName, folderId) {
   let lock; // finallyブロックで確実に解放するため、ここで宣言
 
   let executionContext = {}; // 処理全体で引き回すコンテキスト情報
@@ -199,16 +195,14 @@ function testProcessRequest() {
     // 例: data: "sample"
   };
 
-  return CommonTest.runTest(processRequest, testParams, 'AppSheet_ALL_ファイルID');
+  return CommonTest.runTest((params) => processRequest(params.fileName, params.folderId), testParams, 'AppSheet_ALL_ファイルID');
 }
-
 
 // =================================================================================
 
 // 3. 機能別ヘルパー関数群 (ロジックの詳細)
 
 // =================================================================================
-
 
 /**
 
@@ -290,7 +284,6 @@ function setIdempotencyStatus_(key, status, logger) {
 
 }
 
-
 /**
 
  * ファイル検索などのメインロジックを実行し、AppSheetに更新するデータを生成する。
@@ -359,7 +352,6 @@ function executeMainLogic_(data, baseFolderId, config, logger) {
 
 }
 
-
 /**
 
  * 指定されたパスのファイルをGoogle Driveで検索する。
@@ -413,7 +405,6 @@ function findFileInDrive_(baseFolderId, filePath, logger) {
   return files.next();
 
 }
-
 
 /**
 
@@ -494,7 +485,6 @@ function updateAppSheetRecord_(appConfig, tableName, rowData, logger) {
   }
 
 }
-
 
 /**
 
@@ -604,13 +594,11 @@ AppSheet上で原因を修正後、再実行が可能です。
 
 }
 
-
 // =================================================================================
 
 // 4. ユーティリティ (汎用的な補助機能)
 
 // =================================================================================
-
 
 /**
 
@@ -634,14 +622,12 @@ class CustomLogger_ {
 
   }
 
-  
   _log(level, message, details = '') {
 
     const timestamp = new Date().toISOString();
 
     const logEntry = `[${timestamp}] [${level}] [Config: ${this.context.configName}] [Key: ${this.context.keyValue}] - ${message}`;
 
-    
     // 詳細情報があれば追記
 
     let fullLog = logEntry;
@@ -654,11 +640,9 @@ class CustomLogger_ {
 
     }
 
-    
     Logger.log(fullLog);
 
   }
-
 
   info(message) {
 
@@ -666,13 +650,11 @@ class CustomLogger_ {
 
   }
 
-
   warn(message) {
 
     this._log('WARN', message);
 
   }
-
 
   error(message, errorStack = '') {
 
@@ -680,7 +662,6 @@ class CustomLogger_ {
 
   }
 
-  
   /**
 
    * デバッグモードが有効な場合のみログを出力する
@@ -703,7 +684,6 @@ class CustomLogger_ {
 
 }
 
-
 /**
 
  * =================================================================================
@@ -713,7 +693,6 @@ class CustomLogger_ {
  * =================================================================================
 
  */
-
 
 /**
 

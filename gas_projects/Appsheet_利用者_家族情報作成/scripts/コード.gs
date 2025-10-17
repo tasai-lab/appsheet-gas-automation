@@ -13,17 +13,16 @@
 function doPost(e) {
   return CommonWebhook.handleDoPost(e, function(params) {
     params.scriptName = 'Appsheet_利用者_家族情報作成';
-    return processRequest(params);
+    return processRequest(params.userId || params.data?.userId, params.familyInfo || params.data?.familyInfo, params.relationship || params.data?.relationship);
   });
 }
-
 
 /**
  * メイン処理関数（引数ベース）
  * @param {Object} params - リクエストパラメータ
  * @returns {Object} - 処理結果
  */
-function processRequest(params) {
+function processRequest(userId, familyInfo, relationship) {
   // ▼▼▼ ユーザー設定 ▼▼▼
 
   const GEMINI_API_KEY = 'AIzaSyDUKFlE6_NYGehDYOxiRQcHpjG2l7GZmTY';
@@ -115,7 +114,6 @@ function processRequest(params) {
   }
 }
 
-
 /**
  * テスト用関数
  * GASエディタから直接実行してテスト可能
@@ -127,5 +125,5 @@ function testProcessRequest() {
     // 例: data: "sample"
   };
 
-  return CommonTest.runTest(processRequest, testParams, 'Appsheet_利用者_家族情報作成');
+  return CommonTest.runTest((params) => processRequest(params.userId, params.familyInfo, params.relationship), testParams, 'Appsheet_利用者_家族情報作成');
 }

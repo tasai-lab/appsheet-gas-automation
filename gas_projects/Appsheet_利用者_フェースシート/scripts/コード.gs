@@ -8,21 +8,17 @@
 
  */
 
-
 // 1. Gemini APIキー
 
 const GEMINI_API_KEY = 'AIzaSyDUKFlE6_NYGehDYOxiRQcHpjG2l7GZmTY';
-
 
 // 2. AppSheetのアプリID
 
 const APPSHEET_APP_ID = "f40c4b11-b140-4e31-a60c-600f3c9637c8";
 
-
 // 3. AppSheetのAPIアクセスキー
 
 const APPSHEET_ACCESS_KEY = "V2-s6fif-zteYn-AGhoC-EhNLX-NNwgP-nHXAr-hHGZp-XxyPY";
-
 
 /**
 
@@ -39,17 +35,16 @@ const APPSHEET_ACCESS_KEY = "V2-s6fif-zteYn-AGhoC-EhNLX-NNwgP-nHXAr-hHGZp-XxyPY"
 function doPost(e) {
   return CommonWebhook.handleDoPost(e, function(params) {
     params.scriptName = 'Appsheet_利用者_フェースシート';
-    return processRequest(params);
+    return processRequest(params.userId || params.data?.userId, params.sheetData || params.data?.sheetData, params.sheetType || params.data?.sheetType);
   });
 }
-
 
 /**
  * メイン処理関数（引数ベース）
  * @param {Object} params - リクエストパラメータ
  * @returns {Object} - 処理結果
  */
-function processRequest(params) {
+function processRequest(userId, sheetData, sheetType) {
   let faceSheetId; // catchブロックでも利用できるよう、外側で変数を定義
 
   try {
@@ -191,7 +186,6 @@ function processRequest(params) {
   }
 }
 
-
 /**
  * テスト用関数
  * GASエディタから直接実行してテスト可能
@@ -203,9 +197,8 @@ function testProcessRequest() {
     // 例: data: "sample"
   };
 
-  return CommonTest.runTest(processRequest, testParams, 'Appsheet_利用者_フェースシート');
+  return CommonTest.runTest((params) => processRequest(params.userId, params.sheetData, params.sheetType), testParams, 'Appsheet_利用者_フェースシート');
 }
-
 
 /**
 
@@ -310,7 +303,6 @@ function callGeminiApi(text) {
   }
 
 }
-
 
 /**
 

@@ -6,7 +6,6 @@ const TABLE_NAME = 'Call_Logs';     // 対象のテーブル名
 
 const ACCESS_KEY = 'V2-I1zMZ-90iua-47BBk-RBjO1-N0mUo-kY25j-VsI4H-eRvwT'; // AppSheet APIのアクセスキー
 
-
 // --- 2. メール通知設定 (★必要に応じて修正してください) ---
 
 const SEND_SUCCESS_EMAIL = false; // ★ 追加: 正常処理の完了時にメールを送信する (true) / しない (false)
@@ -14,7 +13,6 @@ const SEND_SUCCESS_EMAIL = false; // ★ 追加: 正常処理の完了時にメ�
 const SEND_ERROR_EMAIL = true;   // ★ 追加: エラー発生時にメールを送信する (true) / しない (false)
 
 const EMAIL_RECIPIENT = 't.asai@fractal-group.co.jp'; // ★ 追加: 通知先メールアドレス
-
 
 /**
  * スクリプト実行時エラーを処理
@@ -36,7 +34,6 @@ function handleScriptError(recordId, errorMessage) {
   });
 }
 
-
 /**
  * AppSheet Webhook エントリーポイント
  * @param {GoogleAppsScript.Events.DoPost} e
@@ -44,26 +41,19 @@ function handleScriptError(recordId, errorMessage) {
 function doPost(e) {
   return CommonWebhook.handleDoPost(e, function(params) {
     params.scriptName = 'Appsheet_通話_ファイルID取得';
-    return processRequest(params);
+    return processRequest(params.callId || params.data?.callId, params.folderId || params.data?.folderId, params.filePath || params.data?.filePath);
   });
 }
-
 
 /**
  * メイン処理関数（引数ベース）
  * @param {Object} params - リクエストパラメータ
  * @returns {Object} - 処理結果
  */
-function processRequest(params) {
+function processRequest(callId, folderId, filePath) {
   const startTime = new Date();
-  let callId = null;
-
   try {
     // パラメータ検証
-    callId = params.callId;
-    const folderId = params.folderId;
-    const filePath = params.filePath;
-
     // callIdは必須
     if (!callId) {
       throw new Error('必須パラメータ callId が不足しています');
@@ -163,9 +153,7 @@ function processRequest(params) {
         'Appsheet_通話_ファイルID取得',
         callId,
         `ファイルID取得成功: ${fileInfo.fileName}`,
-        executionTime,
-        params
-      );
+        executionTime, { callId: callId, folderId: folderId, filePath: filePath });
 
       Logger.log(`[処理完了] ${executionTime}秒`);
 
@@ -179,9 +167,7 @@ function processRequest(params) {
         'Appsheet_通話_ファイルID取得',
         callId,
         `非対応ファイル形式: ${fileInfo.fileName}`,
-        executionTime,
-        params
-      );
+        executionTime, { callId: callId, folderId: folderId, filePath: filePath });
     }
 
     return ContentService.createTextOutput(JSON.stringify({
@@ -206,7 +192,7 @@ function processRequest(params) {
       error.message,
       error,
       executionTime,
-      params
+      { callId: callId, folderId: folderId, filePath: filePath }
     );
 
     // AppSheetエラー記録
@@ -221,7 +207,6 @@ function processRequest(params) {
   }
 }
 
-
 /**
  * テスト用関数
  * GASエディタから直接実行してテスト可能
@@ -233,9 +218,8 @@ function testProcessRequest() {
     // 例: data: "sample"
   };
 
-  return CommonTest.runTest(processRequest, testParams, 'Appsheet_通話_ファイルID取得');
+  return CommonTest.runTest((params) => processRequest(params.callId, params.folderId, params.filePath), testParams, 'Appsheet_通話_ファイルID取得');
 }
-
 
 /**
  * 指定されたフォルダとその全てのサブフォルダから、ファイル名に特定文字列を含む最新のファイルを検索する

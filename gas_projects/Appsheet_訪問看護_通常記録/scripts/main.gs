@@ -6,7 +6,6 @@
 
  */ 
 
-
 /**
 
  * AppSheetのWebhookからPOSTリクエストを受け取るメイン関数
@@ -20,26 +19,22 @@
 function doPost(e) {
   return CommonWebhook.handleDoPost(e, function(params) {
     params.scriptName = 'Appsheet_訪問看護_通常記録';
-    return processRequest(params);
+    return processRequest(params.recordNoteId || params.data?.recordNoteId, params.staffId || params.data?.staffId, params.recordText || params.data?.recordText, params.recordType || params.data?.recordType, params.filePath || params.data?.filePath, params.fileId || params.data?.fileId);
   });
 }
-
 
 /**
  * メイン処理関数（引数ベース）
  * @param {Object} params - リクエストパラメータ
  * @returns {Object} - 処理結果
  */
-function processRequest(params) {
+function processRequest(recordNoteId, staffId, recordText, recordType, filePath, fileId) {
   const startTime = Date.now();
-
-  const recordNoteId = params.recordNoteId;
-
   try {
 
     // Validate required parameters
 
-    if (!recordNoteId || !params.staffId || !params.recordText) {
+    if (!recordNoteId || !staffId || !recordText) {
 
       throw new Error("必須パラメータ（recordNoteId, staffId, recordText）が不足しています。");
 
@@ -53,7 +48,7 @@ function processRequest(params) {
 
     // --- 2. 記録タイプを判定 ---
 
-    const recordType = determineRecordType(params.recordType);
+    const recordType = determineRecordType(recordType);
 
     // --- 3. ファイル処理 (音声ファイルがある場合) ---
 
@@ -61,9 +56,9 @@ function processRequest(params) {
 
     let mimeType = null;
 
-    if (params.filePath || params.fileId) {
+    if (filePath || fileId) {
 
-      const fileId = params.fileId || getFileIdFromPath(params.filePath);
+      const fileId = fileId || getFileIdFromPath(filePath);
 
       const fileData = getFileFromDrive(fileId);
 
@@ -93,9 +88,9 @@ function processRequest(params) {
 
       const prompt = recordType === 'psychiatry' 
 
-        ? buildPsychiatryPrompt(params.recordText, guidanceMasterText)
+        ? buildPsychiatryPrompt(recordText, guidanceMasterText)
 
-        : buildNormalPrompt(params.recordText, guidanceMasterText);
+        : buildNormalPrompt(recordText, guidanceMasterText);
 
       analysisResult = callVertexAIWithPrompt(gsUri, mimeType, prompt, recordType);
 
@@ -107,9 +102,9 @@ function processRequest(params) {
 
       const prompt = recordType === 'psychiatry'
 
-        ? buildPsychiatryPrompt(params.recordText, guidanceMasterText)
+        ? buildPsychiatryPrompt(recordText, guidanceMasterText)
 
-        : buildNormalPrompt(params.recordText, guidanceMasterText);
+        : buildNormalPrompt(recordText, guidanceMasterText);
 
       analysisResult = callGeminiAPIWithPrompt(fileData, prompt, recordType);
 
@@ -119,7 +114,7 @@ function processRequest(params) {
 
     // --- 5. AppSheetに結果を書き込み ---
 
-    updateRecordOnSuccess(recordNoteId, analysisResult, params.staffId, recordType);
+    updateRecordOnSuccess(recordNoteId, analysisResult, staffId, recordType);
 
     // --- 6. Cloud Storageのファイルをクリーンアップ ---
 
@@ -150,7 +145,6 @@ function processRequest(params) {
   }
 }
 
-
 /**
  * テスト用関数
  * GASエディタから直接実行してテスト可能
@@ -162,9 +156,8 @@ function testProcessRequest() {
     // 例: data: "sample"
   };
 
-  return CommonTest.runTest(processRequest, testParams, 'Appsheet_訪問看護_通常記録');
+  return CommonTest.runTest((params) => processRequest(params.recordNoteId, params.staffId, params.recordText, params.recordType, params.filePath, params.fileId), testParams, 'Appsheet_訪問看護_通常記録');
 }
-
 
 /**
 
@@ -232,7 +225,6 @@ function updateRecordOnSuccess(recordNoteId, resultData, staffId, recordType) {
 
 }
 
-
 /**
 
  * 処理失敗時にメールでエラー内容を通知する
@@ -285,7 +277,6 @@ function sendErrorEmail(recordNoteId, errorMessage, context = {}) {
 
 }
 
-
 /**
 
  * 失敗時にAppSheetのレコードをエラー状態で更新する
@@ -315,7 +306,6 @@ function updateRecordOnError(recordNoteId, errorMessage) {
   callAppSheetApi(payload);
 
 }
-
 
 /**
 

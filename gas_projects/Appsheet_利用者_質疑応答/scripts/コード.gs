@@ -4,7 +4,6 @@
 
 // ================================================================================================
 
-
 const CONFIG = {
 
   GEMINI: {
@@ -71,7 +70,6 @@ const CONFIG = {
 
 };
 
-
 const STATUS = {
 
   COMPLETED: "完了",
@@ -80,13 +78,11 @@ const STATUS = {
 
 };
 
-
 // ================================================================================================
 
 // 2. Main Entry Point (doPost - 受付関数)
 
 // ================================================================================================
-
 
 /**
 
@@ -103,17 +99,16 @@ const STATUS = {
 function doPost(e) {
   return CommonWebhook.handleDoPost(e, function(params) {
     params.scriptName = 'Appsheet_利用者_質疑応答';
-    return processRequest(params);
+    return processRequest(params.qaId || params.data?.qaId, params.userId || params.data?.userId, params.question || params.data?.question, params.contextInfo || params.data?.contextInfo);
   });
 }
-
 
 /**
  * メイン処理関数（引数ベース）
  * @param {Object} params - リクエストパラメータ
  * @returns {Object} - 処理結果
  */
-function processRequest(params) {
+function processRequest(qaId, userId, question, contextInfo) {
   // 【★修正】doPost全体をロックしていたグローバルロックを解除しました。
 
   const startTime = new Date();
@@ -185,7 +180,6 @@ function processRequest(params) {
   }
 }
 
-
 /**
  * テスト用関数
  * GASエディタから直接実行してテスト可能
@@ -197,9 +191,8 @@ function testProcessRequest() {
     // 例: data: "sample"
   };
 
-  return CommonTest.runTest(processRequest, testParams, 'Appsheet_利用者_質疑応答');
+  return CommonTest.runTest((params) => processRequest(params.qaId, params.userId, params.question, params.contextInfo), testParams, 'Appsheet_利用者_質疑応答');
 }
-
 
 function validateParameters(analysisId, documentText, promptText) {
 
@@ -209,7 +202,6 @@ function validateParameters(analysisId, documentText, promptText) {
 
 }
 
-
 // ================================================================================================
 
 // 3. Async Task Management (キュー管理とスケジューリング)
@@ -217,7 +209,6 @@ function validateParameters(analysisId, documentText, promptText) {
 // (このセクションに変更はありません)
 
 // ================================================================================================
-
 
 function scheduleAsyncTask(analysisId, params) {
 
@@ -329,7 +320,6 @@ function getNextTaskFromQueue() {
 
 }
 
-
 // ================================================================================================
 
 // 4. Background Worker (ワーカー関数 - 非同期実行)
@@ -337,7 +327,6 @@ function getNextTaskFromQueue() {
 // (このセクションに変更はありません)
 
 // ================================================================================================
-
 
 function processTaskQueueWorker() {
 
@@ -451,7 +440,6 @@ function executeTask(analysisId, params) {
 
 }
 
-
 // ================================================================================================
 
 // 5. Gemini AI Integration (Gemini連携機能)
@@ -459,7 +447,6 @@ function executeTask(analysisId, params) {
 // (このセクションに変更はありません)
 
 // ================================================================================================
-
 
 function generateAnswerAndSummaryWithGemini(documentText, promptText) {
 
@@ -567,7 +554,6 @@ function parseGeminiResponse(responseText) {
 
 }
 
-
 // ================================================================================================
 
 // 6. AppSheet Integration (AppSheet連携機能)
@@ -575,7 +561,6 @@ function parseGeminiResponse(responseText) {
 // (このセクションに変更はありません)
 
 // ================================================================================================
-
 
 function updateOnSuccess(analysisId, answer, summary) {
 
@@ -613,7 +598,6 @@ function callAppSheetApi(payload) {
 
 }
 
-
 // ================================================================================================
 
 // 7. Utilities (ユーティリティ関数)
@@ -621,7 +605,6 @@ function callAppSheetApi(payload) {
 // (このセクションに変更はありません)
 
 // ================================================================================================
-
 
 function acquireIdempotencyLock(analysisId) {
 

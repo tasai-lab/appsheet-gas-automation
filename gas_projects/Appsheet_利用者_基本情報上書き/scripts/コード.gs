@@ -38,7 +38,6 @@
 
   ];
 
-
 // テーブル名
 
 const CLIENTS_TABLE_NAME = 'Clients';
@@ -46,7 +45,6 @@ const CLIENTS_TABLE_NAME = 'Clients';
 const FAMILY_TABLE_NAME = 'Client_Family_Members';
 
 const DOCUMENTS_TABLE_NAME = 'Client_Documents';
-
 
 /**
 
@@ -61,17 +59,16 @@ const DOCUMENTS_TABLE_NAME = 'Client_Documents';
 function doPost(e) {
   return CommonWebhook.handleDoPost(e, function(params) {
     params.scriptName = 'Appsheet_利用者_基本情報上書き';
-    return processRequest(params);
+    return processRequest(params.userId || params.data?.userId, params.basicInfo || params.data?.basicInfo, params.updateFields || params.data?.updateFields);
   });
 }
-
 
 /**
  * メイン処理関数（引数ベース）
  * @param {Object} params - リクエストパラメータ
  * @returns {Object} - 処理結果
  */
-function processRequest(params) {
+function processRequest(userId, basicInfo, updateFields) {
   const documentId = params.documentId;
 
   try {
@@ -134,9 +131,8 @@ function testProcessRequest() {
     // 例: data: "sample"
   };
 
-  return CommonTest.runTest(processRequest, testParams, 'Appsheet_利用者_基本情報上書き');
+  return CommonTest.runTest((params) => processRequest(params.userId, params.basicInfo, params.updateFields), testParams, 'Appsheet_利用者_基本情報上書き');
 }
-
 
 /**
 
@@ -166,13 +162,11 @@ function sendErrorEmail(documentId, errorMessage) {
 
 }
 
-
 // =================================================================
 
 // 以下のヘルパー関数群に変更はありません
 
 // =================================================================
-
 
 function processFamilyMembers(clientId, extractedMembers) {
 
@@ -243,7 +237,6 @@ function processFamilyMembers(clientId, extractedMembers) {
   }
 
 }
-
 
 /**
 
@@ -367,7 +360,6 @@ ${ocrText}
 
 }
 
-
 function updateClientData(clientId, clientInfo) {
 
   if (clientInfo.care_level_name) {
@@ -398,7 +390,6 @@ function updateClientData(clientId, clientInfo) {
 
 }
 
-
 function updateDocumentStatus(documentId, status, errorMessage) {
 
   const rowData = { "document_id": documentId, "status": status };
@@ -416,7 +407,6 @@ function updateDocumentStatus(documentId, status, errorMessage) {
   console.log(`Document ID ${documentId} のステータスを「${status}」に更新しました。`);
 
 }
-
 
 function callAppSheetApi(tableName, payload) {
 

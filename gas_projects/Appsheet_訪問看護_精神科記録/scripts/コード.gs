@@ -16,13 +16,11 @@ const CONFIG = {
 
   APPSHEET_ACCESS_KEY: 'V2-s6fif-zteYn-AGhoC-EhNLX-NNwgP-nHXAr-hHGZp-XxyPY', // AppSheet APIのアクセスキー
 
-
   // --- AppSheet関連 ---
 
   APPSHEET_APP_ID: 'f40c4b11-b140-4e31-a60c-600f3c9637c8', // AppSheetのアプリID
 
   RECORDS_TABLE_NAME: 'Care_Records', // 看護記録が格納されているテーブル名
-
 
   // --- 指導・助言マスターのスプレッドシート情報 ---
 
@@ -32,13 +30,11 @@ const CONFIG = {
 
   MASTER_COLUMN_NAME: 'Care_Provided', // 読み込むマスターの列名
 
-
   // --- その他 ---
 
   ERROR_NOTIFICATION_EMAIL: "t.asai@fractal-group.co.jp", // エラー通知先のメールアドレス
 
 };
-
 
 // スクリプト内で使用する定数
 
@@ -58,7 +54,6 @@ const CONSTANTS = {
 
 };
 
-
 /**
 
  * AppSheetのWebhookからPOSTリクエストを受け取るメイン関数
@@ -76,28 +71,22 @@ const CONSTANTS = {
 function doPost(e) {
   return CommonWebhook.handleDoPost(e, function(params) {
     params.scriptName = 'Appsheet_訪問看護_精神科記録';
-    return processRequest(params);
+    return processRequest(params.recordNoteId || params.data?.recordNoteId, params.staffId || params.data?.staffId, params.recordText || params.data?.recordText, params.fileId || params.data?.fileId);
   });
 }
-
 
 /**
  * メイン処理関数（引数ベース）
  * @param {Object} params - リクエストパラメータ
  * @returns {Object} - 処理結果
  */
-function processRequest(params) {
-  let recordNoteId = null;
-
+function processRequest(recordNoteId, staffId, recordText, fileId) {
   try {
 
     console.log("処理開始: WebhookからのPOSTリクエストを受信しました。");
-
-    recordNoteId = params.recordNoteId;
-
     // --- 1. 入力パラメータの検証 ---
 
-    if (!recordNoteId || !params.staffId || !params.recordText) {
+    if (!recordNoteId || !staffId || !recordText) {
 
       throw new Error("必須パラメータ（recordNoteId, staffId, recordText）が不足しています。");
 
@@ -127,7 +116,7 @@ function processRequest(params) {
 
     // --- 4. AppSheetに成功結果を書き込み ---
 
-    updateAppSheetRecordOnSuccess(recordNoteId, aiAnalysisResult, params.staffId);
+    updateAppSheetRecordOnSuccess(recordNoteId, aiAnalysisResult, staffId);
 
     console.log(`処理完了: レコードID ${recordNoteId} の看護記録を正常に更新しました。`);
 
@@ -156,7 +145,6 @@ function processRequest(params) {
   }
 }
 
-
 /**
  * テスト用関数
  * GASエディタから直接実行してテスト可能
@@ -168,9 +156,8 @@ function testProcessRequest() {
     // 例: data: "sample"
   };
 
-  return CommonTest.runTest(processRequest, testParams, 'Appsheet_訪問看護_精神科記録');
+  return CommonTest.runTest((params) => processRequest(params.recordNoteId, params.staffId, params.recordText, params.fileId), testParams, 'Appsheet_訪問看護_精神科記録');
 }
-
 
 /**
 
@@ -213,7 +200,6 @@ function getGuidanceMasterAsText() {
   return masterText;
 
 }
-
 
 /**
 
@@ -503,7 +489,6 @@ function generateCareRecordWithGemini(context, guidanceMasterText) {
 
 }
 
-
 /**
 
  * 成功時にAppSheetのレコードを更新する
@@ -564,7 +549,6 @@ function updateAppSheetRecordOnSuccess(recordNoteId, aiResult, staffId) {
 
 }
 
-
 /**
 
  * 失敗時にAppSheetのレコードを更新する
@@ -610,7 +594,6 @@ function updateAppSheetRecordOnError(recordNoteId, error) {
   }
 
 }
-
 
 /**
 
@@ -661,7 +644,6 @@ GASのログをご確認ください。
   }
 
 }
-
 
 /**
 

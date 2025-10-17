@@ -16,11 +16,9 @@ const ACCESS_KEY = 'V2-s6fif-zteYn-AGhoC-EhNLX-NNwgP-nHXAr-hHGZp-XxyPY'; // ★ 
 
 const ERROR_NOTIFICATION_EMAIL = "t.asai@fractal-group.co.jp";       // ★ エラー通知先のメールアドレス
 
-
 // 使用するGeminiモデル
 
 const GEMINI_MODEL = 'gemini-2.5-pro';
-
 
 /**
 
@@ -35,17 +33,16 @@ const GEMINI_MODEL = 'gemini-2.5-pro';
 function doPost(e) {
   return CommonWebhook.handleDoPost(e, function(params) {
     params.scriptName = 'Appsheet_訪問看護_書類OCR';
-    return processRequest(params);
+    return processRequest(params.recordId || params.data?.recordId, params.fileId || params.data?.fileId, params.documentType || params.data?.documentType);
   });
 }
-
 
 /**
  * メイン処理関数（引数ベース）
  * @param {Object} params - リクエストパラメータ
  * @returns {Object} - 処理結果
  */
-function processRequest(params) {
+function processRequest(recordId, fileId, documentType) {
   const config = params.config;
 
   const data = params.data;
@@ -188,9 +185,8 @@ function testProcessRequest() {
     // 例: data: "sample"
   };
 
-  return CommonTest.runTest(processRequest, testParams, 'Appsheet_訪問看護_書類OCR');
+  return CommonTest.runTest((params) => processRequest(params.recordId, params.fileId, params.documentType), testParams, 'Appsheet_訪問看護_書類OCR');
 }
-
 
 /**
 
@@ -400,13 +396,11 @@ function getFileCategory(mimeType, fileName) {
 
 }
 
-
 // ============================================
 
 // プロンプト生成関数
 
 // ============================================
-
 
 /**
 
@@ -437,7 +431,6 @@ function generatePrompt(documentType, fileCategory, customInstructions, clientCo
   throw new Error(`予期しないファイルカテゴリが指定されました: ${fileCategory}`);
 
 }
-
 
 /**
 
@@ -785,7 +778,6 @@ function updateOnSuccess(config, keyValue, resultData) {
 
 }
 
-
 /**
 
  * 失敗時にAppSheetのテーブルを更新する
@@ -819,7 +811,6 @@ function updateOnError(config, keyValue, errorMessage) {
   callAppSheetApi(config.tableName, payload);
 
 }
-
 
 /**
 
@@ -857,7 +848,6 @@ function renameDriveFile(fileId, newName) {
 
 }
 
-
 /**
 
  * 処理失敗時にメールでエラー内容を通知する
@@ -885,7 +875,6 @@ function sendErrorEmail(keyValue, errorMessage) {
   }
 
 }
-
 
 /**
 
