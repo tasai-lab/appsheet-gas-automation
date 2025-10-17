@@ -55,7 +55,6 @@ function processRequest(params) {
     callId = params.callId || 'ID不明';
     const callDatetime = params.callDatetime;
     const filePath = params.filePath;
-    const fileId = params.fileId;
     const callContextText = params.callContextText;
     const userInfoText = params.userInfoText;
     const clientId = params.clientId;
