@@ -12,6 +12,7 @@ import json
 import pickle
 import argparse
 from pathlib import Path
+from datetime import datetime
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -163,7 +164,8 @@ def deploy_version(service, script_id, description):
             body=version_body
         ).execute()
         
-        print(f"  バージョン {version.get('versionNumber')} を作成しました")
+        version_number = version.get('versionNumber')
+        print(f"  バージョン {version_number} を作成しました")
         
         # デプロイメント一覧を取得
         deployments = service.projects().deployments().list(
@@ -178,7 +180,7 @@ def deploy_version(service, script_id, description):
                 # デプロイメントを更新
                 update_body = {
                     'deploymentConfig': {
-                        'versionNumber': version['versionNumber'],
+                        'versionNumber': version_number,
                         'description': description
                     }
                 }
@@ -191,11 +193,49 @@ def deploy_version(service, script_id, description):
                 
                 print(f"  デプロイメント {deployment_id} を更新しました")
         
-        return True
+        return True, version_number
     
     except Exception as e:
         print(f"  デプロイエラー: {e}")
-        return False
+        return False, None
+
+def load_version_history(version_file):
+    """バージョン履歴を読み込み"""
+    if version_file.exists():
+        with open(version_file, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    return {
+        'last_updated': None,
+        'projects': {}
+    }
+
+def save_version_history(version_file, history):
+    """バージョン履歴を保存"""
+    history['last_updated'] = datetime.now().isoformat()
+    with open(version_file, 'w', encoding='utf-8') as f:
+        json.dump(history, f, ensure_ascii=False, indent=2)
+
+def update_project_version(history, project_name, script_id, version_number, description, success):
+    """プロジェクトのバージョン情報を更新"""
+    if project_name not in history['projects']:
+        history['projects'][project_name] = {
+            'script_id': script_id,
+            'deployments': []
+        }
+    
+    deployment_info = {
+        'version': version_number,
+        'description': description,
+        'timestamp': datetime.now().isoformat(),
+        'status': 'success' if success else 'failed'
+    }
+    
+    history['projects'][project_name]['script_id'] = script_id
+    history['projects'][project_name]['deployments'].insert(0, deployment_info)
+    
+    # 最新10件のみ保持
+    history['projects'][project_name]['deployments'] = \
+        history['projects'][project_name]['deployments'][:10]
 
 def parse_arguments():
     """引数をパース"""
@@ -271,6 +311,10 @@ def main():
         print(f"エラー: プロジェクトディレクトリが見つかりません: {base_dir}")
         return
 
+    # バージョン履歴を読み込み
+    version_file = Path(__file__).parent.parent / 'deployment_versions.json'
+    version_history = load_version_history(version_file)
+
     # 全プロジェクトを処理
     success_count = 0
     fail_count = 0
@@ -333,10 +377,20 @@ def main():
             print(f"  ✓ 更新完了")
             
             # バージョンをデプロイ
-            deploy_success = deploy_version(
+            deploy_success, version_number = deploy_version(
                 service,
                 script_id,
                 args.description
+            )
+            
+            # バージョン履歴を更新
+            update_project_version(
+                version_history,
+                project_name,
+                script_id,
+                version_number,
+                args.description,
+                deploy_success
             )
             
             if deploy_success:
@@ -345,7 +399,8 @@ def main():
                 results.append({
                     'project': project_name,
                     'status': 'SUCCESS',
-                    'message': '更新とデプロイが完了しました'
+                    'message': '更新とデプロイが完了しました',
+                    'version': version_number
                 })
             else:
                 print(f"  ⚠ デプロイ失敗（更新は完了）")
@@ -353,6 +408,7 @@ def main():
                 results.append({
                     'project': project_name,
                     'status': 'PARTIAL',
+                    'version': version_number,
                     'message': '更新は完了しましたがデプロイに失敗しました'
                 })
         else:
@@ -364,6 +420,10 @@ def main():
                 'message': f'更新失敗: {result}'
             })
     
+    # バージョン履歴を保存
+    save_version_history(version_file, version_history)
+    print(f"\nバージョン履歴を保存しました: {version_file}")
+
     # 結果サマリー
     print("\n" + "="*60)
     print("デプロイ結果サマリー")

@@ -63,6 +63,7 @@ python retrieve_gas.py --folder-id YOUR_FOLDER_ID --filter "Appsheet" --verbose
 
 ### 2. 一括デプロイ (ツール/deploy_all_to_gas.py)
 すべてのGASプロジェクトをGoogle Apps Scriptにデプロイします。
+**自動的にバージョン管理が行われます**（deployment_versions.jsonに記録）
 
 ```bash
 # 基本使用法
@@ -78,6 +79,33 @@ python ツール/deploy_all_to_gas.py --filter "Appsheet_通話" --description "
 # --credentials: 認証情報ファイルパス
 # --token: トークンファイルパス
 # --verbose, -v: 詳細ログを表示
+```
+
+#### バージョン管理機能
+デプロイ時に以下の情報が自動的に記録されます：
+- バージョン番号
+- デプロイ日時
+- デプロイ説明
+- ステータス（成功/失敗）
+- スクリプトID
+
+### 2-1. デプロイ履歴の確認 (ツール/show_deployment_history.py)
+プロジェクトのデプロイ履歴を表示します。
+
+```bash
+# 全プロジェクトの履歴を表示
+python ツール/show_deployment_history.py
+
+# 特定プロジェクトの詳細履歴
+python ツール/show_deployment_history.py --project "Appsheet_通話_要約生成"
+
+# 表示件数を指定
+python ツール/show_deployment_history.py --project "Appsheet_通話_要約生成" --limit 10
+
+# 利用可能な引数
+# --project, -p: 特定プロジェクトの履歴を表示
+# --limit, -l: 表示する履歴の件数 (デフォルト: 5)
+# --file, -f: バージョン履歴ファイル (デフォルト: deployment_versions.json)
 ```
 
 ### 3. スクリプト最適化 (ツール/optimize_all_appsheet_scripts.py)
