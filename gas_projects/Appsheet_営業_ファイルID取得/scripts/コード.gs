@@ -1,127 +1,7 @@
-/**
- * 実行ログモジュール
- */
-const ExecutionLogger = {
-  SPREADSHEET_ID: '15Z_GT4-pDAnjDpd8vkX3B9FgYlQIQwdUF1QIEj7bVnE',
-  SHEET_NAME: 'シート1',
-  
-  /**
-   * ログを記録
-   * @param {string} scriptName - スクリプト名
-   * @param {string} status - ステータス (SUCCESS/ERROR/WARNING)
-   * @param {string} processId - 処理ID
-   * @param {string} message - メッセージ
-   * @param {string} errorDetail - エラー詳細
-   * @param {number} executionTime - 実行時間(秒)
-   * @param {Object} inputData - 入力データ
-   */
-  log: function(scriptName, status, processId, message, errorDetail, executionTime, inputData) {
-    try {
-      const ss = SpreadsheetApp.openById(this.SPREADSHEET_ID);
-      const sheet = ss.getSheetByName(this.SHEET_NAME);
-      
-      const timestamp = new Date();
-      const user = Session.getActiveUser().getEmail();
-      const inputDataStr = inputData ? JSON.stringify(inputData).substring(0, 1000) : '';
-      
-      sheet.appendRow([
-        timestamp,
-        scriptName,
-        status,
-        processId || '',
-        message || '',
-        errorDetail || '',
-        executionTime || 0,
-        user,
-        inputDataStr
-      ]);
-    } catch (e) {
-      Logger.log(`ログ記録エラー: ${e.message}`);
-    }
-  },
-  
-  /**
-   * 成功ログ
-   */
-  success: function(scriptName, processId, message, executionTime, inputData) {
-    this.log(scriptName, 'SUCCESS', processId, message, '', executionTime, inputData);
-  },
-  
-  /**
-   * エラーログ
-   */
-  error: function(scriptName, processId, message, error, executionTime, inputData) {
-    const errorDetail = error ? `${error.message}\n${error.stack}` : '';
-    this.log(scriptName, 'ERROR', processId, message, errorDetail, executionTime, inputData);
-  },
-  
-  /**
-   * 警告ログ
-   */
-  warning: function(scriptName, processId, message, executionTime, inputData) {
-    this.log(scriptName, 'WARNING', processId, message, '', executionTime, inputData);
-  }
-};
 
 
-/**
- * Webhook重複実行防止モジュール
- */
-const DuplicationPrevention = {
-  LOCK_TIMEOUT: 300000, // 5分
-  CACHE_EXPIRATION: 3600, // 1時間
-  
-  /**
-   * リクエストの重複チェック
-   * @param {string} requestId - リクエストID（webhookデータのハッシュ値）
-   * @return {boolean} - 処理を続行する場合はtrue
-   */
-  checkDuplicate: function(requestId) {
-    const cache = CacheService.getScriptCache();
-    const cacheKey = `processed_${requestId}`;
-    
-    // キャッシュチェック
-    if (cache.get(cacheKey)) {
-      Logger.log(`重複リクエストを検出: ${requestId}`);
-      return false;
-    }
-    
-    // ロック取得
-    const lock = LockService.getScriptLock();
-    try {
-      lock.waitLock(this.LOCK_TIMEOUT);
-      
-      // 再度キャッシュチェック（ダブルチェック）
-      if (cache.get(cacheKey)) {
-        Logger.log(`ロック取得後、重複リクエストを検出: ${requestId}`);
-        return false;
-      }
-      
-      // 処理済みマークを設定
-      cache.put(cacheKey, 'processed', this.CACHE_EXPIRATION);
-      return true;
-    } catch (e) {
-      Logger.log(`ロック取得エラー: ${e.message}`);
-      return false;
-    } finally {
-      lock.releaseLock();
-    }
-  },
-  
-  /**
-   * リクエストIDを生成
-   * @param {Object} data - Webhookデータ
-   * @return {string} - リクエストID
-   */
-  generateRequestId: function(data) {
-    const str = JSON.stringify(data);
-    return Utilities.computeDigest(
-      Utilities.DigestAlgorithm.SHA_256,
-      str,
-      Utilities.Charset.UTF_8
-    ).map(b => (b & 0xFF).toString(16).padStart(2, '0')).join('');
-  }
-};
+
+
 
 
 // --- 1. 基本設定 (★ご自身の環境に合わせて全て修正してください) ---
@@ -144,68 +24,24 @@ const ACCESS_KEY = 'V2-A0207-tnP4i-YwteT-Cg55O-7YBvg-zMXQX-sS4Xv-XuaKP'; // AppS
 
  */
 
-function handleScriptError(activityId, errorMessage) {
+/**
+ * スクリプト実行時エラーを処理
+ * @param {string} recordId - レコードID
+ * @param {string} errorMessage - エラーメッセージ
+ */
+function handleScriptError(recordId, errorMessage) {
+  const error = new Error(errorMessage);
 
-  if (!activityId) {
-
-    Logger.log('activityIdが不明なため、AppSheetへのエラー記録はスキップされました。');
-
-    return;
-
-  }
-
-
-
-  const payload = {
-
-    Action: "Edit",
-
-    Properties: { "Locale": "ja-JP", "Timezone": "Asia/Tokyo" },
-
-    Rows: [{
-
-      "activity_id": activityId, // ★キー列名を変更
-
-      "status": "エラー",
-
-      "error_details": `GAS Script Error: ${errorMessage}`
-
-    }]
-
-  };
-
-  
-
-  const apiUrl = `https://api.appsheet.com/api/v2/apps/${APP_ID}/tables/${TABLE_NAME}/Action`;
-
-  const options = {
-
-    'method': 'post',
-
-    'contentType': 'application/json',
-
-    'headers': { 'ApplicationAccessKey': ACCESS_KEY },
-
-    'payload': JSON.stringify(payload),
-
-    'muteHttpExceptions': true
-
-  };
-
-  
-
-  try {
-
-    UrlFetchApp.fetch(apiUrl, options);
-
-    Logger.log(`AppSheetへエラー内容を記録しました: ${errorMessage}`);
-
-  } catch (e) {
-
-    Logger.log(`AppSheetへのエラー記録中にさらにエラーが発生しました: ${e.toString()}`);
-
-  }
-
+  ErrorHandler.handleError(error, {
+    scriptName: ScriptApp.getActive().getName(),
+    processId: recordId,
+    recordId: recordId,
+    appsheetConfig: {
+      appId: APP_ID,
+      tableName: TABLE_NAME,
+      accessKey: ACCESS_KEY
+    }
+  });
 }
 
 
@@ -224,9 +60,15 @@ function handleScriptError(activityId, errorMessage) {
  * AppSheet Webhook エントリーポイント
  * @param {GoogleAppsScript.Events.DoPost} e
  */
+/**
+ * AppSheet Webhook エントリーポイント
+ * @param {GoogleAppsScript.Events.DoPost} e
+ */
 function doPost(e) {
-  const params = JSON.parse(e.postData.contents);
-  return processRequest(params);
+  return CommonWebhook.handleDoPost(e, function(params) {
+    params.scriptName = 'Appsheet_営業_ファイルID取得';
+    return processRequest(params);
+  });
 }
 
 
@@ -378,26 +220,18 @@ function processRequest(params) {
  * テスト用関数
  * GASエディタから直接実行してテスト可能
  */
+/**
+ * テスト用関数
+ * GASエディタから直接実行してテスト可能
+ */
 function testProcessRequest() {
   // TODO: テストデータを設定してください
   const testParams = {
-    // 例: callId: "test-123",
-    // 例: recordId: "rec-456",
-    // 例: action: "CREATE"
+    // 例: action: "test",
+    // 例: data: "sample"
   };
 
-  console.log('=== テスト実行: Appsheet_営業_ファイルID取得 ===');
-  console.log('入力パラメータ:', JSON.stringify(testParams, null, 2));
-
-  try {
-    const result = processRequest(testParams);
-    console.log('処理成功:', JSON.stringify(result, null, 2));
-    return result;
-  } catch (error) {
-    console.error('処理エラー:', error.message);
-    console.error('スタックトレース:', error.stack);
-    throw error;
-  }
+  return CommonTest.runTest(processRequest, testParams, 'Appsheet_営業_ファイルID取得');
 }
 
 

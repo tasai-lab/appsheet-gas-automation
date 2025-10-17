@@ -1,127 +1,7 @@
-/**
- * 実行ログモジュール
- */
-const ExecutionLogger = {
-  SPREADSHEET_ID: '15Z_GT4-pDAnjDpd8vkX3B9FgYlQIQwdUF1QIEj7bVnE',
-  SHEET_NAME: 'シート1',
-  
-  /**
-   * ログを記録
-   * @param {string} scriptName - スクリプト名
-   * @param {string} status - ステータス (SUCCESS/ERROR/WARNING)
-   * @param {string} processId - 処理ID
-   * @param {string} message - メッセージ
-   * @param {string} errorDetail - エラー詳細
-   * @param {number} executionTime - 実行時間(秒)
-   * @param {Object} inputData - 入力データ
-   */
-  log: function(scriptName, status, processId, message, errorDetail, executionTime, inputData) {
-    try {
-      const ss = SpreadsheetApp.openById(this.SPREADSHEET_ID);
-      const sheet = ss.getSheetByName(this.SHEET_NAME);
-      
-      const timestamp = new Date();
-      const user = Session.getActiveUser().getEmail();
-      const inputDataStr = inputData ? JSON.stringify(inputData).substring(0, 1000) : '';
-      
-      sheet.appendRow([
-        timestamp,
-        scriptName,
-        status,
-        processId || '',
-        message || '',
-        errorDetail || '',
-        executionTime || 0,
-        user,
-        inputDataStr
-      ]);
-    } catch (e) {
-      Logger.log(`ログ記録エラー: ${e.message}`);
-    }
-  },
-  
-  /**
-   * 成功ログ
-   */
-  success: function(scriptName, processId, message, executionTime, inputData) {
-    this.log(scriptName, 'SUCCESS', processId, message, '', executionTime, inputData);
-  },
-  
-  /**
-   * エラーログ
-   */
-  error: function(scriptName, processId, message, error, executionTime, inputData) {
-    const errorDetail = error ? `${error.message}\n${error.stack}` : '';
-    this.log(scriptName, 'ERROR', processId, message, errorDetail, executionTime, inputData);
-  },
-  
-  /**
-   * 警告ログ
-   */
-  warning: function(scriptName, processId, message, executionTime, inputData) {
-    this.log(scriptName, 'WARNING', processId, message, '', executionTime, inputData);
-  }
-};
 
 
-/**
- * Webhook重複実行防止モジュール
- */
-const DuplicationPrevention = {
-  LOCK_TIMEOUT: 300000, // 5分
-  CACHE_EXPIRATION: 3600, // 1時間
-  
-  /**
-   * リクエストの重複チェック
-   * @param {string} requestId - リクエストID（webhookデータのハッシュ値）
-   * @return {boolean} - 処理を続行する場合はtrue
-   */
-  checkDuplicate: function(requestId) {
-    const cache = CacheService.getScriptCache();
-    const cacheKey = `processed_${requestId}`;
-    
-    // キャッシュチェック
-    if (cache.get(cacheKey)) {
-      Logger.log(`重複リクエストを検出: ${requestId}`);
-      return false;
-    }
-    
-    // ロック取得
-    const lock = LockService.getScriptLock();
-    try {
-      lock.waitLock(this.LOCK_TIMEOUT);
-      
-      // 再度キャッシュチェック（ダブルチェック）
-      if (cache.get(cacheKey)) {
-        Logger.log(`ロック取得後、重複リクエストを検出: ${requestId}`);
-        return false;
-      }
-      
-      // 処理済みマークを設定
-      cache.put(cacheKey, 'processed', this.CACHE_EXPIRATION);
-      return true;
-    } catch (e) {
-      Logger.log(`ロック取得エラー: ${e.message}`);
-      return false;
-    } finally {
-      lock.releaseLock();
-    }
-  },
-  
-  /**
-   * リクエストIDを生成
-   * @param {Object} data - Webhookデータ
-   * @return {string} - リクエストID
-   */
-  generateRequestId: function(data) {
-    const str = JSON.stringify(data);
-    return Utilities.computeDigest(
-      Utilities.DigestAlgorithm.SHA_256,
-      str,
-      Utilities.Charset.UTF_8
-    ).map(b => (b & 0xFF).toString(16).padStart(2, '0')).join('');
-  }
-};
+
+
 
 
 // --- 1. 基本設定 (★ご自身の環境に合わせて全て修正してください) ---
@@ -154,100 +34,24 @@ const EMAIL_RECIPIENT = 't.asai@fractal-group.co.jp'; // ★ 追加: 通知先�
 
  */
 
-function handleScriptError(callId, errorMessage) {
+/**
+ * スクリプト実行時エラーを処理
+ * @param {string} recordId - レコードID
+ * @param {string} errorMessage - エラーメッセージ
+ */
+function handleScriptError(recordId, errorMessage) {
+  const error = new Error(errorMessage);
 
-  // ★ 追加: メール通知機能
-
-  if (SEND_ERROR_EMAIL) {
-
-    try {
-
-      const subject = '【GASエラー通知】AppSheet連携スクリプトでエラーが発生しました';
-
-      const body = `AppSheet連携スクリプトの実行中にエラーが発生しました。\n\n`
-
-                   + `■ 通話ID (call_id):\n${callId || '不明'}\n\n`
-
-                   + `■ エラー内容:\n${errorMessage}\n\n`
-
-                   + `このメールはGoogle Apps Scriptから自動送信されています。`;
-
-      // Email removed - using execution log instead
-
-      Logger.log(`エラー内容をメールで通知しました: ${EMAIL_RECIPIENT}`);
-
-    } catch (e) {
-
-      Logger.log(`メール通知中にエラーが発生しました: ${e.toString()}`);
-
+  ErrorHandler.handleError(error, {
+    scriptName: ScriptApp.getActive().getName(),
+    processId: recordId,
+    recordId: recordId,
+    appsheetConfig: {
+      appId: APP_ID,
+      tableName: TABLE_NAME,
+      accessKey: ACCESS_KEY
     }
-
-  }
-
-  
-
-  // callIdがない場合は、AppSheetを更新できないので以降の処理を終了
-
-  if (!callId) {
-
-    Logger.log('callIdが不明なため、AppSheetへのエラー記録はスキップされました。');
-
-    return;
-
-  }
-
-
-
-  const payload = {
-
-    Action: "Edit",
-
-    Properties: { "Locale": "ja-JP", "Timezone": "Asia/Tokyo" },
-
-    Rows: [{
-
-      "call_id": callId,
-
-      "status": "エラー",
-
-      "error_details": `GAS Script Error: ${errorMessage}`
-
-    }]
-
-  };
-
-  
-
-  const apiUrl = `https://api.appsheet.com/api/v2/apps/${APP_ID}/tables/${TABLE_NAME}/Action`;
-
-  const options = {
-
-    'method': 'post',
-
-    'contentType': 'application/json',
-
-    'headers': { 'ApplicationAccessKey': ACCESS_KEY },
-
-    'payload': JSON.stringify(payload),
-
-    'muteHttpExceptions': true
-
-  };
-
-  
-
-  try {
-
-    UrlFetchApp.fetch(apiUrl, options);
-
-    Logger.log(`AppSheetへエラー内容を記録しました: ${errorMessage}`);
-
-  } catch (e) {
-
-    Logger.log(`AppSheetへのエラー記録中にさらにエラーが発生しました: ${e.toString()}`);
-
-  }
-
+  });
 }
 
 
@@ -264,9 +68,15 @@ function handleScriptError(callId, errorMessage) {
  * AppSheet Webhook エントリーポイント
  * @param {GoogleAppsScript.Events.DoPost} e
  */
+/**
+ * AppSheet Webhook エントリーポイント
+ * @param {GoogleAppsScript.Events.DoPost} e
+ */
 function doPost(e) {
-  const params = JSON.parse(e.postData.contents);
-  return processRequest(params);
+  return CommonWebhook.handleDoPost(e, function(params) {
+    params.scriptName = 'Appsheet_通話_ファイルID取得';
+    return processRequest(params);
+  });
 }
 
 
@@ -276,194 +86,169 @@ function doPost(e) {
  * @returns {Object} - 処理結果
  */
 function processRequest(params) {
+  const startTime = new Date();
   let callId = null;
 
   try {
-
-    
-
+    // パラメータ検証
     callId = params.callId;
-
     const folderId = params.folderId;
+    const filePath = params.filePath;
 
-
-
-    if (!callId || !folderId) {
-
-      throw new Error('必要なパラメータ (callId, folderId) が不足しています。');
-
+    // callIdは必須
+    if (!callId) {
+      throw new Error('必須パラメータ callId が不足しています');
     }
 
-    Logger.log(`処理開始: Call ID = ${callId}, 親Folder ID = ${folderId}`);
-
-
-
-    Utilities.sleep(5000); 
-
-
-
-    const parentFolder = DriveApp.getFolderById(folderId);
-
-    const latestFile = findFileInSubfolders(parentFolder, callId);
-
-
-
-    if (!latestFile) {
-
-      throw new Error(`'${callId}' を含むファイルが指定されたフォルダ內に見つかりません。`);
-
+    // filePathまたはfolderIdのいずれかが必要
+    if (!filePath && !folderId) {
+      throw new Error('filePath または folderId のいずれかが必要です');
     }
 
+    Logger.log(`[処理開始] Call ID: ${callId}`);
 
+    let fileInfo = null;
 
-    const supportedFileExtensions = {
+    // ファイルパスが指定されている場合（優先）
+    if (filePath && folderId) {
+      Logger.log(`[ファイル検索] パス指定: ${filePath}`);
+      try {
+        fileInfo = FileIdUtilities.getFileIdFromPath(filePath, folderId, {
+          throwOnNotFound: false
+        });
+      } catch (e) {
+        Logger.log(`[警告] パス検索失敗、フォルダー内検索にフォールバック: ${e.message}`);
+      }
+    }
 
-      'm4a': 'audio/mp4', 'mp4': 'audio/mp4', 'mp3': 'audio/mpeg',
+    // パス検索が失敗またはfolderIdのみ指定の場合
+    if (!fileInfo && folderId) {
+      Logger.log(`[ファイル検索] フォルダー内検索: ${callId}`);
 
-      'wav': 'audio/wav', 'ogg': 'audio/ogg', 
+      // 5秒待機（ファイルアップロード完了待ち）
+      Utilities.sleep(5000);
 
-      '3gp': 'video/3gpp', '3gpp': 'video/3gpp'
+      // サポートする音声形式
+      const allowedExtensions = ['m4a', 'mp4', 'mp3', 'wav', 'ogg', '3gp', '3gpp'];
 
-    };
+      fileInfo = FileIdUtilities.findFileInFolder(folderId, callId, {
+        recursive: true,
+        returnLatest: true,
+        allowedExtensions: allowedExtensions
+      });
+    }
 
+    if (!fileInfo) {
+      throw new Error(`'${callId}' を含むファイルが見つかりません`);
+    }
 
+    Logger.log(`[ファイル発見] ${fileInfo.fileName} (ID: ${fileInfo.fileId})`);
 
-    const fileName = latestFile.getName();
-
-    const extension = fileName.includes('.') ? fileName.split('.').pop().toLowerCase() : '';
+    // ファイル形式の検証
+    const supportedFormats = ['m4a', 'mp4', 'mp3', 'wav', 'ogg', '3gp', '3gpp'];
+    const validation = FileIdUtilities.validateFileFormat(fileInfo.fileName, supportedFormats);
 
     let rowData;
+    let isSuccess = false;
 
-    let isSuccess = false; // ★ 追加: 処理成功フラグ
-
-
-
-    if (Object.keys(supportedFileExtensions).includes(extension)) {
-
-      const fileId = latestFile.getId();
-
-      const fileUrl = latestFile.getUrl();
-
-      Logger.log(`対応形式のファイルを検出: Name=${fileName}, ID=${fileId}, URL=${fileUrl}`);
-
-      
+    if (validation.isValid) {
+      Logger.log(`[対応形式] ${validation.extension} (${validation.mimeType})`);
 
       rowData = {
-
         "call_id": callId,
-
-        "recording_file_id": fileId,
-
-        "recording_file_url": fileUrl,
-
+        "recording_file_id": fileInfo.fileId,
+        "recording_file_url": fileInfo.fileUrl,
+        "file_name": fileInfo.fileName,
+        "file_size": fileInfo.size,
+        "mime_type": fileInfo.mimeType,
+        "created_date": fileInfo.createdDate,
         "status": "処理中"
-
       };
-
-      isSuccess = true; // ★ 追加
+      isSuccess = true;
 
     } else {
-
-      const mimeType = latestFile.getMimeType();
-
-      Logger.log(`非対応のファイル形式です: Name=${fileName}, MIME=${mimeType}`);
+      Logger.log(`[非対応形式] ${validation.extension}`);
 
       rowData = {
-
         "call_id": callId,
-
         "status": "エラー",
-
-        "error_details": `非対応のファイル形式です：${fileName} (形式: ${extension || '不明'})`
-
+        "error_details": `非対応のファイル形式です：${fileInfo.fileName} (形式: ${validation.extension || '不明'})`
       };
-
     }
 
-    
-
-    const apiPayload = {
-
-      "Action": "Edit",
-
-      "Properties": { "Locale": "ja-JP", "Timezone": "Asia/Tokyo" },
-
-      "Rows": [rowData]
-
+    // AppSheet APIで更新
+    const config = {
+      appId: APP_ID,
+      tableName: TABLE_NAME,
+      accessKey: ACCESS_KEY
     };
 
-    const apiUrl = `https://api.appsheet.com/api/v2/apps/${APP_ID}/tables/${TABLE_NAME}/Action`;
+    const apiResult = FileIdUtilities.updateAppSheetWithFileInfo(config, "Edit", [rowData]);
 
-    const options = {
+    // 実行時間計算
+    const executionTime = (new Date() - startTime) / 1000;
 
-      'method': 'post',
+    // 実行ログ記録
+    if (isSuccess) {
+      ExecutionLogger.success(
+        'Appsheet_通話_ファイルID取得',
+        callId,
+        `ファイルID取得成功: ${fileInfo.fileName}`,
+        executionTime,
+        params
+      );
 
-      'contentType': 'application/json',
+      Logger.log(`[処理完了] ${executionTime}秒`);
 
-      'headers': { 'ApplicationAccessKey': ACCESS_KEY },
-
-      'payload': JSON.stringify(apiPayload)
-
-    };
-
-
-
-    const response = UrlFetchApp.fetch(apiUrl, options);
-
-    const responseCode = response.getResponseCode();
-
-    const responseText = response.getContentText();
-
-    Logger.log(`AppSheet API 応答: ${responseCode} - ${responseText}`);
-
-    
-
-    if (responseCode >= 400) {
-
-        throw new Error(`AppSheet API Error: ${responseCode} - ${responseText}`);
-
-    }
-
-
-
-    // ★ 変更: 正常処理が完了した場合にメールを送信
-
-    if (isSuccess && SEND_SUCCESS_EMAIL) {
-
-      try {
-
-        const subject = '【GAS正常完了通知】AppSheet連携スクリプト';
-
-        const body = `AppSheet連携スクリプトの処理が正常に完了しました。\n\n`
-
-                     + `■ 通話ID (call_id):\n${callId}\n\n`
-
-                     + `■ 処理対象ファイル:\n${fileName}\n\n`
-
-                     + `■ AppSheetへの登録ステータス:\n処理中\n\n`
-
-                     + `このメールはGoogle Apps Scriptから自動送信されています。`;
-
-        // Email removed - using execution log instead
-
-        Logger.log(`処理完了をメールで通知しました: ${EMAIL_RECIPIENT}`);
-
-      } catch (e) {
-
-        Logger.log(`完了通知メールの送信中にエラーが発生しました: ${e.toString()}`);
-
+      // 成功通知（必要に応じて）
+      if (SEND_SUCCESS_EMAIL) {
+        Logger.log(`[通知] 処理完了メール送信: ${EMAIL_RECIPIENT}`);
       }
 
+    } else {
+      ExecutionLogger.warning(
+        'Appsheet_通話_ファイルID取得',
+        callId,
+        `非対応ファイル形式: ${fileInfo.fileName}`,
+        executionTime,
+        params
+      );
     }
 
-
+    return ContentService.createTextOutput(JSON.stringify({
+      status: 'success',
+      callId: callId,
+      fileId: fileInfo.fileId,
+      fileUrl: fileInfo.fileUrl,
+      fileName: fileInfo.fileName,
+      timestamp: new Date().toISOString()
+    })).setMimeType(ContentService.MimeType.JSON);
 
   } catch (error) {
+    const executionTime = (new Date() - startTime) / 1000;
 
-    Logger.log(`エラーが発生しました: ${error.toString()}`);
+    Logger.log(`[エラー] ${error.toString()}`);
+    Logger.log(`[スタックトレース] ${error.stack}`);
 
+    // エラーログ記録
+    ExecutionLogger.error(
+      'Appsheet_通話_ファイルID取得',
+      callId || 'ID不明',
+      error.message,
+      error,
+      executionTime,
+      params
+    );
+
+    // AppSheetエラー記録
     handleScriptError(callId, error.toString());
 
+    return ContentService.createTextOutput(JSON.stringify({
+      status: 'error',
+      callId: callId,
+      error: error.toString(),
+      timestamp: new Date().toISOString()
+    })).setMimeType(ContentService.MimeType.JSON);
   }
 }
 
@@ -472,26 +257,18 @@ function processRequest(params) {
  * テスト用関数
  * GASエディタから直接実行してテスト可能
  */
+/**
+ * テスト用関数
+ * GASエディタから直接実行してテスト可能
+ */
 function testProcessRequest() {
   // TODO: テストデータを設定してください
   const testParams = {
-    // 例: callId: "test-123",
-    // 例: recordId: "rec-456",
-    // 例: action: "CREATE"
+    // 例: action: "test",
+    // 例: data: "sample"
   };
 
-  console.log('=== テスト実行: Appsheet_通話_ファイルID取得 ===');
-  console.log('入力パラメータ:', JSON.stringify(testParams, null, 2));
-
-  try {
-    const result = processRequest(testParams);
-    console.log('処理成功:', JSON.stringify(result, null, 2));
-    return result;
-  } catch (error) {
-    console.error('処理エラー:', error.message);
-    console.error('スタックトレース:', error.stack);
-    throw error;
-  }
+  return CommonTest.runTest(processRequest, testParams, 'Appsheet_通話_ファイルID取得');
 }
 
 

@@ -15,9 +15,15 @@ const DEFAULT_OAUTH_CALLBACK_FUNCTION = 'authCallback';
  * AppSheet Webhook エントリーポイント
  * @param {GoogleAppsScript.Events.DoPost} e
  */
+/**
+ * AppSheet Webhook エントリーポイント
+ * @param {GoogleAppsScript.Events.DoPost} e
+ */
 function doPost(e) {
-  const params = JSON.parse(e.postData.contents);
-  return processRequest(params);
+  return CommonWebhook.handleDoPost(e, function(params) {
+    params.scriptName = 'Appsheet_通話_スレッド投稿';
+    return processRequest(params);
+  });
 }
 
 
@@ -72,26 +78,18 @@ function processRequest(params) {
  * テスト用関数
  * GASエディタから直接実行してテスト可能
  */
+/**
+ * テスト用関数
+ * GASエディタから直接実行してテスト可能
+ */
 function testProcessRequest() {
   // TODO: テストデータを設定してください
   const testParams = {
-    // 例: callId: "test-123",
-    // 例: recordId: "rec-456",
-    // 例: action: "CREATE"
+    // 例: action: "test",
+    // 例: data: "sample"
   };
 
-  console.log('=== テスト実行: Appsheet_通話_スレッド投稿 ===');
-  console.log('入力パラメータ:', JSON.stringify(testParams, null, 2));
-
-  try {
-    const result = processRequest(testParams);
-    console.log('処理成功:', JSON.stringify(result, null, 2));
-    return result;
-  } catch (error) {
-    console.error('処理エラー:', error.message);
-    console.error('スタックトレース:', error.stack);
-    throw error;
-  }
+  return CommonTest.runTest(processRequest, testParams, 'Appsheet_通話_スレッド投稿');
 }
 
 

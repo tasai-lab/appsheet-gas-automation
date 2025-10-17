@@ -1,0 +1,22 @@
+[
+  {
+    "project": "Appsheet_通話_ファイルID取得",
+    "status": "SUCCESS",
+    "message": "更新とデプロイが完了しました"
+  },
+  {
+    "project": "Appsheet_営業_ファイルID取得",
+    "status": "SUCCESS",
+    "message": "更新とデプロイが完了しました"
+  },
+  {
+    "project": "AppSheet_ALL_ファイルID",
+    "status": "SUCCESS",
+    "message": "更新とデプロイが完了しました"
+  },
+  {
+    "project": "Appsheet_通話_要約生成",
+    "status": "SUCCESS",
+    "message": "更新とデプロイが完了しました"
+  }
+]
