@@ -1,6 +1,8 @@
 /**
  * 通話イベント・タスク作成統合スクリプト
- * - action_typeパラメータでイベントまたはタスクを判別
+ * - action_typeパラメータで「イベント」または「タスク」を判別
+ * - 英語('event'/'task')と日本語('イベント'/'タスク')の両方に対応
+ * - 日時は日本時間(JST)で処理（タイムゾーン: Asia/Tokyo）
  * - Googleカレンダーイベント作成
  * - Googleタスク作成
  * 
@@ -42,12 +44,12 @@ function doPost(e) {
  * AppSheetから直接呼び出す際に使用
  * 
  * @param {string} actionId - アクションID（必須）
- * @param {string} actionType - アクションタイプ（'event' or 'task'）（必須）
+ * @param {string} actionType - アクションタイプ（'event'/'イベント' または 'task'/'タスク'）（必須）
  * @param {string} title - タイトル（必須）
  * @param {string} details - 詳細
- * @param {string} startDateTime - 開始日時（イベント用、ISO形式）
- * @param {string} endDateTime - 終了日時（イベント用、ISO形式）
- * @param {string} dueDateTime - 期限日時（タスク用、ISO形式）
+ * @param {string} startDateTime - 開始日時（イベント用、日本時間JST ISO形式: YYYY-MM-DDTHH:mm:ss+09:00）
+ * @param {string} endDateTime - 終了日時（イベント用、日本時間JST ISO形式: YYYY-MM-DDTHH:mm:ss+09:00）
+ * @param {string} dueDateTime - 期限日時（タスク用、日本時間JST ISO形式: YYYY-MM-DDTHH:mm:ss+09:00）
  * @param {string} assigneeEmail - 担当者メールアドレス（必須）
  * @param {string} rowUrl - AppSheet行URL
  * @return {Object} 処理結果
@@ -79,12 +81,12 @@ function processRequestDirect(
 /**
  * メイン処理関数（統合版）
  * @param {string} actionId - アクションID
- * @param {string} actionType - アクションタイプ（'event' or 'task'）
+ * @param {string} actionType - アクションタイプ（'event'/'イベント' または 'task'/'タスク'）
  * @param {string} title - タイトル
  * @param {string} details - 詳細
- * @param {string} startDateTime - 開始日時（イベント用）
- * @param {string} endDateTime - 終了日時（イベント用）
- * @param {string} dueDateTime - 期限日時（タスク用）
+ * @param {string} startDateTime - 開始日時（イベント用、日本時間JST ISO形式）
+ * @param {string} endDateTime - 終了日時（イベント用、日本時間JST ISO形式）
+ * @param {string} dueDateTime - 期限日時（タスク用、日本時間JST ISO形式）
  * @param {string} assigneeEmail - 担当者メールアドレス
  * @param {string} rowUrl - AppSheet行URL
  * @return {Object} 処理結果
@@ -113,7 +115,7 @@ function processRequest(
     
     let result;
     
-    // アクションタイプによる分岐
+    // アクションタイプによる分岐（日本語にも対応）
     if (normalizedActionType === 'event' || normalizedActionType === 'イベント') {
       Logger.log('[処理モード] Googleカレンダーイベント作成');
       
@@ -147,7 +149,7 @@ function processRequest(
       });
       
     } else {
-      throw new Error(`未対応のアクションタイプ: ${actionType}（'event' または 'task' を指定してください）`);
+      throw new Error(`未対応のアクションタイプ: ${actionType}（'event'/'イベント' または 'task'/'タスク' を指定してください）`);
     }
     
     // 成功時のAppSheet更新
@@ -183,7 +185,8 @@ function processRequest(
 }
 
 /**
- * テスト用関数: イベント作成
+ * テスト用関数: イベント作成（英語パラメータ）
+ * GASエディタから実行してテスト可能
  */
 function testProcessRequestEvent() {
   const now = new Date();
@@ -192,9 +195,9 @@ function testProcessRequestEvent() {
   
   const testParams = {
     actionId: 'test_event_' + now.getTime(),
-    actionType: 'event',
+    actionType: 'event', // 英語パラメータ
     title: 'テストイベント',
-    details: 'これはテスト用のイベントです',
+    details: 'これはテスト用のイベントです（日本時間JST）',
     startDateTime: start.toISOString(),
     endDateTime: end.toISOString(),
     assigneeEmail: 'test@example.com', // ★要変更
@@ -217,7 +220,8 @@ function testProcessRequestEvent() {
 }
 
 /**
- * テスト用関数: タスク作成
+ * テスト用関数: タスク作成（日本語パラメータ）
+ * GASエディタから実行してテスト可能
  */
 function testProcessRequestTask() {
   const now = new Date();
@@ -225,9 +229,9 @@ function testProcessRequestTask() {
   
   const testParams = {
     actionId: 'test_task_' + now.getTime(),
-    actionType: 'task',
+    actionType: 'タスク', // 日本語パラメータ
     title: 'テストタスク',
-    details: 'これはテスト用のタスクです',
+    details: 'これはテスト用のタスクです（日本時間JST）',
     dueDateTime: due.toISOString(),
     assigneeEmail: 'test@example.com' // ★要変更
   };
@@ -284,19 +288,25 @@ function createGoogleCalendarEvent(params) {
     
     const descriptionText = `${details || ''}\n\nAppSheetで詳細を確認:\n${cleanUrl}`;
     
-    // イベントリソース作成
+    // 日本時間(JST)の日時オブジェクトを作成
+    const startDateJST = new Date(startDateTime);
+    const endDateJST = new Date(endDateTime);
+    
+    // イベントリソース作成（タイムゾーンを明示的にAsia/Tokyoに設定）
     const eventResource = {
       'summary': title,
       'description': descriptionText,
       'start': {
-        'dateTime': new Date(startDateTime).toISOString(),
+        'dateTime': startDateJST.toISOString(),
         'timeZone': 'Asia/Tokyo'
       },
       'end': {
-        'dateTime': new Date(endDateTime).toISOString(),
+        'dateTime': endDateJST.toISOString(),
         'timeZone': 'Asia/Tokyo'
       }
     };
+    
+    Logger.log(`[カレンダー] イベント作成 - 開始: ${startDateJST.toISOString()}, 終了: ${endDateJST.toISOString()}`);
     
     const options = {
       method: 'post',
@@ -357,14 +367,18 @@ function createGoogleTask(params) {
     
     const apiUrl = 'https://tasks.googleapis.com/tasks/v1/lists/@default/tasks';
     
-    // タスクの期限（RFC3339形式）
-    const dueDate = new Date(dueDateTime).toISOString();
+    // タスクの期限（日本時間でRFC3339形式）
+    // Google Tasks APIは日付のみを使用（時刻は無視される）
+    const dueDateJST = new Date(dueDateTime);
+    const dueDateRFC3339 = dueDateJST.toISOString();
     
     const taskResource = {
       'title': title,
       'notes': details || '',
-      'due': dueDate
+      'due': dueDateRFC3339
     };
+    
+    Logger.log(`[タスク] タスク作成 - 期限: ${dueDateRFC3339} (JST)`);
     
     const options = {
       method: 'post',

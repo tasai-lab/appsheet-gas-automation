@@ -26,56 +26,78 @@
 | パラメータ | 型 | 必須 | 説明 |
 |-----------|-----|------|------|
 | `actionId` | string | ✅ | アクションID |
-| `actionType` | string | ✅ | `'event'` or `'task'` (または `'イベント'` or `'タスク'`) |
+| `actionType` | string | ✅ | `'event'`/`'イベント'` または `'task'`/`'タスク'` |
 | `title` | string | ✅ | タイトル |
 | `details` | string | ❌ | 詳細説明 |
 | `assigneeEmail` | string | ✅ | 担当者メールアドレス |
 
-### イベント作成用パラメータ (`actionType='event'`)
+**注意**: `actionType` は英語(`event`/`task`)または日本語(`イベント`/`タスク`)のいずれでも指定可能です。
+
+### イベント作成用パラメータ (`actionType='event'` または `'イベント'`)
 
 | パラメータ | 型 | 必須 | 説明 |
 |-----------|-----|------|------|
-| `startDateTime` | string | ✅ | 開始日時（ISO形式） |
-| `endDateTime` | string | ✅ | 終了日時（ISO形式） |
+| `startDateTime` | string | ✅ | 開始日時（ISO形式、日本時間JST） |
+| `endDateTime` | string | ✅ | 終了日時（ISO形式、日本時間JST） |
 | `rowUrl` | string | ❌ | AppSheet行URL |
 
-### タスク作成用パラメータ (`actionType='task'`)
+**日時形式**: `YYYY-MM-DDTHH:mm:ss+09:00` (例: `2025-10-18T10:00:00+09:00`)
+
+### タスク作成用パラメータ (`actionType='task'` または `'タスク'`)
 
 | パラメータ | 型 | 必須 | 説明 |
 |-----------|-----|------|------|
-| `dueDateTime` | string | ✅ | 期限日時（ISO形式） |
+| `dueDateTime` | string | ✅ | 期限日時（ISO形式、日本時間JST） |
+
+**日時形式**: `YYYY-MM-DDTHH:mm:ss+09:00` (例: `2025-10-25T17:00:00+09:00`)
 
 ## 使用例
 
-### 例1: イベント作成
+### 例1: イベント作成（日本語パラメータ使用）
 
 ```javascript
 processRequestDirect(
   "ACT-001",                    // actionId
-  "event",                      // actionType
+  "イベント",                    // actionType（日本語）
   "営業ミーティング",            // title
   "顧客との打ち合わせ",          // details
-  "2025-10-18T10:00:00+09:00",  // startDateTime
-  "2025-10-18T11:00:00+09:00",  // endDateTime
+  "2025-10-18T10:00:00+09:00",  // startDateTime（日本時間JST）
+  "2025-10-18T11:00:00+09:00",  // endDateTime（日本時間JST）
   null,                         // dueDateTime (不要)
   "user@example.com",           // assigneeEmail
   "https://appsheet.com/row/123" // rowUrl
 );
 ```
 
-### 例2: タスク作成
+### 例2: タスク作成（日本語パラメータ使用）
 
 ```javascript
 processRequestDirect(
   "ACT-002",                    // actionId
-  "task",                       // actionType
+  "タスク",                      // actionType（日本語）
   "資料作成",                   // title
   "提案書を作成する",            // details
   null,                         // startDateTime (不要)
   null,                         // endDateTime (不要)
-  "2025-10-25T17:00:00+09:00",  // dueDateTime
+  "2025-10-25T17:00:00+09:00",  // dueDateTime（日本時間JST）
   "user@example.com",           // assigneeEmail
   null                          // rowUrl (不要)
+);
+```
+
+### 例3: イベント作成（英語パラメータ使用）
+
+```javascript
+processRequestDirect(
+  "ACT-003",                    // actionId
+  "event",                      // actionType（英語）
+  "営業ミーティング",            // title
+  "顧客との打ち合わせ",          // details
+  "2025-10-18T14:00:00+09:00",  // startDateTime（日本時間JST）
+  "2025-10-18T15:00:00+09:00",  // endDateTime（日本時間JST）
+  null,                         // dueDateTime (不要)
+  "user@example.com",           // assigneeEmail
+  "https://appsheet.com/row/456" // rowUrl
 );
 ```
 
@@ -83,7 +105,22 @@ processRequestDirect(
 
 ### Webhook設定
 
-#### イベント作成の場合
+#### イベント作成の場合（日本語）
+
+```json
+{
+  "actionId": "<<[action_id]>>",
+  "actionType": "イベント",
+  "title": "<<[title]>>",
+  "details": "<<[details]>>",
+  "startDateTime": "<<[start_datetime]>>",
+  "endDateTime": "<<[end_datetime]>>",
+  "assigneeEmail": "<<[assignee_email]>>",
+  "rowUrl": "<<[row_url]>>"
+}
+```
+
+#### イベント作成の場合（英語）
 
 ```json
 {
@@ -98,7 +135,20 @@ processRequestDirect(
 }
 ```
 
-#### タスク作成の場合
+#### タスク作成の場合（日本語）
+
+```json
+{
+  "actionId": "<<[action_id]>>",
+  "actionType": "タスク",
+  "title": "<<[title]>>",
+  "details": "<<[details]>>",
+  "dueDateTime": "<<[due_datetime]>>",
+  "assigneeEmail": "<<[assignee_email]>>"
+}
+```
+
+#### タスク作成の場合（英語）
 
 ```json
 {
@@ -163,6 +213,7 @@ GASエディタから実行してテストできます。
 **症状**: OAuth2アクセストークン取得失敗
 
 **対策**:
+
 1. `SERVICE_ACCOUNT_JSON` スクリプトプロパティが設定されているか確認
 2. サービスアカウントにドメイン全体の委任が有効か確認
 3. 必要なスコープが付与されているか確認
@@ -172,9 +223,11 @@ GASエディタから実行してテストできます。
 **症状**: 必須パラメータが不足
 
 **対策**:
+
 - イベント作成: `startDateTime`, `endDateTime` が必須
 - タスク作成: `dueDateTime` が必須
-- `actionType` は `'event'` または `'task'` のみ対応
+- `actionType` は `'event'`/`'イベント'` または `'task'`/`'タスク'` のみ対応
+- 日時は日本時間(JST)で `YYYY-MM-DDTHH:mm:ss+09:00` 形式で指定
 
 ## バージョン履歴
 
