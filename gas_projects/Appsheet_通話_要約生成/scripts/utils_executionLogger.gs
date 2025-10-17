@@ -8,7 +8,7 @@
 
 // 設定
 const EXECUTION_LOG_SPREADSHEET_ID = '15Z_GT4-pDAnjDpd8vkX3B9FgYlQIQwdUF1QIEj7bVnE';
-const EXECUTION_LOG_SHEET_NAME = '実行ログ';
+const EXECUTION_LOG_SHEET_NAME = '実行履歴';
 const SCRIPT_NAME = 'Appsheet_通話_要約生成';
 
 /**

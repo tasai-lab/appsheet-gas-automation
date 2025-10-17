@@ -6,7 +6,7 @@
 // ログスプレッドシートID（統一）
 const LOG_SPREADSHEET_ID = '15Z_GT4-pDAnjDpd8vkX3B9FgYlQIQwdUF1QIEj7bVnE';
 const LOG_FOLDER_ID = '16swPUizvdlyPxUjbDpVl9-VBDJZO91kX';
-const LOG_SHEET_NAME = 'GAS実行履歴ログ';
+const LOG_SHEET_NAME = '実行履歴';
 
 /**
  * 実行履歴をスプレッドシートに記録
@@ -20,7 +20,7 @@ const LOG_SHEET_NAME = 'GAS実行履歴ログ';
 function logExecution(scriptName, status, message, details = null, requestId = null, processingTime = null) {
   try {
     const spreadsheet = getOrCreateLogSpreadsheet();
-    const sheet = spreadsheet.getSheetByName('実行ログ') || spreadsheet.getSheets()[0];
+    const sheet = spreadsheet.getSheetByName(LOG_SHEET_NAME) || spreadsheet.getSheets()[0];
     
     const timestamp = new Date();
     const detailsStr = details ? JSON.stringify(details) : '';
@@ -114,7 +114,7 @@ function getOrCreateLogSpreadsheet() {
     
     // ヘッダー行を設定
     const sheet = spreadsheet.getSheets()[0];
-    sheet.setName('実行ログ');
+    sheet.setName(LOG_SHEET_NAME);
     sheet.setFrozenRows(1);
     
     const headers = [

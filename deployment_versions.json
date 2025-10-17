@@ -1,9 +1,15 @@
 {
-  "last_updated": "2025-10-17T19:23:25.837165",
+  "last_updated": "2025-10-17T19:28:54.720449",
   "projects": {
     "Appsheet_通話_要約生成": {
       "script_id": "1PK1RNjLaA7g-1-JrJ-AFn1S0D_nL5cGHNJeDtyhIap_otDnYsUAquSz6",
       "deployments": [
+        {
+          "version": null,
+          "description": "Geminiモデル定義を正しく修正 - gemini-2.5-flash/proに統一、シート名を実行履歴に変更",
+          "timestamp": "2025-10-17T19:28:54.718979",
+          "status": "failed"
+        },
         {
           "version": null,
           "description": "Geminiモデル定義を統一化 - Flash思考モードを導入、実行ログスプレッドシートIDを統一",

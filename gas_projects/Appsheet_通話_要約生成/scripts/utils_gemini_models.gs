@@ -2,10 +2,11 @@
  * Gemini モデル定義モジュール
  * Gemini API のモデル名と設定を統一管理
  * @author Fractal Group
- * @version 1.0.0
+ * @version 1.1.0
  * @date 2025-10-17
  * 
  * 参考: https://ai.google.dev/gemini-api/docs/thinking?hl=ja
+ * 参考: https://ai.google.dev/gemini-api/docs/models/gemini?hl=ja
  */
 
 /**
@@ -13,14 +14,16 @@
  */
 const GEMINI_MODELS = {
   // Flash モデル（高速・軽量タスク向け）
-  FLASH: 'gemini-2.0-flash-exp',
+  // バランスの取れた機能を提供する、価格とパフォーマンスの面で最適なモデル
+  FLASH: 'gemini-2.5-flash',
   
   // Pro モデル（高度な推論向け）
+  // コード、数学、STEMの複雑な問題を推論できる最先端の思考モデル
   PRO: 'gemini-2.5-pro',
   
-  // Flash 思考モード（中等度の思考力が必要な場合）
-  // thinking_mode を有効にして使用
-  FLASH_THINKING: 'gemini-2.0-flash-thinking-exp-01-21'
+  // Flash-Lite モデル（費用対効果重視）
+  // 費用対効果と高スループットを重視して最適化された、最も高速なFlashモデル
+  FLASH_LITE: 'gemini-2.5-flash-lite'
 };
 
 /**
@@ -31,20 +34,20 @@ const GEMINI_MODELS = {
 function getRecommendedModel(taskType) {
   switch (taskType) {
     case 'simple':
-      // シンプルなタスク: Flash モデル
-      return GEMINI_MODELS.FLASH;
+      // シンプルなタスク: Flash-Lite モデル（最速）
+      return GEMINI_MODELS.FLASH_LITE;
     
     case 'moderate':
-      // 中等度の思考力が必要: Flash 思考モード
-      return GEMINI_MODELS.FLASH_THINKING;
+      // 中等度の思考力が必要: Flash モデル（思考モード有効）
+      return GEMINI_MODELS.FLASH;
     
     case 'complex':
       // 複雑な推論が必要: Pro モデル
       return GEMINI_MODELS.PRO;
     
     default:
-      // デフォルトは Flash 思考モード（バランス重視）
-      return GEMINI_MODELS.FLASH_THINKING;
+      // デフォルトは Flash（バランス重視）
+      return GEMINI_MODELS.FLASH;
   }
 }
 
@@ -62,11 +65,19 @@ function getGenerationConfig(modelName, options = {}) {
     maxOutputTokens: options.maxOutputTokens || 8192
   };
   
-  // Flash 思考モードの場合は thinking_mode を有効化
-  if (modelName === GEMINI_MODELS.FLASH_THINKING) {
+  // 思考モードを有効化する場合（Gemini 2.5シリーズでサポート）
+  // thinkingBudget: -1 で動的思考（モデルが自動で調整）
+  // thinkingBudget: 0 で思考無効
+  // thinkingBudget: 数値 で思考トークン数を指定
+  if (options.enableThinking) {
     baseConfig.thinkingConfig = {
-      thinkingMode: 'THINKING_MODE_ENABLED'
+      thinkingBudget: options.thinkingBudget || -1  // -1 = 動的思考
     };
+    
+    // 思考の要約を含める場合
+    if (options.includeThoughts) {
+      baseConfig.thinkingConfig.includeThoughts = true;
+    }
   }
   
   // JSON出力を要求する場合
@@ -87,6 +98,11 @@ function getGenerationConfig(modelName, options = {}) {
 function callGeminiAPI(prompt, apiKey, options = {}) {
   // タスクタイプからモデルを決定（指定がない場合）
   const modelName = options.modelName || getRecommendedModel(options.taskType || 'moderate');
+  
+  // 中等度・複雑タスクの場合は思考モードを自動で有効化
+  if (!options.hasOwnProperty('enableThinking')) {
+    options.enableThinking = (options.taskType === 'moderate' || options.taskType === 'complex');
+  }
   
   // GenerationConfig を生成
   const generationConfig = getGenerationConfig(modelName, options);
@@ -114,7 +130,7 @@ function callGeminiAPI(prompt, apiKey, options = {}) {
     muteHttpExceptions: true
   };
   
-  Logger.log(`[Gemini API] モデル: ${modelName}, タスクタイプ: ${options.taskType || 'moderate'}`);
+  Logger.log(`[Gemini API] モデル: ${modelName}, タスクタイプ: ${options.taskType || 'moderate'}, 思考モード: ${options.enableThinking ? '有効' : '無効'}`);
   
   const response = UrlFetchApp.fetch(url, httpOptions);
   const responseCode = response.getResponseCode();
@@ -198,7 +214,7 @@ function testGeminiModels() {
   Logger.log('\n[モデル一覧]');
   Logger.log(`Flash: ${GEMINI_MODELS.FLASH}`);
   Logger.log(`Pro: ${GEMINI_MODELS.PRO}`);
-  Logger.log(`Flash (思考モード): ${GEMINI_MODELS.FLASH_THINKING}`);
+  Logger.log(`Flash-Lite: ${GEMINI_MODELS.FLASH_LITE}`);
   
   Logger.log('\n[推奨モデル]');
   Logger.log(`Simple タスク: ${getRecommendedModel('simple')}`);
@@ -206,11 +222,14 @@ function testGeminiModels() {
   Logger.log(`Complex タスク: ${getRecommendedModel('complex')}`);
   
   Logger.log('\n[GenerationConfig]');
-  const config1 = getGenerationConfig(GEMINI_MODELS.FLASH);
-  Logger.log(`Flash: ${JSON.stringify(config1, null, 2)}`);
+  const config1 = getGenerationConfig(GEMINI_MODELS.FLASH, { enableThinking: false });
+  Logger.log(`Flash (思考なし): ${JSON.stringify(config1, null, 2)}`);
   
-  const config2 = getGenerationConfig(GEMINI_MODELS.FLASH_THINKING);
+  const config2 = getGenerationConfig(GEMINI_MODELS.FLASH, { enableThinking: true });
   Logger.log(`Flash (思考モード): ${JSON.stringify(config2, null, 2)}`);
+  
+  const config3 = getGenerationConfig(GEMINI_MODELS.PRO, { enableThinking: true, thinkingBudget: 1024 });
+  Logger.log(`Pro (思考モード・予算指定): ${JSON.stringify(config3, null, 2)}`);
   
   Logger.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   
