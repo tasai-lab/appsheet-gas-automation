@@ -35,7 +35,7 @@ graph TB
     C --> D
     F --> B
     
-    style A fill:#e1f5ff
+    style A fill:#e3f2fd
     style B fill:#fff3e0
     style C fill:#f3e5f5
     style D fill:#f3e5f5
