@@ -32,7 +32,7 @@ gcloud services enable storage-api.googleapis.com --project=macro-shadow-458705-
 3. 「Google Cloud Platform（GCP）プロジェクト」セクションで「プロジェクトを変更」をクリック
 4. GCPプロジェクト番号を入力:
    ```
-   1043856847716
+   894359947651
    ```
    ※ プロジェクトID `macro-shadow-458705-v8` のプロジェクト番号
 5. 「プロジェクトを設定」をクリック
@@ -42,12 +42,12 @@ gcloud services enable storage-api.googleapis.com --project=macro-shadow-458705-
 Apps ScriptのサービスアカウントにCloud Storageへの書き込み権限を付与：
 
 ```bash
-# Apps Scriptのサービスアカウントのメールアドレスを確認
-# Apps Scriptエディタ > プロジェクトの設定 > 「サービスアカウント」セクション
-# 例: project-name@appspot.gserviceaccount.com
+# Apps Scriptのサービスアカウントのメールアドレス
+# プロジェクトID: macro-shadow-458705-v8
+# サービスアカウント: macro-shadow-458705-v8@appspot.gserviceaccount.com
 
 # バケットへの権限付与
-gsutil iam ch serviceAccount:PROJECT_ID@appspot.gserviceaccount.com:roles/storage.objectAdmin \
+gsutil iam ch serviceAccount:macro-shadow-458705-v8@appspot.gserviceaccount.com:roles/storage.objectAdmin \
   gs://macro-shadow-458705-v8-call-logs
 ```
 
@@ -55,7 +55,7 @@ gsutil iam ch serviceAccount:PROJECT_ID@appspot.gserviceaccount.com:roles/storag
 1. Cloud Storage > バケット > `macro-shadow-458705-v8-call-logs`
 2. 「権限」タブ
 3. 「アクセス権を付与」をクリック
-4. 新しいプリンシパル: `PROJECT_ID@appspot.gserviceaccount.com`
+4. 新しいプリンシパル: `macro-shadow-458705-v8@appspot.gserviceaccount.com`
 5. ロール: `ストレージ オブジェクト管理者` を選択
 6. 「保存」
 
