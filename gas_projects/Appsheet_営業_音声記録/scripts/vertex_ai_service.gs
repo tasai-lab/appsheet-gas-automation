@@ -119,12 +119,13 @@ function callVertexAIAPIForSalesAnalysis(prompt, base64Data, mimeType, config) {
   const jsonResponse = JSON.parse(responseText);
   
   // Vertex AI APIのレスポンス構造から分析結果を抽出
-  if (!jsonResponse[0] || !jsonResponse[0].candidates || jsonResponse[0].candidates.length === 0) {
+  // 非ストリーミングAPIの構造: { candidates: [...] }
+  if (!jsonResponse.candidates || jsonResponse.candidates.length === 0) {
     Logger.log(`[Vertex AI] デバッグ - レスポンス: ${responseText.substring(0, 500)}`);
     throw new Error('Vertex AIからの応答に有効な候補が含まれていません: ' + responseText.substring(0, 200));
   }
   
-  const candidate = jsonResponse[0].candidates[0];
+  const candidate = jsonResponse.candidates[0];
   
   // finishReasonをチェック
   if (candidate.finishReason) {
