@@ -1,4 +1,16 @@
 {
-  "last_updated": "2025-10-17T00:00:00+09:00",
-  "projects": {}
+  "last_updated": "2025-10-17T18:54:06.788757",
+  "projects": {
+    "Appsheet_通話_要約生成": {
+      "script_id": "1PK1RNjLaA7g-1-JrJ-AFn1S0D_nL5cGHNJeDtyhIap_otDnYsUAquSz6",
+      "deployments": [
+        {
+          "version": null,
+          "description": "Spreadsheets APIのOAuthスコープを追加",
+          "timestamp": "2025-10-17T18:54:06.787371",
+          "status": "failed"
+        }
+      ]
+    }
+  }
 }
