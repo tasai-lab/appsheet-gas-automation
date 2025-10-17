@@ -238,19 +238,22 @@ function testProcessRequest() {
 
 ## Geminiモデル選択
 
-プロジェクトの複雑度に応じて、適切なモデルが自動選択されます：
+プロジェクトの複雑度とユースケースに応じて、適切なAPIとモデルが使用されます：
 
+### Vertex AI統一プロジェクト（通話関連）
+**GCP統合によるセキュアな処理**
+- **Appsheet_通話_要約生成** - 音声解析（gemini-2.5-flash）+ 依頼作成（flash + 思考モード）
+- **Appsheet_通話_質疑応答** - ユーザー選択（Pro/Flash + 思考モード）
+
+### Gemini API使用プロジェクト（その他）
 - **gemini-2.5-flash**: 高速処理が必要な軽量タスク（デフォルト）
 - **gemini-2.5-pro**: 複雑な思考が必要なタスク
-
-### Proモデルを使用するプロジェクト
-- Appsheet_通話_要約生成
-- Appsheet_訪問看護_通常記録
-- Appsheet_訪問看護_精神科記録
-- Appsheet_訪問看護_報告書
-- Appsheet_利用者_質疑応答
-- Appsheet_営業レポート
-- その他、複雑なAI処理を含むプロジェクト
+  - Appsheet_訪問看護_通常記録
+  - Appsheet_訪問看護_精神科記録
+  - Appsheet_訪問看護_報告書
+  - Appsheet_利用者_質疑応答
+  - Appsheet_営業レポート
+  - その他、複雑なAI処理を含むプロジェクト
 
 ## ドキュメント
 

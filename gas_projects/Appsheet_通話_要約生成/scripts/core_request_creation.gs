@@ -119,7 +119,7 @@ function createOrUpdateRequestFromSummary(
 }
 
 /**
- * 【新規作成用】Gemini APIで通話内容から依頼情報を抽出する
+ * 【新規作成用】Vertex AI で通話内容から依頼情報を抽出する
  * @param {string} summary - 通話要約
  * @param {string} transcript - 通話全文
  * @param {Object} config - 設定オブジェクト
@@ -162,7 +162,7 @@ ${transcript}
 }
 
 /**
- * 【上書き更新用】Gemini APIで既存情報と通話内容を元に依頼情報を更新する
+ * 【上書き更新用】Vertex AI で既存情報と通話内容を元に依頼情報を更新する
  * @param {string} summary - 通話要約
  * @param {string} transcript - 通話全文
  * @param {string} existingRequestReason - 既存の依頼理由
@@ -221,27 +221,28 @@ ${transcript}
 }
 
 /**
- * Gemini APIを呼び出す共通関数（依頼作成用）
- * 共通のGeminiモデル定義を使用
+ * Vertex AI を呼び出す共通関数（依頼作成用）
  * @param {string} prompt - プロンプト
  * @param {Object} config - 設定オブジェクト
  * @return {Object} パース済みのJSON結果
  */
 function callGeminiForRequest(prompt, config) {
   try {
-    // 共通のGemini API呼び出し関数を使用
+    // Vertex AI のテキスト生成を使用
     // 中等度の思考力が必要なため、Flash思考モードを使用
-    const result = generateJSON(prompt, config.geminiApiKey, {
+    const result = generateJSONWithVertex(prompt, config, {
       taskType: 'moderate',
-      temperature: 0.3
+      temperature: 0.3,
+      enableThinking: true,
+      thinkingBudget: -1  // 動的思考モード
     });
     
-    Logger.log('[Gemini API] 依頼情報抽出成功');
+    Logger.log('[Vertex AI] 依頼情報抽出成功');
     
     return result;
     
   } catch (error) {
-    Logger.log(`[Gemini API] 依頼情報抽出エラー: ${error.message}`);
+    Logger.log(`[Vertex AI] 依頼情報抽出エラー: ${error.message}`);
     throw error;
   }
 }
