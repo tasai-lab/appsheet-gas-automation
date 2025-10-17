@@ -239,16 +239,16 @@ const KEY_TO_JAPANESE_MAP = {
 function doPost(e) {
   return CommonWebhook.handleDoPost(e, function(params) {
     params.scriptName = 'Appsheet_訪問看護_書類仕分け';
-    return processRequest(params.documentId || params.data?.documentId, params.clientId || params.data?.clientId, params.documentType || params.data?.documentType, params.staffId || params.data?.staffId, params.ocrText || params.data?.ocrText, params.driveFileId || params.data?.driveFileId, params.clientBirthDate || params.data?.clientBirthDate, params.clientName || params.data?.clientName, params.staffName || params.data?.staffName);
+    return processRequest(params);
   });
 }
 
 /**
- * メイン処理関数（引数ベース）
+ * メイン処理関数
  * @param {Object} params - リクエストパラメータ
  * @returns {Object} - 処理結果
  */
-function processRequest(documentId, clientId, documentType, staffId, ocrText, driveFileId, clientBirthDate, clientName, staffName) {
+function processRequest(params) {
   let documentId = "N/A";
 
   const logCollector = [];

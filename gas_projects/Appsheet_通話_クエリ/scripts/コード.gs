@@ -153,16 +153,16 @@ function sendDebugLog(logCollector, subject) {
 function doPost(e) {
   return CommonWebhook.handleDoPost(e, function(params) {
     params.scriptName = 'Appsheet_通話_クエリ';
-    return processRequest(params.queryId || params.data?.queryId, params.promptText || params.data?.promptText, params.callSummary || params.data?.callSummary, params.callTranscript || params.data?.callTranscript, params.call_info || params.data?.call_info, params.modelKeyword || params.data?.modelKeyword);
+    return processRequest(params);
   });
 }
 
 /**
- * メイン処理関数（引数ベース）
+ * メイン処理関数
  * @param {Object} params - リクエストパラメータ
  * @returns {Object} - 処理結果
  */
-function processRequest(queryId, promptText, callSummary, callTranscript, call_info, modelKeyword) {
+function processRequest(params) {
   const logCollector = [];
 
   const startTime = new Date();
@@ -260,7 +260,7 @@ function testProcessRequest() {
     // 例: data: "sample"
   };
 
-  return CommonTest.runTest((params) => processRequest(params.queryId, params.promptText, params.callSummary, params.callTranscript, params.call_info, params.modelKeyword), testParams, 'Appsheet_通話_クエリ');
+  return CommonTest.runTest(processRequest, testParams, 'Appsheet_通話_クエリ');
 }
 
 /**

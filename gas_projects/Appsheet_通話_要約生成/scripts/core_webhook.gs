@@ -35,25 +35,30 @@
 function doPost(e) {
   return CommonWebhook.handleDoPost(e, function(params) {
     params.scriptName = 'Appsheet_通話_要約生成';
-    return processRequest(params.callId || params.data?.callId, params.callDatetime || params.data?.callDatetime, params.filePath || params.data?.filePath, params.fileId || params.data?.fileId, params.callContextText || params.data?.callContextText, params.userInfoText || params.data?.userInfoText, params.clientId || params.data?.clientId);
+    return processRequest(params);
   });
 }
 
 /**
- * メイン処理関数（引数ベース）
+ * メイン処理関数
  * @param {Object} params - リクエストパラメータ
  * @returns {Object} - 処理結果
  */
-function processRequest(callId, callDatetime, filePath, fileId, callContextText, userInfoText, clientId) {
+function processRequest(params) {
   const config = getConfig();
 
   let callId = 'ID解析不能';
 
   try {
 
-    // パラメータから callId を取得
-
-    callId = callId || 'ID不明';
+    // パラメータから個別値を取得
+    callId = params.callId || 'ID不明';
+    const callDatetime = params.callDatetime;
+    const filePath = params.filePath;
+    const fileId = params.fileId;
+    const callContextText = params.callContextText;
+    const userInfoText = params.userInfoText;
+    const clientId = params.clientId;
 
     // パラメータ検証
 
@@ -198,7 +203,7 @@ function testProcessRequest() {
     // 例: data: "sample"
   };
 
-  return CommonTest.runTest((params) => processRequest(params.callId, params.callDatetime, params.filePath, params.fileId, params.callContextText, params.userInfoText, params.clientId), testParams, 'Appsheet_通話_要約生成');
+  return CommonTest.runTest(processRequest, testParams, 'Appsheet_通話_要約生成');
 }
 
 /**

@@ -33,16 +33,16 @@ const GEMINI_MODEL = 'gemini-2.5-pro';
 function doPost(e) {
   return CommonWebhook.handleDoPost(e, function(params) {
     params.scriptName = 'Appsheet_訪問看護_書類OCR';
-    return processRequest(params.recordId || params.data?.recordId, params.fileId || params.data?.fileId, params.documentType || params.data?.documentType);
+    return processRequest(params);
   });
 }
 
 /**
- * メイン処理関数（引数ベース）
+ * メイン処理関数
  * @param {Object} params - リクエストパラメータ
  * @returns {Object} - 処理結果
  */
-function processRequest(recordId, fileId, documentType) {
+function processRequest(params) {
   const config = params.config;
 
   const data = params.data;
@@ -185,7 +185,7 @@ function testProcessRequest() {
     // 例: data: "sample"
   };
 
-  return CommonTest.runTest((params) => processRequest(params.recordId, params.fileId, params.documentType), testParams, 'Appsheet_訪問看護_書類OCR');
+  return CommonTest.runTest(processRequest, testParams, 'Appsheet_訪問看護_書類OCR');
 }
 
 /**
