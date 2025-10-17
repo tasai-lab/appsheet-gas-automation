@@ -196,6 +196,7 @@ sequenceDiagram
 ## 状態遷移図
 
 ```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e3a5f','primaryTextColor':'#fff','primaryBorderColor':'#4a90e2','lineColor':'#4a90e2','secondaryColor':'#5f4c1e','tertiaryColor':'#1e5f3a','noteBkgColor':'#2d4a4a','noteTextColor':'#fff'}}}%%
 stateDiagram-v2
     [*] --> Idle: システム待機
     Idle --> Receiving: Webhook受信
@@ -218,6 +219,21 @@ stateDiagram-v2
     
     Logging --> Responding: レスポンス生成
     Responding --> [*]: 処理完了
+    
+    classDef idleState fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#fff
+    classDef entryState fill:#1e3a5f,stroke:#4a90e2,stroke-width:2px,color:#fff
+    classDef processState fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#fff
+    classDef successState fill:#1e5f3a,stroke:#4ae290,stroke-width:2px,color:#fff
+    classDef errorState fill:#5f1e3a,stroke:#e24a90,stroke-width:2px,color:#fff
+    classDef utilState fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#fff
+    
+    class Idle idleState
+    class Receiving entryState
+    class Validating,Checking utilState
+    class Processing,Executing processState
+    class Success successState
+    class Error,Duplicate errorState
+    class Logging,Responding utilState
 ```
 
 ## タイミング図
