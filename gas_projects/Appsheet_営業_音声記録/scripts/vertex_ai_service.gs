@@ -120,10 +120,19 @@ function callVertexAIAPIForSalesAnalysis(prompt, base64Data, mimeType, config) {
   
   // Vertex AI APIのレスポンス構造から分析結果を抽出
   if (!jsonResponse[0] || !jsonResponse[0].candidates || jsonResponse[0].candidates.length === 0) {
+    Logger.log(`[Vertex AI] デバッグ - レスポンス: ${responseText.substring(0, 500)}`);
     throw new Error('Vertex AIからの応答に有効な候補が含まれていません: ' + responseText.substring(0, 200));
   }
   
   const candidate = jsonResponse[0].candidates[0];
+  
+  // finishReasonをチェック
+  if (candidate.finishReason) {
+    Logger.log(`[Vertex AI] finishReason: ${candidate.finishReason}`);
+    if (candidate.finishReason === 'MAX_TOKENS') {
+      throw new Error('Vertex AIの応答がトークン制限により途中で終了しました。maxOutputTokensを増やすか、プロンプトを短くしてください。');
+    }
+  }
   
   if (!candidate.content || !candidate.content.parts || candidate.content.parts.length === 0) {
     throw new Error('Vertex AIからの応答に有効なコンテンツが含まれていません');
@@ -131,11 +140,71 @@ function callVertexAIAPIForSalesAnalysis(prompt, base64Data, mimeType, config) {
   
   // 分析結果を抽出してパース
   const analysisText = candidate.content.parts[0].text;
-  const analysisResult = JSON.parse(analysisText);
+  Logger.log(`[Vertex AI] 応答テキスト長: ${analysisText.length}文字`);
+  Logger.log(`[Vertex AI] 応答テキスト全文:\n${analysisText}`);
+  
+  // JSON抽出関数を使用（2段階戦略）
+  let analysisResult;
+  try {
+    analysisResult = extractJSONFromText(analysisText);
+  } catch (parseError) {
+    Logger.log(`[Vertex AI] JSON抽出エラー: ${parseError.message}`);
+    Logger.log(`[Vertex AI] 問題のテキスト（最初の1000文字）: ${analysisText.substring(0, 1000)}`);
+    throw new Error(`JSON解析エラー: ${parseError.message}`);
+  }
   
   Logger.log(`[Vertex AI] JSON解析完了: ${Object.keys(analysisResult).length}個のフィールド`);
   
   return analysisResult;
+}
+
+/**
+ * テキストからJSONを抽出（2段階戦略）
+ * 通話_要約生成と同じロジック
+ * 
+ * @param {string} text - AIの応答テキスト
+ * @returns {Object} - 抽出されたJSONオブジェクト
+ */
+function extractJSONFromText(text) {
+  if (!text) {
+    throw new Error('AIの応答テキストが空です');
+  }
+
+  // Strategy 1: Markdownコードブロック抽出
+  const markdownRegex = /```(?:json)?\s*([\s\S]+?)\s*```/i;
+  const match = text.match(markdownRegex);
+  
+  if (match && match[1]) {
+    try {
+      Logger.log('[JSON抽出] Strategy 1 (Markdown) 使用');
+      return JSON.parse(match[1].trim());
+    } catch (error) {
+      Logger.log(`[JSON抽出] Strategy 1 失敗: ${error.message}`);
+    }
+  }
+
+  // Strategy 2: 括弧抽出
+  Logger.log('[JSON抽出] Strategy 2 (括弧) 使用');
+  const startIndex = text.indexOf('{');
+  const endIndex = text.lastIndexOf('}');
+  
+  if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
+    const jsonString = text.substring(startIndex, endIndex + 1);
+    try {
+      return JSON.parse(jsonString);
+    } catch (error) {
+      Logger.log(`[JSON抽出] パースエラー: ${error.message}`);
+      Logger.log(`抽出文字列 (先頭500文字): ${jsonString.substring(0, 500)}`);
+      if (error.message.includes('Unexpected end')) {
+        throw new Error('AIの応答が途中で終了 (トークン不足の可能性)');
+      }
+      throw new Error(`JSON解析エラー: ${error.message}`);
+    }
+  }
+
+  // 両方失敗
+  Logger.log(`[JSON抽出] 失敗\nテキスト (先頭500文字): ${text.substring(0, 500)}`);
+  throw new Error('有効なJSONが見つかりませんでした');
 }
 
 /**

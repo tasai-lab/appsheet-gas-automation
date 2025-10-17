@@ -21,9 +21,9 @@ function getConfig() {
     gcpLocation: props.getProperty('GCP_LOCATION') || 'us-central1',
     
     // Vertex AI設定
-    vertexAIModel: props.getProperty('VERTEX_AI_MODEL') || 'gemini-2.0-flash-exp',
+    vertexAIModel: props.getProperty('VERTEX_AI_MODEL') || 'gemini-2.5-pro',
     temperature: parseFloat(props.getProperty('TEMPERATURE') || '0.7'),
-    maxOutputTokens: parseInt(props.getProperty('MAX_OUTPUT_TOKENS') || '20000'),
+    maxOutputTokens: parseInt(props.getProperty('MAX_OUTPUT_TOKENS') || '8000'),
     
     // AppSheet API設定
     appId: props.getProperty('APP_ID') || '',
@@ -31,7 +31,7 @@ function getConfig() {
     tableName: props.getProperty('TABLE_NAME') || 'Sales_Activities',
     
     // Google Drive設定
-    sharedDriveFolderId: props.getProperty('SHARED_DRIVE_FOLDER_ID') || '',
+    sharedDriveFolderId: props.getProperty('SHARED_DRIVE_FOLDER_ID') || '1OX2l_PmpyUaqKtT77INW8o2FR6OHE9B1',
     
     // 実行ログ設定
     executionLogSpreadsheetId: props.getProperty('EXECUTION_LOG_SPREADSHEET_ID') || '',
@@ -48,9 +48,7 @@ function getConfig() {
 function validateConfig() {
   const config = getConfig();
   const requiredFields = [
-    { key: 'gcpProjectId', name: 'GCP_PROJECT_ID' },
-    { key: 'appId', name: 'APP_ID' },
-    { key: 'accessKey', name: 'ACCESS_KEY' }
+    { key: 'gcpProjectId', name: 'GCP_PROJECT_ID' }
   ];
   
   const missingFields = requiredFields
@@ -68,12 +66,14 @@ function validateConfig() {
 }
 
 /**
- * Vertex AI APIのエンドポイントURLを生成
+ * Vertex AI APIエンドポイントURLを取得
  * @returns {string} - Vertex AI APIエンドポイント
  */
 function getVertexAIEndpoint() {
   const config = getConfig();
-  return `https://${config.gcpLocation}-aiplatform.googleapis.com/v1/projects/${config.gcpProjectId}/locations/${config.gcpLocation}/publishers/google/models/${config.vertexAIModel}:streamGenerateContent`;
+  // 非ストリーミングエンドポイントを使用（通話_要約生成と同じ）
+  // ストリーミングAPIは分割応答を返す可能性があるため
+  return `https://${config.gcpLocation}-aiplatform.googleapis.com/v1/projects/${config.gcpProjectId}/locations/${config.gcpLocation}/publishers/google/models/${config.vertexAIModel}:generateContent`;
 }
 
 /**
@@ -82,4 +82,63 @@ function getVertexAIEndpoint() {
  */
 function getOAuth2Token() {
   return ScriptApp.getOAuthToken();
+}
+
+/**
+ * 設定のデバッグ出力（テスト用）
+ * Script Propertiesの値を確認
+ */
+function debugConfig() {
+  Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  Logger.log('🔍 Script Properties デバッグ');
+  Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  
+  const props = PropertiesService.getScriptProperties();
+  const allProps = props.getProperties();
+  
+  Logger.log('登録されているプロパティ数: ' + Object.keys(allProps).length);
+  Logger.log('');
+  
+  // 全てのプロパティを表示（機密情報はマスク）
+  Object.keys(allProps).sort().forEach(key => {
+    let value = allProps[key];
+    
+    // 機密情報をマスク
+    if (key.includes('KEY') || key.includes('TOKEN') || key.includes('SECRET')) {
+      value = value ? '***' + value.slice(-4) : '(空)';
+    } else if (value && value.length > 50) {
+      value = value.substring(0, 50) + '...';
+    }
+    
+    Logger.log(`${key}: ${value || '(空)'}`);
+  });
+  
+  Logger.log('');
+  Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  
+  // 設定オブジェクトを取得して表示
+  try {
+    const config = getConfig();
+    Logger.log('');
+    Logger.log('📋 getConfig()の結果:');
+    Logger.log('  gcpProjectId: ' + (config.gcpProjectId || '(空)'));
+    Logger.log('  gcpLocation: ' + config.gcpLocation);
+    Logger.log('  vertexAIModel: ' + config.vertexAIModel);
+    Logger.log('  appId: ' + (config.appId ? '***' + config.appId.slice(-4) : '(空)'));
+    Logger.log('  accessKey: ' + (config.accessKey ? '***' + config.accessKey.slice(-4) : '(空)'));
+    Logger.log('  tableName: ' + config.tableName);
+    Logger.log('  sharedDriveFolderId: ' + (config.sharedDriveFolderId || '(空)'));
+    Logger.log('  maxFileSizeMB: ' + config.maxFileSizeMB);
+  } catch (error) {
+    Logger.log('❌ getConfig()エラー: ' + error.message);
+  }
+  
+  // バリデーション結果
+  Logger.log('');
+  try {
+    validateConfig();
+    Logger.log('✅ バリデーション成功');
+  } catch (error) {
+    Logger.log('❌ バリデーション失敗: ' + error.message);
+  }
 }

@@ -1,6 +1,10 @@
 /**
  * AppSheet API連携サービス
  * Sales_Activitiesテーブルの更新を実行
+ * 
+ * @author Fractal Group
+ * @version 2.0.0
+ * @date 2025-10-17
  */
 
 /**

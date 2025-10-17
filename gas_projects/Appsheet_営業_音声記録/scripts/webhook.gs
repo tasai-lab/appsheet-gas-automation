@@ -15,8 +15,7 @@ function doPost(e) {
     // メイン処理を呼び出し（個別引数で渡す）
     const result = processSalesAudioAnalysis(
       params.activityId,
-      params.filePath,
-      params.fileId,
+      params.audioFileId,
       params.salespersonName,
       params.contactName,
       params.orgName
