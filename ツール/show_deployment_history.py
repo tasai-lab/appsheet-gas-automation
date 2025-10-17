@@ -58,13 +58,13 @@ def show_all_projects(history, limit=5):
             print("-" * 80)
             
             for deployment in deployments[:limit]:
-                version = deployment.get('version', 'N/A')
+                version = deployment.get('version') or 'N/A'
                 timestamp = format_timestamp(deployment.get('timestamp'))
                 status = deployment.get('status', 'unknown')
                 description = deployment.get('description', '')
                 
                 status_symbol = '✓' if status == 'success' else '✗'
-                print(f"{version:<12} {timestamp:<20} {status_symbol} {status:<9} {description[:40]}")
+                print(f"{str(version):<12} {timestamp:<20} {status_symbol} {status:<9} {description[:40]}")
 
 def show_project(history, project_name, limit=10):
     """特定プロジェクトのバージョン履歴を表示"""
@@ -99,13 +99,13 @@ def show_project(history, project_name, limit=10):
     print("-" * 80)
     
     for i, deployment in enumerate(deployments[:limit], 1):
-        version = deployment.get('version', 'N/A')
+        version = deployment.get('version') or 'N/A'
         timestamp = format_timestamp(deployment.get('timestamp'))
         status = deployment.get('status', 'unknown')
         description = deployment.get('description', '')
         
         status_symbol = '✓' if status == 'success' else '✗'
-        print(f"{i:<5} {version:<12} {timestamp:<20} {status_symbol} {status:<9} {description}")
+        print(f"{i:<5} {str(version):<12} {timestamp:<20} {status_symbol} {status:<9} {description}")
 
 def main():
     """メイン処理"""
