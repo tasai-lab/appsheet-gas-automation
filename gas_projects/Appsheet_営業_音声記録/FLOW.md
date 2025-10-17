@@ -1,5 +1,7 @@
 # Appsheet_営業_音声記録 - フロー図
 
+> **配色について**: このドキュメントのMermaid図配色は [アーキテクチャ図配色ガイドライン](../../../docs/ARCHITECTURE_DIAGRAM_COLOR_GUIDE.md) に準拠しています。
+
 ## システムフロー図
 
 ### メイン処理フロー
@@ -24,6 +26,22 @@ flowchart TD
     
     L --> N[成功レスポンス返却]
     M --> F
+    
+    %% スタイル定義（ダークモード対応）
+    style A fill:#1e5f3a,stroke:#4ae290,stroke-width:2px,color:#fff
+    style B fill:#1e3a5f,stroke:#4a90e2,stroke-width:2px,color:#fff
+    style C fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#fff
+    style D fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#fff
+    style E fill:#5f1e3a,stroke:#e24a90,stroke-width:2px,color:#fff
+    style F fill:#5f1e3a,stroke:#e24a90,stroke-width:2px,color:#fff
+    style G fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#fff
+    style H fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#fff
+    style I fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#fff
+    style J fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#fff
+    style K fill:#5f4c1e,stroke:#e2a84a,stroke-width:3px,color:#fff
+    style L fill:#1e5f3a,stroke:#4ae290,stroke-width:2px,color:#fff
+    style M fill:#5f1e3a,stroke:#e24a90,stroke-width:2px,color:#fff
+    style N fill:#1e5f3a,stroke:#4ae290,stroke-width:2px,color:#fff
 ```
 
 ## 重複防止フロー
@@ -64,6 +82,9 @@ sequenceDiagram
             GAS-->>AS: 処理結果レスポンス
         end
     end
+    
+    %% スタイル定義（ダークモード対応）
+    %%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e3a5f','primaryTextColor':'#fff','primaryBorderColor':'#4a90e2','lineColor':'#4a90e2','secondaryColor':'#5f4c1e','tertiaryColor':'#1e5f3a'}}}%%
 ```
 
 ## データフロー図
@@ -87,6 +108,20 @@ flowchart LR
     
     J --> K[Log Recording]
     K --> L[Response Generation]
+    
+    %% スタイル定義（ダークモード対応）
+    style A fill:#1e5f3a,stroke:#4ae290,stroke-width:2px,color:#fff
+    style B fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#fff
+    style C fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#fff
+    style D fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#fff
+    style E fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#fff
+    style F fill:#4a1e5f,stroke:#b84ae2,stroke-width:3px,color:#fff
+    style G fill:#1e5f3a,stroke:#4ae290,stroke-width:2px,color:#fff
+    style H fill:#4a1e5f,stroke:#b84ae2,stroke-width:2px,color:#fff
+    style I fill:#4a1e5f,stroke:#b84ae2,stroke-width:2px,color:#fff
+    style J fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#fff
+    style K fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#fff
+    style L fill:#1e5f3a,stroke:#4ae290,stroke-width:2px,color:#fff
 ```
 
 ## エラーハンドリングフロー
@@ -110,6 +145,22 @@ flowchart TD
     
     G --> N[処理終了]
     M --> N
+    
+    %% スタイル定義（ダークモード対応）
+    style A fill:#1e3a5f,stroke:#4a90e2,stroke-width:2px,color:#fff
+    style B fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#fff
+    style C fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#fff
+    style D fill:#1e5f3a,stroke:#4ae290,stroke-width:2px,color:#fff
+    style E fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#fff
+    style F fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#fff
+    style G fill:#1e5f3a,stroke:#4ae290,stroke-width:2px,color:#fff
+    style H fill:#5f1e3a,stroke:#e24a90,stroke-width:2px,color:#fff
+    style I fill:#5f1e3a,stroke:#e24a90,stroke-width:2px,color:#fff
+    style J fill:#5f1e3a,stroke:#e24a90,stroke-width:2px,color:#fff
+    style K fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#fff
+    style L fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#fff
+    style M fill:#5f1e3a,stroke:#e24a90,stroke-width:2px,color:#fff
+    style N fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#fff
 ```
 
 ## ログ記録フロー
@@ -137,6 +188,9 @@ sequenceDiagram
         Logger->>Logger: コンソールログ出力
         Logger-->>Script: 無視（処理継続）
     end
+    
+    %% スタイル定義（ダークモード対応）
+    %%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e3a5f','primaryTextColor':'#fff','primaryBorderColor':'#4a90e2','lineColor':'#4a90e2','secondaryColor':'#5f4c1e','tertiaryColor':'#1e5f3a'}}}%%
 ```
 
 ## 状態遷移図
@@ -169,6 +223,7 @@ stateDiagram-v2
 ## タイミング図
 
 ```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e3a5f','primaryTextColor':'#fff','primaryBorderColor':'#4a90e2','secondaryColor':'#5f4c1e','tertiaryColor':'#1e5f3a'}}}%%
 gantt
     title 処理タイミング
     dateFormat  HH:mm:ss.SSS
@@ -231,6 +286,18 @@ graph TB
     D --> H
     E --> I
     E --> J
+    
+    %% スタイル定義（ダークモード対応）
+    style A fill:#1e5f3a,stroke:#4ae290,stroke-width:2px,color:#fff
+    style B fill:#1e3a5f,stroke:#4a90e2,stroke-width:2px,color:#fff
+    style C fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#fff
+    style D fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#fff
+    style E fill:#5f4c1e,stroke:#e2a84a,stroke-width:3px,color:#fff
+    style F fill:#2d4a4a,stroke:#6dd6d6,stroke-width:2px,color:#fff
+    style G fill:#2d4a4a,stroke:#6dd6d6,stroke-width:2px,color:#fff
+    style H fill:#2d4a4a,stroke:#6dd6d6,stroke-width:2px,color:#fff
+    style I fill:#1e5f5f,stroke:#4ae2e2,stroke-width:2px,color:#fff
+    style J fill:#4a1e5f,stroke:#b84ae2,stroke-width:3px,color:#fff
 ```
 
 ## 使用例
