@@ -11,15 +11,36 @@
  * 音声ファイルを取得してMIMEタイプを判定
  * Vertex AI パターンに準拠
  * 
- * @param {string} fileId - Google DriveのファイルID
+ * @param {string} filePath - Google Driveのファイルパス（優先）
+ * @param {string} fileId - Google DriveのファイルID（filePathが無い場合）
  * @returns {Object} - {blob: Blob, fileName: string, mimeType: string}
  * @throws {Error} - ファイルが見つからない、またはアクセスできない場合
  */
-function getAudioFile(fileId) {
+function getAudioFile(filePath, fileId) {
   try {
-    Logger.log(`[Drive] ファイル取得開始: ${fileId}`);
+    let actualFileId = fileId;
     
-    const file = DriveApp.getFileById(fileId);
+    // filePathが指定されている場合、IDを解決
+    if (filePath) {
+      Logger.log(`[Drive] ファイルパスからID取得: ${filePath}`);
+      const config = getConfig();
+      
+      if (!config.sharedDriveFolderId) {
+        Logger.log('[Drive] ⚠️ 警告: SHARED_DRIVE_FOLDER_ID未設定、filePathを無視してfileIdを使用');
+      } else {
+        const pathResult = getFileIdFromPath(filePath, config.sharedDriveFolderId);
+        actualFileId = pathResult.fileId;
+        Logger.log(`[Drive] パス解決成功: ${actualFileId}`);
+      }
+    }
+    
+    if (!actualFileId) {
+      throw new Error('filePathまたはfileIdが必要です');
+    }
+    
+    Logger.log(`[Drive] ファイル取得開始: ${actualFileId}`);
+    
+    const file = DriveApp.getFileById(actualFileId);
     const blob = file.getBlob();
     const fileName = file.getName();
     
@@ -37,7 +58,7 @@ function getAudioFile(fileId) {
     
   } catch (error) {
     Logger.log(`[Drive] エラー: ${error.message}`);
-    throw new Error(`ファイル取得エラー (ID: ${fileId}): ${error.message}`);
+    throw new Error(`ファイル取得エラー: ${error.message}`);
   }
 }
 

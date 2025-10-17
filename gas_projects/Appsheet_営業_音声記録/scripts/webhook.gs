@@ -15,7 +15,8 @@ function doPost(e) {
     // メイン処理を呼び出し（個別引数で渡す）
     const result = processSalesAudioAnalysis(
       params.activityId,
-      params.audioFileId,
+      params.filePath,
+      params.fileId,
       params.salespersonName,
       params.contactName,
       params.orgName
@@ -44,18 +45,20 @@ function doPost(e) {
  * GASエディタやスクリプトトリガーから直接実行する場合に使用
  * 
  * @param {string} activityId - 活動ID
- * @param {string} audioFileId - 音声ファイルのGoogle Drive ID
+ * @param {string} filePath - 音声ファイルのGoogle Driveパス（優先）
+ * @param {string} fileId - 音声ファイルのGoogle Drive ID（filePathが無い場合）
  * @param {string} salespersonName - 営業担当者名（任意）
  * @param {string} contactName - 面会相手名（任意）
  * @param {string} orgName - 訪問先機関名（任意）
  * @returns {Object} - 処理結果
  */
-function processSalesAudioAnalysisDirect(activityId, audioFileId, salespersonName, contactName, orgName) {
+function processSalesAudioAnalysisDirect(activityId, filePath, fileId, salespersonName, contactName, orgName) {
   Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   Logger.log('🎤 営業音声分析 - 直接実行');
   Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   Logger.log(`Activity ID: ${activityId}`);
-  Logger.log(`Audio File ID: ${audioFileId}`);
+  Logger.log(`File Path: ${filePath || '未指定'}`);
+  Logger.log(`File ID: ${fileId || '未指定'}`);
   Logger.log(`営業担当者: ${salespersonName || '未指定'}`);
   Logger.log(`面会相手: ${contactName || '未指定'}`);
   Logger.log(`訪問先: ${orgName || '未指定'}`);
@@ -63,7 +66,8 @@ function processSalesAudioAnalysisDirect(activityId, audioFileId, salespersonNam
   
   return processSalesAudioAnalysis(
     activityId,
-    audioFileId,
+    filePath || '',
+    fileId || '',
     salespersonName || '',
     contactName || '',
     orgName || ''

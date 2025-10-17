@@ -7,31 +7,38 @@
  * 営業音声記録を分析し、AppSheetを更新する
  * 
  * @param {string} activityId - 活動ID
- * @param {string} audioFileId - 音声ファイルのGoogle Drive ID
+ * @param {string} filePath - 音声ファイルのGoogle Driveパス（優先）
+ * @param {string} fileId - 音声ファイルのGoogle Drive ID（filePathが無い場合）
  * @param {string} salespersonName - 営業担当者名（任意）
  * @param {string} contactName - 面会相手名（任意）
  * @param {string} orgName - 訪問先機関名（任意）
  * @returns {Object} - 分析結果
  */
-function processSalesAudioAnalysis(activityId, audioFileId, salespersonName, contactName, orgName) {
+function processSalesAudioAnalysis(activityId, filePath, fileId, salespersonName, contactName, orgName) {
   try {
     // パラメータ検証
-    if (!activityId || !audioFileId) {
-      throw new Error('必須パラメータ（activityId, audioFileId）が不足しています。');
+    if (!activityId) {
+      throw new Error('必須パラメータ（activityId）が不足しています。');
+    }
+    
+    if (!filePath && !fileId) {
+      throw new Error('filePathまたはfileIdのいずれかが必須です。');
     }
     
     Logger.log(`処理開始: Activity ID = ${activityId}`);
+    Logger.log(`ファイル指定: filePath=${filePath || '未指定'}, fileId=${fileId || '未指定'}`);
     
     // コンテキスト情報を構築
     const context = {
-      audioFileId: audioFileId,
+      filePath: filePath,
+      fileId: fileId,
       salespersonName: salespersonName || '不明',
       contactName: contactName || '不明',
       orgName: orgName || '不明'
     };
     
-    // Gemini APIで音声を分析
-    const analysisResult = analyzeSalesCallWithGemini(context);
+    // Vertex AIで音声を分析
+    const analysisResult = analyzeSalesCallWithVertexAI(context);
     
     if (!analysisResult) {
       throw new Error('AIからの応答が不正でした。');

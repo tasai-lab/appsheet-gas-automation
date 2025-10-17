@@ -26,6 +26,10 @@ graph TB
         D[drive_utils.gs]
     end
     
+    subgraph "設定管理"
+        I[config.gs]
+    end
+    
     subgraph "AppSheet API"
         E[appsheet_api.gs]
     end
@@ -42,6 +46,8 @@ graph TB
     B --> C
     B --> E
     B --> F
+    B --> I
+    C --> I
     G --> B
     C --> D
     D -.Google Drive.-> H[(音声ファイル)]
@@ -54,6 +60,7 @@ graph TB
     style F fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#ffffff
     style G fill:#5f1e3a,stroke:#e24a90,stroke-width:2px,color:#ffffff
     style H fill:#2d4a4a,stroke:#6dd6d6,stroke-width:2px,color:#ffffff
+    style I fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#ffffff
 ```
 
 ## ファイル別役割
@@ -83,31 +90,50 @@ graph TB
 
 ### 3. AI分析
 
-#### `gemini_service.gs`
-- **役割**: Gemini APIによる音声分析と評価
+#### `vertex_ai_service.gs`
+- **役割**: Vertex AIによる音声分析と評価
 - **主な関数**:
-  - `analyzeSalesCallWithGemini(context)` - 音声ファイルを分析
-  - `callGeminiAPIForSalesAnalysis(...)` - Gemini API呼び出し
+  - `analyzeSalesCallWithVertexAI(context)` - 音声ファイルを分析
+  - `callVertexAIAPIForSalesAnalysis(...)` - Vertex AI API呼び出し
   - `buildSalesAnalysisPrompt(context)` - 分析用プロンプト生成
 - **機能**:
   - drive_utils統合による音声ファイル取得
   - ファイルサイズ検証（20MB上限）
-  - Base64エンコーディング
-  - Gemini 2.0 Flash APIでの分析
+  - inlineData方式での音声データ送信
+  - Vertex AI（Gemini 2.0 Flash Exp）での分析
   - 評価指標に基づくJSON生成
+  - GCP OAuth2認証使用
 - **評価指標**: 
   - 関心度（INT-01～05）
   - 当社認知度（AWR-01～03）
   - 印象（IMP-01～05）
   - サービス理解度（UND-01～03）
   - など全14項目
-- **依存関係**: drive_utils.gs
-- **改善点（v3）**: 
-  - モデル変更（gemini-2.5-pro → gemini-2.0-flash-exp）
-  - エラーハンドリング強化
-  - ログ出力の詳細化
+- **依存関係**: drive_utils.gs, config.gs
+- **改善点（v4）**: 
+  - Gemini API → Vertex AIに移行
+  - 通話_要約生成プロジェクトと同じパターン
+  - Cloud Storage不要（inlineData方式）
+  - OAuth2認証でセキュリティ向上
 
-### 4. Google Drive操作
+### 4. 設定管理
+
+#### `config.gs`
+- **役割**: GCP設定とScript Properties管理
+- **主な関数**:
+  - `getConfig()` - 設定取得
+  - `validateConfig()` - 必須設定バリデーション
+  - `getVertexAIEndpoint()` - Vertex AIエンドポイントURL生成
+  - `getOAuth2Token()` - OAuth2トークン取得
+- **設定項目**:
+  - GCP_PROJECT_ID（必須）
+  - GCP_LOCATION (デフォルト: us-central1)
+  - VERTEX_AI_MODEL (デフォルト: gemini-2.0-flash-exp)
+  - APP_ID、ACCESS_KEY（必須）
+  - MAX_FILE_SIZE_MB (デフォルト: 20)
+- **依存関係**: なし
+
+### 5. Google Drive操作
 
 #### `drive_utils.gs`
 - **役割**: 音声ファイルの取得、検証、エンコーディング
@@ -436,6 +462,16 @@ clasp deploy --description "v2: 説明"
 3. AppSheetアプリがデプロイされているか確認
 
 ## 変更履歴
+
+### v4 (2025-01-17)
+- 🔄 **Gemini API → Vertex AI移行**
+- ✨ `config.gs`追加（GCP設定管理、OAuth2認証）
+- ✨ `vertex_ai_service.gs`追加（Vertex AI統合、inlineData方式）
+- ❌ `gemini_service.gs`削除（Vertex AIに置換）
+- 🔐 OAuth2トークン認証（APIキー不要）
+- 📦 inlineData方式で最大20MBまで対応
+- 🔗 通話_要約生成プロジェクトと同じ共通モジュールパターン採用
+- 🚀 デプロイ前にScript PropertiesでGCP_PROJECT_ID設定が必須
 
 ### v3 (2025-10-17)
 - 🔧 音声ファイル・Gemini取扱の最適化

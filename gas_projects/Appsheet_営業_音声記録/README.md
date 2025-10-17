@@ -10,7 +10,12 @@
 
 ## 概要
 
-営業活動の音声記録をGemini APIで分析し、評価指標IDを含む定量・定性評価を自動生成するプロジェクトです。
+営業活動の音声記録を**Vertex AI（Gemini 2.0 Flash Exp）**で分析し、評価指標IDを含む定量・定性評価を自動生成するプロジェクトです。
+
+**通話_要約生成プロジェクトと同様の共通モジュール**を使用：
+- `drive_utils.gs`: ファイル取得・検証・エンコーディング（Vertex AIパターン準拠）
+- `vertex_ai_service.gs`: Vertex AI API連携（inlineData方式、20MB対応）
+- `config.gs`: GCP設定管理
 
 ## 必須パラメータ
 
