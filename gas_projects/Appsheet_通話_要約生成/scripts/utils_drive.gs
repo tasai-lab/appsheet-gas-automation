@@ -1,16 +1,8 @@
-
-
-
-
-
-
 /**
 
  * Google Drive操作モジュール
 
  * 共有ドライブのファイル操作を管理
-
- * 
 
  * @author Fractal Group
 
@@ -21,12 +13,9 @@
  */
 
 
-
 /**
 
  * ファイルパスからファイルIDを取得（共有ドライブ対応）
-
- * 
 
  * @param {string} filePath - ファイルパス（例: "2024/10/recording.m4a"）
 
@@ -44,13 +33,9 @@ function getFileIdFromPath(filePath, baseFolderId) {
 
     Logger.log(`[Drive] ベースフォルダーID: ${baseFolderId}`);
 
-    
-
     // パスを分割（例: "2024/10/recording.m4a" → ["2024", "10", "recording.m4a"]）
 
     const pathParts = filePath.split('/').filter(part => part.length > 0);
-
-    
 
     if (pathParts.length === 0) {
 
@@ -58,13 +43,9 @@ function getFileIdFromPath(filePath, baseFolderId) {
 
     }
 
-    
-
     // ベースフォルダーから開始
 
     let currentFolder = DriveApp.getFolderById(baseFolderId);
-
-    
 
     // パスを辿る（最後の要素はファイル名なので除外）
 
@@ -74,11 +55,7 @@ function getFileIdFromPath(filePath, baseFolderId) {
 
       Logger.log(`[Drive] フォルダー検索: ${folderName}`);
 
-      
-
       const folders = currentFolder.getFoldersByName(folderName);
-
-      
 
       if (!folders.hasNext()) {
 
@@ -86,15 +63,11 @@ function getFileIdFromPath(filePath, baseFolderId) {
 
       }
 
-      
-
       currentFolder = folders.next();
 
       Logger.log(`[Drive] フォルダー発見: ${currentFolder.getName()} (ID: ${currentFolder.getId()})`);
 
     }
-
-    
 
     // 最後の要素（ファイル名）を取得
 
@@ -102,11 +75,7 @@ function getFileIdFromPath(filePath, baseFolderId) {
 
     Logger.log(`[Drive] ファイル検索: ${fileName}`);
 
-    
-
     const files = currentFolder.getFilesByName(fileName);
-
-    
 
     if (!files.hasNext()) {
 
@@ -114,23 +83,17 @@ function getFileIdFromPath(filePath, baseFolderId) {
 
     }
 
-    
-
     const file = files.next();
 
     const fileId = file.getId();
 
     const fileUrl = file.getUrl();
 
-    
-
     Logger.log(`[Drive] ファイル発見: ${file.getName()}`);
 
     Logger.log(`[Drive] ファイルID: ${fileId}`);
 
     Logger.log(`[Drive] ファイルURL: ${fileUrl}`);
-
-    
 
     // 同名ファイルが複数ある場合は警告
 
@@ -140,8 +103,6 @@ function getFileIdFromPath(filePath, baseFolderId) {
 
     }
 
-    
-
     return {
 
       fileId: fileId,
@@ -149,8 +110,6 @@ function getFileIdFromPath(filePath, baseFolderId) {
       fileUrl: fileUrl
 
     };
-
-    
 
   } catch (error) {
 
@@ -163,12 +122,9 @@ function getFileIdFromPath(filePath, baseFolderId) {
 }
 
 
-
 /**
 
  * 共有ドライブのファイル情報を取得
-
- * 
 
  * @param {string} fileId - ファイルID
 
@@ -181,8 +137,6 @@ function getSharedDriveFileInfo(fileId) {
   try {
 
     const file = DriveApp.getFileById(fileId);
-
-    
 
     return {
 
@@ -211,7 +165,6 @@ function getSharedDriveFileInfo(fileId) {
 }
 
 
-
 /**
 
  * ファイルパス検証テスト
@@ -224,8 +177,6 @@ function testFilePathResolution() {
 
   const config = getConfig();
 
-  
-
   Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
   Logger.log('🧪 ファイルパス解決テスト');
@@ -233,8 +184,6 @@ function testFilePathResolution() {
   Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
   Logger.log('');
-
-  
 
   // テストケース
 
@@ -248,13 +197,9 @@ function testFilePathResolution() {
 
   ];
 
-  
-
   testPaths.forEach((testPath, index) => {
 
     Logger.log(`テスト ${index + 1}: ${testPath}`);
-
-    
 
     try {
 
@@ -272,15 +217,10 @@ function testFilePathResolution() {
 
     }
 
-    
-
     Logger.log('');
 
   });
 
-  
-
   Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
 }
-

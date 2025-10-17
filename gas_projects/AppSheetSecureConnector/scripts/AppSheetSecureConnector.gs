@@ -1,9 +1,3 @@
-
-
-
-
-
-
 /**
 
  * AppSheetSecureConnector Library
@@ -11,7 +5,6 @@
  * AppSheet APIキーを安全に管理し、API呼び出しを仲介します。
 
  */
-
 
 
 // =====================================================================================
@@ -49,7 +42,6 @@ const CONFIG = {
 };
 
 
-
 /**
 
  * 【公開関数】AppSheet APIを使用してテーブルを一括更新（Edit）する。
@@ -70,8 +62,6 @@ function updateAppSheetPlanTable(updateRows) {
 
     }
 
-
-
     const endpoint = CONFIG.APPSHEET.getEndpoint();
 
     const payload = {
@@ -89,8 +79,6 @@ function updateAppSheetPlanTable(updateRows) {
         Rows: updateRows
 
     };
-
-
 
     const options = {
 
@@ -112,11 +100,7 @@ function updateAppSheetPlanTable(updateRows) {
 
     };
 
-
-
     console.log(`[Library] AppSheet APIリクエスト送信 (${updateRows.length}件)`);
-
-
 
     // 結果オブジェクトの初期化
 
@@ -128,8 +112,6 @@ function updateAppSheetPlanTable(updateRows) {
 
     }));
 
-
-
     try {
 
         const response = UrlFetchApp.fetch(endpoint, options);
@@ -137,8 +119,6 @@ function updateAppSheetPlanTable(updateRows) {
         const responseCode = response.getResponseCode();
 
         const responseBody = response.getContentText();
-
-
 
         if (responseCode === 200) {
 
@@ -151,8 +131,6 @@ function updateAppSheetPlanTable(updateRows) {
             console.error(`[Library] AppSheet APIリクエスト失敗。Code: ${responseCode}. Response: ${responseBody.substring(0, 500)}...`);
 
             let errorReason = `Error: HTTP ${responseCode}`;
-
-
 
             if (responseCode === 400 && (responseBody.includes("is not found") || responseBody.includes("key"))) {
 
@@ -175,8 +153,6 @@ function updateAppSheetPlanTable(updateRows) {
         results.forEach(r => r.status = `Error: Exception - ${e.message}`);
 
     }
-
-
 
     return results;
 

@@ -1,9 +1,3 @@
-
-
-
-
-
-
 // --- 1. 基本設定 (★ご自身の環境に合わせて全て修正してください) ---
 
 const APP_ID = '4762f34f-3dbc-4fca-9f84-5b6e809c3f5f'; // AppSheetのアプリID
@@ -11,7 +5,6 @@ const APP_ID = '4762f34f-3dbc-4fca-9f84-5b6e809c3f5f'; // AppSheetのアプリID
 const ACCESS_KEY = 'V2-I1zMZ-90iua-47BBk-RBjO1-N0mUo-kY25j-VsI4H-eRvwT'; // AppSheet APIのアクセスキー
 
 const ACTIONS_TABLE_NAME = 'Call_Actions'; // アクションテーブル
-
 
 
 // サービスアカウントキーを保存しているスクリプトプロパティのキー名
@@ -23,19 +16,12 @@ const DEFAULT_SERVICE_ACCOUNT_JSON_KEY = 'SERVICE_ACCOUNT_JSON';
 const DEFAULT_OAUTH_CALLBACK_FUNCTION = 'authCallback';
 
 
-
-
-
 /**
 
  * AppSheetのWebhookからPOSTリクエストを受け取るメイン関数
 
  */
 
-/**
- * AppSheet Webhook エントリーポイント
- * @param {GoogleAppsScript.Events.DoPost} e
- */
 /**
  * AppSheet Webhook エントリーポイント
  * @param {GoogleAppsScript.Events.DoPost} e
@@ -58,8 +44,6 @@ function processRequest(params) {
 
   Logger.log(`Webhook受信: ${JSON.stringify(params)}`);
 
-
-
   try {
 
     const { title, details, startDateTime, endDateTime, assigneeEmail } = params;
@@ -70,13 +54,9 @@ function processRequest(params) {
 
     }
 
-
-
     // Googleカレンダーにイベントを作成
 
     const eventResult = createGoogleCalendarEvent(params);
-
-    
 
     // 成功後、AppSheetを更新
 
@@ -91,8 +71,6 @@ function processRequest(params) {
       throw new Error(eventResult.errorMessage || "不明なGoogleカレンダーイベント作成エラー");
 
     }
-
-
 
   } catch (error) {
 
@@ -112,10 +90,6 @@ function processRequest(params) {
  * テスト用関数
  * GASエディタから直接実行してテスト可能
  */
-/**
- * テスト用関数
- * GASエディタから直接実行してテスト可能
- */
 function testProcessRequest() {
   // TODO: テストデータを設定してください
   const testParams = {
@@ -125,8 +99,6 @@ function testProcessRequest() {
 
   return CommonTest.runTest(processRequest, testParams, 'Appsheet_通話_イベント作成');
 }
-
-
 
 
 /**
@@ -141,15 +113,11 @@ function createGoogleCalendarEvent(params) {
 
   const { title, details, startDateTime, endDateTime, assigneeEmail, rowUrl } = params;
 
-
-
   try {
 
     const calendarScope = ['https://www.googleapis.com/auth/calendar'];
 
     const servicePrefix = 'CalendarImpersonation';
-
-
 
     // 認証
 
@@ -157,11 +125,7 @@ function createGoogleCalendarEvent(params) {
 
     const accessToken = getAccessToken(calendarService);
 
-
-
     const apiUrl = 'https://www.googleapis.com/calendar/v3/calendars/primary/events';
-
-
 
     // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
 
@@ -180,8 +144,6 @@ function createGoogleCalendarEvent(params) {
     const descriptionText = `${details || ''}\n\nAppSheetで詳細を確認:\n${cleanUrl}`;
 
     // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
-
-
 
     // イベントリソースを作成
 
@@ -209,8 +171,6 @@ function createGoogleCalendarEvent(params) {
 
     };
 
-
-
     const options = {
 
       method: 'post',
@@ -225,15 +185,11 @@ function createGoogleCalendarEvent(params) {
 
     };
 
-    
-
     const response = UrlFetchApp.fetch(apiUrl, options);
 
     const responseCode = response.getResponseCode();
 
     const responseBody = response.getContentText();
-
-
 
     if (responseCode === 200) {
 
@@ -264,15 +220,11 @@ function createGoogleCalendarEvent(params) {
 }
 
 
-
-
-
 // =================================================================
 
 // AppSheet更新用ヘルパー関数群
 
 // =================================================================
-
 
 
 function updateActionOnSuccess(actionId, eventId, eventUrl) {
@@ -301,8 +253,6 @@ function updateActionOnSuccess(actionId, eventId, eventUrl) {
 
 }
 
-
-
 function updateActionOnError(actionId, errorMessage) {
 
   const payload = {
@@ -326,7 +276,6 @@ function updateActionOnError(actionId, errorMessage) {
   callAppSheetApi(payload);
 
 }
-
 
 
 function callAppSheetApi(payload) {
@@ -360,15 +309,11 @@ function callAppSheetApi(payload) {
 }
 
 
-
-
-
 // =================================================================
 
 // 認証ヘルパー関数群 (流用)
 
 // =================================================================
-
 
 
 function createOAuth2ServiceForUser(userEmail, scopes, serviceNamePrefix, serviceAccountJsonKey = DEFAULT_SERVICE_ACCOUNT_JSON_KEY, callbackFunctionName = DEFAULT_OAUTH_CALLBACK_FUNCTION) {
@@ -378,8 +323,6 @@ function createOAuth2ServiceForUser(userEmail, scopes, serviceNamePrefix, servic
   if (!serviceAccountJsonString) throw new Error(`スクリプトプロパティ '${serviceAccountJsonKey}' が設定されていません。`);
 
   const serviceAccountInfo = JSON.parse(serviceAccountJsonString);
-
-
 
   return OAuth2.createService(`${serviceNamePrefix}:${userEmail}`)
 
@@ -405,8 +348,6 @@ function createOAuth2ServiceForUser(userEmail, scopes, serviceNamePrefix, servic
 
 }
 
-
-
 function getAccessToken(service) {
 
   if (!service.hasAccess()) {
@@ -426,7 +367,6 @@ function getAccessToken(service) {
   return accessToken;
 
 }
-
 
 
 function authCallback(request) {

@@ -1,16 +1,8 @@
-
-
-
-
-
-
 /**
 
  * =====================================================================================
 
  * AppSheet-Gemini-GAS 連携スクリプト (完全版)
-
- *
 
  * AppSheetのWebhookをトリガーに、OCRテキストをGemini APIで解析し、
 
@@ -47,7 +39,6 @@
   ];
 
 
-
 // テーブル名
 
 const CLIENTS_TABLE_NAME = 'Clients';
@@ -57,19 +48,12 @@ const FAMILY_TABLE_NAME = 'Client_Family_Members';
 const DOCUMENTS_TABLE_NAME = 'Client_Documents';
 
 
-
-
-
 /**
 
  * AppSheet WebhookからのPOSTリクエストを処理するメイン関数
 
  */
 
-/**
- * AppSheet Webhook エントリーポイント
- * @param {GoogleAppsScript.Events.DoPost} e
- */
 /**
  * AppSheet Webhook エントリーポイント
  * @param {GoogleAppsScript.Events.DoPost} e
@@ -90,8 +74,6 @@ function doPost(e) {
 function processRequest(params) {
   const documentId = params.documentId;
 
-
-
   try {
 
     const { clientId, ocrText } = params;
@@ -104,13 +86,9 @@ function processRequest(params) {
 
     console.log(`利用者情報更新処理を開始: DocumentID=${documentId}, ClientID=${clientId}`);
 
-
-
     const extractedData = extractInfoWithGemini(ocrText);
 
     if (!extractedData) throw new Error("AIからの応答が不正でした。");
-
-
 
     const clientInfo = { ...extractedData };
 
@@ -118,21 +96,15 @@ function processRequest(params) {
 
     updateClientData(clientId, clientInfo);
 
-
-
     if (extractedData.family_members && extractedData.family_members.length > 0) {
 
       processFamilyMembers(clientId, extractedData.family_members);
 
     }
 
-    
-
     updateDocumentStatus(documentId, "登録済", null);
 
     console.log("全ての処理が正常に完了しました。");
-
-
 
   } catch (error) {
 
@@ -151,11 +123,6 @@ function processRequest(params) {
   }
 }
 
-
-/**
- * テスト用関数
- * GASエディタから直接実行してテスト可能
- */
 /**
  * テスト用関数
  * GASエディタから直接実行してテスト可能
@@ -169,8 +136,6 @@ function testProcessRequest() {
 
   return CommonTest.runTest(processRequest, testParams, 'Appsheet_利用者_基本情報上書き');
 }
-
-
 
 
 /**
@@ -202,15 +167,11 @@ function sendErrorEmail(documentId, errorMessage) {
 }
 
 
-
-
-
 // =================================================================
 
 // 以下のヘルパー関数群に変更はありません
 
 // =================================================================
-
 
 
 function processFamilyMembers(clientId, extractedMembers) {
@@ -284,7 +245,6 @@ function processFamilyMembers(clientId, extractedMembers) {
 }
 
 
-
 /**
 
  * Gemini APIを呼び出し、OCRテキストから情報を抽出する
@@ -306,8 +266,6 @@ function extractInfoWithGemini(ocrText) {
 **今日（${new Date().toLocaleDateString('ja-JP')}）の時点での満年齢を計算して "age" に含めてください。**
 
 家族情報が見つからない場合は、"family_members"には空の配列 [] を設定してください。
-
-
 
 【抽出対象のキーとOCRテキスト】
 
@@ -349,8 +307,6 @@ function extractInfoWithGemini(ocrText) {
 
   "special_notes": "（特記事項やアレルギーなど、ケアで最優先で確認すべき重要事項）",
 
-
-
   "family_members": [
 
     {
@@ -373,8 +329,6 @@ function extractInfoWithGemini(ocrText) {
 
 }
 
-
-
 【基本情報のテキスト】
 
 ${ocrText}
@@ -387,15 +341,11 @@ ${ocrText}
 
   const options = { method: 'post', contentType: 'application/json', payload: JSON.stringify(payload), muteHttpExceptions: true };
 
-  
-
   const response = UrlFetchApp.fetch(url, options);
 
   const responseText = response.getContentText();
 
   if (response.getResponseCode() !== 200) throw new Error(`Gemini APIエラー: ${responseText}`);
-
-  
 
   const jsonResponse = JSON.parse(responseText);
 
@@ -407,20 +357,15 @@ ${ocrText}
 
   let content = jsonResponse.candidates[0].content.parts[0].text;
 
-  
-
   const startIndex = content.indexOf('{');
 
   const endIndex = content.lastIndexOf('}');
 
   if (startIndex === -1 || endIndex === -1) throw new Error("AIの応答からJSONを抽出できませんでした。");
 
-  
-
   return JSON.parse(content.substring(startIndex, endIndex + 1));
 
 }
-
 
 
 function updateClientData(clientId, clientInfo) {
@@ -454,7 +399,6 @@ function updateClientData(clientId, clientInfo) {
 }
 
 
-
 function updateDocumentStatus(documentId, status, errorMessage) {
 
   const rowData = { "document_id": documentId, "status": status };
@@ -472,7 +416,6 @@ function updateDocumentStatus(documentId, status, errorMessage) {
   console.log(`Document ID ${documentId} のステータスを「${status}」に更新しました。`);
 
 }
-
 
 
 function callAppSheetApi(tableName, payload) {

@@ -1,15 +1,8 @@
-
-
-
-
-
-
 /**
 
  * 通知・ロギングモジュール
 
  */
-
 
 
 /**
@@ -32,8 +25,6 @@ function sendErrorEmail(recordNoteId, errorMessage, context = {}) {
 
     const subject = `[要確認] GAS処理エラー: 看護記録作成 (ID: ${recordNoteId})`;
 
-    
-
     let body = `看護記録の自動生成処理でエラーが発生しました。\n\n`;
 
     body += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
@@ -48,15 +39,11 @@ function sendErrorEmail(recordNoteId, errorMessage, context = {}) {
 
     body += `処理モード: ${context.processingMode || SYSTEM_CONFIG.processingMode}\n`;
 
-    
-
     if (context.errorCode) {
 
       body += `エラーコード: ${context.errorCode}\n`;
 
     }
-
-    
 
     body += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
 
@@ -66,15 +53,11 @@ function sendErrorEmail(recordNoteId, errorMessage, context = {}) {
 
     body += `${errorMessage}\n\n`;
 
-    
-
     if (context.filePath) {
 
       body += `ファイルパス: ${context.filePath}\n`;
 
     }
-
-    
 
     if (context.errorDetails) {
 
@@ -88,8 +71,6 @@ function sendErrorEmail(recordNoteId, errorMessage, context = {}) {
 
     }
 
-    
-
     if (context.stackTrace) {
 
       body += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
@@ -101,8 +82,6 @@ function sendErrorEmail(recordNoteId, errorMessage, context = {}) {
       body += `${context.stackTrace}\n\n`;
 
     }
-
-    
 
     body += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
 
@@ -118,11 +97,7 @@ function sendErrorEmail(recordNoteId, errorMessage, context = {}) {
 
     body += `記録ID: ${recordNoteId}\n`;
 
-    
-
     // Email removed - using execution log instead
-
-    
 
     logStructured(LOG_LEVEL.INFO, 'エラー通知メール送信成功', {
 
@@ -131,8 +106,6 @@ function sendErrorEmail(recordNoteId, errorMessage, context = {}) {
       recipient: NOTIFICATION_CONFIG.errorEmail
 
     });
-
-    
 
   } catch (error) {
 
@@ -147,8 +120,6 @@ function sendErrorEmail(recordNoteId, errorMessage, context = {}) {
   }
 
 }
-
-
 
 /**
 
@@ -168,8 +139,6 @@ function sendSlackNotification(message, type = 'info') {
 
   }
 
-  
-
   try {
 
     const colors = {
@@ -183,8 +152,6 @@ function sendSlackNotification(message, type = 'info') {
       info: '#0099ff'
 
     };
-
-    
 
     const payload = {
 
@@ -202,8 +169,6 @@ function sendSlackNotification(message, type = 'info') {
 
     };
 
-    
-
     const options = {
 
       method: 'post',
@@ -216,13 +181,9 @@ function sendSlackNotification(message, type = 'info') {
 
     };
 
-    
-
     UrlFetchApp.fetch(NOTIFICATION_CONFIG.slackWebhookUrl, options);
 
     Logger.log('Slack通知送信成功');
-
-    
 
   } catch (error) {
 
@@ -231,7 +192,6 @@ function sendSlackNotification(message, type = 'info') {
   }
 
 }
-
 
 
 /**
@@ -262,13 +222,9 @@ function logStructured(level, message, data = {}) {
 
   };
 
-  
-
   // ログレベルに応じて出力方法を変更
 
   const logString = JSON.stringify(logEntry, null, SYSTEM_CONFIG.debugMode ? 2 : 0);
-
-  
 
   switch (level) {
 
@@ -317,7 +273,6 @@ function logStructured(level, message, data = {}) {
 }
 
 
-
 /**
 
  * 処理開始ログ
@@ -346,8 +301,6 @@ function logProcessingStart(recordNoteId, params) {
 
 }
 
-
-
 /**
 
  * 処理完了ログ
@@ -371,8 +324,6 @@ function logProcessingComplete(recordNoteId, duration) {
   });
 
 }
-
-
 
 /**
 
@@ -401,4 +352,3 @@ function logError(recordNoteId, error, context = {}) {
   });
 
 }
-

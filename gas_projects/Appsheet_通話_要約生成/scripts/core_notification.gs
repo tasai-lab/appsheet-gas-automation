@@ -1,16 +1,8 @@
-
-
-
-
-
-
 /**
 
  * 通知モジュール
 
  * メール通知機能
-
- * 
 
  * @author Fractal Group
 
@@ -21,14 +13,11 @@
  */
 
 
-
 /**
 
  * 成功通知を送信
 
  * 処理成功時にメールで通知
-
- * 
 
  * @param {string} callId - 通話ID
 
@@ -48,8 +37,6 @@ function sendSuccessNotification(callId, summary, config) {
 
   }
 
-  
-
   if (!config.errorNotificationEmail) {
 
     Logger.log('[通知] 通知先メールアドレスが未設定です');
@@ -58,11 +45,7 @@ function sendSuccessNotification(callId, summary, config) {
 
   }
 
-  
-
   const subject = `✅ [処理成功] 通話音声処理完了 (ID: ${callId})`;
-
-  
 
   // 要約は200文字に制限
 
@@ -72,13 +55,9 @@ function sendSuccessNotification(callId, summary, config) {
 
     : summary;
 
-  
-
   const body = `
 
 通話音声ファイルの自動処理が正常に完了しました。
-
-
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -86,13 +65,9 @@ function sendSuccessNotification(callId, summary, config) {
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-
-
 通話ID: ${callId}
 
 処理日時: ${Utilities.formatDate(new Date(), "Asia/Tokyo", "yyyy/MM/dd HH:mm:ss")}
-
-
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -100,19 +75,11 @@ function sendSuccessNotification(callId, summary, config) {
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-
-
 ${summarySnippet}
-
-
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-
-
 完全な内容はAppSheetでご確認ください。
-
-
 
 --
 
@@ -121,8 +88,6 @@ ${summarySnippet}
 株式会社フラクタル
 
 `;
-
-  
 
   try {
 
@@ -139,14 +104,11 @@ ${summarySnippet}
 }
 
 
-
 /**
 
  * エラー通知を送信
 
  * 処理失敗時に詳細なエラー情報をメールで通知
-
- * 
 
  * @param {string} callId - 通話ID
 
@@ -168,8 +130,6 @@ function sendErrorNotification(callId, errorMessage, errorStack, config) {
 
   }
 
-  
-
   if (!config.errorNotificationEmail) {
 
     Logger.log('[通知] 通知先メールアドレスが未設定です');
@@ -178,11 +138,7 @@ function sendErrorNotification(callId, errorMessage, errorStack, config) {
 
   }
 
-  
-
   const subject = `⚠️ [要確認] 通話音声処理エラー (ID: ${callId})`;
-
-  
 
   const body = `
 
@@ -190,21 +146,15 @@ function sendErrorNotification(callId, errorMessage, errorStack, config) {
 
 早急にGASログを確認してください。
 
-
-
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ■ エラー情報
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-
-
 通話ID: ${callId}
 
 発生日時: ${Utilities.formatDate(new Date(), "Asia/Tokyo", "yyyy/MM/dd HH:mm:ss")}
-
-
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -212,11 +162,7 @@ function sendErrorNotification(callId, errorMessage, errorStack, config) {
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-
-
 ${errorMessage}
-
-
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -224,11 +170,7 @@ ${errorMessage}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-
-
 ${errorStack || 'スタックトレース情報なし'}
-
-
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -236,13 +178,9 @@ ${errorStack || 'スタックトレース情報なし'}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-
-
 1. Apps Scriptのログを確認
 
    https://script.google.com/
-
-
 
 2. エラーメッセージから原因を特定
 
@@ -252,11 +190,7 @@ ${errorStack || 'スタックトレース情報なし'}
 
    - ファイル形式・サイズを確認
 
-
-
 3. 必要に応じて再処理
-
-
 
 --
 
@@ -265,8 +199,6 @@ ${errorStack || 'スタックトレース情報なし'}
 株式会社フラクタル
 
 `;
-
-  
 
   try {
 
@@ -283,7 +215,6 @@ ${errorStack || 'スタックトレース情報なし'}
 }
 
 
-
 /**
 
  * テスト通知を送信
@@ -296,8 +227,6 @@ function sendTestNotification() {
 
   const config = getConfig();
 
-  
-
   if (!config.errorNotificationEmail) {
 
     Logger.log('❌ ERROR_NOTIFICATION_EMAIL が未設定です');
@@ -306,15 +235,11 @@ function sendTestNotification() {
 
   }
 
-  
-
   const subject = '🔔 [テスト] 通話音声処理システム - 通知テスト';
 
   const body = `
 
 これは通知機能のテストメールです。
-
-
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -322,27 +247,17 @@ function sendTestNotification() {
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-
-
 通知先: ${config.errorNotificationEmail}
 
 メール通知: ${config.emailNotificationEnabled ? '有効' : '無効'}
 
 成功時通知: ${config.notifyOnSuccess ? '有効' : '無効'}
 
-
-
 送信日時: ${Utilities.formatDate(new Date(), "Asia/Tokyo", "yyyy/MM/dd HH:mm:ss")}
-
-
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-
-
 このメールが届いていれば、通知機能は正常に動作しています。
-
-
 
 --
 
@@ -351,8 +266,6 @@ function sendTestNotification() {
 株式会社フラクタル
 
 `;
-
-  
 
   try {
 
@@ -369,4 +282,3 @@ function sendTestNotification() {
   }
 
 }
-

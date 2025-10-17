@@ -1,9 +1,3 @@
-
-
-
-
-
-
 // --- 1. 基本設定 (★ご自身の環境に合わせて全て修正してください) ---
 
 const SPREADSHEET_ID = '11ciS14lVjl1Ka_QyysD_ZPGLe6wRx9iBhxFkmr8a1Kc';
@@ -15,11 +9,9 @@ const APP_ID = 'f40c4b11-b140-4e31-a60c-600f3c9637c8';
 const ACCESS_KEY = 'V2-s6fif-zteYn-AGhoC-EhNLX-NNwgP-nHXAr-hHGZp-XxyPY';
 
 
-
 const MASTER_TABLE_NAME = 'Schedule_Master'; // ★ マスターテーブル名を追加
 
 const PLAN_TABLE_NAME = 'Schedule_Plan';
-
 
 
 /**
@@ -28,10 +20,6 @@ const PLAN_TABLE_NAME = 'Schedule_Plan';
 
  */
 
-/**
- * AppSheet Webhook エントリーポイント
- * @param {GoogleAppsScript.Events.DoPost} e
- */
 /**
  * AppSheet Webhook エントリーポイント
  * @param {GoogleAppsScript.Events.DoPost} e
@@ -54,15 +42,11 @@ function processRequest(params) {
 
   try {
 
-    
-
     const masterData = params.masterData;
 
     const creatorId = params.creatorId;
 
     masterId = masterData.master_id;
-
-
 
     if (!masterData || !creatorId || !masterId) {
 
@@ -70,13 +54,9 @@ function processRequest(params) {
 
     }
 
-    
-
     const existingSchedules = getExistingScheduleData();
 
     const potentialDates = calculatePotentialDates(masterData);
-
-
 
     const schedulesToCreate = potentialDates.filter(date => {
 
@@ -86,19 +66,13 @@ function processRequest(params) {
 
       const endTimeStr = masterData.end_time ? masterData.end_time.substring(0, 5) : '00:00';
 
-      
-
       const masterKey = [masterId, visitDateStr, startTimeStr, endTimeStr].join('|');
 
       const isDuplicate = existingSchedules.masterKeys.has(masterKey);
 
-      
-
       return !isDuplicate;
 
     });
-
-
 
     if (schedulesToCreate.length === 0) {
 
@@ -110,15 +84,11 @@ function processRequest(params) {
 
     }
 
-
-
     createSchedulesInAppSheet(masterData, schedulesToCreate, creatorId, existingSchedules.visitorMap);
 
     updateMasterStatus(masterId, "完了", null);
 
     console.log(`${schedulesToCreate.length}件の新しい予定を作成しました。`);
-
-
 
   } catch (error) {
 
@@ -138,10 +108,6 @@ function processRequest(params) {
  * テスト用関数
  * GASエディタから直接実行してテスト可能
  */
-/**
- * テスト用関数
- * GASエディタから直接実行してテスト可能
- */
 function testProcessRequest() {
   // TODO: テストデータを設定してください
   const testParams = {
@@ -151,8 +117,6 @@ function testProcessRequest() {
 
   return CommonTest.runTest(processRequest, testParams, 'Appsheet_訪問看護_定期スケジュール');
 }
-
-
 
 
 /**
@@ -169,8 +133,6 @@ function getExistingScheduleData() {
 
   const headers = data.shift();
 
-
-
   const col = (name) => headers.indexOf(name);
 
   const idx = {
@@ -181,23 +143,15 @@ function getExistingScheduleData() {
 
   };
 
-  
-
   const masterKeys = new Set();
 
   const visitorMap = new Map();
-
-  
 
   for (const row of data) {
 
     if (!row[idx.masterId] || !row[idx.visitDate] || !row[idx.startTime] || !row[idx.endTime]) continue;
 
-
-
     const visitDate = Utilities.formatDate(new Date(row[idx.visitDate]), "JST", "yyyy-MM-dd");
-
-    
 
     // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
 
@@ -209,13 +163,9 @@ function getExistingScheduleData() {
 
     // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
 
-    
-
     const masterKey = [row[idx.masterId], visitDate, startTimeStr, endTimeStr].join('|');
 
     masterKeys.add(masterKey);
-
-
 
     const visitor = row[idx.visitorName];
 
@@ -238,9 +188,6 @@ function getExistingScheduleData() {
   return { masterKeys, visitorMap };
 
 }
-
-
-
 
 
 // =================================================================

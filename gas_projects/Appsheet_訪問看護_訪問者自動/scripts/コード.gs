@@ -1,9 +1,3 @@
-
-
-
-
-
-
 /**
 
  * 設定エリア
@@ -23,7 +17,6 @@ const CONFIG = {
   ATTENDANCE_SPREADSHEET_ID: '1QDMA3DP4Y9XSFRWY9ewwP3Vih2NJEpq7NmNRRgASqRY',
 
 
-
   // --- 新機能：訪問比率の設定 ---
 
   // trueにすると、STAFF_ASSIGNMENT_RATIOに基づいた比率で割り当てを試みます。
@@ -31,7 +24,6 @@ const CONFIG = {
   // falseにすると、従来のロジック（空いているスタッフを順に割り当て）で動作します。
 
   USE_RATIO_ASSIGNMENT: true,
-
 
 
   // 各スタッフの訪問比率 (合計が1.0になるように調整してください)
@@ -49,7 +41,6 @@ const CONFIG = {
   },
 
 
-
   // シート名
 
   SCHEDULE_SHEET_NAME: 'Schedule_Plan',
@@ -57,7 +48,6 @@ const CONFIG = {
   STAFF_SHEET_NAME: 'Staff_Members',
 
   ATTENDANCE_SHEET_NAME: '勤務_予定',
-
 
 
   // Schedule_Plan シートの列名
@@ -81,7 +71,6 @@ const CONFIG = {
   },
 
 
-
   // Staff_Members シートの列名
 
   STAFF_COLUMNS: {
@@ -93,7 +82,6 @@ const CONFIG = {
     JOB_TYPE_ID: 'job_type_id' // ★追加
 
   },
-
 
 
   // 勤務_予定 シートの列名
@@ -115,7 +103,6 @@ const CONFIG = {
 };
 
 
-
 /**
 
  * メイン関数：翌月の訪問スケジュールにスタッフを割り当てる
@@ -132,15 +119,11 @@ function assignStaffForNextMonth() {
 
     const ssAttendance = SpreadsheetApp.openById(CONFIG.ATTENDANCE_SPREADSHEET_ID);
 
-
-
     const scheduleSheet = ssSchedule.getSheetByName(CONFIG.SCHEDULE_SHEET_NAME);
 
     const staffSheet = ssStaff.getSheetByName(CONFIG.STAFF_SHEET_NAME);
 
     const attendanceSheet = ssAttendance.getSheetByName(CONFIG.ATTENDANCE_SHEET_NAME);
-
-
 
     if (!scheduleSheet || !staffSheet || !attendanceSheet) {
 
@@ -150,15 +133,11 @@ function assignStaffForNextMonth() {
 
     }
 
-
-
     const scheduleData = getSheetData(scheduleSheet);
 
     const staffData = getSheetData(staffSheet);
 
     const attendanceData = getSheetData(attendanceSheet);
-
-
 
     const scheduleCols = getHeaderIndices(scheduleData.header, CONFIG.SCHEDULE_COLUMNS);
 
@@ -166,23 +145,17 @@ function assignStaffForNextMonth() {
 
     const attendanceCols = getHeaderIndices(attendanceData.header, CONFIG.ATTENDANCE_COLUMNS);
 
-
-
     const today = new Date();
 
     const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
 
     const prevMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
 
-
-
     const clientPreferences = createClientPreferences(scheduleData.rows, scheduleCols, prevMonth);
 
     const staffDetails = createStaffDetails(staffData, staffCols);
 
     const staffWorkSchedules = createWorkSchedules(staffDetails, attendanceData, attendanceCols);
-
-
 
     // ★修正：翌月の未割り当てスケジュールから「看護」のみを抽出
 
@@ -206,8 +179,6 @@ function assignStaffForNextMonth() {
 
       });
 
-
-
     Logger.log(`翌月の未割り当てスケジュール（看護）: ${unassignedVisits.length}件`);
 
     if (unassignedVisits.length === 0) {
@@ -218,15 +189,11 @@ function assignStaffForNextMonth() {
 
     }
 
-
-
     // --- 割り当てロジック ---
 
     let assignedCount = 0;
 
     const assignedCounts = {}; // スタッフごとの割り当て件数を記録
-
-    
 
     // 比率計算の準備
 
@@ -246,15 +213,9 @@ function assignStaffForNextMonth() {
 
     }
 
-
-
-
-
     const visitsByDayAndRoute = groupVisitsByDayAndRoute(unassignedVisits, scheduleCols);
 
     const dailyRouteAssignments = {};
-
-
 
     for (const key in visitsByDayAndRoute) {
 
@@ -264,8 +225,6 @@ function assignStaffForNextMonth() {
 
       const firstVisit = visitsInGroup[0];
 
-      
-
       const visitDate = new Date(firstVisit.row[scheduleCols.VISIT_DATE]);
 
       const visitStartTime = combineDateAndTime(visitDate, firstVisit.row[scheduleCols.START_TIME]);
@@ -274,19 +233,13 @@ function assignStaffForNextMonth() {
 
       const clientId = firstVisit.row[scheduleCols.CLIENT_ID];
 
-
-
       if (!dailyRouteAssignments[visitDateStr]) {
 
         dailyRouteAssignments[visitDateStr] = {};
 
       }
 
-
-
       let assignedStaffId = null;
-
-
 
       if (dailyRouteAssignments[visitDateStr][routeTag]) {
 
@@ -300,13 +253,9 @@ function assignStaffForNextMonth() {
 
         const availableStaff = findAvailableStaff(visitStartTime, visitEndTime, staffWorkSchedules, staffDetails, ['01', '02', '03'], assignedStaffOnDay);
 
-        
-
         if (availableStaff.length > 0) {
 
            const preferredStaffId = clientPreferences[clientId];
-
-           
 
            if(CONFIG.USE_RATIO_ASSIGNMENT){
 
@@ -323,8 +272,6 @@ function assignStaffForNextMonth() {
         }
 
       }
-
-      
 
       if (assignedStaffId) {
 
@@ -350,21 +297,15 @@ function assignStaffForNextMonth() {
 
     }
 
-
-
     const originalData = scheduleSheet.getDataRange().getValues();
 
     const updatedData = [originalData[0], ...scheduleData.rows];
 
     scheduleSheet.getRange(1, 1, updatedData.length, updatedData[0].length).setValues(updatedData);
 
-
-
     Logger.log(`処理が完了しました。${assignedCount}件のスケジュールにスタッフを割り当てました。`);
 
     if(CONFIG.USE_RATIO_ASSIGNMENT) Logger.log(`最終割り当て件数: ${JSON.stringify(assignedCounts)}`);
-
-
 
   } catch (e) {
 
@@ -375,9 +316,7 @@ function assignStaffForNextMonth() {
 }
 
 
-
 // --- ヘルパー関数 ---
-
 
 
 function getSheetData(sheet) {
@@ -389,7 +328,6 @@ function getSheetData(sheet) {
   return { header, rows: values };
 
 }
-
 
 
 function getHeaderIndices(header, columnsConfig) {
@@ -409,7 +347,6 @@ function getHeaderIndices(header, columnsConfig) {
   return indices;
 
 }
-
 
 
 /**
@@ -443,8 +380,6 @@ function createStaffDetails(staffData, staffCols){
     return details;
 
 }
-
-
 
 function createClientPreferences(rows, cols, prevMonth) {
 
@@ -497,7 +432,6 @@ function createClientPreferences(rows, cols, prevMonth) {
 }
 
 
-
 /**
 
  * ★修正：staffDetailsを受け取るように変更
@@ -521,8 +455,6 @@ function createWorkSchedules(staffDetails, attendanceData, attendanceCols) {
       return acc;
 
   }, {});
-
-  
 
   attendanceData.rows.forEach(row => {
 
@@ -562,8 +494,6 @@ function createWorkSchedules(staffDetails, attendanceData, attendanceCols) {
 
 }
 
-
-
 /**
 
  * ★修正：職種IDでのフィルタリング機能を追加
@@ -580,15 +510,11 @@ function findAvailableStaff(visitStart, visitEnd, staffSchedules, staffDetails, 
 
     if (excludeStaffIds.includes(staffId)) continue;
 
-    
-
     // 職種フィルタ
 
     const staffJobTypeId = staffDetails[staffId]?.jobTypeId;
 
     if (requiredJobTypeIds.length > 0 && !requiredJobTypeIds.includes(staffJobTypeId)) continue;
-
-
 
     const staffShift = staffSchedules[staffId].shifts[visitDateStr];
 
@@ -603,7 +529,6 @@ function findAvailableStaff(visitStart, visitEnd, staffSchedules, staffDetails, 
   return available;
 
 }
-
 
 
 /**
@@ -634,8 +559,6 @@ function groupVisitsByDayAndRoute(visits, scheduleCols) {
 
 }
 
-
-
 /**
 
  * ★新規：比率に基づいてスタッフを選択するロジック
@@ -654,15 +577,11 @@ function selectStaffByRatio(availableStaff, preferredStaffId, assignedCounts, ta
 
     }
 
-
-
     // 2. 目標比率に対して最も余裕のあるスタッフを探す
 
     let selectedStaff = null;
 
     let maxDeficiency = -Infinity;
-
-
 
     availableStaff.forEach(staff => {
 
@@ -684,8 +603,6 @@ function selectStaffByRatio(availableStaff, preferredStaffId, assignedCounts, ta
 
     });
 
-
-
     // 3. 比率設定にないが利用可能なスタッフがいれば、その人を返す
 
     if(!selectedStaff && availableStaff.length > 0) {
@@ -694,12 +611,9 @@ function selectStaffByRatio(availableStaff, preferredStaffId, assignedCounts, ta
 
     }
 
-
-
     return selectedStaff;
 
 }
-
 
 
 function combineDateAndTime(dateObj, time) {

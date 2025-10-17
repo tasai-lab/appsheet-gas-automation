@@ -1,9 +1,3 @@
-
-
-
-
-
-
 // --- 1. 基本設定 (★ご自身の環境に合わせて全て修正してください) ---
 
 const SHARED_DRIVE_FOLDER_ID = '1eOzeBli1FcusgKL6MEyhnZQUoDca-RLd';
@@ -23,11 +17,9 @@ const ACCESS_KEY = 'V2-A0207-tnP4i-YwteT-Cg55O-7YBvg-zMXQX-sS4Xv-XuaKP';
 const GEMINI_API_KEY = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY');
 
 
-
 const CONTACTS_TABLE_NAME = 'Organization_Contacts';
 
 const BUSINESS_CARD_APPSHEET_FOLDER = '名刺_格納';
-
 
 
 /**
@@ -54,13 +46,9 @@ function processAllBusinessCards(creatorId = 'SYSTEM') {
 
   }
 
-
-
   if (!creatorId) { console.error("実行者のIDが指定されていません。"); return; }
 
   console.log(`処理開始。実行者ID: ${creatorId}`);
-
-
 
   try {
 
@@ -73,8 +61,6 @@ function processAllBusinessCards(creatorId = 'SYSTEM') {
     const pairedCards = pairBusinessCards(files);
 
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-
-
 
     for (const card of pairedCards) {
 
@@ -90,23 +76,15 @@ function processAllBusinessCards(creatorId = 'SYSTEM') {
 
         }
 
-
-
         const lastNameKana = extractedInfo.last_name_kana || '';
 
         const firstNameKana = extractedInfo.first_name_kana || '';
 
-        
-
         const checkResult = findContactAction(ss, extractedInfo);
-
-        
 
         let action = checkResult.action;
 
         let existingContactId = checkResult.contactId;
-
-
 
         if (action === 'CHECK_ORG') {
 
@@ -117,8 +95,6 @@ function processAllBusinessCards(creatorId = 'SYSTEM') {
           action = isSameOrg ? 'UPDATE' : 'CREATE';
 
         }
-
-
 
         switch (action) {
 
@@ -132,8 +108,6 @@ function processAllBusinessCards(creatorId = 'SYSTEM') {
 
             break;
 
-
-
           case 'UPDATE':
 
             console.log(`事業所が同一と判断。既存の連絡先(${existingContactId})を上書き更新します。`);
@@ -143,8 +117,6 @@ function processAllBusinessCards(creatorId = 'SYSTEM') {
             const updateFrontFileName = `${updateFileNameBase}.jpg`;
 
             const updateBackFileName = card.back ? `${updateFileNameBase}_001.jpg` : null;
-
-
 
             // 1. まずAppSheetを更新
 
@@ -160,8 +132,6 @@ function processAllBusinessCards(creatorId = 'SYSTEM') {
 
             break;
 
-
-
           case 'CREATE':
 
             console.log(`新規連絡先として作成します: ${extractedInfo.last_name} ${extractedInfo.first_name}`);
@@ -173,8 +143,6 @@ function processAllBusinessCards(creatorId = 'SYSTEM') {
             const createFrontFileName = `${createFileNameBase}.jpg`;
 
             const createBackFileName = card.back ? `${createFileNameBase}_001.jpg` : null;
-
-            
 
             // 1. まずAppSheetに登録
 
@@ -209,7 +177,6 @@ function processAllBusinessCards(creatorId = 'SYSTEM') {
   console.log("\n全処理が終了しました。");
 
 }
-
 
 
 // =================================================================
@@ -319,7 +286,6 @@ function extractInfoWithGemini(frontFile, backFile) {
 }
 
 
-
 function findContactAction(ss, newInfo) {
 
   const sheet = ss.getSheetByName(CONTACTS_SHEET_NAME);
@@ -351,7 +317,6 @@ function findContactAction(ss, newInfo) {
   return { action: 'CREATE' };
 
 }
-
 
 
 function areOrganizationsSame(ss, existingOrgId, newCardInfo) {
@@ -429,7 +394,6 @@ function areOrganizationsSame(ss, existingOrgId, newCardInfo) {
 }
 
 
-
 function generateUniqueContactId(ss) {
 
   const sheet = ss.getSheetByName(CONTACTS_SHEET_NAME);
@@ -443,7 +407,6 @@ function generateUniqueContactId(ss) {
   return newId;
 
 }
-
 
 
 /**
@@ -464,8 +427,6 @@ function createAppSheetContact(contactId, info, frontFileName, backFileName) {
 
 }
 
-
-
 function updateAppSheetContact(contactId, info, frontFile, backFile, creatorId) {
 
     const payload = buildAppSheetPayload(contactId, info, frontFile, backFile);
@@ -479,8 +440,6 @@ function updateAppSheetContact(contactId, info, frontFile, backFile, creatorId) 
     callAppSheetApi(payload);
 
 }
-
-
 
 /**
 
@@ -521,7 +480,6 @@ function buildAppSheetPayload(contactId, info, frontFileName, backFileName) {
 }
 
 
-
 function callAppSheetApi(payload) {
 
   const apiUrl = `https://api.appsheet.com/api/v2/apps/${APP_ID}/tables/${CONTACTS_TABLE_NAME}/Action`;
@@ -533,7 +491,6 @@ function callAppSheetApi(payload) {
   if (response.getResponseCode() >= 400) { throw new Error(`AppSheet API Error: ${response.getContentText()}`); }
 
 }
-
 
 
 function deleteFile(fileId) { Drive.Files.remove(fileId); }

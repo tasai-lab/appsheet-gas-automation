@@ -1,9 +1,3 @@
-
-
-
-
-
-
 /**
 
  * AppSheetからのWebhook POSTリクエストを受け取るメイン関数
@@ -12,10 +6,6 @@
 
  */
 
-/**
- * AppSheet Webhook エントリーポイント
- * @param {GoogleAppsScript.Events.DoPost} e
- */
 /**
  * AppSheet Webhook エントリーポイント
  * @param {GoogleAppsScript.Events.DoPost} e
@@ -38,11 +28,7 @@ function processRequest(params) {
 
     Logger.info('Webhook受信', { params });
 
-
-
     // --- ▼▼▼ ここから修正・追加 ▼▼▼ ---
-
-
 
     // 処理の一意なIDを取得 (通常はAppSheetの行ID)
 
@@ -52,35 +38,23 @@ function processRequest(params) {
 
       : null;
 
-
-
     // IDに対して実行ロックを試みる
 
     LockingService.acquireLock(executionId);
 
-
-
     // --- ▲▲▲ ここまで修正・追加 ▲▲▲ ---
-
-
 
     Validator.validateRequestPayload(params);
 
     const result = routeAction(params);
 
-
-
     return ContentService.createTextOutput(JSON.stringify({ status: 'success', data: result }))
 
       .setMimeType(ContentService.MimeType.JSON);
 
-
-
   } catch (error) {
 
     // --- ▼▼▼ ここから修正・追加 ▼▼▼ ---
-
-
 
     // 重複実行ロックによるエラーの場合、特別に処理する
 
@@ -90,8 +64,6 @@ function processRequest(params) {
 
       Logger.info(`ID '${lockedId}' の重複実行を検知・回避しました。`);
 
-      
-
       // AppSheet側でユーザーにエラーを見せないよう、エラーではなく「スキップ」として応答する
 
       return ContentService.createTextOutput(JSON.stringify({ status: 'skipped', message: 'Duplicate execution avoided.' }))
@@ -100,15 +72,9 @@ function processRequest(params) {
 
     }
 
-
-
     // --- ▲▲▲ ここまで修正・追加 ▲▲▲ ---
 
-    
-
     Logger.error('doPostで致命的なエラーが発生', error, { params });
-
-    
 
     if (params && params.returnToAppSheet) {
 
@@ -124,8 +90,6 @@ function processRequest(params) {
 
     }
 
-    
-
     return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: error.message }))
 
       .setMimeType(ContentService.MimeType.JSON)
@@ -140,10 +104,6 @@ function processRequest(params) {
  * テスト用関数
  * GASエディタから直接実行してテスト可能
  */
-/**
- * テスト用関数
- * GASエディタから直接実行してテスト可能
- */
 function testProcessRequest() {
   // TODO: テストデータを設定してください
   const testParams = {
@@ -153,8 +113,6 @@ function testProcessRequest() {
 
   return CommonTest.runTest(processRequest, testParams, 'Appsheet_ALL_Event');
 }
-
-
 
 
 /**
@@ -173,11 +131,7 @@ function routeAction(params) {
 
   let result = null;
 
-
-
   Logger.info(`アクション '${action}' を実行します。`);
-
-
 
   switch (action) {
 
@@ -187,15 +141,11 @@ function routeAction(params) {
 
       break;
 
-
-
     case 'UPDATE':
 
       result = CalendarService.updateEvent(ownerData.newOwnerEmail, eventId, eventData);
 
       break;
-
-      
 
     case 'TRANSFER':
 
@@ -203,23 +153,17 @@ function routeAction(params) {
 
       break;
 
-
-
     case 'DELETE':
 
       result = CalendarService.deleteEvent(ownerData.oldOwnerEmail, eventId);
 
       break;
 
-
-
     default:
 
       throw new Error(`未知のアクションです: ${action}`);
 
   }
-
-
 
   if (returnToAppSheet) {
 
@@ -230,8 +174,6 @@ function routeAction(params) {
     AppSheetService.sendSuccessResponse(returnToAppSheet, eventIdValue, eventUrlValue, action);
 
   }
-
-
 
   return result;
 

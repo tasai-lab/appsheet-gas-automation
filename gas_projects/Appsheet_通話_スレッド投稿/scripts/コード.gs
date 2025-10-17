@@ -15,10 +15,6 @@ const DEFAULT_OAUTH_CALLBACK_FUNCTION = 'authCallback';
  * AppSheet Webhook エントリーポイント
  * @param {GoogleAppsScript.Events.DoPost} e
  */
-/**
- * AppSheet Webhook エントリーポイント
- * @param {GoogleAppsScript.Events.DoPost} e
- */
 function doPost(e) {
   return CommonWebhook.handleDoPost(e, function(params) {
     params.scriptName = 'Appsheet_通話_スレッド投稿';
@@ -74,10 +70,6 @@ function processRequest(params) {
 }
 
 
-/**
- * テスト用関数
- * GASエディタから直接実行してテスト可能
- */
 /**
  * テスト用関数
  * GASエディタから直接実行してテスト可能

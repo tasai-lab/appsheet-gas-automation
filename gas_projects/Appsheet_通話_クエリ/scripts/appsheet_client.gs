@@ -1,9 +1,3 @@
-
-
-
-
-
-
 /**
  * AppSheet API統合クライアント
  * 全てのGASプロジェクトで共通使用するAppSheet API連携モジュール

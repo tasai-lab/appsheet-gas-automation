@@ -1,9 +1,3 @@
-
-
-
-
-
-
 /**
 
  * 【家族情報の追加用スクリプト】
@@ -12,10 +6,6 @@
 
  */
 
-/**
- * AppSheet Webhook エントリーポイント
- * @param {GoogleAppsScript.Events.DoPost} e
- */
 /**
  * AppSheet Webhook エントリーポイント
  * @param {GoogleAppsScript.Events.DoPost} e
@@ -44,19 +34,13 @@ function processRequest(params) {
 
   // ▲▲▲ ユーザー設定 ▲▲▲
 
-
-
   const getAppSheetApiUrl = (tableName) => `https://api.appsheet.com/api/v2/apps/${APPSHEET_APP_ID}/tables/${tableName}/Action`;
 
   const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${GEMINI_API_KEY}`;
 
-
-
   let documentId;
 
   try {
-
-    
 
     documentId = params.documentId;
 
@@ -66,11 +50,7 @@ function processRequest(params) {
 
     if (!documentId || !clientId || !ocrText) throw new Error('必須パラメータが不足しています。');
 
-    
-
     Logger.log(`家族情報追加処理を開始: DocumentID=${documentId}, ClientID=${clientId}`);
-
-
 
     const prompt = `あなたは医療・介護サービスの事務スタッフです。以下のOCRテキストから、ご家族の情報のみを抽出し、配列としてください。利用者本人の情報は含めないでください。結果は必ず指定されたキーを持つJSON形式のみで出力してください。フリガナはカタカナで出力してください。【抽出対象のキー】{"family_members": [{"relationship": "（続柄）","last_name": "（姓）","first_name": "（名。不明な場合は「（不明）」）","last_name_kana": "（姓カナ）","first_name_kana": "（名カナ）","is_cohabiting": "（同居か別居）","living_area": "（在住エリア）","phone1": "（電話番号1）","phone2": "（電話番号2）","email": "（メール）","preferred_contact_method": "（希望連絡手段）","available_contact_time": "（連絡可能時間帯）","wants_email_updates": "（メール配信希望 Y/N）","emergency_contact_priority": "（緊急連絡優先順位）","is_key_person": "（キーパーソン Y/N）","relationship_details": "（関係性詳細）","has_caution_notes": "（注意点有無 Y/N）","caution_notes": "（注意点詳細）"}]}`;
 
@@ -82,11 +62,7 @@ function processRequest(params) {
 
     if (geminiResponse.getResponseCode() !== 200) throw new Error(`Gemini APIエラー: ${geminiResponse.getContentText()}`);
 
-    
-
     const result = JSON.parse(JSON.parse(geminiResponse.getContentText()).candidates[0].content.parts[0].text);
-
-    
 
     if (result.family_members && result.family_members.length > 0) {
 
@@ -99,8 +75,6 @@ function processRequest(params) {
         client_id: clientId
 
       }));
-
-      
 
       const payload = { Action: 'Add', Properties: { "Locale": "ja-JP", "Timezone": "Asia/Tokyo" }, Rows: rowsToAdd };
 
@@ -118,15 +92,11 @@ function processRequest(params) {
 
     }
 
-    
-
     const statusPayload = { Action: 'Edit', Properties: { "Locale": "ja-JP", "Timezone": "Asia/Tokyo" }, Rows: [{ "document_id": documentId, "status": "家族情報完了" }] };
 
     const options = { method: 'post', contentType: 'application/json', headers: { ApplicationAccessKey: APPSHEET_ACCESS_KEY }, payload: JSON.stringify(statusPayload), muteHttpExceptions: true };
 
     UrlFetchApp.fetch(getAppSheetApiUrl('Client_Documents'), options);
-
-
 
   } catch (error) {
 
@@ -146,10 +116,6 @@ function processRequest(params) {
 }
 
 
-/**
- * テスト用関数
- * GASエディタから直接実行してテスト可能
- */
 /**
  * テスト用関数
  * GASエディタから直接実行してテスト可能

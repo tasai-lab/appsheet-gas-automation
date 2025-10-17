@@ -1,9 +1,3 @@
-
-
-
-
-
-
 ﻿/**
 
  * 設定確認とデバッグ用のテスト関数
@@ -11,7 +5,6 @@
  * Apps Script Editorで実行してください
 
  */
-
 
 
 /**
@@ -28,8 +21,6 @@ function debugCurrentSettings() {
 
   Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
-  
-
   Logger.log('');
 
   Logger.log('【GCP設定】');
@@ -42,8 +33,6 @@ function debugCurrentSettings() {
 
   Logger.log(`  vertexAI.model: ${GCP_CONFIG.vertexAI.model}`);
 
-  
-
   Logger.log('');
 
   Logger.log('【Gemini API設定】');
@@ -51,8 +40,6 @@ function debugCurrentSettings() {
   Logger.log(`  model: ${GEMINI_CONFIG.model}`);
 
   Logger.log(`  apiKey: ${GEMINI_CONFIG.apiKey.substring(0, 20)}...`);
-
-  
 
   Logger.log('');
 
@@ -63,8 +50,6 @@ function debugCurrentSettings() {
   Logger.log(`  enableAsyncProcessing: ${SYSTEM_CONFIG.enableAsyncProcessing}`);
 
   Logger.log(`  debugMode: ${SYSTEM_CONFIG.debugMode}`);
-
-  
 
   Logger.log('');
 
@@ -84,8 +69,6 @@ function debugCurrentSettings() {
 
   }
 
-  
-
   Logger.log('');
 
   Logger.log('【OAuth Token確認】');
@@ -102,14 +85,11 @@ function debugCurrentSettings() {
 
   }
 
-  
-
   Logger.log('');
 
   Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
 }
-
 
 
 /**
@@ -126,8 +106,6 @@ function testVertexAIConnection() {
 
   Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
-  
-
   try {
 
     Logger.log('');
@@ -140,8 +118,6 @@ function testVertexAIConnection() {
 
     Logger.log(`  モデル: ${GCP_CONFIG.vertexAI.model}`);
 
-    
-
     Logger.log('');
 
     Logger.log('【OAuth Token確認】');
@@ -150,8 +126,6 @@ function testVertexAIConnection() {
 
     Logger.log(`  ✅ Token取得成功`);
 
-    
-
     Logger.log('');
 
     Logger.log('【API URL構築】');
@@ -159,8 +133,6 @@ function testVertexAIConnection() {
     const url = `https://${GCP_CONFIG.location}-aiplatform.googleapis.com/v1/projects/${GCP_CONFIG.projectId}/locations/${GCP_CONFIG.location}/publishers/google/models/${GCP_CONFIG.vertexAI.model}:generateContent`;
 
     Logger.log(`  URL: ${url}`);
-
-    
 
     Logger.log('');
 
@@ -186,8 +158,6 @@ function testVertexAIConnection() {
 
     };
 
-    
-
     const options = {
 
       method: 'post',
@@ -206,23 +176,17 @@ function testVertexAIConnection() {
 
     };
 
-    
-
     const response = UrlFetchApp.fetch(url, options);
 
     const responseCode = response.getResponseCode();
 
     const responseText = response.getContentText();
 
-    
-
     Logger.log('');
 
     Logger.log('【レスポンス】');
 
     Logger.log(`  ステータスコード: ${responseCode}`);
-
-    
 
     if (responseCode === 200) {
 
@@ -246,13 +210,9 @@ function testVertexAIConnection() {
 
     }
 
-    
-
     Logger.log('');
 
     Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━');
-
-    
 
   } catch (error) {
 
@@ -271,7 +231,6 @@ function testVertexAIConnection() {
 }
 
 
-
 /**
 
  * GCPプロジェクト紐付け確認
@@ -286,8 +245,6 @@ function checkGCPProjectBinding() {
 
   Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
-  
-
   Logger.log('');
 
   Logger.log('【設定ファイルの値】');
@@ -295,8 +252,6 @@ function checkGCPProjectBinding() {
   Logger.log(`  GCP_CONFIG.projectId: ${GCP_CONFIG.projectId}`);
 
   Logger.log('  期待値: macro-shadow-458705-v8');
-
-  
 
   if (GCP_CONFIG.projectId === 'macro-shadow-458705-v8') {
 
@@ -307,8 +262,6 @@ function checkGCPProjectBinding() {
     Logger.log('  ❌ 設定ファイルが間違っている');
 
   }
-
-  
 
   Logger.log('');
 
@@ -332,15 +285,11 @@ function checkGCPProjectBinding() {
 
   Logger.log('    → "プロジェクトを設定" をクリック');
 
-  
-
   Logger.log('');
 
   Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
 }
-
-
 
 /**
 
@@ -356,8 +305,6 @@ function testCloudStorageConnection() {
 
   Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
-  
-
   try {
 
     Logger.log('');
@@ -370,13 +317,9 @@ function testCloudStorageConnection() {
 
     const testBlob = Utilities.newBlob('test content from GAS', 'text/plain', testFileName);
 
-    
-
     Logger.log(`  バケット名: ${bucketName}`);
 
     Logger.log(`  テストファイル: ${testFileName}`);
-
-    
 
     Logger.log('');
 
@@ -388,8 +331,6 @@ function testCloudStorageConnection() {
 
     Logger.log(`  GCS URI: ${uploadResult.gsUri}`);
 
-    
-
     Logger.log('');
 
     Logger.log('【削除テスト】');
@@ -398,21 +339,15 @@ function testCloudStorageConnection() {
 
     Logger.log(`  ✅ 削除成功`);
 
-    
-
     Logger.log('');
 
     Logger.log('✅ Cloud Storage接続テスト完了');
 
     Logger.log('正しいプロジェクト (macro-shadow-458705-v8) に接続されています');
 
-    
-
     Logger.log('');
 
     Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━');
-
-    
 
   } catch (error) {
 
@@ -421,8 +356,6 @@ function testCloudStorageConnection() {
     Logger.log('【エラー】');
 
     Logger.log(`  ❌ テスト失敗: ${error.toString()}`);
-
-    
 
     Logger.log('');
 
@@ -434,15 +367,11 @@ function testCloudStorageConnection() {
 
     Logger.log('  3. 権限が不足している');
 
-    
-
     Logger.log('');
 
     Logger.log('【解決方法】');
 
     Logger.log('  checkGCPProjectBinding() を実行して紐付けを確認してください');
-
-    
 
     Logger.log('');
 
@@ -451,8 +380,6 @@ function testCloudStorageConnection() {
   }
 
 }
-
-
 
 /**
 
@@ -466,21 +393,14 @@ function runAllTests() {
 
   Logger.log('\n\n');
 
-  
-
   checkGCPProjectBinding();
 
   Logger.log('\n\n');
-
-  
 
   testCloudStorageConnection();
 
   Logger.log('\n\n');
 
-  
-
   testVertexAIConnection();
 
 }
-

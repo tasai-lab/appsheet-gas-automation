@@ -1,9 +1,3 @@
-
-
-
-
-
-
 const Validator = {
 
   validateRequestPayload(params) {
@@ -13,9 +7,7 @@ const Validator = {
     if (!params.action) throw new Error("必須パラメータ 'action' が不足しています。");
 
 
-
     const { action, eventId, eventData, ownerData } = params;
-
 
 
     switch (action) {
@@ -29,7 +21,6 @@ const Validator = {
         break;
 
 
-
       case 'UPDATE':
 
         if (!eventId) throw new Error("'UPDATE'アクションには 'eventId' が必須です。");
@@ -39,7 +30,6 @@ const Validator = {
         if (!ownerData || !ownerData.newOwnerEmail) throw new Error("'UPDATE'アクションには 'ownerData.newOwnerEmail' が必須です。");
 
         break;
-
 
 
       case 'TRANSFER':
@@ -53,7 +43,6 @@ const Validator = {
         break;
 
         
-
       case 'DELETE':
 
         if (!eventId) throw new Error("'DELETE'アクションには 'eventId' が必須です。");
@@ -61,7 +50,6 @@ const Validator = {
         if (!ownerData || !ownerData.oldOwnerEmail) throw new Error("'DELETE'アクションには 'ownerData.oldOwnerEmail' が必須です。");
 
         break;
-
 
 
       default:

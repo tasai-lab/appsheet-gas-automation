@@ -1,19 +1,8 @@
-
-
-
-
-
-
 // --- 1. 基本設定 ---
 
 const ERROR_NOTIFICATION_EMAIL = "t.asai@fractal-group.co.jp";
 
 
-
-/**
- * AppSheet Webhook エントリーポイント
- * @param {GoogleAppsScript.Events.DoPost} e
- */
 /**
  * AppSheet Webhook エントリーポイント
  * @param {GoogleAppsScript.Events.DoPost} e
@@ -34,8 +23,6 @@ function doPost(e) {
 function processRequest(params) {
   Utilities.sleep(15000);
 
-  
-
   const { appsheetConfig, jobs } = params;
 
   if (!appsheetConfig || !jobs || !Array.isArray(jobs)) {
@@ -43,8 +30,6 @@ function processRequest(params) {
     throw new Error("Webhook Bodyの形式が正しくありません。");
 
   }
-
-
 
   for (const job of jobs) {
 
@@ -54,13 +39,9 @@ function processRequest(params) {
 
       if (!updateTarget || !fileAssignments || !Array.isArray(fileAssignments)) continue;
 
-
-
       console.log(`処理開始: Table=${updateTarget.tableName}, Key=${updateTarget.keyValue}`);
 
       const rowDataToUpdate = { [updateTarget.keyColumn]: updateTarget.keyValue };
-
-
 
       for (const assignment of fileAssignments) {
 
@@ -68,15 +49,11 @@ function processRequest(params) {
 
         if (!search || !targets || !Array.isArray(targets)) continue;
 
-        
-
         try {
 
           console.log(`  -> 検索中: Path=${search.relativePath || '(ルート)'}, Name=${search.partialFileName}`);
 
           const foundFile = findFile(search.baseFolderId, search.relativePath, search.partialFileName);
-
-          
 
           if (foundFile) {
 
@@ -116,8 +93,6 @@ function processRequest(params) {
 
       }
 
-
-
       if (Object.keys(rowDataToUpdate).length > 1) {
 
         console.log(`  -> AppSheetへ更新リクエストを送信します...`);
@@ -156,10 +131,6 @@ function processRequest(params) {
  * テスト用関数
  * GASエディタから直接実行してテスト可能
  */
-/**
- * テスト用関数
- * GASエディタから直接実行してテスト可能
- */
 function testProcessRequest() {
   // TODO: テストデータを設定してください
   const testParams = {
@@ -169,8 +140,6 @@ function testProcessRequest() {
 
   return CommonTest.runTest(processRequest, testParams, 'Appsheet_All_ファイル検索＋ID挿入');
 }
-
-
 
 
 function callAppSheetApi(config, tableName, payload) {
@@ -198,9 +167,6 @@ function callAppSheetApi(config, tableName, payload) {
   }
 
 }
-
-
-
 
 
 // =================================================================
@@ -256,8 +222,6 @@ function findFile(baseFolderId, relativePath, partialFileName) {
   return latestFile;
 
 }
-
-
 
 function sendErrorEmail(subject, body) {
 

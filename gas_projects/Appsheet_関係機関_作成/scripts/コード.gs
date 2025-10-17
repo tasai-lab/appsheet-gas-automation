@@ -1,9 +1,3 @@
-
-
-
-
-
-
 // --- 1. 基本設定 (★ご自身の環境に合わせて全て修正してください) ---
 
 const PLACES_API_KEY = 'AIzaSyD-V_IwW1flPJif6eYFZPFjLpfonyLKT-Y'; // ★ Google Places APIのキー
@@ -13,11 +7,9 @@ const APP_ID = '27bceb6f-9a2c-4ab6-9438-31fec25a495e'; // AppSheetのアプリID
 const ACCESS_KEY = 'V2-A0207-tnP4i-YwteT-Cg55O-7YBvg-zMXQX-sS4Xv-XuaKP'; // AppSheet APIのアクセスキー
 
 
-
 // テーブル名
 
 const ORGS_TABLE_NAME = 'Organizations';
-
 
 
 /**
@@ -26,10 +18,6 @@ const ORGS_TABLE_NAME = 'Organizations';
 
  */
 
-/**
- * AppSheet Webhook エントリーポイント
- * @param {GoogleAppsScript.Events.DoPost} e
- */
 /**
  * AppSheet Webhook エントリーポイント
  * @param {GoogleAppsScript.Events.DoPost} e
@@ -50,8 +38,6 @@ function doPost(e) {
 function processRequest(params) {
   const orgId = params.orgId;
 
-
-
   try {
 
     const { commonName, fullAddress } = params;
@@ -64,8 +50,6 @@ function processRequest(params) {
 
     Logger.log(`処理開始: Org ID = ${orgId}, Name = ${commonName}`);
 
-
-
     // --- Places APIで情報を取得 ---
 
     const placeData = getPlaceDetails(commonName, fullAddress);
@@ -76,17 +60,11 @@ function processRequest(params) {
 
     }
 
-
-
     // --- AppSheetに取得結果を書き込み ---
 
     updateOrganizationOnSuccess(orgId, placeData);
 
-
-
     Logger.log(`処理完了。ID ${orgId} の情報を更新しました。`);
-
-
 
   } catch (error) {
 
@@ -108,10 +86,6 @@ function processRequest(params) {
  * テスト用関数
  * GASエディタから直接実行してテスト可能
  */
-/**
- * テスト用関数
- * GASエディタから直接実行してテスト可能
- */
 function testProcessRequest() {
   // TODO: テストデータを設定してください
   const testParams = {
@@ -121,8 +95,6 @@ function testProcessRequest() {
 
   return CommonTest.runTest(processRequest, testParams, 'Appsheet_関係機関_作成');
 }
-
-
 
 
 /**
@@ -151,13 +123,9 @@ function getPlaceDetails(name, address) {
 
   }
 
-
-
   // Places API (Text Search) のエンドポイント
 
   const apiUrl = 'https://places.googleapis.com/v1/places:searchText';
-
-  
 
   const requestBody = {
 
@@ -166,8 +134,6 @@ function getPlaceDetails(name, address) {
     languageCode: 'ja'
 
   };
-
-
 
   const options = {
 
@@ -189,15 +155,11 @@ function getPlaceDetails(name, address) {
 
   };
 
-
-
   const response = UrlFetchApp.fetch(apiUrl, options);
 
   const responseBody = response.getContentText();
 
   const jsonResponse = JSON.parse(responseBody);
-
-
 
   if (!jsonResponse.places || jsonResponse.places.length === 0) {
 
@@ -205,21 +167,15 @@ function getPlaceDetails(name, address) {
 
   }
 
-
-
   // 最も関連性の高い最初の結果を使用
 
   const place = jsonResponse.places[0];
 
   const location = place.location ? `${place.location.latitude},${place.location.longitude}` : null;
 
-  
-
   // 営業時間を指定フォーマットに整形
 
   const operatingHours = place.regularOpeningHours ? formatOpeningHours(place.regularOpeningHours) : null;
-
-
 
   return {
 
@@ -239,8 +195,6 @@ function getPlaceDetails(name, address) {
 
 }
 
-
-
 /**
 
  * Places APIから返された営業時間を指定のテキスト形式に整形する
@@ -253,8 +207,6 @@ function formatOpeningHours(openingHoursData) {
 
   const dailyHours = {};
 
-
-
   if (openingHoursData.periods) {
 
     openingHoursData.periods.forEach(period => {
@@ -264,8 +216,6 @@ function formatOpeningHours(openingHoursData) {
       const openTime = `${String(period.open.hour).padStart(2, '0')}時${String(period.open.minute).padStart(2, '0')}分`;
 
       const closeTime = `${String(period.close.hour).padStart(2, '0')}時${String(period.close.minute).padStart(2, '0')}分`;
-
-      
 
       if (!dailyHours[day]) {
 
@@ -278,8 +228,6 @@ function formatOpeningHours(openingHoursData) {
     });
 
   }
-
-
 
   return weekdays.map(day => {
 
@@ -298,7 +246,6 @@ function formatOpeningHours(openingHoursData) {
 }
 
 
-
 /**
 
  * 成功時にAppSheetのOrganizationsテーブルを更新する
@@ -313,8 +260,6 @@ function updateOrganizationOnSuccess(orgId, placeData) {
 
   placeData.info_accuracy = "確認済";
 
-
-
   const payload = {
 
     Action: "Edit",
@@ -325,12 +270,9 @@ function updateOrganizationOnSuccess(orgId, placeData) {
 
   };
 
-  
-
   callAppSheetApi(payload);
 
 }
-
 
 
 /**

@@ -1,9 +1,3 @@
-
-
-
-
-
-
 const AuthService = {
 
   _serviceAccountJsonKey: 'SERVICE_ACCOUNT_JSON', // スクリプトプロパティのキー名
@@ -11,7 +5,6 @@ const AuthService = {
   _callbackFunctionName: 'authCallback',
 
   _calendarScope: ['https://www.googleapis.com/auth/calendar'],
-
 
 
   /**
@@ -49,7 +42,6 @@ const AuthService = {
   },
 
 
-
   /**
 
    * ユーザーごとのOAuth2サービスを作成する
@@ -77,7 +69,6 @@ const AuthService = {
     const serviceAccountInfo = JSON.parse(serviceAccountJsonString);
 
     
-
     return OAuth2.createService(`${serviceNamePrefix}:${userEmail}`)
 
       .setTokenUrl('https://oauth2.googleapis.com/token')
@@ -103,7 +94,6 @@ const AuthService = {
   }
 
 };
-
 
 
 /**

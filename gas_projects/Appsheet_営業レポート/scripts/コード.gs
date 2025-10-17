@@ -1,16 +1,8 @@
-
-
-
-
-
-
 /**
 
  * =============================================================================
 
  * フラクタル訪問看護 営業レポート自動化システム (v5.1 - Optimized Contact Display)
-
- *
 
  * 機能: 週次/月次集計、推移分析(月次)、因果関係分析、AI統括レポート、HTMLレポート生成・配信。
 
@@ -21,13 +13,11 @@
  */
 
 
-
 // =============================================================================
 
 // 1. 設定 (Configuration)
 
 // =============================================================================
-
 
 
 class Config {
@@ -59,7 +49,6 @@ class Config {
   }
 
 
-
   static get AI_OPTIONS() {
 
     return {
@@ -77,7 +66,6 @@ class Config {
     };
 
   }
-
 
 
   // 関心度バッジの定義（基準値18）
@@ -109,7 +97,6 @@ class Config {
   }
 
 
-
   static get SPREADSHEETS() {
 
     return {
@@ -125,7 +112,6 @@ class Config {
     };
 
   }
-
 
 
   static get SHEET_NAMES() {
@@ -149,7 +135,6 @@ class Config {
   }
 
 
-
   static get DEBUG_MODE() { return true; }
 
   static get TIMEZONE() { return 'Asia/Tokyo'; }
@@ -157,13 +142,11 @@ class Config {
 }
 
 
-
 // =============================================================================
 
 // 2. ユーティリティ (Utilities) - 変更なし
 
 // =============================================================================
-
 
 
 class LoggerUtil {
@@ -183,7 +166,6 @@ class LoggerUtil {
   }
 
 }
-
 
 
 class DateUtil {
@@ -219,7 +201,6 @@ class DateUtil {
   }
 
 
-
   /**
 
    * レポート対象週として「先週（月曜〜日曜）」の期間を返します。
@@ -239,7 +220,6 @@ class DateUtil {
     today.setHours(0, 0, 0, 0); // 日付計算の基準として時間をリセット
 
 
-
     // 今週の月曜日を計算します (getDay()は 日曜=0, 月曜=1, ..., 土曜=6)
 
     const dayOfWeek = today.getDay();
@@ -251,7 +231,6 @@ class DateUtil {
     thisMonday.setDate(today.getDate() + diffToMonday);
 
 
-
     // レポート対象期間の終了日 = 今週の月曜日の1日前 = 先週の日曜日
 
     const endDate = new Date(thisMonday);
@@ -259,7 +238,6 @@ class DateUtil {
     endDate.setDate(thisMonday.getDate() - 1);
 
     endDate.setHours(23, 59, 59, 999);
-
 
 
     // レポート対象期間の開始日 = 先週の日曜日から6日前 = 先週の月曜日
@@ -271,11 +249,9 @@ class DateUtil {
     startDate.setHours(0, 0, 0, 0);
 
     
-
     return { startDate, endDate };
 
   }
-
 
 
   /**
@@ -295,13 +271,11 @@ class DateUtil {
     const { startDate: lastWeekMonday } = this.getRecentWeek(baseDate);
 
     
-
     // 比較対象期間の終了日 = 先週の月曜日の1日前 = 先々週の日曜日
 
     const endDate = new Date(lastWeekMonday);
 
     endDate.setMilliseconds(lastWeekMonday.getMilliseconds() - 1);
-
 
 
     // 比較対象期間の開始日 = 先々週の日曜日から6日前 = 先々週の月曜日
@@ -313,11 +287,9 @@ class DateUtil {
     startDate.setHours(0, 0, 0, 0);
 
 
-
     return { startDate, endDate };
 
   }
-
 
 
   /**
@@ -337,7 +309,6 @@ class DateUtil {
     const today = new Date(baseDate);
 
     
-
     // レポート対象期間の終了日 = 今月の0日目 = 先月の末日
 
     const endDate = new Date(today.getFullYear(), today.getMonth(), 0);
@@ -345,17 +316,14 @@ class DateUtil {
     endDate.setHours(23, 59, 59, 999);
 
 
-
     // レポート対象期間の開始日 = 先月の1日
 
     const startDate = new Date(endDate.getFullYear(), endDate.getMonth(), 1, 0, 0, 0, 0);
 
     
-
     return { startDate, endDate };
 
   }
-
 
 
   /**
@@ -373,7 +341,6 @@ class DateUtil {
     const today = new Date(baseDate);
 
     
-
     // 比較対象期間の終了日 = 先月の0日目 = 先々月の末日
 
     const endDate = new Date(today.getFullYear(), today.getMonth() - 1, 0);
@@ -381,17 +348,14 @@ class DateUtil {
     endDate.setHours(23, 59, 59, 999);
 
 
-
     // 比較対象期間の開始日 = 先々月の1日
 
     const startDate = new Date(endDate.getFullYear(), endDate.getMonth(), 1, 0, 0, 0, 0);
 
 
-
     return { startDate, endDate };
 
   }
-
 
 
   static getPastMonthKeys(baseDate, months) {
@@ -417,7 +381,6 @@ class DateUtil {
   }
 
 
-
   static getDaysBetween(date1, date2) {
 
     const oneDay = 24 * 60 * 60 * 1000;
@@ -433,7 +396,6 @@ class DateUtil {
 }
 
 
-
 function escapeHtml(unsafe) {
 
   if (unsafe === null || unsafe === undefined) return '';
@@ -446,15 +408,11 @@ function escapeHtml(unsafe) {
 
 }
 
-
-
 // =============================================================================
 
 // 3. データアクセス層 (Data Access Layer) - 変更なし
 
 // =============================================================================
-
-
 
 class DataAccessService {
 
@@ -477,8 +435,6 @@ class DataAccessService {
       const values = sheet.getDataRange().getValues();
 
       if (values.length <= 1) return [];
-
-
 
       const headers = values[0].map(h => String(h).trim());
 
@@ -505,8 +461,6 @@ class DataAccessService {
     }
 
   }
-
-
 
   static appendData(spreadsheetId, sheetName, dataObject) {
 
@@ -535,13 +489,11 @@ class DataAccessService {
 }
 
 
-
 // =============================================================================
 
 // 4. ビジネスロジック層 (Business Logic Layer) - ★★★ 修正箇所あり ★★★
 
 // =============================================================================
-
 
 
 class CausalityAnalysisService {
@@ -557,7 +509,6 @@ class CausalityAnalysisService {
     this.prepareActivities();
 
   }
-
 
 
   prepareActivities() {
@@ -579,11 +530,9 @@ class CausalityAnalysisService {
   }
 
 
-
   analyzeRequests(requests, startDate, endDate) {
 
     const analyzedRequests = [];
-
 
 
     const validRequests = requests.filter(request =>
@@ -593,7 +542,6 @@ class CausalityAnalysisService {
     );
 
 
-
     validRequests.forEach(request => {
 
         const orgId = request.requester_org_id;
@@ -601,9 +549,7 @@ class CausalityAnalysisService {
         if (!orgId) return;
 
 
-
         const salesHistory = this.activitiesByOrg.get(orgId);
-
 
 
         if (!salesHistory || salesHistory.length === 0) {
@@ -635,7 +581,6 @@ class CausalityAnalysisService {
     return analyzedRequests;
 
   }
-
 
 
   calculateMetrics(history, requestDateTime) {
@@ -675,7 +620,6 @@ class CausalityAnalysisService {
     const averageScore = validScores > 0 ? Math.floor(scoreSum / validScores).toString() : 'N/A';
 
 
-
     return {
 
       totalContacts: history.length,
@@ -691,7 +635,6 @@ class CausalityAnalysisService {
     };
 
   }
-
 
 
   formatResult(request, orgId, requestDateTime, analysis, noPriorSalesActivity) {
@@ -725,7 +668,6 @@ class CausalityAnalysisService {
 }
 
 
-
 class BaseReportService {
 
   constructor() {
@@ -749,7 +691,6 @@ class BaseReportService {
   }
 
 
-
   prepareData() {
 
     this.prepareMasterData();
@@ -763,7 +704,6 @@ class BaseReportService {
     this.preparePastReportsData();
 
   }
-
 
 
   prepareMasterData() {
@@ -781,7 +721,6 @@ class BaseReportService {
     contacts.forEach(contact => this.contactMap.set(contact.contact_id, contact.full_name));
 
   }
-
 
 
   prepareActivityData() {
@@ -805,7 +744,6 @@ class BaseReportService {
     }).filter(a => a !== null && a.org_id);
 
   }
-
 
 
   prepareRequestData() {
@@ -843,7 +781,6 @@ class BaseReportService {
     }).filter(r => r !== null);
 
 
-
     this.allRequests.forEach(req => {
 
         const orgId = req.requester_org_id;
@@ -861,13 +798,11 @@ class BaseReportService {
   }
 
 
-
   preparePastReportsData() {
 
     this.pastReports = DataAccessService.fetchData(Config.SPREADSHEETS.SALES_ID, Config.SHEET_NAMES.REPORTS_LOG);
 
   }
-
 
 
   groupAndSortActivities() {
@@ -891,7 +826,6 @@ class BaseReportService {
     });
 
   }
-
 
 
   getOrgInfo(orgId) {
@@ -919,7 +853,6 @@ class BaseReportService {
   }
 
 
-
   calculateSummary(visitedOrgIds, startDate, endDate) {
 
     const uniqueOrgs = visitedOrgIds.size;
@@ -929,7 +862,6 @@ class BaseReportService {
     let scoreSum = 0;
 
     let validScoreCount = 0;
-
 
 
     this.allActivities.forEach(activity => {
@@ -953,17 +885,14 @@ class BaseReportService {
     });
 
 
-
     const averageScoreValue = validScoreCount > 0 ? (scoreSum / validScoreCount) : 0;
 
     const averageScoreText = validScoreCount > 0 ? Math.floor(averageScoreValue).toString() : 'N/A';
 
 
-
     return { uniqueOrgs, totalVisits, averageScore: averageScoreText, averageScoreValue };
 
   }
-
 
 
   getVisitedOrgIdsInPeriod(startDate, endDate) {
@@ -987,7 +916,6 @@ class BaseReportService {
 }
 
 
-
 class WeeklyReportService extends BaseReportService {
 
   generateReport(baseDate) {
@@ -995,7 +923,6 @@ class WeeklyReportService extends BaseReportService {
     LoggerUtil.info("Generating Weekly Report...");
 
     this.prepareData();
-
 
 
     const currentPeriod = DateUtil.getRecentWeek(baseDate);
@@ -1045,7 +972,6 @@ class WeeklyReportService extends BaseReportService {
   }
 
 
-
   extractWeeklyDetails(startDate, endDate) {
 
     const reportDetails = [];
@@ -1053,7 +979,6 @@ class WeeklyReportService extends BaseReportService {
     const visitedOrgIds = new Set();
 
     const maxHistory = Config.REPORT_OPTIONS.WEEKLY_MAX_HISTORY;
-
 
 
     this.activitiesByOrg.forEach((history, orgId) => {
@@ -1065,7 +990,6 @@ class WeeklyReportService extends BaseReportService {
       );
 
 
-
       if (hasActivityInPeriod) {
 
         visitedOrgIds.add(orgId);
@@ -1073,7 +997,6 @@ class WeeklyReportService extends BaseReportService {
         const orgInfo = this.getOrgInfo(orgId);
 
         const recentHistory = history.slice(0, maxHistory);
-
 
 
         const historyByContact = new Map();
@@ -1101,7 +1024,6 @@ class WeeklyReportService extends BaseReportService {
         });
 
 
-
         reportDetails.push({
 
           orgInfo,
@@ -1117,13 +1039,11 @@ class WeeklyReportService extends BaseReportService {
     });
 
 
-
     reportDetails.sort((a, b) => {
 
         return b.latestActivityDate.getTime() - a.latestActivityDate.getTime();
 
     });
-
 
 
     return { reportDetails, visitedOrgIds };
@@ -1133,9 +1053,7 @@ class WeeklyReportService extends BaseReportService {
 }
 
 
-
 class MonthlyReportService extends BaseReportService {
-
 
 
   generateReport(baseDate) {
@@ -1145,11 +1063,9 @@ class MonthlyReportService extends BaseReportService {
     this.prepareData();
 
 
-
     const currentPeriod = DateUtil.getCurrentMonth(baseDate);
 
     const previousPeriod = DateUtil.getPreviousMonth(baseDate);
-
 
 
     const trendStartDate = new Date(baseDate);
@@ -1161,11 +1077,9 @@ class MonthlyReportService extends BaseReportService {
     const trendPeriodActivities = this.allActivities.filter(a => a.activityDate >= trendStartDate && a.activityDate <= currentPeriod.endDate);
 
 
-
     const monthlyTrends = this.analyzeLongTermTrends(trendPeriodActivities);
 
     const contactPersonTrends = this.analyzeContactPersonTrends(trendPeriodActivities);
-
 
 
     const visitedThisMonth = this.getVisitedOrgIdsInPeriod(currentPeriod.startDate, currentPeriod.endDate);
@@ -1173,9 +1087,7 @@ class MonthlyReportService extends BaseReportService {
     const visitedLastMonth = this.getVisitedOrgIdsInPeriod(previousPeriod.startDate, previousPeriod.endDate);
 
 
-
     const reportDetails = this.generateMonthlyDetails(monthlyTrends, contactPersonTrends, visitedThisMonth, baseDate);
-
 
 
     const causalityService = new CausalityAnalysisService(this.allActivities, this.orgMap);
@@ -1189,11 +1101,9 @@ class MonthlyReportService extends BaseReportService {
     const causalityAnalysisLastMonth = causalityService.analyzeRequests(this.allRequests, previousPeriod.startDate, previousPeriod.endDate);
 
 
-
     const summaryThisMonth = this.calculateSummary(visitedThisMonth, currentPeriod.startDate, currentPeriod.endDate);
 
     const summaryLastMonth = this.calculateSummary(visitedLastMonth, previousPeriod.startDate, previousPeriod.endDate);
-
 
 
     // サマリーオブジェクトに依頼獲得数を追加
@@ -1201,7 +1111,6 @@ class MonthlyReportService extends BaseReportService {
     summaryThisMonth.totalRequests = causalityAnalysisThisMonth.length;
 
     summaryLastMonth.totalRequests = causalityAnalysisLastMonth.length;
-
 
 
     const summary = {
@@ -1215,7 +1124,6 @@ class MonthlyReportService extends BaseReportService {
     };
 
     // ★★★ 変更点：ここまで ★★★
-
 
 
     return {
@@ -1239,13 +1147,11 @@ class MonthlyReportService extends BaseReportService {
   }
 
 
-
   analyzeLongTermTrends(activities) {
 
     const trendsByOrg = new Map();
 
     const activitiesByOrg = new Map();
-
 
 
     activities.forEach(activity => {
@@ -1259,7 +1165,6 @@ class MonthlyReportService extends BaseReportService {
       activitiesByOrg.get(activity.org_id).push(activity);
 
     });
-
 
 
     activitiesByOrg.forEach((history, orgId) => {
@@ -1305,7 +1210,6 @@ class MonthlyReportService extends BaseReportService {
     return trendsByOrg;
 
   }
-
 
 
   analyzeContactPersonTrends(activities) {
@@ -1379,7 +1283,6 @@ class MonthlyReportService extends BaseReportService {
   }
 
 
-
   /**
 
    * 月次レポートの詳細データ（事業所ごとのトレンド情報）を生成する。
@@ -1405,11 +1308,9 @@ class MonthlyReportService extends BaseReportService {
       const mainContactsTrendData = new Map();
 
 
-
       contactTrendData.forEach((trends, contactName) => {
 
         const totalVisits = Array.from(trends.values()).reduce((sum, stats) => sum + stats.visits, 0);
-
 
 
         // ★★★ 修正：訪問回数が2回以上で、かつ「担当者不明/その他」ではない場合のみ主要面会者とする ★★★
@@ -1421,7 +1322,6 @@ class MonthlyReportService extends BaseReportService {
         }
 
       });
-
 
 
       if (trendData) {
@@ -1487,9 +1387,6 @@ class MonthlyReportService extends BaseReportService {
 }
 
 
-
-
-
 /**
 
  * =============================================================================
@@ -1499,7 +1396,6 @@ class MonthlyReportService extends BaseReportService {
  * =============================================================================
 
  */
-
 
 
 /**
@@ -1521,7 +1417,6 @@ class AiAnalysisService {
     }
 
 
-
     if (Config.AI_OPTIONS.GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY' || !Config.AI_OPTIONS.GEMINI_API_KEY) {
 
       LoggerUtil.warn("Gemini API Key is not configured.");
@@ -1531,9 +1426,7 @@ class AiAnalysisService {
     }
 
 
-
     if (reportData.isEmpty) return null;
-
 
 
     LoggerUtil.info("Starting AI analysis...");
@@ -1545,9 +1438,7 @@ class AiAnalysisService {
       : this.buildWeeklyPrompt(reportData);
 
 
-
     const responseText = this.callGeminiApi(prompt);
-
 
 
     if (responseText) {
@@ -1563,7 +1454,6 @@ class AiAnalysisService {
   }
 
 
-
 /**
 
    * 【週次レポート用プロンプト】（変更なし）
@@ -1577,17 +1467,14 @@ class AiAnalysisService {
     const causality = summary.causalityAnalysis;
 
 
-
     let context = `
 
 # 指示書: 取締役向け週次営業戦術レポート生成
 
 
-
 ## 1. AIの役割と前提条件
 
 あなたは、株式会社フラクタルの訪問看護事業であるフラクタル訪問看護の専属のデータ駆動型セールスコーチです。代表取締役である浅井の認知特性プロファイルを完全に理解し、以下の**週次データ**に基づき、**次週の戦術的意思決定**を最大化するためのレポートを生成してください。長期的な戦略よりも、短期的な成果に焦点を当てます。
-
 
 
 ### 対象者の認知特性プロファイル
@@ -1601,13 +1488,10 @@ class AiAnalysisService {
 - **忌避事項**: 冗長な説明、主観的な記述、ルーティン報告。
 
 
-
 ## 2. インプットデータ
 
 
-
 ### 対象期間: ${DateUtil.format(reportData.startDate, 'yyyy/MM/dd')} 〜 ${DateUtil.format(reportData.endDate, 'MM/dd')}
-
 
 
 ### 主要KPIサマリー (対前週比)
@@ -1619,11 +1503,9 @@ class AiAnalysisService {
 - **新規依頼件数**: ${causality.length}件
 
 
-
 ### 今週の注目すべき活動ハイライト
 
 ${this.summarizeCausalityForPrompt(causality, 'weekly')}
-
 
 
 ## 3. レポート生成の厳格な指示
@@ -1631,9 +1513,7 @@ ${this.summarizeCausalityForPrompt(causality, 'weekly')}
 以下の構成要素と順序を**寸分違わず厳守**し、レポート本文のみをマークダウン形式で生成してください。
 
 
-
 ---
-
 
 
 ### 1. 週次エグゼクティブサマリー (Weekly BLUF)
@@ -1647,7 +1527,6 @@ ${this.summarizeCausalityForPrompt(causality, 'weekly')}
 - **最優先アクション (Top Priority Actions)**: 次週、**必ず実行すべきこと**を、優先順位をつけて3つリストアップする。「誰が」「何を」「いつまでに行うか」を具体的に示す。
 
 
-
 ### 2. パフォーマンス要因分析
 
 **【目的】KPI変動の根本原因（Why）を特定する。**
@@ -1657,7 +1536,6 @@ ${this.summarizeCausalityForPrompt(causality, 'weekly')}
 - **成功パターンの抽出**: 今週、新規依頼獲得に至ったケース（もしあれば）を分析し、その成功要因（接触頻度、タイミング、会話内容など）を特定する。次週に横展開できるパターンを抽出する。
 
 
-
 ### 3. 個別化分析と次週のターゲット
 
 **【目的】リソースを最適配分するため、注力すべき対象を特定する。**
@@ -1665,7 +1543,6 @@ ${this.summarizeCausalityForPrompt(causality, 'weekly')}
 - **関係深化が見られる事業所**: 今週の活動で関心度スコアが著しく上昇した事業所をリストアップし、次週の推奨アクション（例：「クロージング訪問」「追加情報提供」など）を提示する。
 
 - **停滞・関係悪化の兆候がある事業所**: 複数回訪問しているにも関わらずスコアが停滞、または下降している事業所を特定する。その原因を分析し、次週の対応（例：「アプローチ方法の変更」「一時的な冷却期間」など）を提言する。
-
 
 
 ## 4. 表現に関する厳格な制約事項
@@ -1685,7 +1562,6 @@ ${this.summarizeCausalityForPrompt(causality, 'weekly')}
   }
 
 
-
   /**
 
    * ★★★ 刷新版：浅井拓哉氏向け事業レポート生成ガイドライン準拠 ★★★
@@ -1699,17 +1575,14 @@ ${this.summarizeCausalityForPrompt(causality, 'weekly')}
     const causality = summary.causalityAnalysis;
 
 
-
     let context = `
 
 # 指示書: フラクタル訪問看護の月次事業レポート生成
 
 
-
 ## 1. AIの役割と前提条件
 
 あなたは、株式会社フラクタルのフラクタル訪問看護の主席営業戦略アナリストです。取締役社長の浅井の認知特性プロファイルを完全に理解し、以下のデータとガイドラインに基づき、彼の迅速な意思決定を最大化するための事業レポートを生成してください。
-
 
 
 ### 対象者の認知特性プロファイル
@@ -1723,13 +1596,10 @@ ${this.summarizeCausalityForPrompt(causality, 'weekly')}
 - **忌避事項**: 冗長な説明、詳細すぎるオペレーション情報、論理的裏付けのない意見、感情的・主観的な記述。
 
 
-
 ## 2. インプットデータ
 
 
-
 ### 対象期間: ${DateUtil.format(reportData.startDate, 'yyyy/MM')}
-
 
 
 ### 主要KPIサマリー
@@ -1741,11 +1611,9 @@ ${this.summarizeCausalityForPrompt(causality, 'weekly')}
 - **新規依頼件数**: ${summary.current.totalRequests}件 (前月比: ${summary.current.totalRequests - summary.previous.totalRequests})
 
 
-
 ### 長期トレンド分析のハイライト（${Config.REPORT_OPTIONS.MONTHLY_TREND_MONTHS}ヶ月）
 
 ${this.summarizeTrendsForPrompt(reportData.reportDetails)}
-
 
 
 ### 依頼獲得プロセスのハイライト
@@ -1753,15 +1621,12 @@ ${this.summarizeTrendsForPrompt(reportData.reportDetails)}
 ${this.summarizeCausalityForPrompt(causality)}
 
 
-
 ## 3. レポート生成の厳格な指示
 
 以下の構成要素と順序を**寸分違わず厳守**し、レポート本文のみをマークダウン形式で生成してください。AI風の応答やヘッダー情報は一切不要です。
 
 
-
 ---
-
 
 
 ### 1. エグゼクティブサマリー
@@ -1775,7 +1640,6 @@ ${this.summarizeCausalityForPrompt(causality)}
 - **意思決定事項と推奨アクション (Decision Points & Actions)**: 対象者が即座に判断・実行すべき具体的な戦略レベルのアクションをリスト形式で提言。
 
 
-
 ### 2. トレンド分析と未来予測
 
 **【目的】マクロな視点での現状把握と将来シナリオを提示する。**
@@ -1783,7 +1647,6 @@ ${this.summarizeCausalityForPrompt(causality)}
 - **トレンドとパターンの分析**: 主要KPIの変動における変曲点や異常値を指摘し、その背景を分析する。
 
 - **未来予測シナリオ**: 過去のトレンドとインプットデータに基づき、来月の主要KPIについて3つのシナリオ（楽観的、標準的、悲観的）を提示。各シナリオの前提条件を明記する。
-
 
 
 ### 3. 要因分析と構造的理解
@@ -1795,7 +1658,6 @@ ${this.summarizeCausalityForPrompt(causality)}
 - **因果関係と根本原因の特定**: なぜ特定の事業所の関心度スコアが上昇（または下降）したのか。データに基づき、相関と因果を区別して根本原因を分析する。
 
 
-
 ### 4. 個別化分析と最適化
 
 **【目的】個別の特性を分析し、最大の成果を生むパターンを特定する。**
@@ -1805,7 +1667,6 @@ ${this.summarizeCausalityForPrompt(causality)}
 - **ボトルネックと特異点の分析**: 成長を阻害している要因、またはトレンドから外れた異常値を持つ事業所を特定し、その原因を分析する。
 
 
-
 ### 5. 戦略提言とオプション比較
 
 **【目的】分析結果に基づき、具体的な戦略オプションを比較検討する。**
@@ -1813,7 +1674,6 @@ ${this.summarizeCausalityForPrompt(causality)}
 - **戦略オプションの提示**: 課題解決または機会獲得のための代替的な戦略オプションを複数（2〜3つ）提案する。既存の延長線上にない革新的なアプローチも一つ含めること。
 
 - **オプション評価マトリクス**: 各オプションの「期待効果」「リスク」「必要なリソース」を客観的に比較するHTMLの<table>を作成する。
-
 
 
 ## 4. 表現に関する厳格な制約事項
@@ -1831,7 +1691,6 @@ ${this.summarizeCausalityForPrompt(causality)}
     return context;
 
   }
-
 
 
   // ★★★ 新規追加：月次プロンプト用のデータ要約ヘルパー ★★★
@@ -1853,7 +1712,6 @@ ${this.summarizeCausalityForPrompt(causality)}
   }
 
   
-
   // ★★★ 新規追加：月次プロンプト用のデータ要約ヘルパー ★★★
 
   static summarizeCausalityForPrompt(causality) {
@@ -1889,9 +1747,6 @@ ${this.summarizeCausalityForPrompt(causality)}
     return summaryText;
 
   }
-
-
-
 
 
   // トレンド分析の要約ヘルパー（変更なし）
@@ -1963,7 +1818,6 @@ ${this.summarizeCausalityForPrompt(causality)}
   }
 
 
-
   // トレンドデータから統計を取得するヘルパー（変更なし）
 
   static getStatsFromTrend(trendData, monthKey) {
@@ -1979,7 +1833,6 @@ ${this.summarizeCausalityForPrompt(causality)}
     return { visits: 0, averageScoreValue: 0 };
 
   }
-
 
 
   static callGeminiApi(prompt) {
@@ -2047,17 +1900,11 @@ ${this.summarizeCausalityForPrompt(causality)}
 }
 
 
-
-
-
-
-
 // =============================================================================
 
 // 6. プレゼンテーション層 (Presentation Layer) - ★★★ 修正箇所あり ★★★
 
 // =============================================================================
-
 
 
 /**
@@ -2067,7 +1914,6 @@ ${this.summarizeCausalityForPrompt(causality)}
  */
 
 class HtmlReportGenerator {
-
 
 
   // レポート構造生成 (メール互換性向上のためテーブルレイアウトでラップ)
@@ -2131,7 +1977,6 @@ class HtmlReportGenerator {
   }
 
 
-
   /**
 
    * メインのメール本文用HTMLを生成する。
@@ -2141,7 +1986,6 @@ class HtmlReportGenerator {
   static generateEmailBody(reportData, aiSummaryHtml = null) {
 
     let contentHtml = '';
-
 
 
     if (reportData.isEmpty) {
@@ -2161,7 +2005,6 @@ class HtmlReportGenerator {
       contentHtml += summaryHtml;
 
 
-
       // 2. AIサマリー
 
       if (aiSummaryHtml) {
@@ -2177,7 +2020,6 @@ class HtmlReportGenerator {
       }
 
 
-
       // 3. 因果関係分析セクション
 
       const causalityHtml = this.generateCausalitySection(reportData);
@@ -2189,9 +2031,6 @@ class HtmlReportGenerator {
                                 <div class="section-content">${causalityHtml}</div>
 
                             </div>`;
-
-
-
 
 
       // 4. 詳細レポート
@@ -2233,7 +2072,6 @@ class HtmlReportGenerator {
   }
 
 
-
   // --- スタイル定義 (デザイン全面刷新) ---
 
 // --- スタイル定義 (デザイン全面刷新) ---
@@ -2261,7 +2099,6 @@ class HtmlReportGenerator {
     const textLight = '#6b7280';
 
 
-
     // バッジスタイルの動的生成
 
     let customBadgeStyles = '';
@@ -2273,7 +2110,6 @@ class HtmlReportGenerator {
       customBadgeStyles += `${className} { background-color: ${config.color}; color: #ffffff; } \n`;
 
     });
-
 
 
     return `
@@ -2349,7 +2185,6 @@ class HtmlReportGenerator {
             }
 
 
-
             /* --- レイアウト --- */
 
             .container {
@@ -2375,7 +2210,6 @@ class HtmlReportGenerator {
                 padding: 30px;
 
             }
-
 
 
             /* --- ヘッダー --- */
@@ -2411,7 +2245,6 @@ class HtmlReportGenerator {
             }
 
 
-
             /* --- セクション --- */
 
             .section {
@@ -2419,7 +2252,6 @@ class HtmlReportGenerator {
                 margin-bottom: 40px;
 
             }
-
 
 
             .section-title {
@@ -2455,7 +2287,6 @@ class HtmlReportGenerator {
                 white-space: nowrap;
 
             }
-
 
 
             /* --- ダッシュボード（サマリー） --- */
@@ -2551,7 +2382,6 @@ class HtmlReportGenerator {
             }
 
 
-
             /* --- AIサマリー --- */
 
             .ai-summary .section-content {
@@ -2589,7 +2419,6 @@ class HtmlReportGenerator {
                 margin-top: 0;
 
             }
-
 
 
             /* --- 因果関係分析 --- */
@@ -2701,7 +2530,6 @@ class HtmlReportGenerator {
             .col-analysis strong { color: ${textColor}; }
 
 
-
             /* --- 事業所カード（詳細） --- */
 
             .org-card {
@@ -2739,7 +2567,6 @@ class HtmlReportGenerator {
                 color: ${textColor};
 
             }
-
 
 
             /* --- 週次詳細：タイムライン --- */
@@ -2819,7 +2646,6 @@ class HtmlReportGenerator {
                 text-align: left;
 
             }
-
 
 
             /* --- 月次詳細：トレンド分析 --- */
@@ -2939,7 +2765,6 @@ class HtmlReportGenerator {
             }
 
 
-
             /* 月次詳細：面会者別トレンド */
 
           	.contact-trend-item {
@@ -3003,7 +2828,6 @@ class HtmlReportGenerator {
           	.no-data-text { font-size: 14px; color: ${textLight}; padding: 10px 0; }
 
 
-
           	/* --- バッジと凡例 --- */
 
           	.badge {
@@ -3023,7 +2847,6 @@ class HtmlReportGenerator {
           	}
 
           	${customBadgeStyles}
-
 
 
           	.legend {
@@ -3059,7 +2882,6 @@ class HtmlReportGenerator {
           	}
 
 
-
           	/* --- フッター --- */
 
           	.footer {
@@ -3077,7 +2899,6 @@ class HtmlReportGenerator {
                 background-color: #F9FAFB;
 
           	}
-
 
 
           	/* --- レスポンシブ対応 --- */
@@ -3209,9 +3030,7 @@ class HtmlReportGenerator {
   }
 
 
-
   // --- 各セクション生成メソッド ---
-
 
 
   static getHeader(reportData) {
@@ -3223,7 +3042,6 @@ class HtmlReportGenerator {
     return `<div class="header"><h1>${title}</h1><p class="period">${period}</p></div>`;
 
   }
-
 
 
 // 週次サマリー（ダッシュボード）
@@ -3263,7 +3081,6 @@ class HtmlReportGenerator {
   }
 
 
-
   // 月次サマリー（ダッシュボード）
 
   static getMonthlySummary(summary) {
@@ -3277,7 +3094,6 @@ class HtmlReportGenerator {
     const previousTotalRequests = summary.previous.totalRequests;
 
     // ★★★ 変更点：ここまで ★★★
-
 
 
     return `<table class="summary-dashboard" width="100%" border="0" cellspacing="0" cellpadding="0">
@@ -3299,9 +3115,7 @@ class HtmlReportGenerator {
                 <td style="padding-left: 10px; vertical-align: top; width: 33%;">
 
                   
-
                   ${this.generateStatBox('新規依頼獲得数', totalRequests, previousTotalRequests, '前月比')}
-
 
 
                 </td>
@@ -3311,7 +3125,6 @@ class HtmlReportGenerator {
             </table>`;
 
   }
-
 
 
   // 統計ボックス生成
@@ -3327,7 +3140,6 @@ class HtmlReportGenerator {
       const previous = parseFloat(previousValue);
 
 
-
       if (!isNaN(current) && !isNaN(previous)) {
 
         const diff = current - previous;
@@ -3337,7 +3149,6 @@ class HtmlReportGenerator {
         let icon = '';
 
         let className = 'comp-neutral';
-
 
 
         if (diff > 0) {
@@ -3361,7 +3172,6 @@ class HtmlReportGenerator {
         }
 
 
-
         const formattedDiff = label.includes('スコア') ? diff.toFixed(1) : Math.round(diff);
 
         comparisonHtml = `<div class="stat-comparison">
@@ -3381,7 +3191,6 @@ class HtmlReportGenerator {
     }
 
 
-
     // 表示順序を「ラベル」→「数値」→「比較」に変更
 
     return `<div class="stat-box">
@@ -3397,7 +3206,6 @@ class HtmlReportGenerator {
   }
 
 
-
   /**
 
    * 因果関係分析セクションを生成する。
@@ -3411,13 +3219,11 @@ class HtmlReportGenerator {
     const allTimeRequestCountByOrg = reportData.allTimeRequestCountByOrg;
 
 
-
     if (!causalityAnalysis || causalityAnalysis.length === 0) {
 
       return `<p>対象期間中の新規依頼はありませんでした。</p>`;
 
     }
-
 
 
     // 事業所ごとに依頼をグループ化
@@ -3437,7 +3243,6 @@ class HtmlReportGenerator {
     });
 
 
-
     // 最新の依頼日時でソート
 
     const sortedOrgs = Array.from(requestsByOrg.entries()).sort((a, b) => {
@@ -3451,9 +3256,7 @@ class HtmlReportGenerator {
     });
 
 
-
     let html = '';
-
 
 
     sortedOrgs.forEach(([orgName, requests]) => {
@@ -3477,7 +3280,6 @@ class HtmlReportGenerator {
       });
 
 
-
       const orgId = requests[0].orgId;
 
       const totalRequestsForOrg = allTimeRequestCountByOrg.get(orgId) || 0;
@@ -3485,13 +3287,11 @@ class HtmlReportGenerator {
       const orgHeader = `${escapeHtml(orgName)} <span style="font-weight: normal; font-size: 14px; color: #6b7280;">(期間中: ${requests.length}件 / 累計: ${totalRequestsForOrg}件)</span>`;
 
 
-
       html += `<div class="causality-card">
 
                         <div class="causality-header">${orgHeader}</div>
 
                         <div class="causality-content">`;
-
 
 
       Array.from(requestsByStatus.entries()).forEach(([status, statusRequests]) => {
@@ -3503,7 +3303,6 @@ class HtmlReportGenerator {
         // テーブルヘッダーを追加 (アクセシビリティ向上)
 
         html += '<thead><tr><th class="col-date">依頼日</th><th class="col-reason">内容・経緯</th><th class="col-analysis">分析</th></tr></thead><tbody>';
-
 
 
         statusRequests.forEach(item => {
@@ -3549,15 +3348,12 @@ class HtmlReportGenerator {
     });
 
 
-
     return html;
 
   }
 
 
-
   // --- 週次・月次詳細生成メソッド群 ---
-
 
 
   static generateLegend() {
@@ -3577,13 +3373,11 @@ class HtmlReportGenerator {
   }
 
 
-
   static getWeeklyDetails(reportDetails) {
 
     return reportDetails.map(detail => this.generateWeeklyOrgCard(detail)).join("");
 
   }
-
 
 
   // 週次レポートの事業所カード生成
@@ -3593,7 +3387,6 @@ class HtmlReportGenerator {
     const { orgInfo, historyByContact } = detail;
 
     let activitiesHtml = "";
-
 
 
     // 面会者をソート（担当者不明は最後）
@@ -3607,7 +3400,6 @@ class HtmlReportGenerator {
       return a[0].localeCompare(b[0]);
 
     });
-
 
 
     // 面会者ごとにグループ化して表示
@@ -3631,7 +3423,6 @@ class HtmlReportGenerator {
     });
 
 
-
     return `<div class="org-card">
 
                     <div class="org-header">
@@ -3647,7 +3438,6 @@ class HtmlReportGenerator {
   }
 
 
-
   // 週次レポートの活動エントリー生成
 
   static generateWeeklyActivityEntry(activity) {
@@ -3661,7 +3451,6 @@ class HtmlReportGenerator {
     const badge = this.getScoreBadge(activity.sales_score);
 
     const summaryHtml = this.parseMarkdown(activity.summary) || '<span style="color: #999;">記録なし</span>';
-
 
 
     // ★★★ 変更点：ここから ★★★
@@ -3707,13 +3496,11 @@ class HtmlReportGenerator {
   }
 
 
-
   static getMonthlyDetails(reportDetails) {
 
     return reportDetails.map(detail => this.generateMonthlyOrgCard(detail)).join("");
 
   }
-
 
 
   /**
@@ -3727,13 +3514,11 @@ class HtmlReportGenerator {
     if (!contactTrendData) return '';
 
 
-
     let scoreRow = '<tr><td class="trend-label-col-sub">平均スコア</td>';
 
     let headerRow = '<tr><th>指標</th>';
 
     const currentMonthKey = monthKeys[monthKeys.length - 1];
-
 
 
     monthKeys.forEach(key => {
@@ -3757,11 +3542,9 @@ class HtmlReportGenerator {
     headerRow += '</tr>';
 
 
-
     return `<table class="trend-table-sub">${headerRow}${scoreRow}</table>`;
 
   }
-
 
 
   /**
@@ -3777,11 +3560,9 @@ class HtmlReportGenerator {
     const { orgInfo, trendData, contactTrendData, monthKeys } = detail;
 
 
-
     // 1. 事業所全体のトレンド分析テーブル
 
     const orgTrendTableHtml = this.generateTrendTable(trendData, monthKeys);
-
 
 
     // 2. 面会者別のトレンド分析セクション
@@ -3789,13 +3570,11 @@ class HtmlReportGenerator {
     let contactTrendsSectionHtml = '';
 
 
-
     // ★★★ 修正：contactTrendData（ビジネスロジック層でフィルタリング済み）が存在し、かつ空でない場合のみセクションを生成 ★★★
 
     if (contactTrendData && contactTrendData.size > 0) {
 
       let contactTrendsHtml = '';
-
 
 
       // 訪問回数が多い順に面会者をソート
@@ -3809,7 +3588,6 @@ class HtmlReportGenerator {
         return totalVisitsB - totalVisitsA;
 
       });
-
 
 
       sortedContacts.forEach(([contactName, trends]) => {
@@ -3831,7 +3609,6 @@ class HtmlReportGenerator {
       });
 
 
-
       // セクション全体を構築
 
       contactTrendsSectionHtml = `
@@ -3849,7 +3626,6 @@ class HtmlReportGenerator {
     }
 
     // 主要な面会者がいない場合、contactTrendsSectionHtml は空文字列のままとなり、表示されない。
-
 
 
     return `
@@ -3879,7 +3655,6 @@ class HtmlReportGenerator {
   }
 
 
-
   /**
 
    * トレンド分析テーブルを生成する（スコアバー付き）。
@@ -3891,7 +3666,6 @@ class HtmlReportGenerator {
     if (!trendData || monthKeys.length === 0) return '<p>統計データがありません。</p>';
 
 
-
     let headerRow = '<tr><th class="trend-label-col">指標</th>';
 
     let visitsRow = '<tr><td class="trend-label-col">訪問回数</td>';
@@ -3899,7 +3673,6 @@ class HtmlReportGenerator {
     let scoreRow = '<tr><td class="trend-label-col">平均スコア</td>';
 
     const currentMonthKey = monthKeys[monthKeys.length - 1];
-
 
 
     monthKeys.forEach(key => {
@@ -3915,11 +3688,9 @@ class HtmlReportGenerator {
       const cellClass = key === currentMonthKey ? 'trend-current-month' : '';
 
 
-
       headerRow += `<th class="${cellClass}">${key.substring(5)}月</th>`;
 
       visitsRow += `<td class="${cellClass}">${visits}</td>`;
-
 
 
       let scoreHtml = formattedScore;
@@ -3945,11 +3716,9 @@ class HtmlReportGenerator {
       }
 
 
-
       scoreRow += `<td class="${cellClass} trend-score-cell">${scoreHtml}</td>`;
 
     });
-
 
 
     headerRow += '</tr>';
@@ -3959,17 +3728,12 @@ class HtmlReportGenerator {
     scoreRow += '</tr>';
 
 
-
     return `<table class="trend-table"><thead>${headerRow}</thead><tbody>${visitsRow}${scoreRow}</tbody></table>`;
 
   }
 
 
-
-
-
   // --- 共通ヘルパーメソッド ---
-
 
 
   static getBadgeConfig(sales_score) {
@@ -3995,7 +3759,6 @@ class HtmlReportGenerator {
   }
 
 
-
   static getScoreBadge(sales_score) {
 
     const config = this.getBadgeConfig(sales_score);
@@ -4007,7 +3770,6 @@ class HtmlReportGenerator {
     return `<span class="badge ${className}">${escapeHtml(config.text)}</span>`;
 
   }
-
 
 
   /**
@@ -4025,15 +3787,12 @@ class HtmlReportGenerator {
     if (!text) return '';
 
 
-
     LoggerUtil.debug(`[parseMarkdown] --- Table Debugging Start ---`);
 
     LoggerUtil.debug(`[parseMarkdown] 1. Received raw text from AI:\n${text}`);
 
 
-
     let processedText = text;
-
 
 
     // STEP 1: Markdown形式のテーブルをHTML形式に変換する
@@ -4085,7 +3844,6 @@ class HtmlReportGenerator {
     }
 
 
-
     // STEP 2: 行ごとに解析し、安全なHTMLを構築する
 
     const lines = processedText.split('\n');
@@ -4097,11 +3855,9 @@ class HtmlReportGenerator {
     let inTable = false;
 
 
-
     for (const line of lines) {
 
       const trimmedLine = line.trim();
-
 
 
       // HTMLテーブル内の行はそのまま維持
@@ -4119,7 +3875,6 @@ class HtmlReportGenerator {
       }
 
 
-
       // リストの終了処理
 
       if (inList && !trimmedLine.startsWith('- ') && !trimmedLine.startsWith('* ')) {
@@ -4129,7 +3884,6 @@ class HtmlReportGenerator {
         inList = false;
 
       }
-
 
 
       // Markdown記法を処理
@@ -4181,9 +3935,7 @@ class HtmlReportGenerator {
     if (inList) finalHtml += '</ul>\n';
 
 
-
     LoggerUtil.debug(`[parseMarkdown] 4. Final processed HTML:\n${finalHtml}`);
-
 
 
     // --- 自己診断デバッグ機能 ---
@@ -4191,7 +3943,6 @@ class HtmlReportGenerator {
     const originalHasTable = /<table|<\|/i.test(text);
 
     const finalHasTable = /<table/i.test(finalHtml);
-
 
 
     if (originalHasTable && !finalHasTable) {
@@ -4219,15 +3970,11 @@ class HtmlReportGenerator {
     }
 
     
-
     LoggerUtil.debug(`[parseMarkdown] --- Table Debugging End ---`);
 
     return finalHtml;
 
   }
-
-
-
 
 
   static getFooter() {
@@ -4247,13 +3994,11 @@ class HtmlReportGenerator {
 }
 
 
-
 // =============================================================================
 
 // 7. データ永続化層 (Persistence Layer) - 変更なし
 
 // =============================================================================
-
 
 
 class ReportPersistenceService {
@@ -4323,13 +4068,11 @@ class ReportPersistenceService {
 }
 
 
-
 // =============================================================================
 
 // 8. 実行関数 (Execution Functions) - 変更なし
 
 // =============================================================================
-
 
 
 function mainWeekly(baseDate = null) {
@@ -4339,13 +4082,11 @@ function mainWeekly(baseDate = null) {
 }
 
 
-
 function mainMonthly(baseDate = null) {
 
   executeReportProcess('Monthly', baseDate);
 
 }
-
 
 
 function executeReportProcess(reportType, baseDate = null) {
@@ -4355,8 +4096,6 @@ function executeReportProcess(reportType, baseDate = null) {
   const startTime = Date.now();
 
   const executionDate = baseDate || new Date();
-
-
 
   try {
 
@@ -4376,25 +4115,17 @@ function executeReportProcess(reportType, baseDate = null) {
 
     }
 
-
-
     const reportData = reportService.generateReport(executionDate);
 
     const aiSummary = AiAnalysisService.generateExecutiveSummary(reportData);
 
     reportData.executiveSummary = aiSummary;
 
-
-
     const finalHtmlBody = HtmlReportGenerator.generateEmailBody(reportData, aiSummary);
-
-
 
     sendReportEmail(reportData, finalHtmlBody);
 
     ReportPersistenceService.saveReport(reportData);
-
-
 
     // ★★★ 変更点：ここから ★★★
 
@@ -4408,13 +4139,9 @@ function executeReportProcess(reportType, baseDate = null) {
 
     // ★★★ 変更点：ここまで ★★★
 
-
-
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
 
     LoggerUtil.info(`=== ${reportType} Report Generation Finished Successfully (Duration: ${duration}s) ===`);
-
-
 
   } catch (error) {
 
@@ -4425,9 +4152,6 @@ function executeReportProcess(reportType, baseDate = null) {
   }
 
 }
-
-
-
 
 
 function sendReportEmail(reportData, htmlBody) {
@@ -4442,23 +4166,17 @@ function sendReportEmail(reportData, htmlBody) {
 
   }
 
-
-
   let subject = reportData.reportType === 'Monthly' ? Config.REPORT_OPTIONS.SUBJECT_MONTHLY : Config.REPORT_OPTIONS.SUBJECT_WEEKLY;
 
   const periodSuffix = `${DateUtil.format(reportData.startDate, 'MMdd')}-${DateUtil.format(reportData.endDate, 'MMdd')}`;
 
   subject += ` (${periodSuffix})`;
 
-
-
   if (reportData.isEmpty) {
 
     subject += " ※活動・依頼なし";
 
   }
-
-
 
   // 1. 添付ファイル名を生成
 
@@ -4468,15 +4186,11 @@ function sendReportEmail(reportData, htmlBody) {
 
   const fileName = `${reportTypeName}_${fileNameDateSuffix}.html`;
 
-
-
   // 2. HTMLコンテンツから添付ファイル（Blob）を作成
 
   const attachment = Utilities.newBlob(htmlBody, MimeType.HTML, fileName);
 
   // ★★★ 変更点：ここまで ★★★
-
-
 
   try {
 
@@ -4495,7 +4209,6 @@ function sendReportEmail(reportData, htmlBody) {
   }
 
 }
-
 
 
 function sendErrorNotification(error, reportType) {
@@ -4523,13 +4236,11 @@ function sendErrorNotification(error, reportType) {
 }
 
 
-
 // =============================================================================
 
 // 9. テスト関数 (Testing Functions) - 変更なし
 
 // =============================================================================
-
 
 
 /**
@@ -4549,7 +4260,6 @@ function runTestWeekly() {
 }
 
 
-
 /**
 
  * 月次テスト実行。
@@ -4567,7 +4277,6 @@ function runTestMonthly() {
 }
 
 
-
 /**
 
  * =============================================================================
@@ -4577,7 +4286,6 @@ function runTestMonthly() {
  * =============================================================================
 
  */
-
 
 
 /**
@@ -4598,8 +4306,6 @@ function setNextMonthlyTrigger(baseDate) {
 
     const functionNameToTrigger = 'mainMonthly';
 
-
-
     // 1. この関数用の既存トリガーを全て削除（重複防止）
 
     const allTriggers = ScriptApp.getProjectTriggers();
@@ -4616,21 +4322,15 @@ function setNextMonthlyTrigger(baseDate) {
 
     });
 
-
-
     // 2. 次回トリガーの日付を計算（翌月の最終日）
 
     const executionDate = baseDate || new Date();
-
-    
 
     // JavaScriptのTips: 翌々月の「0日目」は、翌月の最終日を指します。
 
     // 例：8月に実行 -> 10月(月インデックス:9)の0日目 -> 9月30日
 
     const triggerDate = new Date(executionDate.getFullYear(), executionDate.getMonth() + 2, 0);
-
-
 
     // 実行時刻を午前9時に設定
 
@@ -4639,8 +4339,6 @@ function setNextMonthlyTrigger(baseDate) {
     triggerDate.setMinutes(0);
 
     triggerDate.setSeconds(0);
-
-
 
     // 3. 新しいトリガーを作成
 
@@ -4652,11 +4350,7 @@ function setNextMonthlyTrigger(baseDate) {
 
       .create();
 
-
-
     LoggerUtil.info(`新しいトリガーを作成しました。次回実行日時: '${DateUtil.format(triggerDate, 'yyyy/MM/dd HH:mm')}'`);
-
-
 
   } catch (e) {
 

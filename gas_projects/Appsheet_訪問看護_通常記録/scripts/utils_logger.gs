@@ -1,9 +1,3 @@
-
-
-
-
-
-
 /**
 
  * Unified Logging Utility
@@ -11,7 +5,6 @@
  * All logging functions unified for consistency and debuggability
 
  */
-
 
 
 /**
@@ -42,8 +35,6 @@ function logStructured(level, message, data = {}) {
 
   };
 
-  
-
   // Format log based on debug mode
 
   const logString = SYSTEM_CONFIG.debugMode 
@@ -51,8 +42,6 @@ function logStructured(level, message, data = {}) {
     ? JSON.stringify(logEntry, null, 2) 
 
     : JSON.stringify(logEntry);
-
-  
 
   // Output based on level
 
@@ -103,7 +92,6 @@ function logStructured(level, message, data = {}) {
 }
 
 
-
 /**
 
  * Processing start log
@@ -134,8 +122,6 @@ function logProcessingStart(recordNoteId, params) {
 
 }
 
-
-
 /**
 
  * Processing complete log
@@ -159,8 +145,6 @@ function logProcessingComplete(recordNoteId, duration) {
   });
 
 }
-
-
 
 /**
 
@@ -194,8 +178,6 @@ function logError(recordNoteId, error, context = {}) {
 
 }
 
-
-
 /**
 
  * API call log
@@ -228,8 +210,6 @@ function logApiCall(apiName, endpoint, responseCode, duration) {
 
 }
 
-
-
 /**
 
  * Debug log (only shown in debug mode)
@@ -249,7 +229,6 @@ function logDebug(message, data = {}) {
   }
 
 }
-
 
 
 /**
@@ -277,8 +256,6 @@ function logFileOperation(operation, filePath, details = {}) {
   });
 
 }
-
-
 
 /**
 
@@ -314,8 +291,6 @@ function perfStart(label) {
 
 }
 
-
-
 /**
 
  * Trace function execution (decorator pattern)
@@ -335,8 +310,6 @@ function traced(fn, fnName) {
     const stop = perfStart(fnName);
 
     logDebug(`関数開始: ${fnName}`, { args: args });
-
-    
 
     try {
 
@@ -361,4 +334,3 @@ function traced(fn, fnName) {
   };
 
 }
-

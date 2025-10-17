@@ -1,16 +1,8 @@
-
-
-
-
-
-
 /**
 
  * テストモジュール
 
  * システム動作確認用のテスト関数
-
- * 
 
  * @author Fractal Group
 
@@ -19,7 +11,6 @@
  * @date 2025-10-06
 
  */
-
 
 
 /**
@@ -38,19 +29,13 @@ function testConfig() {
 
   Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
-  
-
   // 設定表示
 
   showCurrentConfig();
 
-  
-
   // 設定検証
 
   const validation = validateConfig();
-
-  
 
   if (validation.isValid) {
 
@@ -66,13 +51,9 @@ function testConfig() {
 
   }
 
-  
-
   Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
 }
-
-
 
 /**
 
@@ -90,11 +71,7 @@ function testVertexAI() {
 
   Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
-  
-
   const config = getConfig();
-
-  
 
   // 設定チェック
 
@@ -108,11 +85,7 @@ function testVertexAI() {
 
   }
 
-  
-
   const endpoint = `https://${config.gcpLocation}-aiplatform.googleapis.com/v1/projects/${config.gcpProjectId}/locations/${config.gcpLocation}/publishers/google/models/${config.vertexAIModel}:generateContent`;
-
-  
 
   const requestBody = {
 
@@ -134,8 +107,6 @@ function testVertexAI() {
 
   };
 
-  
-
   const options = {
 
     method: 'post',
@@ -154,15 +125,11 @@ function testVertexAI() {
 
   };
 
-  
-
   try {
 
     Logger.log('');
 
     Logger.log('[接続テスト] API呼び出し中...');
-
-    
 
     const response = UrlFetchApp.fetch(endpoint, options);
 
@@ -170,17 +137,11 @@ function testVertexAI() {
 
     const responseText = response.getContentText();
 
-    
-
     Logger.log(`[接続テスト] ステータスコード: ${statusCode}`);
-
-    
 
     if (statusCode === 200) {
 
       const result = JSON.parse(responseText);
-
-      
 
       if (result.candidates && result.candidates[0]) {
 
@@ -210,8 +171,6 @@ function testVertexAI() {
 
     }
 
-    
-
   } catch (error) {
 
     Logger.log('');
@@ -220,12 +179,9 @@ function testVertexAI() {
 
   }
 
-  
-
   Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
 }
-
 
 
 /**
@@ -244,11 +200,7 @@ function testCloudStorage() {
 
   Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
-  
-
   const config = getConfig();
-
-  
 
   if (!config.gcpBucketName) {
 
@@ -260,8 +212,6 @@ function testCloudStorage() {
 
   }
 
-  
-
   try {
 
     // テストファイル作成
@@ -270,13 +220,9 @@ function testCloudStorage() {
 
     const testBlob = Utilities.newBlob(testContent, 'text/plain', 'test.txt');
 
-    
-
     Logger.log('');
 
     Logger.log('[テスト] アップロード中...');
-
-    
 
     // アップロード（直接API呼び出し）
 
@@ -285,8 +231,6 @@ function testCloudStorage() {
     const fileName = `test_${timestamp}.txt`;
 
     const uploadUrl = `https://storage.googleapis.com/upload/storage/v1/b/${config.gcpBucketName}/o?uploadType=media&name=${encodeURIComponent(fileName)}`;
-
-    
 
     const uploadOptions = {
 
@@ -306,11 +250,7 @@ function testCloudStorage() {
 
     };
 
-    
-
     const uploadResponse = UrlFetchApp.fetch(uploadUrl, uploadOptions);
-
-    
 
     if (uploadResponse.getResponseCode() !== 200) {
 
@@ -318,21 +258,15 @@ function testCloudStorage() {
 
     }
 
-    
-
     const gsUri = `gs://${config.gcpBucketName}/${fileName}`;
 
     Logger.log(`✅ アップロード成功: ${gsUri}`);
-
-    
 
     // 削除
 
     Logger.log('[テスト] 削除中...');
 
     const deleteUrl = `https://storage.googleapis.com/storage/v1/b/${config.gcpBucketName}/o/${encodeURIComponent(fileName)}`;
-
-    
 
     const deleteOptions = {
 
@@ -348,17 +282,11 @@ function testCloudStorage() {
 
     };
 
-    
-
     UrlFetchApp.fetch(deleteUrl, deleteOptions);
-
-    
 
     Logger.log('');
 
     Logger.log('✅ Cloud Storage接続テスト成功');
-
-    
 
   } catch (error) {
 
@@ -368,12 +296,9 @@ function testCloudStorage() {
 
   }
 
-  
-
   Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
 }
-
 
 
 /**
@@ -381,8 +306,6 @@ function testCloudStorage() {
  * Webhookテスト
 
  * doPost関数の動作を確認
-
- * 
 
  * ⚠️ 注意: 実際のファイルIDを指定してください
 
@@ -402,8 +325,6 @@ function testWebhook() {
 
   Logger.log('');
 
-  
-
   const testData = {
 
     callId: "test_" + new Date().getTime(),
@@ -420,8 +341,6 @@ function testWebhook() {
 
   };
 
-  
-
   const e = {
 
     postData: {
@@ -432,15 +351,11 @@ function testWebhook() {
 
   };
 
-  
-
   Logger.log('[テストデータ]');
 
   Logger.log(JSON.stringify(testData, null, 2));
 
   Logger.log('');
-
-  
 
   if (testData.fileId === "YOUR_TEST_FILE_ID") {
 
@@ -464,8 +379,6 @@ function testWebhook() {
 
   }
 
-  
-
   try {
 
     Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -474,13 +387,9 @@ function testWebhook() {
 
     Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
-    
-
     const result = doPost(e);
 
     const content = result.getContent();
-
-    
 
     Logger.log('');
 
@@ -492,8 +401,6 @@ function testWebhook() {
 
     Logger.log('✅ Webhookテスト完了');
 
-    
-
   } catch (error) {
 
     Logger.log('');
@@ -504,12 +411,9 @@ function testWebhook() {
 
   }
 
-  
-
   Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
 }
-
 
 
 /**
@@ -526,19 +430,13 @@ function testDuplicateRequestPrevention() {
 
   Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
-  
-
   const testCallId = 'TEST-DUPLICATE-' + new Date().getTime();
-
-  
 
   Logger.log('');
 
   Logger.log(`[テスト通話ID] ${testCallId}`);
 
   Logger.log('');
-
-  
 
   // テスト1: 初回リクエスト
 
@@ -547,8 +445,6 @@ function testDuplicateRequestPrevention() {
   const isDuplicate1 = isDuplicateRequest(testCallId);
 
   Logger.log(`結果: ${isDuplicate1 ? '❌ 重複' : '✅ 新規'}`);
-
-  
 
   if (isDuplicate1) {
 
@@ -560,13 +456,9 @@ function testDuplicateRequestPrevention() {
 
   }
 
-  
-
   // 処理中としてマーク
 
   markAsProcessing(testCallId);
-
-  
 
   Logger.log('');
 
@@ -575,8 +467,6 @@ function testDuplicateRequestPrevention() {
   const isDuplicate2 = isDuplicateRequest(testCallId);
 
   Logger.log(`結果: ${isDuplicate2 ? '✅ 重複検出' : '❌ 検出失敗'}`);
-
-  
 
   if (!isDuplicate2) {
 
@@ -588,13 +478,9 @@ function testDuplicateRequestPrevention() {
 
   }
 
-  
-
   // 完了としてマーク
 
   markAsCompleted(testCallId);
-
-  
 
   Logger.log('');
 
@@ -603,8 +489,6 @@ function testDuplicateRequestPrevention() {
   const isDuplicate3 = isDuplicateRequest(testCallId);
 
   Logger.log(`結果: ${isDuplicate3 ? '✅ 重複検出' : '❌ 検出失敗'}`);
-
-  
 
   if (!isDuplicate3) {
 
@@ -616,13 +500,9 @@ function testDuplicateRequestPrevention() {
 
   }
 
-  
-
   // クリーンアップ
 
   clearProcessingState(testCallId);
-
-  
 
   Logger.log('');
 
@@ -632,8 +512,6 @@ function testDuplicateRequestPrevention() {
 
   Logger.log(`結果: ${isDuplicate4 ? '❌ 重複' : '✅ 新規'}`);
 
-  
-
   if (isDuplicate4) {
 
     Logger.log('❌ クリア後も重複と判定されました（異常）');
@@ -642,8 +520,6 @@ function testDuplicateRequestPrevention() {
 
   }
 
-  
-
   Logger.log('');
 
   Logger.log('✅ 重複リクエスト対策テスト成功');
@@ -651,8 +527,6 @@ function testDuplicateRequestPrevention() {
   Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
 }
-
-
 
 /**
 
@@ -672,23 +546,17 @@ function runAllTests() {
 
   Logger.log('');
 
-  
-
   // 1. 設定テスト
 
   testConfig();
 
   Logger.log('');
 
-  
-
   // 2. Vertex AIテスト
 
   testVertexAI();
 
   Logger.log('');
-
-  
 
   // 3. Cloud Storageテスト (設定されている場合のみ)
 
@@ -701,8 +569,6 @@ function runAllTests() {
     Logger.log('');
 
   }
-
-  
 
   // 4. 通知テスト
 
@@ -722,8 +588,6 @@ function runAllTests() {
 
   }
 
-  
-
   Logger.log('╔═══════════════════════════════════════════╗');
 
   Logger.log('║           全テスト実行完了                ║');
@@ -731,4 +595,3 @@ function runAllTests() {
   Logger.log('╚═══════════════════════════════════════════╝');
 
 }
-

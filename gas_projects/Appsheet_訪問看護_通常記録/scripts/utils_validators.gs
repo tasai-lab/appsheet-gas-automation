@@ -1,9 +1,3 @@
-
-
-
-
-
-
 /**
 
  * バリデーションモジュール
@@ -11,7 +5,6 @@
  * 入力データの検証と型チェックを担当
 
  */
-
 
 
 /**
@@ -35,7 +28,6 @@ class ValidationError extends Error {
   }
 
 }
-
 
 
 /**
@@ -64,15 +56,11 @@ function validateWebhookParams(params) {
 
   }
 
-
-
   // 必須フィールドのチェック
 
   const requiredFields = ['recordNoteId', 'staffId', 'recordText'];
 
   const missingFields = requiredFields.filter(field => !params[field]);
-
-
 
   if (missingFields.length > 0) {
 
@@ -94,8 +82,6 @@ function validateWebhookParams(params) {
 
   }
 
-
-
   // recordNoteIdの型チェック
 
   if (typeof params.recordNoteId !== 'string' || params.recordNoteId.trim() === '') {
@@ -112,8 +98,6 @@ function validateWebhookParams(params) {
 
   }
 
-
-
   // staffIdの型チェック
 
   if (typeof params.staffId !== 'string' || params.staffId.trim() === '') {
@@ -129,8 +113,6 @@ function validateWebhookParams(params) {
     );
 
   }
-
-
 
   // recordTextの型チェック
 
@@ -149,7 +131,6 @@ function validateWebhookParams(params) {
   }
 
 }
-
 
 
 /**
@@ -178,8 +159,6 @@ function validateFilePath(filePath) {
 
   }
 
-
-
   const trimmedPath = filePath.trim();
 
   if (trimmedPath === '') {
@@ -196,12 +175,9 @@ function validateFilePath(filePath) {
 
   }
 
-
-
   return trimmedPath;
 
 }
-
 
 
 /**
@@ -222,8 +198,6 @@ function validateRecordType(recordType) {
 
   }
 
-
-
   // 厳密一致チェック
 
   if (recordType === RECORD_TYPE_CONFIG.psychiatry.matchText) {
@@ -232,15 +206,11 @@ function validateRecordType(recordType) {
 
   }
 
-
-
   if (recordType === RECORD_TYPE_CONFIG.normal.matchText) {
 
     return 'normal';
 
   }
-
-
 
   // 不明な値の場合は警告してデフォルト
 
@@ -249,7 +219,6 @@ function validateRecordType(recordType) {
   return 'normal';
 
 }
-
 
 
 /**
@@ -271,8 +240,6 @@ function validateFileSize(fileSize, fileName = '') {
     const fileSizeMB = (fileSize / 1024 / 1024).toFixed(2);
 
     const maxSizeMB = (AUDIO_CONFIG.maxFileSizeBytes / 1024 / 1024).toFixed(2);
-
-    
 
     throw new ValidationError(
 
@@ -296,8 +263,6 @@ function validateFileSize(fileSize, fileName = '') {
 
 }
 
-
-
 /**
 
  * ファイル形式を検証
@@ -318,8 +283,6 @@ function validateFileFormat(fileName) {
 
     : '';
 
-
-
   if (!extension) {
 
     throw new ValidationError(
@@ -333,8 +296,6 @@ function validateFileFormat(fileName) {
     );
 
   }
-
-
 
   if (!AUDIO_CONFIG.supportedFormats.includes(extension)) {
 
@@ -358,13 +319,9 @@ function validateFileFormat(fileName) {
 
   }
 
-
-
   return extension;
 
 }
-
-
 
 /**
 
@@ -394,19 +351,13 @@ function validateAIResult(result, recordType) {
 
   }
 
-
-
   const requiredFields = REQUIRED_FIELDS[recordType];
 
   const missingFields = requiredFields.filter(field => !(field in result));
 
-
-
   if (missingFields.length > 0) {
 
     Logger.log(`警告: 必須フィールドが欠落しています: ${missingFields.join(', ')}`);
-
-    
 
     // デフォルト値を設定
 
@@ -430,13 +381,9 @@ function validateAIResult(result, recordType) {
 
   }
 
-
-
   return result;
 
 }
-
-
 
 /**
 
@@ -463,7 +410,6 @@ function validateHttpResponse(statusCode, context = 'API') {
 }
 
 
-
 /**
 
  * JSON文字列を検証してパース
@@ -488,25 +434,17 @@ function validateAndParseJSON(jsonString, context = 'JSON') {
 
     const endIndex = jsonString.lastIndexOf('}');
 
-
-
     if (startIndex === -1 || endIndex === -1) {
 
       throw new Error('JSONブロックが見つかりません');
 
     }
 
-
-
     const extractedJson = jsonString.substring(startIndex, endIndex + 1);
 
     const parsed = JSON.parse(extractedJson);
 
-
-
     return parsed;
-
-
 
   } catch (error) {
 
@@ -531,4 +469,3 @@ function validateAndParseJSON(jsonString, context = 'JSON') {
   }
 
 }
-

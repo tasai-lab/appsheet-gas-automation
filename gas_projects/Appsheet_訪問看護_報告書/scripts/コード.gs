@@ -1,9 +1,3 @@
-
-
-
-
-
-
 // --- 1. 基本設定 (★ご自身の環境に合わせて全て修正してください) ---
 
 const GEMINI_API_KEY = 'AIzaSyDUKFlE6_NYGehDYOxiRQcHpjG2l7GZmTY'; // Gemini APIキー
@@ -15,11 +9,9 @@ const ACCESS_KEY = 'V2-s6fif-zteYn-AGhoC-EhNLX-NNwgP-nHXAr-hHGZp-XxyPY'; // AppS
 const ERROR_NOTIFICATION_EMAIL = "t.asai@fractal-group.co.jp"; // ★ エラー通知先のメールアドレス
 
 
-
 // テーブル名
 
 const REPORTS_TABLE_NAME = 'VN_Reports';
-
 
 
 /**
@@ -28,10 +20,6 @@ const REPORTS_TABLE_NAME = 'VN_Reports';
 
  */
 
-/**
- * AppSheet Webhook エントリーポイント
- * @param {GoogleAppsScript.Events.DoPost} e
- */
 /**
  * AppSheet Webhook エントリーポイント
  * @param {GoogleAppsScript.Events.DoPost} e
@@ -52,8 +40,6 @@ function doPost(e) {
 function processRequest(params) {
   const reportId = params.reportId;
 
-
-
   try {
 
     const { clientName, targetMonth, visitRecords } = params;
@@ -66,8 +52,6 @@ function processRequest(params) {
 
     console.log(`処理開始: Report ID = ${reportId}`);
 
-
-
     // --- AIで報告書を生成 ---
 
     const reportText = generateReportWithGemini(params);
@@ -78,15 +62,11 @@ function processRequest(params) {
 
     }
 
-
-
     // --- AppSheetに結果を書き込み ---
 
     updateReportOnSuccess(reportId, reportText);
 
     console.log(`処理完了。ID ${reportId} の報告書を生成しました。`);
-
-
 
   } catch (error) {
 
@@ -108,10 +88,6 @@ function processRequest(params) {
  * テスト用関数
  * GASエディタから直接実行してテスト可能
  */
-/**
- * テスト用関数
- * GASエディタから直接実行してテスト可能
- */
 function testProcessRequest() {
   // TODO: テストデータを設定してください
   const testParams = {
@@ -121,8 +97,6 @@ function testProcessRequest() {
 
   return CommonTest.runTest(processRequest, testParams, 'Appsheet_訪問看護_報告書');
 }
-
-
 
 
 /**
@@ -139,15 +113,11 @@ function generateReportWithGemini(context) {
 
 あなたは、${context.clientName}さまの多様な情報を分析し、医療機関向けの要点を押さえつつ、現場感のある構造的な報告書を生成するプロフェッショナルです。
 
-
-
 # 前提条件
 
 あなたは経験豊富な訪問看護師の視点を持ち、報告先の医療機関が利用者の状態変化や重要なポイントを正確に把握できるよう配慮します。
 
 提供された資料から、報告すべき最優先事項を的確に判断し、重要な経緯や観察内容は省略せずに要約する能力があります。
-
-
 
 # 入力情報
 
@@ -155,31 +125,21 @@ ${context.clientName}様に関する、以下の一連の資料。
 
 ${context.visitRecords}
 
-
-
 # 実行タスク
 
 提供された入力情報を全て精査し、${context.targetMonth}における${context.clientName}様の状態報告書を、医療機関向けに作成してください。
-
-
 
 # 出力形式と構成
 
 以下の構成と指示に従い、報告書を作成してください。
 
-
-
 1.  **冒頭の挨拶**
 
     「いつもお世話になっております。」
 
-
-
 2.  **報告の主旨**
 
     「${context.clientName}様の、${context.targetMonth}の状態報告をさせていただきます。」
-
-
 
 3.  **バイタルサイン**
 
@@ -188,8 +148,6 @@ ${context.visitRecords}
     [順序の指示] 記載する順番は「BT(体温)」「BP(血圧)」「P(脈拍)」「SpO2」の順とし、BS(血糖値)の記録がある場合は最後に記載してください。
 
     （例: BT:36.6～36.8℃ BP:100～132/56～76mmHg P:64～84回/分 SpO2:97～99% BS:150～152）改行せず一行とすること。
-
-
 
 4.  **主要トピックの要約**
 
@@ -211,13 +169,9 @@ ${context.visitRecords}
 
     -   各トopicは、3〜4文程度の文章量で記述してください。
 
-
-
 5.  **結びの挨拶**
 
     「以上となります。\nご確認よろしくお願いいたします。」
-
-
 
 # 遵守事項
 
@@ -245,8 +199,6 @@ ${context.visitRecords}
 
   const options = { method: 'post', contentType: 'application/json', payload: JSON.stringify(requestBody), muteHttpExceptions: true };
 
-
-
   const response = UrlFetchApp.fetch(url, options);
 
   const responseText = response.getContentText();
@@ -264,7 +216,6 @@ ${context.visitRecords}
   return jsonResponse.candidates[0].content.parts[0].text.trim();
 
 }
-
 
 
 /**
@@ -292,7 +243,6 @@ function updateReportOnSuccess(reportId, reportText) {
 }
 
 
-
 /**
 
  * 失敗時にAppSheetのテーブルを更新する
@@ -316,7 +266,6 @@ function updateReportOnError(reportId, errorMessage) {
   callAppSheetApi(payload);
 
 }
-
 
 
 /**
@@ -350,7 +299,6 @@ function callAppSheetApi(payload) {
   }
 
 }
-
 
 
 /**

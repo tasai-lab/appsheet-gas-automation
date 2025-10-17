@@ -1,9 +1,3 @@
-
-
-
-
-
-
 /**
 
  * main.js - AppSheet Webhook Entry Point
@@ -13,17 +7,12 @@
  */ 
 
 
-
 /**
 
  * AppSheetのWebhookからPOSTリクエストを受け取るメイン関数
 
  */
 
-/**
- * AppSheet Webhook エントリーポイント
- * @param {GoogleAppsScript.Events.DoPost} e
- */
 /**
  * AppSheet Webhook エントリーポイント
  * @param {GoogleAppsScript.Events.DoPost} e
@@ -44,11 +33,7 @@ function doPost(e) {
 function processRequest(params) {
   const startTime = Date.now();
 
-  
-
   const recordNoteId = params.recordNoteId;
-
-
 
   try {
 
@@ -60,23 +45,15 @@ function processRequest(params) {
 
     }
 
-    
-
     logProcessingStart(recordNoteId, params);
-
-
 
     // --- 1. マスターデータをスプレッドシートから読み込む ---
 
     const guidanceMasterText = getGuidanceMasterAsText();
 
-
-
     // --- 2. 記録タイプを判定 ---
 
     const recordType = determineRecordType(params.recordType);
-
-    
 
     // --- 3. ファイル処理 (音声ファイルがある場合) ---
 
@@ -84,15 +61,11 @@ function processRequest(params) {
 
     let mimeType = null;
 
-    
-
     if (params.filePath || params.fileId) {
 
       const fileId = params.fileId || getFileIdFromPath(params.filePath);
 
       const fileData = getFileFromDrive(fileId);
-
-      
 
       const uploadResult = uploadToCloudStorage(
 
@@ -110,13 +83,9 @@ function processRequest(params) {
 
     }
 
-
-
     // --- 4. AIで看護記録を生成 ---
 
     let analysisResult;
-
-    
 
     if (SYSTEM_CONFIG.processingMode === 'vertex-ai' && gsUri) {
 
@@ -127,8 +96,6 @@ function processRequest(params) {
         ? buildPsychiatryPrompt(params.recordText, guidanceMasterText)
 
         : buildNormalPrompt(params.recordText, guidanceMasterText);
-
-      
 
       analysisResult = callVertexAIWithPrompt(gsUri, mimeType, prompt, recordType);
 
@@ -144,23 +111,15 @@ function processRequest(params) {
 
         : buildNormalPrompt(params.recordText, guidanceMasterText);
 
-      
-
       analysisResult = callGeminiAPIWithPrompt(fileData, prompt, recordType);
 
     }
 
-    
-
     if (!analysisResult) throw new Error("AIからの応答が不正でした。");
-
-
 
     // --- 5. AppSheetに結果を書き込み ---
 
     updateRecordOnSuccess(recordNoteId, analysisResult, params.staffId, recordType);
-
-    
 
     // --- 6. Cloud Storageのファイルをクリーンアップ ---
 
@@ -172,13 +131,9 @@ function processRequest(params) {
 
     }
 
-    
-
     const duration = Date.now() - startTime;
 
     logProcessingComplete(recordNoteId, duration);
-
-
 
   } catch (error) {
 
@@ -200,10 +155,6 @@ function processRequest(params) {
  * テスト用関数
  * GASエディタから直接実行してテスト可能
  */
-/**
- * テスト用関数
- * GASエディタから直接実行してテスト可能
- */
 function testProcessRequest() {
   // TODO: テストデータを設定してください
   const testParams = {
@@ -213,14 +164,6 @@ function testProcessRequest() {
 
   return CommonTest.runTest(processRequest, testParams, 'Appsheet_訪問看護_通常記録');
 }
-
-
-
-
-
-
-
-
 
 
 /**
@@ -241,15 +184,11 @@ function updateRecordOnSuccess(recordNoteId, resultData, staffId, recordType) {
 
   };
 
-  
-
   // 記録タイプに応じたフィールドマッピングを取得
 
   const fieldMapping = APPSHEET_FIELD_MAPPING[recordType];
 
   const outputFields = RECORD_TYPE_CONFIG[recordType].outputFields;
-
-  
 
   // 各フィールドをマッピング
 
@@ -287,16 +226,11 @@ function updateRecordOnSuccess(recordNoteId, resultData, staffId, recordType) {
 
   });
 
-  
-
   const payload = { Action: "Edit", Properties: { "Locale": "ja-JP" }, Rows: [rowData] };
 
   callAppSheetApi(payload);
 
 }
-
-
-
 
 
 /**
@@ -317,21 +251,15 @@ function sendErrorEmail(recordNoteId, errorMessage, context = {}) {
 
   body += `■ エラー内容:\n${errorMessage}\n\n`;
 
-  
-
   if (context.errorCode) {
 
     body += `■ エラーコード: ${context.errorCode}\n\n`;
 
   }
 
-  
-
   body += `GASのログをご確認ください。\n`;
 
   body += `https://script.google.com/home/executions`;
-
-  
 
   try {
 
@@ -356,7 +284,6 @@ function sendErrorEmail(recordNoteId, errorMessage, context = {}) {
   }
 
 }
-
 
 
 /**
@@ -390,7 +317,6 @@ function updateRecordOnError(recordNoteId, errorMessage) {
 }
 
 
-
 /**
 
  * AppSheet APIを呼び出す共通関数
@@ -400,8 +326,6 @@ function updateRecordOnError(recordNoteId, errorMessage) {
 function callAppSheetApi(payload) {
 
   const perfStop = perfStart('AppSheet_API');
-
-  
 
   const apiUrl = `https://api.appsheet.com/api/v2/apps/${APPSHEET_CONFIG.appId}/tables/${APPSHEET_CONFIG.tableName}/Action`;
 
@@ -419,19 +343,13 @@ function callAppSheetApi(payload) {
 
   };
 
-  
-
   const response = UrlFetchApp.fetch(apiUrl, options);
 
   const responseCode = response.getResponseCode();
 
   const duration = perfStop();
 
-  
-
   logApiCall('AppSheet', apiUrl, responseCode, duration);
-
-  
 
   if (responseCode >= 400) {
 

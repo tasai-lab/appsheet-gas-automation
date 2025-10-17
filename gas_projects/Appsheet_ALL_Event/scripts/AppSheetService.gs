@@ -1,9 +1,3 @@
-
-
-
-
-
-
 const AppSheetService = {
 
   sendSuccessResponse(config, eventId, eventUrl, action) {
@@ -17,7 +11,6 @@ const AppSheetService = {
     if (config.eventUrlColumnName) rowData[config.eventUrlColumnName] = eventUrl;
 
     
-
     // アクションに応じてステータスを変更する
 
     if (action === 'DELETE') {
@@ -31,7 +24,6 @@ const AppSheetService = {
     }
 
     
-
     const payload = { Action: "Edit", Properties: { "Locale": "ja-JP" }, Rows: [rowData] };
 
     Logger.info('AppSheetへの成功通知を送信', { rowId: config.rowId, action });
@@ -39,7 +31,6 @@ const AppSheetService = {
     this._callApi(config, payload);
 
   },
-
 
 
   /**
@@ -67,7 +58,6 @@ const AppSheetService = {
     }
 
 
-
     const payload = { Action: "Edit", Properties: { "Locale": "ja-JP" }, Rows: [rowData] };
 
     Logger.info('AppSheetへのエラー通知を送信', { rowId: config.rowId, error: error.message });
@@ -75,7 +65,6 @@ const AppSheetService = {
     this._callApi(config, payload);
 
   },
-
 
 
   /**
@@ -111,13 +100,11 @@ const AppSheetService = {
     };
 
     
-
     const response = UrlFetchApp.fetch(apiUrl, options);
 
     const responseCode = response.getResponseCode();
 
     const responseBody = response.getContentText();
-
 
 
     if (responseCode >= 400) {

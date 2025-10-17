@@ -1,15 +1,8 @@
-
-
-
-
-
-
 /**
 
  * AppSheet API連携モジュール
 
  */
-
 
 
 /**
@@ -27,8 +20,6 @@ function callAppSheetApi(payload) {
   try {
 
     const apiUrl = `https://api.appsheet.com/api/v2/apps/${APPSHEET_CONFIG.appId}/tables/${APPSHEET_CONFIG.tableName}/Action`;
-
-    
 
     const options = {
 
@@ -48,11 +39,7 @@ function callAppSheetApi(payload) {
 
     };
 
-    
-
     logDebug('AppSheet API呼び出し', { action: payload.Action });
-
-    
 
     const response = UrlFetchApp.fetch(apiUrl, options);
 
@@ -60,19 +47,13 @@ function callAppSheetApi(payload) {
 
     const responseText = response.getContentText();
 
-    
-
     logDebug('AppSheet API応答', { responseCode: responseCode });
-
-    
 
     if (responseCode >= 400) {
 
       throw new Error(`AppSheet API Error: ${responseCode} - ${responseText}`);
 
     }
-
-    
 
     // 空のレスポンス対応
 
@@ -89,8 +70,6 @@ function callAppSheetApi(payload) {
       return { success: true, message: 'Empty response from AppSheet API' };
 
     }
-
-    
 
     try {
 
@@ -110,8 +89,6 @@ function callAppSheetApi(payload) {
 
     }
 
-    
-
   } catch (error) {
 
     logStructured(LOG_LEVEL.ERROR, 'AppSheet API呼び出しエラー', {
@@ -127,7 +104,6 @@ function callAppSheetApi(payload) {
   }
 
 }
-
 
 
 /**
@@ -151,8 +127,6 @@ function updateRecordOnSuccess(recordNoteId, resultData, staffId, recordType = '
   try {
 
     let rowData;
-
-    
 
     if (recordType === 'psychiatry') {
 
@@ -222,8 +196,6 @@ function updateRecordOnSuccess(recordNoteId, resultData, staffId, recordType = '
 
     }
 
-    
-
     const payload = {
 
       Action: 'Edit',
@@ -240,8 +212,6 @@ function updateRecordOnSuccess(recordNoteId, resultData, staffId, recordType = '
 
     };
 
-    
-
     logStructured(LOG_LEVEL.INFO, 'レコード更新成功', { 
 
       recordNoteId: recordNoteId, 
@@ -252,8 +222,6 @@ function updateRecordOnSuccess(recordNoteId, resultData, staffId, recordType = '
 
     return callAppSheetApi(payload);
 
-    
-
   } catch (error) {
 
     Logger.log(`レコード更新エラー（成功時）: ${error.toString()}`);
@@ -263,7 +231,6 @@ function updateRecordOnSuccess(recordNoteId, resultData, staffId, recordType = '
   }
 
 }
-
 
 
 /**
@@ -306,13 +273,9 @@ function updateRecordOnError(recordNoteId, errorMessage) {
 
     };
 
-    
-
     logStructured(LOG_LEVEL.INFO, 'レコードエラー状態更新', { recordNoteId: recordNoteId });
 
     return callAppSheetApi(payload);
-
-    
 
   } catch (error) {
 
@@ -325,7 +288,6 @@ function updateRecordOnError(recordNoteId, errorMessage) {
   }
 
 }
-
 
 
 /**
@@ -366,13 +328,9 @@ function updateRecordToProcessing(recordNoteId) {
 
     };
 
-    
-
     Logger.log(`レコード更新: ${recordNoteId} - 処理中`);
 
     return callAppSheetApi(payload);
-
-    
 
   } catch (error) {
 
@@ -385,4 +343,3 @@ function updateRecordToProcessing(recordNoteId) {
   }
 
 }
-

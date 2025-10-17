@@ -1,9 +1,3 @@
-
-
-
-
-
-
 // --- 1. 基本設定 (★ご自身の環境に合わせて全て修正してください) ---
 
 const GEMINI_API_KEY = 'AIzaSyDUKFlE6_NYGehDYOxiRQcHpjG2l7GZmTY'; // Gemini APIキー
@@ -13,11 +7,9 @@ const APP_ID = '27bceb6f-9a2c-4ab6-9438-31fec25a495e'; // AppSheetのアプリID
 const ACCESS_KEY = 'V2-A0207-tnP4i-YwteT-Cg55O-7YBvg-zMXQX-sS4Xv-XuaKP'; // AppSheet APIのアクセスキー
 
 
-
 // テーブル名
 
 const ACTIVITIES_TABLE_NAME = 'Sales_Activities';
-
 
 
 /**
@@ -26,10 +18,6 @@ const ACTIVITIES_TABLE_NAME = 'Sales_Activities';
 
  */
 
-/**
- * AppSheet Webhook エントリーポイント
- * @param {GoogleAppsScript.Events.DoPost} e
- */
 /**
  * AppSheet Webhook エントリーポイント
  * @param {GoogleAppsScript.Events.DoPost} e
@@ -50,13 +38,9 @@ function doPost(e) {
 function processRequest(params) {
   const activityId = params.activityId;
 
-
-
   try {
 
     const { audioFileId, salespersonName, contactName, orgName } = params;
-
-
 
     if (!activityId || !audioFileId) {
 
@@ -65,8 +49,6 @@ function processRequest(params) {
     }
 
     Logger.log(`処理開始: Activity ID = ${activityId}`);
-
-
 
     // --- AIで営業トークを分析・評価 ---
 
@@ -78,17 +60,11 @@ function processRequest(params) {
 
     }
 
-
-
     // --- AppSheetに分析結果を書き込み ---
 
     updateActivityOnSuccess(activityId, analysisResult);
 
-
-
     Logger.log(`処理完了。ID ${activityId} の分析結果を書き込みました。`);
-
-
 
   } catch (error) {
 
@@ -108,10 +84,6 @@ function processRequest(params) {
  * テスト用関数
  * GASエディタから直接実行してテスト可能
  */
-/**
- * テスト用関数
- * GASエディタから直接実行してテスト可能
- */
 function testProcessRequest() {
   // TODO: テストデータを設定してください
   const testParams = {
@@ -121,10 +93,6 @@ function testProcessRequest() {
 
   return CommonTest.runTest(processRequest, testParams, 'Appsheet_営業_音声記録');
 }
-
-
-
-
 
 
 /**
@@ -140,8 +108,6 @@ function analyzeSalesCallWithGemini(context) {
   const audioBlob = file.getBlob();
 
   const fileName = file.getName();
-
-
 
   // MIMEタイプ判定
 
@@ -167,8 +133,6 @@ function analyzeSalesCallWithGemini(context) {
 
   }
 
-
-
   // ★★★ AIへの指示プロンプト（評価指標を全て内蔵） ★★★
 
   const prompt = `
@@ -177,8 +141,6 @@ function analyzeSalesCallWithGemini(context) {
 
 あなたは、営業コンサルタント兼データアナリストです。提供された営業担当者と面会相手との音声記録を分析し、以下の#評価指標に基づいて、営業活動の評価とサマリーを作成してください。
 
-
-
 # 背景情報
 
 - 営業担当者: ${context.salespersonName || '不明'}
@@ -186,8 +148,6 @@ function analyzeSalesCallWithGemini(context) {
 - 訪問先（機関）: ${context.orgName || '不明'}
 
 - 面会相手: ${context.contactName || '不明'}
-
-
 
 # 評価指標
 
@@ -203,8 +163,6 @@ function analyzeSalesCallWithGemini(context) {
 
 - **INT-05**: 関心がない - 全く関心がない、または否定的な状態。
 
-
-
 ## 当社を知っているか (knows_us)
 
 - **AWR-01**: よく知っている - ステーション名、所在地など基本情報を正確に認知。
@@ -212,8 +170,6 @@ function analyzeSalesCallWithGemini(context) {
 - **AWR-02**: 聞いたことがある - ステーション名は聞いたことがあるが、詳細は曖昧。
 
 - **AWR-03**: ほとんど知らない - ほとんど、または全く知らない。
-
-
 
 ## 当社の印象 (our_impression)
 
@@ -227,8 +183,6 @@ function analyzeSalesCallWithGemini(context) {
 
 - **IMP-05**: 非常に悪い - 強い不満や不信感がある状態。重大な問題がある。
 
-
-
 ## 営業時間を知っているか (knows_hours)
 
 - **HRS-01**: 正確に把握 - 平日の営業時間、土日祝の対応、緊急時連絡体制などを正確に把握。
@@ -237,8 +191,6 @@ function analyzeSalesCallWithGemini(context) {
 
 - **HRS-03**: ほとんど知らない - ほとんど知らない、または誤解している。
 
-
-
 ## 当社の専門職の種別を知っているか (knows_job_types)
 
 - **STF-01**: 具体的に知っている - 看護師に加え、配置しているリハビリ専門職（PT/OT/ST）の種類や構成まで具体的に知っている。
@@ -246,8 +198,6 @@ function analyzeSalesCallWithGemini(context) {
 - **STF-02**: なんとなく知っている - 看護師とリハビリ専門職がいることは知っているが、職種の詳細までは知らない。
 
 - **STF-03**: ほとんど知らない - 看護師のみと思っている、またはスタッフ構成についてほとんど知らない。
-
-
 
 ## 看護とリハで訪問可能時間が異なることを知っているか (knows_time_diff)
 
@@ -259,8 +209,6 @@ function analyzeSalesCallWithGemini(context) {
 
 - **TIM-04**: 該当しない/不明 - 該当しない/不明。
 
-
-
 ## 提供サービスへの理解度 (understands_services)
 
 - **UND-01**: よく理解している - 健康管理、医療処置、リハビリ、ターミナルケアなど、訪問看護の多様な役割を広く正しく理解している。
@@ -268,8 +216,6 @@ function analyzeSalesCallWithGemini(context) {
 - **UND-02**: 部分的に理解 - 日常的な健康管理等が中心というイメージが強いなど、理解が限定的・部分的。
 
 - **UND-03**: ほとんど知らない - ヘルパーサービスとの違いが不明瞭、またはサービス内容についてほとんど知らない・誤解がある。
-
-
 
 ## 訪問看護全体の印象 (overall_vhns_impression)
 
@@ -279,15 +225,11 @@ function analyzeSalesCallWithGemini(context) {
 
 - **OVL-03**: ネガティブ - あまり重要視していない、または訪問看護全体に対してネガティブな印象を持っている。
 
-
-
 ## 連携における悩みの有無 (has_coop_issues)
 
 - **CWP-01**: なし - 悩みや不満、課題はない。
 
 - **CWP-02**: ある - 何らかの悩みや不満、課題があることが表明される。
-
-
 
 ## 業務における悩み (has_work_issues)
 
@@ -297,15 +239,11 @@ function analyzeSalesCallWithGemini(context) {
 
 - **WKP-03**: なし - 業務に関する個人的な悩みや相談は全くされない。
 
-
-
 ## その他の悩み (has_other_issues)
 
 - **OTH-01**: あり - 業務外の個人的なことや、業界全般に関する雑談・相談など、何らかの話がある。
 
 - **OTH-02**: なし - 業務に関する話以外はほとんどしない、または全くない。
-
-
 
 ## 営業頻度 (sales_frequency_plan)
 
@@ -319,8 +257,6 @@ function analyzeSalesCallWithGemini(context) {
 
 - **FRQ-05**: 営業の希望なし - 現時点では情報提供を希望していない。
 
-
-
 # 出力指示
 
 - 音声記録の内容を分析し、以下のキーを持つJSONオブジェクトを生成してください。
@@ -332,8 +268,6 @@ function analyzeSalesCallWithGemini(context) {
 - 該当する情報が会話にない場合は、値にnullを設定してください。
 
 - **特に指定がない限り、詳細記述用の項目（..._details）は、対応する悩みや宿題が会話中に存在した場合にのみ内容を記述し、存在しない場合はnullにしてください。**
-
-
 
 {
 
@@ -413,21 +347,15 @@ function analyzeSalesCallWithGemini(context) {
 
   };
 
-
-
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
 
   const options = { method: 'post', contentType: 'application/json', payload: JSON.stringify(requestBody), muteHttpExceptions: true };
-
-
 
   const response = UrlFetchApp.fetch(url, options);
 
   const responseText = response.getContentText();
 
   Logger.log('Gemini API Response: ' + responseText);
-
-
 
   const jsonResponse = JSON.parse(responseText);
 
@@ -442,15 +370,11 @@ function analyzeSalesCallWithGemini(context) {
 }
 
 
-
-
-
 // =================================================================
 
 // AppSheet更新用ヘルパー関数群
 
 // =================================================================
-
 
 
 /**
@@ -471,13 +395,9 @@ function updateActivityOnSuccess(activityId, resultData) {
 
   resultData.status = "編集中";       // ステータスを上書き
 
-  
-
   // ★★★ "Y" / "N" を true / false に変換する処理を【削除】します ★★★
 
   // AIが生成した "Y" または "N" を、そのままAppSheetに送信するのが正しい挙動です。
-
-  
 
   const payload = {
 
@@ -492,7 +412,6 @@ function updateActivityOnSuccess(activityId, resultData) {
   callAppSheetApi(payload);
 
 }
-
 
 
 function updateActivityOnError(activityId, errorMessage) {
@@ -518,7 +437,6 @@ function updateActivityOnError(activityId, errorMessage) {
   callAppSheetApi(payload);
 
 }
-
 
 
 function callAppSheetApi(payload) {

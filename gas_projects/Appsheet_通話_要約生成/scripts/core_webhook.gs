@@ -1,16 +1,8 @@
-
-
-
-
-
-
 /**
 
  * Webhook受信処理
 
  * AppSheetからのWebhookを受け取り、通話音声ファイルをVertex AIで処理する
-
- * 
 
  * @author Fractal Group
 
@@ -21,14 +13,11 @@
  */
 
 
-
 /**
 
  * WebアプリのPOSTリクエストエントリーポイント
 
  * AppSheetからのWebhookを受信
-
- * 
 
  * 重複リクエスト対策:
 
@@ -40,10 +29,6 @@
 
  */
 
-/**
- * AppSheet Webhook エントリーポイント
- * @param {GoogleAppsScript.Events.DoPost} e
- */
 /**
  * AppSheet Webhook エントリーポイント
  * @param {GoogleAppsScript.Events.DoPost} e
@@ -72,13 +57,9 @@ function processRequest(params) {
 
     callId = params.callId || 'ID不明';
 
-    
-
     // パラメータ検証
 
     validateRequiredParams(params);
-
-    
 
     // ⭐ 重複リクエストチェック
 
@@ -90,17 +71,11 @@ function processRequest(params) {
 
     }
 
-    
-
     // 処理中フラグを設定
 
     markAsProcessing(callId);
 
-    
-
     Logger.log(`[処理開始] 通話ID: ${callId}`);
-
-
 
     // file_pathからファイルIDとURLを取得
 
@@ -138,8 +113,6 @@ function processRequest(params) {
 
     }
 
-
-
     // Vertex AIで音声解析
 
     const analysisResult = analyzeAudioWithVertexAI(
@@ -156,21 +129,15 @@ function processRequest(params) {
 
     );
 
-
-
     // 結果の検証
 
     validateAnalysisResult(analysisResult);
-
-    
 
     // ファイル情報を結果に追加
 
     analysisResult.recording_file_id = fileId;
 
     analysisResult.recording_file_url = fileUrl;
-
-
 
     // AppSheet更新
 
@@ -190,64 +157,41 @@ function processRequest(params) {
 
     );
 
-
-
     if (analysisResult.actions.length > 0) {
 
       addCallActions(callId, params.clientId, analysisResult.actions, config);
 
     }
 
-
-
     Logger.log(`[処理完了] 通話ID: ${callId}`);
-
-    
 
     // 処理完了フラグを設定（重複防止を6時間維持）
 
     markAsCompleted(callId);
 
-    
-
     // 成功通知
 
     sendSuccessNotification(callId, analysisResult.summary, config);
 
-
-
     return createSuccessResponse(callId, fileId, fileUrl);
-
-
 
   } catch (error) {
 
     Logger.log(`[エラー] ${error.toString()}\n${error.stack}`);
 
-    
-
     // エラー時も処理済みとしてマーク（リトライ防止）
 
     markAsCompleted(callId);
 
-    
-
     recordError(callId, error.toString(), config);
 
     sendErrorNotification(callId, error.toString(), error.stack, config);
-
-    
 
     return createErrorResponse(callId, error);
 
   }
 }
 
-
-/**
- * テスト用関数
- * GASエディタから直接実行してテスト可能
- */
 /**
  * テスト用関数
  * GASエディタから直接実行してテスト可能
@@ -261,8 +205,6 @@ function testProcessRequest() {
 
   return CommonTest.runTest(processRequest, testParams, 'Appsheet_通話_要約生成');
 }
-
-
 
 
 /**
@@ -286,7 +228,6 @@ function parseRequest(e) {
 }
 
 
-
 /**
 
  * 必須パラメータの検証
@@ -299,15 +240,11 @@ function validateRequiredParams(params) {
 
   const missingFields = requiredFields.filter(key => !params[key]);
 
-  
-
   if (missingFields.length > 0) {
 
     throw new Error(`必須パラメータが不足: ${missingFields.join(', ')}`);
 
   }
-
-  
 
   // filePath または fileId のいずれかが必要
 
@@ -318,7 +255,6 @@ function validateRequiredParams(params) {
   }
 
 }
-
 
 
 /**
@@ -335,8 +271,6 @@ function validateAnalysisResult(result) {
 
   }
 
-  
-
   if (!result.summary || !result.transcript || !Array.isArray(result.actions)) {
 
     throw new Error('解析結果に必須キー (summary, transcript, actions) が不足しています');
@@ -344,7 +278,6 @@ function validateAnalysisResult(result) {
   }
 
 }
-
 
 
 /**
@@ -371,8 +304,6 @@ function createSuccessResponse(callId, fileId, fileUrl) {
 
 }
 
-
-
 /**
 
  * エラーレスポンスを返す
@@ -394,8 +325,6 @@ function createErrorResponse(callId, error) {
   })).setMimeType(ContentService.MimeType.JSON);
 
 }
-
-
 
 /**
 
@@ -419,8 +348,6 @@ function createDuplicateResponse(callId) {
 
 }
 
-
-
 /**
 
  * 重複リクエストかチェック
@@ -437,8 +364,6 @@ function isDuplicateRequest(callId) {
 
   const cacheKey = `processing_${callId}`;
 
-  
-
   // キャッシュに存在する場合は重複
 
   const cachedValue = cache.get(cacheKey);
@@ -453,12 +378,9 @@ function isDuplicateRequest(callId) {
 
   }
 
-  
-
   return false;
 
 }
-
 
 
 /**
@@ -475,8 +397,6 @@ function markAsProcessing(callId) {
 
   const cacheKey = `processing_${callId}`;
 
-  
-
   const status = {
 
     state: 'processing',
@@ -485,18 +405,13 @@ function markAsProcessing(callId) {
 
   };
 
-  
-
   // 10分間処理中としてマーク（Apps Scriptの最大実行時間6分を考慮）
 
   cache.put(cacheKey, JSON.stringify(status), 600);
 
-  
-
   Logger.log(`[重複防止] 処理中マーク設定: ${callId}`);
 
 }
-
 
 
 /**
@@ -513,8 +428,6 @@ function markAsCompleted(callId) {
 
   const cacheKey = `processing_${callId}`;
 
-  
-
   const status = {
 
     state: 'completed',
@@ -523,18 +436,13 @@ function markAsCompleted(callId) {
 
   };
 
-  
-
   // 6時間完了済みとしてマーク（重複リクエスト防止）
 
   cache.put(cacheKey, JSON.stringify(status), 21600);
 
-  
-
   Logger.log(`[重複防止] 処理完了マーク設定: ${callId} (6時間保持)`);
 
 }
-
 
 
 /**
@@ -556,4 +464,3 @@ function clearProcessingState(callId) {
   Logger.log(`[重複防止] 処理状態クリア: ${callId}`);
 
 }
-

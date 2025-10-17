@@ -1,15 +1,8 @@
-
-
-
-
-
-
 // ================================================================================================
 
 // 1. Configuration & Constants (設定と定数)
 
 // ================================================================================================
-
 
 
 /**
@@ -117,7 +110,6 @@ const CONFIG = {
 };
 
 
-
 const STATUS = {
 
   COMPLETED: '完了',
@@ -127,9 +119,6 @@ const STATUS = {
 };
 
 
-
-
-
 // ================================================================================================
 
 // 2. Main Entry Points (doPost / doGet)
@@ -137,11 +126,6 @@ const STATUS = {
 // ================================================================================================
 
 
-
-/**
- * AppSheet Webhook エントリーポイント
- * @param {GoogleAppsScript.Events.DoPost} e
- */
 /**
  * AppSheet Webhook エントリーポイント
  * @param {GoogleAppsScript.Events.DoPost} e
@@ -174,15 +158,11 @@ function processRequest(params) {
 
   };
 
-
-
   try {
 
     const requestId = params.returnToAppSheet && params.returnToAppSheet.rowId ? params.returnToAppSheet.rowId : `adhoc-${Utilities.getUuid()}`;
 
     responsePayload.requestId = requestId;
-
-
 
     const idempotencyState = getIdempotencyState(requestId);
 
@@ -198,13 +178,9 @@ function processRequest(params) {
 
     }
 
-    
-
     setIdempotencyState(requestId, CONFIG.IDEMPOTENCY.STATE_PROCESSING);
 
     scheduleAsyncTask(requestId, params);
-
-
 
     // [FIXED] .getTime()を削除してエラーを修正
 
@@ -216,11 +192,7 @@ function processRequest(params) {
 
     Logger.log(`[INFO][doPost] リクエスト受付完了: ${requestId}, 応答時間 = ${duration}ms`);
 
-
-
     return createJsonResponse(responsePayload);
-
-
 
   } catch (error) {
 
@@ -246,10 +218,6 @@ function processRequest(params) {
  * テスト用関数
  * GASエディタから直接実行してテスト可能
  */
-/**
- * テスト用関数
- * GASエディタから直接実行してテスト可能
- */
 function testProcessRequest() {
   // TODO: テストデータを設定してください
   const testParams = {
@@ -259,8 +227,6 @@ function testProcessRequest() {
 
   return CommonTest.runTest(processRequest, testParams, 'Appsheet_ALL_スレッド投稿');
 }
-
-
 
 
 function doGet(e) {
@@ -278,8 +244,6 @@ function doGet(e) {
       return ContentService.createTextOutput("Forbidden.").setMimeType(ContentService.MimeType.TEXT);
 
   }
-
-
 
   const lock = LockService.getScriptLock();
 
@@ -309,12 +273,9 @@ function doGet(e) {
 
   }
 
-
-
   return ContentService.createTextOutput("Worker process initiated.").setMimeType(ContentService.MimeType.TEXT);
 
 }
-
 
 
 function parseAndValidateRequest(e) {
@@ -356,7 +317,6 @@ function parseAndValidateRequest(e) {
 }
 
 
-
 // ================================================================================================
 
 // 3. Async Task Management (キュー管理とスケジューリング)
@@ -364,14 +324,11 @@ function parseAndValidateRequest(e) {
 // ================================================================================================
 
 
-
 function scheduleAsyncTask(requestId, params) {
 
   const scriptProperties = PropertiesService.getScriptProperties();
 
   const propKey = CONFIG.ASYNC_CONFIG.TASK_DATA_PREFIX + requestId;
-
-
 
   try {
 
@@ -384,8 +341,6 @@ function scheduleAsyncTask(requestId, params) {
     throw new Error(`タスクデータの保存に失敗: ${e.toString()}`);
 
   }
-
-
 
   const lock = LockService.getScriptLock();
 
@@ -417,12 +372,9 @@ function scheduleAsyncTask(requestId, params) {
 
   }
 
-  
-
   triggerWorkerAsynchronously();
 
 }
-
 
 
 function triggerWorkerAsynchronously() {
@@ -438,8 +390,6 @@ function triggerWorkerAsynchronously() {
         scriptProperties.setProperty('INTERNAL_EXEC_TOKEN', token);
 
     }
-
-
 
     const url = ScriptApp.getService().getUrl() + `?action=${CONFIG.ASYNC_CONFIG.WORKER_ACTION}&token=${token}`;
 
@@ -457,15 +407,11 @@ function triggerWorkerAsynchronously() {
 
     };
 
-    
-
     UrlFetchApp.fetch(url, options);
 
     Logger.log('[INFO][Async] 自己呼び出しWebhookでワーカーの起動をリクエストしました。');
 
 }
-
-
 
 function getNextTaskFromQueue() {
 
@@ -502,7 +448,6 @@ function getNextTaskFromQueue() {
 }
 
 
-
 // ================================================================================================
 
 // 4. Background Worker (ワーカー関数 - 非同期実行)
@@ -510,14 +455,11 @@ function getNextTaskFromQueue() {
 // ================================================================================================
 
 
-
 function processTaskQueueWorker() {
 
   const startTime = new Date();
 
   let processedCount = 0;
-
-
 
   while ((new Date() - startTime) < CONFIG.ASYNC_CONFIG.MAX_EXECUTION_TIME_MS) {
 
@@ -531,13 +473,9 @@ function processTaskQueueWorker() {
 
     }
 
-
-
     Logger.log(`[INFO][Worker] タスク処理開始: ${requestId}`);
 
     const taskData = getTaskData(requestId);
-
-
 
     if (taskData) {
 
@@ -553,8 +491,6 @@ function processTaskQueueWorker() {
 
     }
 
-    
-
     if ((new Date() - startTime) > CONFIG.ASYNC_CONFIG.MAX_EXECUTION_TIME_MS) {
 
         Logger.log('[INFO][Worker] 実行時間制限が近づいたため、ワーカーを停止します。');
@@ -564,8 +500,6 @@ function processTaskQueueWorker() {
     }
 
   }
-
-
 
   const queue = JSON.parse(PropertiesService.getScriptProperties().getProperty(CONFIG.ASYNC_CONFIG.QUEUE_KEY) || '[]');
 
@@ -580,7 +514,6 @@ function processTaskQueueWorker() {
 }
 
 
-
 function executeTask(requestId, params) {
 
   const startTime = new Date();
@@ -588,8 +521,6 @@ function executeTask(requestId, params) {
   const returnToAppSheet = params.returnToAppSheet;
 
   let hasError = false;
-
-
 
   try {
 
@@ -602,8 +533,6 @@ function executeTask(requestId, params) {
     }
 
     Logger.log(`[INFO][Worker] メッセージ投稿成功: ${chatResult.sentMessageId}`);
-
-
 
     if (returnToAppSheet && returnToAppSheet.rowId) {
 
@@ -660,13 +589,11 @@ function executeTask(requestId, params) {
 }
 
 
-
 // ================================================================================================
 
 // 5. Google Chat Integration (Chat連携機能) - [RESTORED] 復元セクション
 
 // ================================================================================================
-
 
 
 function postMessageToChat(params) {
@@ -694,7 +621,6 @@ function postMessageToChat(params) {
 }
 
 
-
 function buildChatApiPayload(targetThreadId, targetSpaceId, messageText) {
 
   const messageResource = { text: messageText };
@@ -702,8 +628,6 @@ function buildChatApiPayload(targetThreadId, targetSpaceId, messageText) {
   let apiUrl = '';
 
   let actionType = 'UNKNOWN';
-
-
 
   if (targetThreadId) {
 
@@ -774,7 +698,6 @@ function buildChatApiPayload(targetThreadId, targetSpaceId, messageText) {
 }
 
 
-
 function executeChatPost(apiUrl, messageResource, impersonatingUserEmail) {
 
   const chatService = createOAuth2ServiceForUser(impersonatingUserEmail, CONFIG.AUTH.CHAT_SCOPES, 'ChatImpersonation');
@@ -802,13 +725,11 @@ function executeChatPost(apiUrl, messageResource, impersonatingUserEmail) {
 }
 
 
-
 // ================================================================================================
 
 // 6. AppSheet Integration (AppSheet連携機能)
 
 // ================================================================================================
-
 
 
 function writeResultToAppSheet(configName, returnConfig, dataToUpdate) {
@@ -876,13 +797,11 @@ function writeResultToAppSheet(configName, returnConfig, dataToUpdate) {
 }
 
 
-
 // ================================================================================================
 
 // 7. Authentication (OAuth2認証ヘルパー) - [RESTORED] 復元セクション
 
 // ================================================================================================
-
 
 
 function createOAuth2ServiceForUser(userEmail, scopes, serviceNamePrefix) {
@@ -896,8 +815,6 @@ function createOAuth2ServiceForUser(userEmail, scopes, serviceNamePrefix) {
   const serviceAccountInfo = JSON.parse(serviceAccountJsonString);
 
   const serviceName = `${serviceNamePrefix}:${userEmail}`;
-
-
 
   return OAuth2.createService(serviceName)
 
@@ -923,8 +840,6 @@ function createOAuth2ServiceForUser(userEmail, scopes, serviceNamePrefix) {
 
 }
 
-
-
 function getAccessToken(service) {
 
   if (service.hasAccess()) {
@@ -944,7 +859,6 @@ function getAccessToken(service) {
 }
 
 
-
 function authCallback(request) {
 
   const service = OAuth2.getService();
@@ -956,13 +870,11 @@ function authCallback(request) {
 }
 
 
-
 // ================================================================================================
 
 // 8. Utilities (ユーティリティ関数)
 
 // ================================================================================================
-
 
 
 // --- 冪等性ヘルパー (PropertiesService版) ---
@@ -1022,7 +934,6 @@ function deleteIdempotencyState(requestId) {
 }
 
 
-
 // --- 非同期ヘルパー ---
 
 function getTaskData(requestId) {
@@ -1056,8 +967,6 @@ function cleanupTask(requestId, hasError) {
   scriptProperties.deleteProperty(propKey);
 
 }
-
-
 
 // --- APIリトライヘルパー - [RESTORED] 復元セクション ---
 

@@ -1,16 +1,8 @@
-
-
-
-
-
-
 /**
 
  * Vertex AI音声解析モジュール
 
  * Gemini 2.5 Flash/Proを使用して音声ファイルを解析
-
- * 
 
  * @author Fractal Group
 
@@ -21,14 +13,11 @@
  */
 
 
-
 /**
 
  * Vertex AIで音声ファイルを解析
 
  * 原則としてCloud Storage経由で処理（ファイルサイズ制限なし）
-
- * 
 
  * @param {string} fileId - Google DriveのファイルID
 
@@ -50,17 +39,11 @@ function analyzeAudioWithVertexAI(fileId, callDatetime, callContextText, userInf
 
   const audioFile = getAudioFile(fileId);
 
-  
-
   Logger.log(`[Vertex AI] ファイルサイズ: ${(audioFile.blob.getBytes().length / 1024 / 1024).toFixed(2)}MB`);
-
-  
 
   // プロンプト生成
 
   const prompt = generatePrompt(callDatetime, callContextText, userInfoText);
-
-  
 
   // 原則Cloud Storage経由で処理
 
@@ -68,25 +51,17 @@ function analyzeAudioWithVertexAI(fileId, callDatetime, callContextText, userInf
 
   const gsUri = uploadToCloudStorage(audioFile, config);
 
-  
-
   try {
 
     // Vertex AI APIリクエスト（Cloud Storage URI使用）
 
     const apiResponse = callVertexAIAPIWithStorage(gsUri, audioFile.mimeType, prompt, config);
 
-    
-
     // JSON抽出と検証
 
     const result = extractAndValidateJSON(apiResponse);
 
-    
-
     return result;
-
-    
 
   } finally {
 
@@ -97,7 +72,6 @@ function analyzeAudioWithVertexAI(fileId, callDatetime, callContextText, userInf
   }
 
 }
-
 
 
 /**
@@ -116,13 +90,9 @@ function getAudioFile(fileId) {
 
     const fileName = file.getName();
 
-    
-
     // 拡張子からMIMEタイプを判定
 
     const mimeType = determineMimeType(fileName, blob);
-
-    
 
     return {
 
@@ -143,7 +113,6 @@ function getAudioFile(fileId) {
 }
 
 
-
 /**
 
  * ファイル名と拡張子からMIMEタイプを判定
@@ -157,8 +126,6 @@ function determineMimeType(fileName, blob) {
     ? fileName.split('.').pop().toLowerCase() 
 
     : '';
-
-  
 
   const mimeTypeMap = {
 
@@ -180,11 +147,7 @@ function determineMimeType(fileName, blob) {
 
   };
 
-  
-
   let mimeType = mimeTypeMap[extension];
-
-  
 
   // マップになければBlobのMIMEタイプを使用
 
@@ -193,8 +156,6 @@ function determineMimeType(fileName, blob) {
     mimeType = blob.getContentType();
 
   }
-
-  
 
   // 音声/動画形式チェック
 
@@ -210,13 +171,9 @@ function determineMimeType(fileName, blob) {
 
   }
 
-  
-
   return mimeType;
 
 }
-
-
 
 /**
 
@@ -230,15 +187,11 @@ function generatePrompt(callDatetime, callContextText, userInfoText) {
 
   const formattedDate = Utilities.formatDate(date, "Asia/Tokyo", "yyyy/MM/dd(E) HH:mm");
 
-  
-
   const userInfoSection = userInfoText 
 
     ? `# 利用者・関係機関の事前情報\n${userInfoText}\n\n`
 
     : '';
-
-    
 
   const contextSection = callContextText
 
@@ -246,15 +199,11 @@ function generatePrompt(callDatetime, callContextText, userInfoText) {
 
     : '';
 
-
-
   return `
 
 # 指示
 
 提供された音声ファイルと以下の情報を総合的に分析し、医療・介護分野の文脈を正確に理解した上で、厳格なルールに従ってJSONオブジェクトを生成してください。
-
-
 
 ${contextSection}${userInfoSection}
 
@@ -274,8 +223,6 @@ ${contextSection}${userInfoSection}
 
 - 包括: 地域包括支援センター, サ担会議: サービス担当者会議
 
-
-
 # JSON出力仕様
 
 以下の構造のJSONを生成:
@@ -290,13 +237,9 @@ ${contextSection}${userInfoSection}
 
 }
 
-
-
 # 要約作成ルール (summaryキー)
 
 Markdown形式で以下のグループごとに整理:
-
-
 
 **通話の概要**
 
@@ -310,13 +253,9 @@ Markdown形式で以下のグループごとに整理:
 
 - **背景**: (経緯や関連する出来事)
 
-
-
 **話し合った内容**
 
 - (要点を箇条書き)
-
-
 
 **決定事項と次のアクション**
 
@@ -324,13 +263,9 @@ Markdown形式で以下のグループごとに整理:
 
 - **アクションアイテム**: (誰が、いつまでに、何をするか)
 
-
-
 重要な部分は\`バッククオート\`で囲んでマーカー表示。
 
 該当情報がないグループは省略。
-
-
 
 # 全文文字起こしルール (transcriptキー)
 
@@ -339,8 +274,6 @@ Markdown形式で以下のグループごとに整理:
 - 話者ラベル: 「スタッフ：」「通話相手：」
 
 - 発言ごとに改行
-
-
 
 # アクション抽出ルール (actionsキー)
 
@@ -362,15 +295,11 @@ Markdown形式で以下のグループごとに整理:
 
 }
 
-
-
 アクションがなければ空配列 [] を返す。
 
 `;
 
 }
-
-
 
 /**
 
@@ -386,11 +315,7 @@ function uploadToCloudStorage(audioFile, config) {
 
   const uploadUrl = `https://storage.googleapis.com/upload/storage/v1/b/${config.gcpBucketName}/o?uploadType=media&name=${encodeURIComponent(fileName)}`;
 
-  
-
   Logger.log(`[Cloud Storage] アップロード開始: ${fileName}`);
-
-  
 
   const uploadOptions = {
 
@@ -410,13 +335,9 @@ function uploadToCloudStorage(audioFile, config) {
 
   };
 
-  
-
   const response = UrlFetchApp.fetch(uploadUrl, uploadOptions);
 
   const statusCode = response.getResponseCode();
-
-  
 
   if (statusCode !== 200) {
 
@@ -428,18 +349,13 @@ function uploadToCloudStorage(audioFile, config) {
 
   }
 
-  
-
   const gsUri = `gs://${config.gcpBucketName}/${fileName}`;
 
   Logger.log(`[Cloud Storage] アップロード成功: ${gsUri}`);
 
-  
-
   return gsUri;
 
 }
-
 
 
 /**
@@ -456,11 +372,7 @@ function deleteFromCloudStorage(gsUri, config) {
 
     const deleteUrl = `https://storage.googleapis.com/storage/v1/b/${config.gcpBucketName}/o/${encodeURIComponent(fileName)}`;
 
-    
-
     Logger.log(`[Cloud Storage] 削除開始: ${fileName}`);
-
-    
 
     const deleteOptions = {
 
@@ -476,13 +388,9 @@ function deleteFromCloudStorage(gsUri, config) {
 
     };
 
-    
-
     const response = UrlFetchApp.fetch(deleteUrl, deleteOptions);
 
     const statusCode = response.getResponseCode();
-
-    
 
     if (statusCode === 204) {
 
@@ -503,7 +411,6 @@ function deleteFromCloudStorage(gsUri, config) {
 }
 
 
-
 /**
 
  * Vertex AI APIを呼び出し（Cloud Storage URI使用）
@@ -516,11 +423,7 @@ function callVertexAIAPIWithStorage(gsUri, mimeType, prompt, config) {
 
   const endpoint = `https://${config.gcpLocation}-aiplatform.googleapis.com/v1/projects/${config.gcpProjectId}/locations/${config.gcpLocation}/publishers/google/models/${config.vertexAIModel}:generateContent`;
 
-  
-
   Logger.log(`[Vertex AI] モデル: ${config.vertexAIModel}, リージョン: ${config.gcpLocation}`);
-
-  
 
   // リクエストボディ構築（Cloud Storage URI使用）
 
@@ -566,8 +469,6 @@ function callVertexAIAPIWithStorage(gsUri, mimeType, prompt, config) {
 
   };
 
-  
-
   // API呼び出しオプション
 
   const options = {
@@ -588,8 +489,6 @@ function callVertexAIAPIWithStorage(gsUri, mimeType, prompt, config) {
 
   };
 
-  
-
   // API実行
 
   Logger.log('[Vertex AI] API呼び出し開始');
@@ -599,8 +498,6 @@ function callVertexAIAPIWithStorage(gsUri, mimeType, prompt, config) {
   const statusCode = response.getResponseCode();
 
   const responseText = response.getContentText();
-
-  
 
   // ステータスコードチェック
 
@@ -618,16 +515,11 @@ function callVertexAIAPIWithStorage(gsUri, mimeType, prompt, config) {
 
   }
 
-  
-
   Logger.log(`[Vertex AI] API呼び出し成功 (レスポンス: ${responseText.length}文字)`);
-
-  
 
   return responseText;
 
 }
-
 
 
 /**
@@ -644,11 +536,7 @@ function callVertexAIAPI(audioFile, prompt, config) {
 
   const endpoint = `https://${config.gcpLocation}-aiplatform.googleapis.com/v1/projects/${config.gcpProjectId}/locations/${config.gcpLocation}/publishers/google/models/${config.vertexAIModel}:generateContent`;
 
-  
-
   Logger.log(`[Vertex AI] モデル: ${config.vertexAIModel}, リージョン: ${config.gcpLocation}`);
-
-  
 
   // リクエストボディ構築
 
@@ -694,8 +582,6 @@ function callVertexAIAPI(audioFile, prompt, config) {
 
   };
 
-  
-
   // API呼び出しオプション
 
   const options = {
@@ -716,8 +602,6 @@ function callVertexAIAPI(audioFile, prompt, config) {
 
   };
 
-  
-
   // API実行
 
   Logger.log('[Vertex AI] API呼び出し開始');
@@ -727,8 +611,6 @@ function callVertexAIAPI(audioFile, prompt, config) {
   const statusCode = response.getResponseCode();
 
   const responseText = response.getContentText();
-
-  
 
   // ステータスコードチェック
 
@@ -746,16 +628,11 @@ function callVertexAIAPI(audioFile, prompt, config) {
 
   }
 
-  
-
   Logger.log(`[Vertex AI] API呼び出し成功 (レスポンス: ${responseText.length}文字)`);
-
-  
 
   return responseText;
 
 }
-
 
 
 /**
@@ -767,8 +644,6 @@ function callVertexAIAPI(audioFile, prompt, config) {
 function extractAndValidateJSON(responseText) {
 
   let jsonResponse;
-
-  
 
   // JSONパース
 
@@ -782,15 +657,11 @@ function extractAndValidateJSON(responseText) {
 
   }
 
-  
-
   // 候補(candidates)チェック
 
   if (!jsonResponse.candidates || jsonResponse.candidates.length === 0) {
 
     let errorMsg = 'AIからの有効な応答がありません';
-
-    
 
     if (jsonResponse.promptFeedback && jsonResponse.promptFeedback.blockReason) {
 
@@ -798,39 +669,27 @@ function extractAndValidateJSON(responseText) {
 
     }
 
-    
-
     if (jsonResponse.error) {
 
       errorMsg += ` [APIエラー: ${jsonResponse.error.message}]`;
 
     }
 
-    
-
     throw new Error(errorMsg);
 
   }
-
-  
 
   // コンテンツチェック
 
   const candidate = jsonResponse.candidates[0];
 
-  
-
   if (!candidate.content || !candidate.content.parts || candidate.content.parts.length === 0) {
 
     let errorMsg = 'AIの応答にコンテンツがありません';
 
-    
-
     if (candidate.finishReason) {
 
       errorMsg += ` [終了理由: ${candidate.finishReason}]`;
-
-      
 
       if (candidate.finishReason === 'MAX_TOKENS') {
 
@@ -844,23 +703,15 @@ function extractAndValidateJSON(responseText) {
 
     }
 
-    
-
     throw new Error(errorMsg);
 
   }
 
-  
-
   const contentText = candidate.content.parts[0].text;
-
-  
 
   // JSON抽出（2段階戦略）
 
   const result = extractJSONFromText(contentText);
-
-  
 
   // 構造検証
 
@@ -870,16 +721,11 @@ function extractAndValidateJSON(responseText) {
 
   }
 
-  
-
   Logger.log(`[Vertex AI] JSON抽出成功 (アクション数: ${result.actions.length})`);
-
-  
 
   return result;
 
 }
-
 
 
 /**
@@ -896,15 +742,11 @@ function extractJSONFromText(text) {
 
   }
 
-  
-
   // Strategy 1: Markdownコードブロック抽出
 
   const markdownRegex = /```(?:json)?\s*([\s\S]+?)\s*```/i;
 
   const match = text.match(markdownRegex);
-
-  
 
   if (match && match[1]) {
 
@@ -922,8 +764,6 @@ function extractJSONFromText(text) {
 
   }
 
-  
-
   // Strategy 2: 括弧抽出
 
   Logger.log('[JSON抽出] Strategy 2 (括弧) 使用');
@@ -932,13 +772,9 @@ function extractJSONFromText(text) {
 
   const endIndex = text.lastIndexOf('}');
 
-  
-
   if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
 
     const jsonString = text.substring(startIndex, endIndex + 1);
-
-    
 
     try {
 
@@ -950,23 +786,17 @@ function extractJSONFromText(text) {
 
       Logger.log(`抽出文字列 (先頭500文字): ${jsonString.substring(0, 500)}`);
 
-      
-
       if (error.message.includes('Unexpected end')) {
 
         throw new Error('AIの応答が途中で終了 (トークン不足の可能性)');
 
       }
 
-      
-
       throw new Error(`JSON解析エラー: ${error.message}`);
 
     }
 
   }
-
-  
 
   // 両方失敗
 
@@ -975,4 +805,3 @@ function extractJSONFromText(text) {
   throw new Error('有効なJSONが見つかりませんでした');
 
 }
-

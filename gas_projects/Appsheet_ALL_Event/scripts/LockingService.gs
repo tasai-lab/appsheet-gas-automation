@@ -1,9 +1,3 @@
-
-
-
-
-
-
 /**
 
  * 処理の重複実行を防止するためのロックサービス
@@ -15,7 +9,6 @@ const LockingService = {
   CACHE_PREFIX: 'lock_',
 
   LOCK_TIMEOUT_SECONDS: 60, // ロックの有効期間（秒）
-
 
 
   /**
@@ -43,7 +36,6 @@ const LockingService = {
     }
 
     
-
     const lockKey = this.CACHE_PREFIX + id;
 
     // CacheServiceへの同時アクセスによる競合状態を防ぐため、ScriptLockを使用する
@@ -51,7 +43,6 @@ const LockingService = {
     const scriptLock = LockService.getScriptLock();
 
     
-
     try {
 
       // 最大5秒間、スクリプトロックの取得を試みる
@@ -59,13 +50,11 @@ const LockingService = {
       scriptLock.waitLock(5000);
 
       
-
       const cache = CacheService.getScriptCache();
 
       const existingLock = cache.get(lockKey);
 
       
-
       if (existingLock) {
 
         // 既にロック（キャッシュ）が存在する
@@ -75,7 +64,6 @@ const LockingService = {
       }
 
       
-
       // 新しくロック（キャッシュ）を設定する
 
       cache.put(lockKey, 'locked', this.LOCK_TIMEOUT_SECONDS);
@@ -83,11 +71,9 @@ const LockingService = {
       Logger.info(`ID '${id}' のロックを取得しました。有効期限: ${this.LOCK_TIMEOUT_SECONDS}秒`);
 
       
-
       return true;
 
       
-
     } finally {
 
       // 必ずスクリプトロックを解放する

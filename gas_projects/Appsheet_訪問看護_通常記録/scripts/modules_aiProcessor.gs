@@ -1,9 +1,3 @@
-
-
-
-
-
-
 ﻿/**
 
  * Vertex AI連携モジュール
@@ -11,7 +5,6 @@
  * Gemini APIを使用した看護記録生成
 
  */
-
 
 
 /**
@@ -36,8 +29,6 @@ function callVertexAIWithPrompt(gsUri, mimeType, prompt, recordType = 'normal') 
 
   const retryDelays = [30000, 60000, 120000]; // 30秒, 1分, 2分
 
-  
-
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
 
     try {
@@ -48,15 +39,11 @@ function callVertexAIWithPrompt(gsUri, mimeType, prompt, recordType = 'normal') 
 
       const errorMessage = error.message || '';
 
-      
-
       // Service Agent プロビジョニングエラーの場合は再試行
 
       if (errorMessage.includes('Service agents are being provisioned') || 
 
           errorMessage.includes('FAILED_PRECONDITION')) {
-
-        
 
         if (attempt < maxRetries) {
 
@@ -78,8 +65,6 @@ function callVertexAIWithPrompt(gsUri, mimeType, prompt, recordType = 'normal') 
 
       }
 
-      
-
       // その他のエラーは即座にスロー
 
       throw error;
@@ -89,8 +74,6 @@ function callVertexAIWithPrompt(gsUri, mimeType, prompt, recordType = 'normal') 
   }
 
 }
-
-
 
 /**
 
@@ -113,8 +96,6 @@ function callVertexAIWithPromptInternal(gsUri, mimeType, prompt, recordType = 'n
   try {
 
     const url = `https://${GCP_CONFIG.location}-aiplatform.googleapis.com/v1/projects/${GCP_CONFIG.projectId}/locations/${GCP_CONFIG.location}/publishers/google/models/${GCP_CONFIG.vertexAI.model}:generateContent`;
-
-    
 
     const requestBody = {
 
@@ -154,11 +135,7 @@ function callVertexAIWithPromptInternal(gsUri, mimeType, prompt, recordType = 'n
 
     };
 
-    
-
     Logger.log(`Vertex AI API呼び出し開始: ${GCP_CONFIG.vertexAI.model}`);
-
-    
 
     const options = {
 
@@ -178,8 +155,6 @@ function callVertexAIWithPromptInternal(gsUri, mimeType, prompt, recordType = 'n
 
     };
 
-    
-
     const startTime = new Date().getTime();
 
     const response = UrlFetchApp.fetch(url, options);
@@ -188,17 +163,11 @@ function callVertexAIWithPromptInternal(gsUri, mimeType, prompt, recordType = 'n
 
     const duration = ((endTime - startTime) / 1000).toFixed(2);
 
-    
-
     const responseCode = response.getResponseCode();
 
     const responseText = response.getContentText();
 
-    
-
     Logger.log(`Vertex AI API応答: ${responseCode}, 処理時間: ${duration}秒`);
-
-    
 
     if (responseCode !== 200) {
 
@@ -206,11 +175,7 @@ function callVertexAIWithPromptInternal(gsUri, mimeType, prompt, recordType = 'n
 
     }
 
-    
-
     const jsonResponse = JSON.parse(responseText);
-
-    
 
     if (!jsonResponse.candidates || jsonResponse.candidates.length === 0) {
 
@@ -218,11 +183,7 @@ function callVertexAIWithPromptInternal(gsUri, mimeType, prompt, recordType = 'n
 
     }
 
-    
-
     const candidate = jsonResponse.candidates[0];
-
-    
 
     // セーフティフィルターチェック
 
@@ -232,23 +193,15 @@ function callVertexAIWithPromptInternal(gsUri, mimeType, prompt, recordType = 'n
 
     }
 
-    
-
     const generatedText = candidate.content.parts[0].text;
-
-    
 
     // JSONパース
 
     const result = parseGeneratedJSON(generatedText);
 
-    
-
     Logger.log('Vertex AI処理成功');
 
     return result;
-
-    
 
   } catch (error) {
 
@@ -259,7 +212,6 @@ function callVertexAIWithPromptInternal(gsUri, mimeType, prompt, recordType = 'n
   }
 
 }
-
 
 
 /**
@@ -282,8 +234,6 @@ function callGeminiAPIWithPrompt(fileData, prompt, recordType = 'normal') {
 
     const parts = [{ text: prompt }];
 
-    
-
     // 音声ファイルを追加
 
     if (fileData && fileData.blob) {
@@ -302,8 +252,6 @@ function callGeminiAPIWithPrompt(fileData, prompt, recordType = 'normal') {
 
     }
 
-    
-
     const requestBody = {
 
       contents: [{ parts: parts }],
@@ -318,15 +266,9 @@ function callGeminiAPIWithPrompt(fileData, prompt, recordType = 'normal') {
 
     };
 
-    
-
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_CONFIG.model}:generateContent?key=${GEMINI_CONFIG.apiKey}`;
 
-    
-
     Logger.log(`Gemini API呼び出し開始: ${GEMINI_CONFIG.model}`);
-
-    
 
     const options = {
 
@@ -340,8 +282,6 @@ function callGeminiAPIWithPrompt(fileData, prompt, recordType = 'normal') {
 
     };
 
-    
-
     const startTime = new Date().getTime();
 
     const response = UrlFetchApp.fetch(url, options);
@@ -350,17 +290,11 @@ function callGeminiAPIWithPrompt(fileData, prompt, recordType = 'normal') {
 
     const duration = ((endTime - startTime) / 1000).toFixed(2);
 
-    
-
     const responseCode = response.getResponseCode();
 
     const responseText = response.getContentText();
 
-    
-
     Logger.log(`Gemini API応答: ${responseCode}, 処理時間: ${duration}秒`);
-
-    
 
     if (responseCode !== 200) {
 
@@ -368,11 +302,7 @@ function callGeminiAPIWithPrompt(fileData, prompt, recordType = 'normal') {
 
     }
 
-    
-
     const jsonResponse = JSON.parse(responseText);
-
-    
 
     if (!jsonResponse.candidates || jsonResponse.candidates.length === 0) {
 
@@ -380,19 +310,13 @@ function callGeminiAPIWithPrompt(fileData, prompt, recordType = 'normal') {
 
     }
 
-    
-
     const generatedText = jsonResponse.candidates[0].content.parts[0].text;
 
     const result = parseGeneratedJSON(generatedText, recordType);
 
-    
-
     Logger.log('Gemini API処理成功');
 
     return result;
-
-    
 
   } catch (error) {
 
@@ -403,7 +327,6 @@ function callGeminiAPIWithPrompt(fileData, prompt, recordType = 'normal') {
   }
 
 }
-
 
 
 /**
@@ -428,27 +351,19 @@ function parseGeneratedJSON(text, recordType = 'normal') {
 
     const endIndex = text.lastIndexOf('}');
 
-    
-
     if (startIndex === -1 || endIndex === -1) {
 
       throw new Error('JSONブロックが見つかりません');
 
     }
 
-    
-
     const jsonText = text.substring(startIndex, endIndex + 1);
 
     const result = JSON.parse(jsonText);
 
-    
-
     // 記録タイプに応じた必須フィールドを取得
 
     const requiredFields = REQUIRED_FIELDS[recordType];
-
-    
 
     // 必須フィールドの検証
 
@@ -484,11 +399,7 @@ function parseGeneratedJSON(text, recordType = 'normal') {
 
     }
 
-    
-
     return result;
-
-    
 
   } catch (error) {
 
@@ -507,7 +418,6 @@ function parseGeneratedJSON(text, recordType = 'normal') {
   }
 
 }
-
 
 
 /**
@@ -532,13 +442,9 @@ function buildNormalPrompt(recordText, guidanceMasterText) {
 
 提供される断片的な情報（音声、テキスト）から、訪問看護記録に必要な要素を5W1H（いつ、どこで、誰が、何を、なぜ、どのように）を意識して過不足なく抽出し、客観的な事実に基づいた構造化された記録を作成します。
 
-
-
 # タスク
 
 看護師による口述音声、既存の記録テキスト、マスターリストを統合的に分析し、以下の詳細な指示に従って、訪問看護記録を生成してください。出力は、指定された英語キーを持つJSONオブジェクト形式で、値は日本語で記述してください。
-
-
 
 # 入力情報
 
@@ -548,11 +454,7 @@ function buildNormalPrompt(recordText, guidanceMasterText) {
 
 3.  **指導・助言マスターリスト**: ${guidanceMasterText}
 
-
-
 # 出力形式と詳細な指示
-
-
 
 ## 全体ルール
 
@@ -564,17 +466,11 @@ function buildNormalPrompt(recordText, guidanceMasterText) {
 
 - 客観的な事実（Objective）と主観的な情報（Subjective）を明確に区別してください。
 
-
-
 ## JSONキーと各項目の要件
-
-
 
 - processedAudioText: (string)
 
   - 【音声ファイルがある場合のみ】音声認識の結果を、看護記録として利用しやすいように要点を整理し、箇条書きで記述します。音声がない場合は "" とします。
-
-
 
 - vitalSigns: (object)
 
@@ -582,15 +478,11 @@ function buildNormalPrompt(recordText, guidanceMasterText) {
 
   - 例: { "bt": "36.5℃", "bp": "128/78mmHg", "hr": "72bpm", "spo2": "98%" }
 
-
-
 - subjectiveInformation: (string)
 
   - 利用者本人や家族からの主観的な訴え、発言、様子の変化などを記述します。発言は「」で囲んでください。
 
   - 例: 「昨晩は胸が少し苦しくて眠りが浅かった」「足のむくみは昨日より良い気がする」とご本人の発言あり。
-
-
 
 - userCondition: (string)
 
@@ -616,13 +508,9 @@ function buildNormalPrompt(recordText, guidanceMasterText) {
 
     　仙骨部に直径2cmの発赤あり。熱感や浸出液はなし。微温湯で洗浄後、アズノール軟膏を塗布し保護パッドを貼付。処置中に痛み等の訴えは聞かれなかった。
 
-
-
     ・排便コントロール
 
     　3日間排便がない状況であり、腹部膨満と軽度の圧痛あり。本日、腹部マッサージを実施し水分摂取を促したところ、「少し楽になった」との発言あり。
-
-
 
 - guidanceAndAdvice: (string)
 
@@ -632,13 +520,9 @@ function buildNormalPrompt(recordText, guidanceMasterText) {
 
   - 例: ご家族に対し、褥瘡予防のための体位交換方法について、実演を交えて説明した。ご家族は「2時間おきですね。圧がかからないようにクッションを使うのが大事なんですね」と復唱し、理解を示した。
 
-
-
 - nursingAndRehabilitationItems: (array of strings)
 
   - 今回の訪問で実施した看護やリハビリの項目名を、提供された\`guidanceMasterText\`の中から**一言一句違わずに**選択し、配列形式でリストアップします。マスターに存在しない項目は含めないでください。
-
-
 
 - specialNotes: (string)
 
@@ -651,8 +535,6 @@ function buildNormalPrompt(recordText, guidanceMasterText) {
     - **福祉的側面:** 状態変化に伴う区分変更の必要性、福祉用具の提案、他サービスの利用状況や課題など。
 
     - **他職種との連携:** リハビリ専門職や薬剤師への情報提供や相談事項。
-
-
 
 - summaryForNextVisit: (string)
 
@@ -668,10 +550,6 @@ function buildNormalPrompt(recordText, guidanceMasterText) {
 
     ・家族の介護負担に関する訴えが増加傾向。傾聴と精神的支援も考慮。
 
-
-
-
-
 # 思考プロセス
 
 1.  **Step 1 (情報整理):** 音声情報がある場合は、まずその内容を正確にテキスト化し、主要なトピック（バイタル、訴え、実施ケア、観察事項など）をキーワードとして抽出します。
@@ -684,19 +562,13 @@ function buildNormalPrompt(recordText, guidanceMasterText) {
 
 5.  **Step 5 (最終確認):** 生成したJSONオブジェクト全体を見直し、情報の重複や漏れ、矛盾がないかを確認してから最終的な出力を確定します。
 
-
-
 ---
-
-
 
 以下に提供情報を示します。これらを総合的に判断して上記のJSONオブジェクトを作成してください。
 
 `;
 
 }
-
-
 
 /**
 
@@ -718,8 +590,6 @@ function buildPsychiatryPrompt(recordText, guidanceMasterText) {
 
 あなたは、Biopsychosocial（生物・心理・社会）モデルを深く理解し、精神科領域における豊富な臨床経験を持つ訪問看護師スペシャリストです。あなたの使命は、単なる情報の書き写しではありません。音声やテキストの断片的な情報から、利用者の言動の背景にある心理社会的要因を洞察し、その人らしさ（個別性）を尊重した上で、記録の読み手（医師、ケアマネージャー、他の看護師など）が具体的な次のアクションを考えられるような、客観的かつ専門的な看護記録を構造化して生成することです。
 
-
-
 # 絶対厳守のルール
 
 1.  **出力形式**: 最終的な出力はJSONオブジェクトそのものとします。説明文、コメント、\`\`\`json ...\`\`\`のようなマークダウンは一切含んではいけません。
@@ -729,8 +599,6 @@ function buildPsychiatryPrompt(recordText, guidanceMasterText) {
 3.  **情報重複の禁止**: 各JSONキーには明確な役割があります。同じ情報を複数のキーに重複して記述することは固く禁じます。最も適切な一つのキーにのみ情報を配置してください。
 
 4.  **空データの扱い**: 該当する情報が存在しない場合、キーの値は指示されたデータ型に応じて、必ず \`""\` (空文字列) または \`[]\` (空配列) としてください。\`null\` は決して使用しないでください。
-
-
 
 # 思考プロセス（命令）
 
@@ -746,11 +614,7 @@ function buildPsychiatryPrompt(recordText, guidanceMasterText) {
 
 5.  **ステップ5: 自己レビュー**: 生成したJSON全体が「#絶対厳守のルール」に違反していないか、特に情報の重複や、事実と解釈の混同がないかを厳しく検証し、完璧な状態にしてから出力します。
 
-
-
 # JSONキーごとの詳細指示
-
-
 
 ### \`clientCondition\`: (string)
 
@@ -762,8 +626,6 @@ function buildPsychiatryPrompt(recordText, guidanceMasterText) {
 
 * **【記述例】** 「訪室時、やや疲れた表情で出迎える。BP 130/85, SpO2 98%。『昨夜から頭が重い感じがする』との訴えあり。服装の乱れはない。」
 
-
-
 ### \`dailyLivingObservation\`: (string)
 
 * **【目的】** [必須項目]セルフケア能力と生活リズムを評価し、ケアマネージャー等が生活支援の必要性を判断するため。
@@ -773,8 +635,6 @@ function buildPsychiatryPrompt(recordText, guidanceMasterText) {
 * **【記述すべきでないこと】** 対人関係や感情の起伏（他のキーで記述）。
 
 * **【記述例】** 「食事は一日一食、夕食のみ摂取していることが多いと話す。昨夜はほとんど眠れず、朝方に2時間ほどうとうとしたとのこと。3日間入浴できていない。」
-
-
 
 ### \`mentalStateObservation\`: (string)
 
@@ -786,8 +646,6 @@ function buildPsychiatryPrompt(recordText, guidanceMasterText) {
 
 * **【記述例】** 「会話中、時折話が脱線し、元の話題に戻ることが困難な場面があった。無気力な様子で、『何もする気が起きない』と発言。窓の外を気にし、『誰かに見られている気がする』と小声で話す。」
 
-
-
 ### \`medicationAdherence\`: (string)
 
 * **【目的】** [必須項目]服薬コンプライアンスと、それに関連する要因（副作用、病識など）を把握するため。
@@ -797,8 +655,6 @@ function buildPsychiatryPrompt(recordText, guidanceMasterText) {
 * **【記述すべきでないこと】** 薬以外のケア内容。
 
 * **【記述例】** 「週1回のセットは家族が実施。朝薬は自己管理で内服できているが、眠前の薬を飲み忘れることが多い。『この薬を飲むと、翌朝ぼーっとする』と副作用への懸念を話された。」
-
-
 
 ### \`socialFunctionalObservation\`: (string)
 
@@ -810,8 +666,6 @@ function buildPsychiatryPrompt(recordText, guidanceMasterText) {
 
 * **【記述例】** 「家族とはほとんど会話がない状態が続いている。週3回の予定の作業所は、今週は1回のみの参加。『人が多い場所に行くと疲れてしまう』と話す。」
 
-
-
 ### \`careProvided\`: (array of strings)
 
 * **【目的】】** [必須項目]実施したケアをマスターリストに基づき正確に記録するため。
@@ -821,8 +675,6 @@ function buildPsychiatryPrompt(recordText, guidanceMasterText) {
 * **【記述すべきでないこと】** マスターリストにないケア、自由記述の文章。
 
 * **【記述例】** \`["精神的支援", "服薬確認・支援", "家族への状況説明"]\`
-
-
 
 ### \`guidanceAndAdvice\`: (string)
 
@@ -834,8 +686,6 @@ function buildPsychiatryPrompt(recordText, guidanceMasterText) {
 
 * **【記述例】** 「ご本人に、不眠時の対処法としてリラクゼーション技法を具体的に説明した。『試してみます』と関心を示した。ご家族には、本人の発言を傾聴する際のポイントを助言した。」
 
-
-
 ### \`remarks\`: (string)
 
 * **【目的】** 他の項目に該当しないが、チームで共有すべき特記事項や事務連絡を記録するため。
@@ -846,8 +696,6 @@ function buildPsychiatryPrompt(recordText, guidanceMasterText) {
 
 * **【記述例】** 「自立支援医療の更新手続きが必要なため、次回訪問時に申請書類の記入支援を予定。」
 
-
-
 ### \`summaryForNextVisit\`: (string)
 
 * **【目的】** 次回訪問者が、今回の訪問結果を踏まえて、優先度の高い観察・ケア項目を短時間で把握するため。
@@ -857,8 +705,6 @@ function buildPsychiatryPrompt(recordText, guidanceMasterText) {
 * **【記述すべきでないこと】** 今回の訪問の詳細な報告（既に他の項目で記述済み）。
 
 * **【記述例】** 「・幻覚様体験の訴えが再燃。発言の頻度と内容を注意深く観察。\\n・デイケアの参加意欲低下。休んでいる理由を再度傾聴し、阻害要因を探る。\\n・家族の疲労感が強いため、レスパイトの必要性について検討。」
-
-
 
 ---
 
@@ -873,7 +719,6 @@ function buildPsychiatryPrompt(recordText, guidanceMasterText) {
 `;
 
 }
-
 
 
 /**
@@ -896,8 +741,6 @@ function determineRecordType(recordType) {
 
   }
 
-  
-
   // 日本語での完全一致で判定
 
   if (recordType === '精神' || recordType === RECORD_TYPE_CONFIG.psychiatry.matchText) {
@@ -908,8 +751,6 @@ function determineRecordType(recordType) {
 
   }
 
-  
-
   if (recordType === '通常' || recordType === RECORD_TYPE_CONFIG.normal.matchText) {
 
     logDebug('記録タイプ判定: 通常', { input: recordType });
@@ -918,8 +759,6 @@ function determineRecordType(recordType) {
 
   }
 
-  
-
   // 一致しない場合は警告してデフォルト
 
   logStructured(LOG_LEVEL.WARN, '不明な記録タイプ', { input: recordType, defaultTo: 'normal' });
@@ -927,4 +766,3 @@ function determineRecordType(recordType) {
   return 'normal';
 
 }
-

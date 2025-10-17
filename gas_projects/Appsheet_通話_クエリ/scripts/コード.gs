@@ -1,9 +1,3 @@
-
-
-
-
-
-
 /**
 
  * @fileoverview AppSheetからのWebhookを受け取り、Gemini APIで回答を生成し、AppSheetに書き戻すスクリプト。
@@ -11,7 +5,6 @@
  * 詳細なデバッグログ機能、設定のコード内定義、動的なモデル選択機能を搭載。
 
  */
-
 
 
 // --- 1. 基本設定 ---
@@ -27,11 +20,9 @@ const SETTINGS = {
   ACCESS_KEY: 'V2-I1zMZ-90iua-47BBk-RBjO1-N0mUo-kY25j-VsI4H-eRvwT', // AppSheet APIのアクセスキー
 
 
-
   // --- AppSheetテーブル名 ---
 
   QUERIES_TABLE_NAME: 'Call_Queries', // 質疑応答テーブル
-
 
 
   // --- デバッグ & ログ機能 ---
@@ -41,13 +32,11 @@ const SETTINGS = {
   LOG_EMAIL: 't.asai@fractal-group.co.jp', // デバッグログを送信するメールアドレス
 
 
-
   // --- メール件名用設定 ---
 
   SCRIPT_NAME: '通話関連クエリ', // メール件名に表示するスクリリプトの名前
 
   ID_LABEL: 'query_id',         // メール件名に表示するIDの名称 (例: QueryID, RecordID など)
-
 
 
   // --- Geminiモデル設定 ---
@@ -67,9 +56,6 @@ const SETTINGS = {
   DEFAULT_MODEL_KEYWORD: "しっかり"
 
 };
-
-
-
 
 
 /**
@@ -95,7 +81,6 @@ function log(logCollector, message) {
 }
 
 
-
 /**
 
  * ログ出力用に、オブジェクト内にある指定されたキーの長文テキストを切り詰める。
@@ -118,8 +103,6 @@ function truncateObjectValuesForLogging(obj, keysToTruncate, maxLength) {
 
   const newObj = { ...obj }; 
 
-  
-
   for (const key of keysToTruncate) {
 
     if (typeof newObj[key] === 'string' && newObj[key].length > maxLength) {
@@ -134,8 +117,6 @@ function truncateObjectValuesForLogging(obj, keysToTruncate, maxLength) {
 
 }
 
-
-
 /**
 
  * 収集したログを指定されたメールアドレスに送信する。
@@ -149,8 +130,6 @@ function truncateObjectValuesForLogging(obj, keysToTruncate, maxLength) {
 function sendDebugLog(logCollector, subject) {
 
   if (!SETTINGS.DEBUG_MODE || !SETTINGS.LOG_EMAIL) return;
-
-  
 
   try {
 
@@ -167,7 +146,6 @@ function sendDebugLog(logCollector, subject) {
 }
 
 
-
 /**
 
  * AppSheetのWebhookからPOSTリクエストを受け取るメイン関数
@@ -176,10 +154,6 @@ function sendDebugLog(logCollector, subject) {
 
  */
 
-/**
- * AppSheet Webhook エントリーポイント
- * @param {GoogleAppsScript.Events.DoPost} e
- */
 /**
  * AppSheet Webhook エントリーポイント
  * @param {GoogleAppsScript.Events.DoPost} e
@@ -206,14 +180,9 @@ function processRequest(params) {
 
   let status = '成功';
 
-
-
   try {
 
     log(logCollector, '--- 処理開始 ---');
-
-    
-
 
     const keysToTruncate = ['promptText', 'callSummary', 'callTranscript', 'call_info'];
 
@@ -221,13 +190,9 @@ function processRequest(params) {
 
     log(logCollector, `受信したWebhookペイロード: ${JSON.stringify(paramsForLog, null, 2)}`);
 
-
-
     queryId = params.queryId;
 
     const { promptText, callSummary, callTranscript, call_info, modelKeyword } = params;
-
-
 
     if (!queryId || !promptText) {
 
@@ -236,8 +201,6 @@ function processRequest(params) {
     }
 
     log(logCollector, `処理対象: ${SETTINGS.ID_LABEL} = ${queryId}`);
-
-
 
     const selectedKeyword = modelKeyword && SETTINGS.MODEL_MAPPING[modelKeyword] ? modelKeyword : SETTINGS.DEFAULT_MODEL_KEYWORD;
 
@@ -251,8 +214,6 @@ function processRequest(params) {
 
     log(logCollector, `使用モデル: ${model} (キーワード: ${selectedKeyword})`);
 
-
-
     const answerText = generateAnswerWithGemini(logCollector, promptText, callSummary, callTranscript, call_info, model);
 
     if (!answerText) {
@@ -263,11 +224,7 @@ function processRequest(params) {
 
     log(logCollector, `AIからの生成回答（先頭100文字）: ${answerText.substring(0, 100)}...`);
 
-
-
     updateQueryResponse(logCollector, queryId, answerText);
-
-    
 
   } catch (error) {
 
@@ -297,11 +254,7 @@ function processRequest(params) {
 
     log(logCollector, `--- 処理終了 (ステータス: ${status}, 処理時間: ${elapsedTime}秒) ---`);
 
-    
-
     const subject = `[GASログ] ${SETTINGS.SCRIPT_NAME} (${status}) - ${SETTINGS.ID_LABEL}: ${queryId}`;
-
-    
 
     sendDebugLog(logCollector, subject);
 
@@ -309,10 +262,6 @@ function processRequest(params) {
 }
 
 
-/**
- * テスト用関数
- * GASエディタから直接実行してテスト可能
- */
 /**
  * テスト用関数
  * GASエディタから直接実行してテスト可能
@@ -328,8 +277,6 @@ function testProcessRequest() {
 }
 
 
-
-
 /**
 
  * Gemini APIを呼び出し、回答を生成する
@@ -340,8 +287,6 @@ function generateAnswerWithGemini(logCollector, promptText, callSummary, callTra
 
   log(logCollector, 'Gemini API 処理開始...');
 
-  
-
   const prompt = `
 
 # 指示
@@ -350,27 +295,19 @@ function generateAnswerWithGemini(logCollector, promptText, callSummary, callTra
 
 **重要: 回答には「はい、わかりました」などの前置きや挨拶を含めず、質問に対する答えそのものだけを生成してください。**
 
-
-
 # 参照情報
 
 ## 通話の要約
 
 ${callSummary || '要約はありません。'}
 
-
-
 ## 通話の全文文字起こし
 
 ${callTranscript || '全文文字起こしはありません。'}
 
-
-
 ## 通話関連情報
 
 ${call_info || '関連する通話はありません。'}
-
-
 
 ---
 
@@ -379,8 +316,6 @@ ${call_info || '関連する通話はありません。'}
 ${promptText}
 
 `;
-
-  
 
   const requestBody = {
 
@@ -396,8 +331,6 @@ ${promptText}
 
   };
 
-
-
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${SETTINGS.GEMINI_API_KEY}`;
 
   const options = {
@@ -412,8 +345,6 @@ ${promptText}
 
   };
 
-  
-
   log(logCollector, `Gemini APIリクエストURL: ${url}`);
 
   const requestBodyForLog = {
@@ -426,21 +357,15 @@ ${promptText}
 
   log(logCollector, `Gemini APIリクエストボディ: ${JSON.stringify(requestBodyForLog, null, 2)}`);
 
-
-
   const response = UrlFetchApp.fetch(url, options);
 
   const responseCode = response.getResponseCode();
 
   const responseText = response.getContentText();
 
-  
-
   log(logCollector, `Gemini APIレスポンスコード: ${responseCode}`);
 
   log(logCollector, `Gemini APIレスポンスボディ (先頭500文字): ${responseText.substring(0, 500)}...`);
-
-  
 
   if (responseCode !== 200) {
 
@@ -448,11 +373,7 @@ ${promptText}
 
   }
 
-
-
   const jsonResponse = JSON.parse(responseText);
-
-  
 
   if (!jsonResponse.candidates || jsonResponse.candidates.length === 0 || !jsonResponse.candidates[0].content || !jsonResponse.candidates[0].content.parts || jsonResponse.candidates[0].content.parts.length === 0) {
 
@@ -464,15 +385,11 @@ ${promptText}
 
   }
 
-  
-
   log(logCollector, 'Gemini API 処理正常終了。');
 
   return jsonResponse.candidates[0].content.parts[0].text.trim();
 
 }
-
-
 
 /**
 
@@ -505,8 +422,6 @@ function updateQueryResponse(logCollector, queryId, answerText) {
   callAppSheetApi(logCollector, payload);
 
 }
-
-
 
 /**
 
@@ -541,7 +456,6 @@ function updateQueryStatusToError(logCollector, queryId, errorMessage) {
 }
 
 
-
 /**
 
  * AppSheet APIを呼び出す共通関数
@@ -566,8 +480,6 @@ function callAppSheetApi(logCollector, payload) {
 
   };
 
-  
-
   const payloadForLog = JSON.parse(JSON.stringify(payload));
 
   if (payloadForLog.Rows && payloadForLog.Rows[0]) {
@@ -588,13 +500,9 @@ function callAppSheetApi(logCollector, payload) {
 
   }
 
-
-
   log(logCollector, `AppSheet APIリクエストURL: ${apiUrl}`);
 
   log(logCollector, `AppSheet APIリクエストペイロード: ${JSON.stringify(payloadForLog, null, 2)}`);
-
-
 
   const response = UrlFetchApp.fetch(apiUrl, options);
 
@@ -602,13 +510,9 @@ function callAppSheetApi(logCollector, payload) {
 
   const responseText = response.getContentText();
 
-  
-
   log(logCollector, `AppSheet APIレスポンスコード: ${responseCode}`);
 
   log(logCollector, `AppSheet APIレスポンスボディ: ${responseText}`);
-
-  
 
   if (responseCode >= 300) {
 

@@ -1,9 +1,3 @@
-
-
-
-
-
-
 /**
 
  * ★★★ メンテナンス用関数 ★★★
@@ -24,8 +18,6 @@ function clearAllProcessLocks() {
 
   let clearedCount = 0;
 
-
-
   for (const key of allKeys) {
 
     // このスクリプトで使われるキー（書類ID、または提供票のCONTEXT）を対象とする
@@ -42,8 +34,6 @@ function clearAllProcessLocks() {
 
   }
 
-
-
   if (clearedCount === 0) {
 
     console.log("クリア対象のロック情報はありませんでした。");
@@ -55,7 +45,6 @@ function clearAllProcessLocks() {
   }
 
 }
-
 
 
 /**
@@ -76,8 +65,6 @@ function clearSpecificLock() {
 
   const documentIdToClear = 'CLDC-148ddbe7'; // 例: 'CLDC-148ddbe7'
 
-
-
   // --- ここから下は変更しないでください ---
 
   if (!documentIdToClear || documentIdToClear === 'ここにIDをペーストしてください') {
@@ -88,13 +75,9 @@ function clearSpecificLock() {
 
   }
 
-
-
   const properties = PropertiesService.getScriptProperties();
 
   let cleared = false;
-
-
 
   // メインのロックキーを削除 ('processing' or 'completed')
 
@@ -107,8 +90,6 @@ function clearSpecificLock() {
     cleared = true;
 
   }
-
-
 
   // 提供票用のCONTEXTキーも削除
 
@@ -123,8 +104,6 @@ function clearSpecificLock() {
     cleared = true;
 
   }
-
-
 
   if (cleared) {
 

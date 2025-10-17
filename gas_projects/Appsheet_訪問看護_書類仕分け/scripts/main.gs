@@ -1,9 +1,3 @@
-
-
-
-
-
-
 /**
 
  * ===================================================================================
@@ -23,7 +17,6 @@ const ACCESS_KEY = 'V2-s6fif-zteYn-AGhoC-EhNLX-NNwgP-nHXAr-hHGZp-XxyPY';      //
 const APP_NAME = '訪問看護_利用者管理-575936796'; // ★ AppSheetのアプリ名
 
 
-
 // --- メール通知設定 ---
 
 // エラー発生時や処理全体のログを送信する宛先
@@ -33,7 +26,6 @@ const ERROR_NOTIFICATION_EMAIL = "t.asai@fractal-group.co.jp";
 // 処理完了時に確認を促すHTMLメールを送信する宛先（カンマ区切りで複数指定可）
 
 const COMPLETION_NOTIFICATION_EMAILS = "t.asai@fractal-group.co.jp, m.iwaizako@fractal-group.co.jp"; 
-
 
 
 // --- AppSheet テーブル名 ---
@@ -57,7 +49,6 @@ const DETAILS_TABLE_NAME = 'Service_Form_Details';                 // サービ�
 const COPAYMENT_TABLE_NAME = 'Client_LTCI_Copayment_Certificates';   // 介護保険負担割合証テーブル
 
 
-
 // --- 外部マスタースプレッドシート設定 ---
 
 // ★★★【新規追加】提供票のデータが格納されているスプレッドシート ★★★
@@ -75,7 +66,6 @@ const PUBLIC_SUBSIDY_MASTER_SHEET_NAME = 'Public_Subsidy_Master';
 const SERVICE_MASTER_SS_ID = '1r-ehIg7KMrSPBCI3K1wA8UFvBnKvqp1kmb8r7MCH1tQ';
 
 const SERVICE_MASTER_SHEET_NAME = '介護_基本・加算マスター';
-
 
 
 // --- AppSheetの各詳細ビューへのディープリンク設定 ---
@@ -101,7 +91,6 @@ const VIEW_NAME_MAP = {
 };
 
 
-
 /**
 
  * ===================================================================================
@@ -113,9 +102,7 @@ const VIEW_NAME_MAP = {
  */
 
 
-
 // (既存の VIEW_NAME_MAP の下などに追加)
-
 
 
 // ★★★【新規追加】メールに表示する項目名を日本語に変換するためのマップ ★★★
@@ -159,7 +146,6 @@ const KEY_TO_JAPANESE_MAP = {
   'reduction_cert_expiration_date': '減免証明書有効期限',
 
   
-
   // 介護保険証
 
   'insured_person_number': '被保険者番号',
@@ -173,7 +159,6 @@ const KEY_TO_JAPANESE_MAP = {
   'cert_end_date': '認定有効期間（終了）',
 
   'next_renewal_check_date': '次回更新確認日',
-
 
 
   // 公費
@@ -199,7 +184,6 @@ const KEY_TO_JAPANESE_MAP = {
   'monthly_visit_limit': '月間上限回数',
 
   
-
   // 口座情報
 
   'bank_code': '金融機関コード',
@@ -215,7 +199,6 @@ const KEY_TO_JAPANESE_MAP = {
   'account_holder_name_kana': '口座名義人（カナ）',
 
   
-
   // 指示書
 
   'instructionType': '指示書区分',
@@ -245,13 +228,11 @@ const KEY_TO_JAPANESE_MAP = {
   'diseaseMedicalCode3': '傷病名コード3',
 
   
-
   // 負担割合証
 
   'copayment_rate': '負担割合'
 
 };
-
 
 
 /**
@@ -264,10 +245,6 @@ const KEY_TO_JAPANESE_MAP = {
 
  */
 
-/**
- * AppSheet Webhook エントリーポイント
- * @param {GoogleAppsScript.Events.DoPost} e
- */
 /**
  * AppSheet Webhook エントリーポイント
  * @param {GoogleAppsScript.Events.DoPost} e
@@ -291,8 +268,6 @@ function processRequest(params) {
   const logCollector = [];
 
   let context = {}; // エラー時にも参照できるよう、スコープの先頭で定義
-
-
 
   const log = (message, details = null) => {
 
@@ -320,21 +295,15 @@ function processRequest(params) {
 
   };
 
-
-
   try {
 
     log("処理開始: WebhookからのPOSTリクエストを受信");
-
-
 
     const rawParams = params;
 
     const parsedData = parseCompositeOcrText(rawParams.ocrText);
 
     log("複合テキストの分解結果:", parsedData);
-
-
 
     context = {
 
@@ -358,13 +327,9 @@ function processRequest(params) {
 
     };
 
-    
-
     documentId = context.documentId || "N/A";
 
     if (documentId === "N/A") throw new Error("必須パラメータ documentId が分解後も不明です。");
-
-
 
     const lock = LockService.getScriptLock();
 
@@ -375,8 +340,6 @@ function processRequest(params) {
       const properties = PropertiesService.getScriptProperties();
 
       const status = properties.getProperty(documentId);
-
-
 
       if (status === 'completed' || status === 'processing') {
 
@@ -390,15 +353,11 @@ function processRequest(params) {
 
       log(`新規リクエスト受付: ID ${documentId} を処理中に設定しました。`, context);
 
-
-
     } finally {
 
       lock.releaseLock();
 
     }
-
-    
 
     const { documentType, ocrText, staffId, clientId } = context;
 
@@ -407,8 +366,6 @@ function processRequest(params) {
       throw new Error("必須パラメータが分解後も不足しています。（ocrText, staffId, clientId, documentType）");
 
     }
-
-
 
     let newRecordStatus = "登録済";
 
@@ -430,19 +387,13 @@ function processRequest(params) {
 
         .create();
 
-      
-
       // トリガーに渡すために、contextオブジェクトを一時的に保存
 
       PropertiesService.getScriptProperties().setProperty(`CONTEXT_${documentId}`, JSON.stringify(context));
 
-      
-
       // AppSheetへの応答を返すため、ここでは処理を終了
 
       return ContentService.createTextOutput("提供票の処理をバックグラウンドで開始しました。");
-
-
 
     } else if (documentType === '医療保険証') {
 
@@ -534,8 +485,6 @@ function processRequest(params) {
 
     }
 
-    
-
     if (!processSkipped) {
 
       log("メイン処理完了。ドキュメントステータスを更新します。");
@@ -544,27 +493,19 @@ function processRequest(params) {
 
     }
 
-    
-
     PropertiesService.getScriptProperties().setProperty(documentId, 'completed');
 
     log(`ステータス更新: ID ${documentId} を 'completed' に設定しました。`);
 
-
-
     // ★★★ 修正: context.documentTypeを渡す ★★★
 
     sendProcessLogEmail(documentId, context.documentType, "成功", null, logCollector);
-
-
 
   } catch (error) {
 
     const errorMessage = error.stack || error.toString();
 
     log(`[!!! エラー発生 !!!] ${errorMessage}`);
-
-    
 
     if (documentId !== "N/A") {
 
@@ -588,24 +529,15 @@ function processRequest(params) {
 
     }
 
-    
-
     // ★★★ 修正: context.documentTypeを渡す (contextが存在しない場合も考慮) ★★★
 
     sendProcessLogEmail(documentId, (context ? context.documentType : '種別不明'), "失敗", errorMessage, logCollector);
 
   }
 
-  
-
   return ContentService.createTextOutput("Process finished.");
 }
 
-
-/**
- * テスト用関数
- * GASエディタから直接実行してテスト可能
- */
 /**
  * テスト用関数
  * GASエディタから直接実行してテスト可能
@@ -621,8 +553,6 @@ function testProcessRequest() {
 }
 
 
-
-
 /**
 
  * ===================================================================================
@@ -634,20 +564,15 @@ function testProcessRequest() {
  */
 
 
-
 // --- A: 医療保険証 ---
 
 function extractMedicalInsuranceInfo(ocrText, birthDate, log) {
 
   log("医療保険証: Gemini APIによる情報抽出を開始 (コード変換ロジック追加)");
 
-  
-
   // ★★★ 追加: 年齢計算ロジック ★★★
 
   const age = birthDate ? new Date(new Date() - new Date(birthDate)).getFullYear() - 1970 : null;
-
-
 
   const prompt = `
 
@@ -657,13 +582,9 @@ function extractMedicalInsuranceInfo(ocrText, birthDate, log) {
 
 以下のOCRテキストから、指定された項目を抽出し、厳密なJSON形式で出力してください。
 
-
-
 # 前提情報
 
 - 利用者の年齢: ${age || '不明'} 歳
-
-
 
 # 抽出・変換ルール
 
@@ -672,8 +593,6 @@ function extractMedicalInsuranceInfo(ocrText, birthDate, log) {
 - **保険分類 (insurance_category)**: 社会保険なら "1"、国民健康保険なら "2" を返してください。
 
 - **給付割合 (benefit_rate)**: 自己負担割合（一部負担金割合）が「3割」であれば給付割合は「7割」となり 70、「9割」であれば 90 のように、**整数**で返してください。
-
-
 
 - **所得区分 (income_category)**: 記載の区分を読み取り、以下の対応表に基づいて**2桁のコード**を返してください。
 
@@ -693,8 +612,6 @@ function extractMedicalInsuranceInfo(ocrText, birthDate, log) {
 
   - "一般Ⅰ" → "42"
 
-
-
 // ★★★ ここからが新しい変換ルール ★★★
 
 - **一部負担金区分 (copayment_category) - 別表７**:
@@ -707,8 +624,6 @@ function extractMedicalInsuranceInfo(ocrText, birthDate, log) {
 
   - 上記以外で70歳未満の場合はnullを返してください。
 
-
-
 - **職務上の事由 (is_work_related_reason) - 別表８**:
 
   - 職務上の事由に関する記載を読み取り、以下の対応表に基づいて**コード**を返してください。
@@ -718,8 +633,6 @@ function extractMedicalInsuranceInfo(ocrText, birthDate, log) {
   - 「下３」または「下船後３月以内」と読める記載がある場合 → \`"2"\`
 
   - 「通災」または「通勤災害」と読める記載がある場合 → \`"3"\`
-
-
 
 - **減免区分 (reduction_category) - 別表９**:
 
@@ -733,19 +646,13 @@ function extractMedicalInsuranceInfo(ocrText, birthDate, log) {
 
 // ★★★ 新しい変換ルールここまで ★★★
 
-
-
 - 該当する情報が見つからない項目の値は \`null\` にしてください。
 
 - **禁止事項**: JSON以外の説明文や\`\`\`jsonマーカーは絶対に含めないでください。
 
-
-
 # OCRテキスト
 
 ${ocrText}
-
-
 
 # 出力形式 (このJSONフォーマットを厳守してください)
 
@@ -799,8 +706,6 @@ function createMedicalInsuranceRecord(context, extractedInfo, log) {
 
   log("医療保険証: AppSheetへのレコード作成を開始 (v8 - 本人区分デフォルト値設定)");
 
-
-
   const safeParseInt = (value) => {
 
     if (value === null || value === undefined) return null;
@@ -811,17 +716,11 @@ function createMedicalInsuranceRecord(context, extractedInfo, log) {
 
   };
 
-  
-
   const isWorkRelated = typeof extractedInfo.is_work_related_reason === 'string' && extractedInfo.is_work_related_reason.length > 0;
-
-
 
   const todayJSTStr = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd');
 
   const todayJST = new Date(todayJSTStr);
-
-
 
   let isActive = null;
 
@@ -832,8 +731,6 @@ function createMedicalInsuranceRecord(context, extractedInfo, log) {
     const endDateStr = extractedInfo.effective_end_date;
 
     const isEndDateValid = (!endDateStr || new Date(endDateStr) >= todayJST);
-
-    
 
     if (startDate <= todayJST && isEndDateValid) {
 
@@ -847,11 +744,7 @@ function createMedicalInsuranceRecord(context, extractedInfo, log) {
 
   }
 
-
-
   // --- 給付割合・所得区分・本人区分の判定ロジック ---
-
-
 
   // 1. 給付割合のデフォルト値を設定
 
@@ -865,8 +758,6 @@ function createMedicalInsuranceRecord(context, extractedInfo, log) {
 
   }
 
-
-
   // 2. AIの抽出結果をデフォルト値として変数を初期化
 
   let finalIncomeCategory = extractedInfo.income_category;
@@ -875,23 +766,17 @@ function createMedicalInsuranceRecord(context, extractedInfo, log) {
 
   const insurerNumber = extractedInfo.insurer_number;
 
-
-
   // 3. 後期高齢者医療の場合、優先的に判定を実行
 
   if (insurerNumber && insurerNumber.startsWith('39')) {
 
     log("後期高齢者医療の保険証として検出。優先判定ロジックを適用します。");
 
-
-
     // ★★★ 本人・家族区分を'本人'に設定 ★★★
 
     finalRelationship = '本人';
 
     log(`-> 本人・家族区分を'${finalRelationship}'に設定しました。`);
-
-
 
     // 所得区分の判定
 
@@ -911,13 +796,9 @@ function createMedicalInsuranceRecord(context, extractedInfo, log) {
 
   }
 
-
-
   const nowJST = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd HH:mm:ss');
 
   const newId = `MEDI-${Utilities.getUuid().substring(0, 8)}`;
-
-  
 
   let effectiveEndDate = extractedInfo.effective_end_date;
 
@@ -926,8 +807,6 @@ function createMedicalInsuranceRecord(context, extractedInfo, log) {
     effectiveEndDate = '2999/12/31';
 
   }
-
-
 
   const rowData = {
 
@@ -989,18 +868,13 @@ function createMedicalInsuranceRecord(context, extractedInfo, log) {
 
   };
 
-  
-
   const payload = { Action: "Add", Properties: { "Locale": "ja-JP" }, Rows: [rowData] };
 
   callAppSheetApi(MEDICAL_INSURANCE_TABLE_NAME, payload, log);
 
-
-
   return newId;
 
 }
-
 
 
 // --- B: 介護保険証 ---
@@ -1016,8 +890,6 @@ function extractLtciInsuranceInfo(ocrText, log) {
 あなたは介護保険被保険者証を解析するエキスパートです。
 
 以下のOCRテキストから、指定された項目を抽出し、厳密なJSON形式で出力してください。
-
-
 
 # 抽出ルール
 
@@ -1049,13 +921,9 @@ function extractLtciInsuranceInfo(ocrText, log) {
 
 - JSON以外の説明文や\`\`\`jsonマーカーは不要です。
 
-
-
 # OCRテキスト
 
 ${ocrText}
-
-
 
 # 出力形式 (このJSONフォーマットを厳守してください)
 
@@ -1091,8 +959,6 @@ function createLtciInsuranceRecord(context, extractedInfo, log) {
 
   const newId = `LTCI-${Utilities.getUuid().substring(0, 8)}`;
 
-
-
   let certEndDate = extractedInfo.cert_end_date;
 
   if (extractedInfo.cert_start_date && !certEndDate) {
@@ -1100,8 +966,6 @@ function createLtciInsuranceRecord(context, extractedInfo, log) {
     certEndDate = '2999/12/31';
 
   }
-
-
 
   const rowData = {
 
@@ -1139,12 +1003,9 @@ function createLtciInsuranceRecord(context, extractedInfo, log) {
 
   callAppSheetApi(LTCI_INSURANCE_TABLE_NAME, payload, log);
 
-
-
   return newId;
 
 }
-
 
 
 // --- C: 公費受給者証 ---
@@ -1157,8 +1018,6 @@ function extractSubsidyInfo(ocrText, birthDate, log) {
 
   const age = birthDate ? new Date(new Date() - new Date(birthDate)).getFullYear() - 1970 : null;
 
-
-
   const prompt = `
 
 # あなたの役割
@@ -1167,13 +1026,9 @@ function extractSubsidyInfo(ocrText, birthDate, log) {
 
 以下のOCRテキストから、指定された項目を抽出し、厳密なJSON形式で出力してください。
 
-
-
 # 前提情報
 
 - 利用者の年齢: ${age || '不明'} 歳
-
-
 
 # 抽出ルール
 
@@ -1209,8 +1064,6 @@ function extractSubsidyInfo(ocrText, birthDate, log) {
 
 - 該当情報がない場合は null を返してください。
 
-
-
 // ★★★ ここからが新しい指示 ★★★
 
 - **「無料」の特別ルール**:
@@ -1223,23 +1076,15 @@ function extractSubsidyInfo(ocrText, birthDate, log) {
 
 // ★★★ 新しい指示ここまで ★★★
 
-
-
 - **禁止事項**: JSON以外の説明文や\`\`\`jsonマーカーは絶対に含めないでください。
-
-
 
 # 公費マスター (コード: 正式名称)
 
 ${subsidyMasterText}
 
-
-
 # OCRテキスト
 
 ${ocrText}
-
-
 
 # 出力形式 (このJSONフォーマットを厳守してください)
 
@@ -1283,8 +1128,6 @@ function createSubsidyRecord(context, extractedInfo, log) {
 
   log("公費: AppSheetへのレコード作成を開始 (新仕様)");
 
-  
-
   const parseIntStrict = (value) => {
 
     if (value === null || value === undefined || value === '') return null;
@@ -1297,13 +1140,9 @@ function createSubsidyRecord(context, extractedInfo, log) {
 
   };
 
-
-
   const todayJSTStr = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd');
 
   const todayJST = new Date(todayJSTStr);
-
-
 
   let isActive = null;
 
@@ -1327,13 +1166,9 @@ function createSubsidyRecord(context, extractedInfo, log) {
 
   }
 
-
-
   const nowJST = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd HH:mm:ss');
 
   const newId = `CLPB-${Utilities.getUuid().substring(0, 8)}`;
-
-
 
   let effectiveEndDate = extractedInfo.effective_end_date;
 
@@ -1342,8 +1177,6 @@ function createSubsidyRecord(context, extractedInfo, log) {
     effectiveEndDate = '2999/12/31';
 
   }
-
-
 
   const rowData = {
 
@@ -1365,13 +1198,9 @@ function createSubsidyRecord(context, extractedInfo, log) {
 
     "updated_by": context.staffId,
 
-    
-
     // --- スクリプトによる判定項目 ---
 
     "is_currently_active": isActive,
-
-    
 
     // --- AIによる抽出項目 ---
 
@@ -1401,8 +1230,6 @@ function createSubsidyRecord(context, extractedInfo, log) {
 
     "effective_end_date": effectiveEndDate,
 
-    
-
     // --- 手動入力項目 (今回はnull) ---
 
     "priority_rank": null,
@@ -1411,18 +1238,13 @@ function createSubsidyRecord(context, extractedInfo, log) {
 
   };
 
-  
-
   const payload = { Action: "Add", Properties: { "Locale": "ja-JP" }, Rows: [rowData] };
 
   callAppSheetApi(PUBLIC_SUBSIDY_TABLE_NAME, payload, log);
 
-  
-
   return newId;
 
 }
-
 
 
 // --- D: 口座振替依頼書 ---
@@ -1436,8 +1258,6 @@ function extractBankAccountInfo(ocrText, log) {
 # あなたの役割
 
 あなたは、金融機関の帳票を読み取る専門のOCR AIです。提供された「預金口座振替依頼書」のOCRテキストから、データベース登録に必要な情報を極めて正確に抽出してください。
-
-
 
 # 思考プロセス
 
@@ -1477,13 +1297,9 @@ function extractBankAccountInfo(ocrText, log) {
 
 5.  全ての抽出が完了したら、最終的な結果を指示されたJSON形式で出力します。
 
-
-
 # 参照情報 (OCRテキスト)
 
 ${ocrText}
-
-
 
 # 抽出ルールと出力形式
 
@@ -1494,8 +1310,6 @@ ${ocrText}
 - 該当する情報がない場合や、読み取れない場合は、値に\`null\`を設定してください。
 
 - JSON以外の説明文は一切含めないでください。
-
-
 
 {
 
@@ -1537,15 +1351,11 @@ function createBankAccountRecord(context, extractedInfo, log) {
 
   const toHalfWidthKana = (str) => str ? String(str).replace(/[\u30A1-\u30F6]/g, m => String.fromCharCode(m.charCodeAt(0) - 0x60)) : null;
 
-  
-
   extractedInfo.bank_name_kana = toHalfWidthKana(extractedInfo.bank_name_kana);
 
   extractedInfo.account_holder_name_kana = toHalfWidthKana(extractedInfo.account_holder_name_kana);
 
   extractedInfo.biller_name_kana = toHalfWidthKana(extractedInfo.biller_name_kana);
-
-
 
   let accountNumber = extractedInfo.account_number ? String(extractedInfo.account_number).trim() : null;
 
@@ -1575,13 +1385,9 @@ function createBankAccountRecord(context, extractedInfo, log) {
 
   }
 
-
-
   const status = "編集中";
 
   const newId = `BACC-${Utilities.getUuid().substring(0, 8)}`;
-
-  
 
   const rowData = {
 
@@ -1601,18 +1407,13 @@ function createBankAccountRecord(context, extractedInfo, log) {
 
   };
 
-
-
   const payload = { Action: "Add", Properties: { "Locale": "ja-JP" }, Rows: [rowData] };
 
   callAppSheetApi(BANK_ACCOUNTS_TABLE_NAME, payload, log);
 
-  
-
   return newId;
 
 }
-
 
 
 // --- E: 訪問看護指示書 ---
@@ -1626,8 +1427,6 @@ function extractInstructionInfo(ocrText, log) {
 あなたは医療文書を解析するエキスパートです。
 
 以下の訪問看護指示書のテキストから、指定された項目を抽出し、厳密なJSON形式で出力してください。
-
-
 
 # 指示ルール
 
@@ -1660,8 +1459,6 @@ function extractInstructionInfo(ocrText, log) {
 - 傷病一覧 (diseaseNameList): 指示書に記載されている「主たる傷病名」を、記載されている順番を厳守してリスト化してください。番号や「(コード: ...」のような付随情報は含めず、傷病名そのものだけを抽出してください。
 
 - 傷病名コード (diseaseMedicalCode1, 2, 3): \`diseaseNameList\` の各傷病名に対応するコードを、指示書テキスト内から抽出して返してください。テキスト内にコードの記載がない傷病名については、nullを返してください。3つに満たない場合も同様にnullを返してください。
-
-
 
 # 疾病等マスター
 
@@ -1703,13 +1500,9 @@ function extractInstructionInfo(ocrText, log) {
 
 - "019": 頸髄損傷
 
-
-
 # OCRテキスト
 
 ${ocrText}
-
-
 
 # 出力形式 (このJSONフォーマットを厳守してください)
 
@@ -1757,8 +1550,6 @@ function createInstructionRecord(context, extractedInfo, log) {
 
   const newId = `ODR-${Utilities.getUuid().substring(0, 8)}`;
 
-
-
   let instructionEndDate = extractedInfo.instructionEndDate;
 
   if (extractedInfo.instructionStartDate && !instructionEndDate) {
@@ -1774,8 +1565,6 @@ function createInstructionRecord(context, extractedInfo, log) {
     dripEndDate = '2999/12/31';
 
   }
-
-
 
   const rowData = {
 
@@ -1807,8 +1596,6 @@ function createInstructionRecord(context, extractedInfo, log) {
 
   };
 
-
-
   const instructionType = extractedInfo.instructionType;
 
   if (instructionType !== '02' && instructionType !== '04') {
@@ -1831,18 +1618,13 @@ function createInstructionRecord(context, extractedInfo, log) {
 
   }
 
-
-
   const payload = { Action: "Add", Properties: { "Locale": "ja-JP" }, Rows: [rowData] };
 
   callAppSheetApi(INSTRUCTIONS_TABLE_NAME, payload, log);
 
-
-
   return newId;
 
 }
-
 
 
 // --- F: 介護サービス提供票 ---
@@ -1859,8 +1641,6 @@ function extractFormData(ocrText, log) {
 
 あなたの仕事は、以下のOCRテキストから、「月間サービス計画及び実績の記録」と「サービス提供票別表」の情報を正確に関連付け、指定された項目を厳密なJSON形式で出力することです。
 
-
-
 # 思考プロセス
 
 1.  まず、「フラクタル訪問看護」に関連するサービスを特定します。
@@ -1876,8 +1656,6 @@ function extractFormData(ocrText, log) {
 6.  もし「実績」行の日付部分に一つも数字がない場合は、代わりに「予定」行に注目し、そこに記載されている日付を\`service_dates\`のリストとして抽出してください。
 
 7.  最後に、ヘッダー情報と、全てのサービス明細情報を結合してJSONを生成します。
-
-
 
 # 抽出ルール
 
@@ -1901,13 +1679,9 @@ function extractFormData(ocrText, log) {
 
 - JSON以外の説明文は一切含めないでください。
 
-
-
 # OCRテキスト
 
 ${ocrText}
-
-
 
 # 出力形式 (このJSONフォーマットを厳守してください)
 
@@ -1955,8 +1729,6 @@ function createNewServiceFormAndDetails(context, extractedData, serviceMasterMap
 
   const { formHeader, formDetails } = extractedData;
 
-
-
   if (!formHeader || !formDetails) {
 
     throw new Error("AIからの応答が不正、または必要なデータ(formHeader, formDetails)が含まれていませんでした。");
@@ -1969,13 +1741,9 @@ function createNewServiceFormAndDetails(context, extractedData, serviceMasterMap
 
   }
 
-  
-
   // ★★★ 修正: AppSheet API検索からスプレッドシート検索に変更 ★★★
 
   const existingForms = getServiceFormsFromSheet(clientId, formHeader.applicable_month, log);
-
-
 
   let targetFormId = null;
 
@@ -1987,8 +1755,6 @@ function createNewServiceFormAndDetails(context, extractedData, serviceMasterMap
 
       : null;
 
-
-
   if (existingForms.length > 0) {
 
     if (!formattedCreationDate) {
@@ -1996,8 +1762,6 @@ function createNewServiceFormAndDetails(context, extractedData, serviceMasterMap
       throw new Error(`既存の提供票が見つかりましたが、比較すべき作成日(creation_date)をAIが抽出できませんでした。処理を中断します。`);
 
     }
-
-
 
     const existingForm = existingForms[0];
 
@@ -2009,8 +1773,6 @@ function createNewServiceFormAndDetails(context, extractedData, serviceMasterMap
 
     existingCreationDate.setHours(0, 0, 0, 0);
 
-    
-
     if (newCreationDate >= existingCreationDate) {
 
       targetFormId = existingForm.form_id;
@@ -2019,13 +1781,9 @@ function createNewServiceFormAndDetails(context, extractedData, serviceMasterMap
 
       log(returnMessage);
 
-      
-
       const detailsToDeletePayload = { Action: "Delete", Properties: {}, Selector: `FILTER(Service_Form_Details, [form_id] = "${targetFormId}")` };
 
       callAppSheetApi(DETAILS_TABLE_NAME, detailsToDeletePayload, log);
-
-      
 
       const formUpdateRow = { "form_id": targetFormId, "creation_date": formattedCreationDate, "status": "編集中", "updated_by": staffId };
 
@@ -2073,15 +1831,11 @@ function createNewServiceFormAndDetails(context, extractedData, serviceMasterMap
 
   }
 
-  
-
   const newDetailsToCreate = [];
 
   const year = formHeader.applicable_month.substring(0, 4);
 
   const month = formHeader.applicable_month.substring(4, 6);
-
-
 
   formDetails.forEach(detailGroup => {
 
@@ -2097,11 +1851,7 @@ function createNewServiceFormAndDetails(context, extractedData, serviceMasterMap
 
     }
 
-
-
     let itemCategory = masterInfo.name.includes("加算") ? "加算" : masterInfo.name.includes("減算") ? "減算" : "サービス";
-
-    
 
     if (detailGroup.service_dates && detailGroup.service_dates.length > 0) {
 
@@ -2159,8 +1909,6 @@ function createNewServiceFormAndDetails(context, extractedData, serviceMasterMap
 
   });
 
-
-
   if (newDetailsToCreate.length > 0) {
 
     const detailRows = newDetailsToCreate.map(d => ({
@@ -2181,12 +1929,9 @@ function createNewServiceFormAndDetails(context, extractedData, serviceMasterMap
 
   }
 
-  
-
   return { formId: targetFormId, extractedData: extractedData, message: returnMessage };
 
 }
-
 
 
 // --- G: 介護保険負担割合証 ---
@@ -2203,8 +1948,6 @@ function extractCopayInfo(ocrText, log) {
 
 以下のOCRテキストから、指定された項目を抽出し、厳密なJSON形式で出力してください。
 
-
-
 # 抽出ルール
 
 - 日付はすべて西暦の「yyyy/mm/dd」形式に変換してください。和暦は正しく西暦に変換してください。
@@ -2217,13 +1960,9 @@ function extractCopayInfo(ocrText, log) {
 
 - JSON以外の説明文や\`\`\`jsonマーカーは不要です。
 
-
-
 # OCRテキスト
 
 ${ocrText}
-
-
 
 # 出力形式 (このJSONフォーマットを厳守してください)
 
@@ -2253,8 +1992,6 @@ function createCopayCertificateRecord(context, extractedInfo, log) {
 
   const newId = `COPAY-${Utilities.getUuid().substring(0, 8)}`;
 
-
-
   let effectiveEndDate = extractedInfo.effective_end_date;
 
   if (extractedInfo.effective_start_date && !effectiveEndDate) {
@@ -2262,8 +1999,6 @@ function createCopayCertificateRecord(context, extractedInfo, log) {
     effectiveEndDate = '2999/12/31';
 
   }
-
-
 
   const rowData = {
 
@@ -2295,14 +2030,9 @@ function createCopayCertificateRecord(context, extractedInfo, log) {
 
   callAppSheetApi(COPAYMENT_TABLE_NAME, payload, log);
 
-  
-
   return newId;
 
 }
-
-
-
 
 
 /**
@@ -2314,7 +2044,6 @@ function createCopayCertificateRecord(context, extractedInfo, log) {
  * ===================================================================================
 
  */
-
 
 
 /**
@@ -2345,11 +2074,7 @@ function parseCompositeOcrText(compositeText) {
 
   };
 
-
-
   if (!compositeText) return parsedData;
-
-
 
   // ★★★ ここが修正点 ★★★
 
@@ -2358,8 +2083,6 @@ function parseCompositeOcrText(compositeText) {
   const lines = compositeText.replace(/\\n/g, '\n').split('\n');
 
   const ocrStartIndex = lines.findIndex(line => line.startsWith('OCRテキスト:'));
-
-
 
   // AIに渡す純粋なOCRテキストを抽出
 
@@ -2375,8 +2098,6 @@ function parseCompositeOcrText(compositeText) {
 
   }
 
-  
-
   // メタデータを抽出
 
   const metadataLines = (ocrStartIndex !== -1) ? lines.slice(0, ocrStartIndex) : lines;
@@ -2387,13 +2108,9 @@ function parseCompositeOcrText(compositeText) {
 
     if (parts.length < 2) return;
 
-    
-
     const key = parts[0].trim();
 
     const value = parts.slice(1).join(':').trim();
-
-
 
     switch (key) {
 
@@ -2431,13 +2148,9 @@ function parseCompositeOcrText(compositeText) {
 
   });
 
-
-
   return parsedData;
 
 }
-
-
 
 // --- Gemini API 呼び出し共通関数 ---
 
@@ -2453,8 +2166,6 @@ function callGeminiApi(prompt, log, model = 'gemini-2.5-pro') {
 
   const options = { method: 'post', contentType: 'application/json', payload: JSON.stringify(requestBody), muteHttpExceptions: true };
 
-
-
   const response = UrlFetchApp.fetch(url, options);
 
   const responseText = response.getContentText();
@@ -2463,11 +2174,7 @@ function callGeminiApi(prompt, log, model = 'gemini-2.5-pro') {
 
   log(`Gemini API 応答: ${responseCode}`);
 
-  
-
   if (responseCode >= 400) throw new Error(`Gemini API Error (${responseCode}): ${responseText}`);
-
-  
 
   const jsonResponse = JSON.parse(responseText);
 
@@ -2476,8 +2183,6 @@ function callGeminiApi(prompt, log, model = 'gemini-2.5-pro') {
     throw new Error("AIからの応答に有効な候補が含まれていません: " + responseText);
 
   }
-
-
 
   const content = jsonResponse.candidates[0].content.parts[0].text;
 
@@ -2491,12 +2196,9 @@ function callGeminiApi(prompt, log, model = 'gemini-2.5-pro') {
 
   }
 
-  
-
   return JSON.parse(content.substring(startIndex, endIndex + 1));
 
 }
-
 
 
 // --- AppSheet API 呼び出し共通関数 ---
@@ -2529,8 +2231,6 @@ function callAppSheetApi(tableName, payload, log) {
 
   log(`AppSheet API (${tableName}) 応答: ${responseCode}`);
 
-
-
   if (responseCode >= 400) {
 
     log(`AppSheet API Error Body: ${responseText}`);
@@ -2542,7 +2242,6 @@ function callAppSheetApi(tableName, payload, log) {
   return responseText;
 
 }
-
 
 
 // --- ドキュメントステータス更新関数 ---
@@ -2562,7 +2261,6 @@ function updateDocumentStatus(documentId, status, errorMessage, log) {
   callAppSheetApi(DOCUMENTS_TABLE_NAME, payload, log);
 
 }
-
 
 
 /**
@@ -2605,8 +2303,6 @@ function sendProcessLogEmail(documentId, documentTypeJP, status, errorInfo, logC
 
     body += logCollector.join('\n');
 
-    
-
     // Email removed - using execution log instead
 
     console.log(`処理ログメールを ${ERROR_NOTIFICATION_EMAIL} へ送信しました。`);
@@ -2618,7 +2314,6 @@ function sendProcessLogEmail(documentId, documentTypeJP, status, errorInfo, logC
   }
 
 }
-
 
 
 // --- 公費マスター取得 ---
@@ -2640,7 +2335,6 @@ function getPublicSubsidyMasterAsText(log) {
 }
 
 
-
 // --- サービスマスター取得 (キャッシュ付き) ---
 
 function getServiceMasterAsMap(log) {
@@ -2648,8 +2342,6 @@ function getServiceMasterAsMap(log) {
   const cache = CacheService.getScriptCache();
 
   const CACHE_KEY = 'SERVICE_MASTER_MAP_CACHE';
-
-  
 
   const cached = cache.get(CACHE_KEY);
 
@@ -2661,8 +2353,6 @@ function getServiceMasterAsMap(log) {
 
   }
 
-
-
   log("サービスマスター: スプレッドシートから読み込み");
 
   const sheet = SpreadsheetApp.openById(SERVICE_MASTER_SS_ID).getSheetByName(SERVICE_MASTER_SHEET_NAME);
@@ -2670,8 +2360,6 @@ function getServiceMasterAsMap(log) {
   const data = sheet.getDataRange().getValues();
 
   const headers = data.shift();
-
-  
 
   const typeIndex = headers.indexOf('種類');
 
@@ -2681,15 +2369,11 @@ function getServiceMasterAsMap(log) {
 
   const unitIndex = headers.indexOf('単位');
 
-
-
   if ([typeIndex, itemIndex, nameIndex, unitIndex].includes(-1)) {
 
     throw new Error("マスタースプレッドシートに必要な列（種類, 項目, サービス内容略称, 単位）が見つかりません。");
 
   }
-
-
 
   const map = new Map();
 
@@ -2705,23 +2389,17 @@ function getServiceMasterAsMap(log) {
 
   }
 
-  
-
   cache.put(CACHE_KEY, JSON.stringify(Array.from(map.entries())), 21600); // 6時間キャッシュ
 
   return map;
 
 }
 
-
-
 // --- 都道府県コード取得 ---
 
 function getPrefectureCode(address) {
 
   if (!address || typeof address !== 'string') return null;
-
-
 
   const prefMap = {
 
@@ -2747,8 +2425,6 @@ function getPrefectureCode(address) {
 
   };
 
-
-
   for (const pref in prefMap) {
 
     if (address.startsWith(pref)) {
@@ -2762,8 +2438,6 @@ function getPrefectureCode(address) {
   return null;
 
 }
-
-
 
 /**
 
@@ -2786,7 +2460,6 @@ function getEndDateOrDefault(dateString) {
   return dateString;
 
 }
-
 
 
 /**
@@ -2817,8 +2490,6 @@ function sendCompletionNotificationEmail(context, documentTypeJP, extractedData,
 
   }
 
-
-
   const { clientId, staffId, driveFileId, clientName, staffName } = context;
 
   const displayClientName = clientName || clientId;
@@ -2827,8 +2498,6 @@ function sendCompletionNotificationEmail(context, documentTypeJP, extractedData,
 
   const subject = `【要確認】${documentTypeJP}の自動登録が完了しました (${displayClientName} 様)`;
 
-
-
   const encodedAppName = encodeURIComponent(APP_NAME);
 
   const encodedViewName = encodeURIComponent(viewName);
@@ -2836,8 +2505,6 @@ function sendCompletionNotificationEmail(context, documentTypeJP, extractedData,
   const encodedRowId = encodeURIComponent(newRecordId);
 
   const appSheetLink = `https://www.appsheet.com/start/${APP_ID}?platform=desktop#appName=${encodedAppName}&view=${encodedViewName}&row=${encodedRowId}`;
-
-  
 
   // ★★★ GoogleドライブへのリンクとボタンHTMLを生成 ★★★
 
@@ -2848,10 +2515,6 @@ function sendCompletionNotificationEmail(context, documentTypeJP, extractedData,
     ? `<a href="${driveFileLink}" target="_blank" style="background-color: #008CBA; color: white; padding: 12px 25px; text-align: center; text-decoration: none; display: inline-block; border-radius: 5px; font-size: 16px; margin-left: 10px;">原本ファイルを開く</a>`
 
     : '';
-
-
-
-  
 
   // ★★★ 値をメール表示用に整形するヘルパー関数 ★★★
 
@@ -2869,19 +2532,13 @@ function sendCompletionNotificationEmail(context, documentTypeJP, extractedData,
 
   };
 
-  
-
   let dataContentHtml = '';
-
-
 
   // ★★★ 提供票の場合の特別なHTMLを生成 ★★★
 
   if (documentTypeJP === '提供票') {
 
     const { formHeader, formDetails } = extractedData;
-
-    
 
     // フォームヘッダー情報
 
@@ -2898,8 +2555,6 @@ function sendCompletionNotificationEmail(context, documentTypeJP, extractedData,
     }
 
     dataContentHtml += '</table>';
-
-
 
     // サービス明細情報
 
@@ -2925,8 +2580,6 @@ function sendCompletionNotificationEmail(context, documentTypeJP, extractedData,
 
     dataContentHtml += '</table>';
 
-
-
   } else {
 
     // 提供票以外の通常の処理
@@ -2949,8 +2602,6 @@ function sendCompletionNotificationEmail(context, documentTypeJP, extractedData,
 
         const formattedValue = formatValueForEmail(value);
 
-
-
         dataContentHtml += `
 
           <tr style="border-bottom: 1px solid #ddd;">
@@ -2969,8 +2620,6 @@ function sendCompletionNotificationEmail(context, documentTypeJP, extractedData,
 
   }
 
-
-
   const htmlBody = `
 
     <html lang="ja">
@@ -2982,8 +2631,6 @@ function sendCompletionNotificationEmail(context, documentTypeJP, extractedData,
         <h2 style="color: #333; border-bottom: 2px solid #4CAF50; padding-bottom: 10px;">書類の自動登録が完了しました</h2>
 
         <p>${displayClientName} 様の${documentTypeJP}の自動登録処理が完了しましたので、内容のご確認をお願いいたします。</p>
-
-        
 
         <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin-top: 20px;">
 
@@ -2997,8 +2644,6 @@ function sendCompletionNotificationEmail(context, documentTypeJP, extractedData,
 
         </div>
 
-
-
         <div style="margin-top: 20px;">
 
           <h3 style="color: #555;">登録された主な内容</h3>
@@ -3007,8 +2652,6 @@ function sendCompletionNotificationEmail(context, documentTypeJP, extractedData,
 
         </div>
 
-
-
         <div style="margin-top: 30px; text-align: center;">
 
           <a href="${appSheetLink}" target="_blank" style="background-color: #4CAF50; color: white; padding: 12px 25px; text-align: center; text-decoration: none; display: inline-block; border-radius: 5px; font-size: 16px;">AppSheetで内容を確認する</a>
@@ -3016,8 +2659,6 @@ function sendCompletionNotificationEmail(context, documentTypeJP, extractedData,
           ${driveLinkButtonHtml}
 
         </div>
-
-        
 
         <p style="margin-top: 30px; font-size: 12px; color: #888;">このメールはシステムによって自動的に送信されています。</p>
 
@@ -3028,8 +2669,6 @@ function sendCompletionNotificationEmail(context, documentTypeJP, extractedData,
     </html>
 
   `;
-
-
 
   // ファイル添付ロジックはそのまま維持します
 
@@ -3053,8 +2692,6 @@ function sendCompletionNotificationEmail(context, documentTypeJP, extractedData,
 
   }
 
-  
-
   try {
 
     // Email removed - using execution log instead
@@ -3068,7 +2705,6 @@ function sendCompletionNotificationEmail(context, documentTypeJP, extractedData,
   }
 
 }
-
 
 
 /**
@@ -3099,8 +2735,6 @@ function processProvisionForm(event) {
 
   }
 
-
-
   // 保存されたcontextを検索して処理対象を決定する
 
   const properties = PropertiesService.getScriptProperties();
@@ -3108,8 +2742,6 @@ function processProvisionForm(event) {
   const allKeys = properties.getKeys();
 
   const contextKey = allKeys.find(key => key.startsWith('CONTEXT_'));
-
-
 
   if (!contextKey) {
 
@@ -3119,13 +2751,9 @@ function processProvisionForm(event) {
 
   }
 
-
-
   const context = JSON.parse(properties.getProperty(contextKey));
 
   properties.deleteProperty(contextKey); // 処理後に削除
-
-
 
   const { documentId } = context;
 
@@ -3157,13 +2785,9 @@ function processProvisionForm(event) {
 
   };
 
-
-
   try {
 
     log(`バックグラウンド処理開始: 提供票 (ID: ${documentId})`);
-
-
 
     // doPostから移動してきた、提供票のビジネスロジック
 
@@ -3172,8 +2796,6 @@ function processProvisionForm(event) {
     const extractedFormData = extractFormData(context.ocrText, log);
 
     const formResult = createNewServiceFormAndDetails(context, extractedFormData, serviceMasterMap, log);
-
-
 
     if (formResult.message.includes("スキップ")) {
 
@@ -3187,15 +2809,11 @@ function processProvisionForm(event) {
 
     }
 
-
-
     properties.setProperty(documentId, 'completed');
 
     log(`ステータス更新: ID ${documentId} を 'completed' に設定しました。`);
 
     sendProcessLogEmail(documentId, context.documentType, "成功", null, logCollector);
-
-
 
   } catch (error) {
 
@@ -3212,8 +2830,6 @@ function processProvisionForm(event) {
   }
 
 }
-
-
 
 /**
 
@@ -3241,23 +2857,17 @@ function getServiceFormsFromSheet(clientId, applicableMonth, log) {
 
     const headers = data.shift(); // ヘッダー行を取得し、データ配列からは削除
 
-
-
     // 列名の完全一致で列番号を動的に検索
 
     const clientIdIndex = headers.indexOf('client_id');
 
     const monthIndex = headers.indexOf('applicable_month');
 
-
-
     if (clientIdIndex === -1 || monthIndex === -1) {
 
       throw new Error("提供票スプレッドシートに見出し'client_id'または'applicable_month'が見つかりません。");
 
     }
-
-
 
     // 指定されたclientIdとapplicableMonthに一致する行をフィルタリング
 
@@ -3268,8 +2878,6 @@ function getServiceFormsFromSheet(clientId, applicableMonth, log) {
       String(row[monthIndex]) === String(applicableMonth)
 
     );
-
-
 
     // フィルタリングされた行を、扱いやすいオブジェクトの配列に変換
 
@@ -3287,13 +2895,9 @@ function getServiceFormsFromSheet(clientId, applicableMonth, log) {
 
     });
 
-    
-
     log(`スプレッドシートから ${resultObjects.length} 件の一致データが見つかりました。`);
 
     return resultObjects;
-
-
 
   } catch (e) {
 

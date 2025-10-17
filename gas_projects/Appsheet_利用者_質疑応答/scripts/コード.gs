@@ -1,15 +1,8 @@
-
-
-
-
-
-
 // ================================================================================================
 
 // 1. Configuration (設定)
 
 // ================================================================================================
-
 
 
 const CONFIG = {
@@ -79,7 +72,6 @@ const CONFIG = {
 };
 
 
-
 const STATUS = {
 
   COMPLETED: "完了",
@@ -89,13 +81,11 @@ const STATUS = {
 };
 
 
-
 // ================================================================================================
 
 // 2. Main Entry Point (doPost - 受付関数)
 
 // ================================================================================================
-
 
 
 /**
@@ -106,10 +96,6 @@ const STATUS = {
 
  */
 
-/**
- * AppSheet Webhook エントリーポイント
- * @param {GoogleAppsScript.Events.DoPost} e
- */
 /**
  * AppSheet Webhook エントリーポイント
  * @param {GoogleAppsScript.Events.DoPost} e
@@ -138,12 +124,6 @@ function processRequest(params) {
 
   }
 
-
-
-  
-
-
-
   // 内部からのワーカー起動リクエストか、AppSheetからの通常リクエストかを判定
 
   if (params.action === CONFIG.ASYNC_CONFIG.WORKER_ACTION_KEY) {
@@ -155,8 +135,6 @@ function processRequest(params) {
     return createJsonResponse({ status: "worker_process_invoked" });
 
   }
-
-
 
   // --- 以下、AppSheetからの通常リクエスト処理 ---
 
@@ -170,8 +148,6 @@ function processRequest(params) {
 
     if (!analysisId) throw new Error("Missing analysisId");
 
-
-
     idempotencyLockAcquired = acquireIdempotencyLock(analysisId);
 
     if (!idempotencyLockAcquired) {
@@ -182,21 +158,15 @@ function processRequest(params) {
 
     }
 
-
-
     validateParameters(analysisId, params.documentText, params.promptText);
 
     scheduleAsyncTask(analysisId, params);
-
-
 
     const duration = (new Date() - startTime);
 
     Logger.log(`[INFO][doPost] リクエスト受付完了 (ワーカー起動リクエスト済): ${analysisId}, 応答時間 = ${duration}ms`);
 
     return createJsonResponse({ status: "accepted", message: "Request accepted for asynchronous processing", analysisId: analysisId });
-
-
 
   } catch (error) {
 
@@ -220,10 +190,6 @@ function processRequest(params) {
  * テスト用関数
  * GASエディタから直接実行してテスト可能
  */
-/**
- * テスト用関数
- * GASエディタから直接実行してテスト可能
- */
 function testProcessRequest() {
   // TODO: テストデータを設定してください
   const testParams = {
@@ -235,8 +201,6 @@ function testProcessRequest() {
 }
 
 
-
-
 function validateParameters(analysisId, documentText, promptText) {
 
   if (!documentText) throw new Error("Missing documentText");
@@ -246,7 +210,6 @@ function validateParameters(analysisId, documentText, promptText) {
 }
 
 
-
 // ================================================================================================
 
 // 3. Async Task Management (キュー管理とスケジューリング)
@@ -254,7 +217,6 @@ function validateParameters(analysisId, documentText, promptText) {
 // (このセクションに変更はありません)
 
 // ================================================================================================
-
 
 
 function scheduleAsyncTask(analysisId, params) {
@@ -368,7 +330,6 @@ function getNextTaskFromQueue() {
 }
 
 
-
 // ================================================================================================
 
 // 4. Background Worker (ワーカー関数 - 非同期実行)
@@ -376,7 +337,6 @@ function getNextTaskFromQueue() {
 // (このセクションに変更はありません)
 
 // ================================================================================================
-
 
 
 function processTaskQueueWorker() {
@@ -492,7 +452,6 @@ function executeTask(analysisId, params) {
 }
 
 
-
 // ================================================================================================
 
 // 5. Gemini AI Integration (Gemini連携機能)
@@ -500,7 +459,6 @@ function executeTask(analysisId, params) {
 // (このセクションに変更はありません)
 
 // ================================================================================================
-
 
 
 function generateAnswerAndSummaryWithGemini(documentText, promptText) {
@@ -531,21 +489,15 @@ function createGeminiPrompt(documentText, promptText) {
 
 あなたは、提供された#参照資料を深く理解し、#ユーザーからの質問に的確に答える、優秀なAIアシスタントです。
 
-
-
 # 参照資料
 
 ${documentText}
-
-
 
 ---
 
 # ユーザーからの質問
 
 ${promptText}
-
-
 
 ---
 
@@ -554,8 +506,6 @@ ${promptText}
 - 上記の参照資料のみに基づいて、ユーザーからの質問に対する**詳細な回答**と、その回答を**簡潔に要約したもの**の両方を生成してください。
 
 - 応答は、必ず以下の構造を持つ有効なJSONオブジェクト形式で返してください。マークダウン記法（例: \`\`\`json）や説明文などは一切含めないでください。
-
-
 
 {
 
@@ -618,7 +568,6 @@ function parseGeminiResponse(responseText) {
 }
 
 
-
 // ================================================================================================
 
 // 6. AppSheet Integration (AppSheet連携機能)
@@ -626,7 +575,6 @@ function parseGeminiResponse(responseText) {
 // (このセクションに変更はありません)
 
 // ================================================================================================
-
 
 
 function updateOnSuccess(analysisId, answer, summary) {
@@ -666,7 +614,6 @@ function callAppSheetApi(payload) {
 }
 
 
-
 // ================================================================================================
 
 // 7. Utilities (ユーティリティ関数)
@@ -674,7 +621,6 @@ function callAppSheetApi(payload) {
 // (このセクションに変更はありません)
 
 // ================================================================================================
-
 
 
 function acquireIdempotencyLock(analysisId) {

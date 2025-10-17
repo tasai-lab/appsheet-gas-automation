@@ -1,9 +1,3 @@
-
-
-
-
-
-
 /**
 
  * データアクセスモジュール
@@ -11,7 +5,6 @@
  * スプレッドシートからのマスターデータ取得
 
  */
-
 
 
 /**
@@ -32,19 +25,13 @@ function getGuidanceMasterAsText() {
 
       .getSheetByName(SPREADSHEET_CONFIG.sheetName);
 
-    
-
     if (!sheet) {
 
       throw new Error(`シートが見つかりません: ${SPREADSHEET_CONFIG.sheetName}`);
 
     }
 
-    
-
     const data = sheet.getDataRange().getValues();
-
-    
 
     if (data.length === 0) {
 
@@ -52,21 +39,15 @@ function getGuidanceMasterAsText() {
 
     }
 
-    
-
     const headers = data.shift(); // ヘッダー行を取得
 
     const careProvidedIndex = headers.indexOf('Care_Provided');
-
-    
 
     if (careProvidedIndex === -1) {
 
       throw new Error('マスタースプレッドシートに "Care_Provided" 列が見つかりません');
 
     }
-
-    
 
     // "Care_Provided"列の値だけをリスト化
 
@@ -80,15 +61,9 @@ function getGuidanceMasterAsText() {
 
       .join('\n');
 
-    
-
     logStructured(LOG_LEVEL.INFO, 'マスターデータ取得成功', { count: data.length });
 
-    
-
     return masterList;
-
-    
 
   } catch (error) {
 
@@ -107,7 +82,6 @@ function getGuidanceMasterAsText() {
 }
 
 
-
 /**
 
  * マスターデータをキャッシュから取得（パフォーマンス最適化）
@@ -124,13 +98,9 @@ function getGuidanceMasterCached() {
 
   const cacheDuration = 3600; // 1時間
 
-  
-
   // キャッシュから取得を試みる
 
   let masterText = cache.get(cacheKey);
-
-  
 
   if (masterText) {
 
@@ -140,17 +110,12 @@ function getGuidanceMasterCached() {
 
   }
 
-  
-
   // キャッシュにない場合は取得してキャッシュに保存
 
   masterText = getGuidanceMasterAsText();
 
   cache.put(cacheKey, masterText, cacheDuration);
 
-  
-
   return masterText;
 
 }
-

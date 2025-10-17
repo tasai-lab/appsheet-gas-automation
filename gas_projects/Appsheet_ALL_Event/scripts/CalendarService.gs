@@ -1,9 +1,3 @@
-
-
-
-
-
-
 const CalendarService = {
 
   /**
@@ -29,7 +23,6 @@ const CalendarService = {
     return { eventId: result.id, eventUrl: result.htmlLink };
 
   },
-
 
 
   /**
@@ -59,7 +52,6 @@ const CalendarService = {
   },
 
   
-
   /**
 
    * 既存のカレンダーイベントを削除する
@@ -77,7 +69,6 @@ const CalendarService = {
     Logger.info('イベント削除成功', { eventId, ownerEmail });
 
   },
-
 
 
   /**
@@ -99,7 +90,6 @@ const CalendarService = {
   },
 
 
-
   /**
 
    * 既存イベントを削除し、新しい所有者で再作成する（担当者変更）
@@ -113,7 +103,6 @@ const CalendarService = {
     return this.createEvent(ownerData.newOwnerEmail, eventData);
 
   },
-
 
 
   /**
@@ -163,7 +152,6 @@ const CalendarService = {
   },
 
 
-
   /**
 
    * Google Calendar APIを呼び出す内部関数
@@ -205,7 +193,6 @@ const CalendarService = {
     }
 
 
-
     const response = UrlFetchApp.fetch(apiUrl, options);
 
     const responseCode = response.getResponseCode();
@@ -213,9 +200,7 @@ const CalendarService = {
     const responseBody = response.getContentText();
 
 
-
     // --- ▼▼▼ ここから修正 ▼▼▼ ---
-
 
 
     // DELETEメソッドの特別なエラーハンドリング
@@ -241,9 +226,7 @@ const CalendarService = {
     }
 
 
-
     // --- ▲▲▲ ここまで修正 ▲▲▲ ---
-
 
 
     if (responseCode >= 200 && responseCode < 300) {

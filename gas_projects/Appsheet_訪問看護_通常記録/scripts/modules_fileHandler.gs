@@ -1,9 +1,3 @@
-
-
-
-
-
-
 ﻿/**
 
  * ファイルハンドリングモジュール (改善版)
@@ -13,7 +7,6 @@
  * エラーハンドリングとロギングを強化
 
  */
-
 
 
 /**
@@ -38,11 +31,7 @@ function getFileIdFromPath(filePath) {
 
       const validPath = validateFilePath(filePath);
 
-      
-
       logStructured(LOG_LEVEL.DEBUG, 'ファイルパス解析開始', { filePath: validPath });
-
-      
 
       // パターン1: 完全なGoogle Drive URL
 
@@ -58,8 +47,6 @@ function getFileIdFromPath(filePath) {
 
       }
 
-      
-
       // パターン2: ファイルIDが直接渡された場合
 
       if (validPath.match(/^[a-zA-Z0-9_-]{20,}$/)) {
@@ -70,8 +57,6 @@ function getFileIdFromPath(filePath) {
 
       }
 
-      
-
       // パターン3: 共有ドライブのパス形式(フォルダ1/フォルダ2/ファイル名)
 
       if (validPath.includes('/')) {
@@ -81,8 +66,6 @@ function getFileIdFromPath(filePath) {
         return getFileIdFromSharedDrivePath(validPath);
 
       }
-
-      
 
       // パターン4: ファイル名で検索(マイドライブ)
 
@@ -97,7 +80,6 @@ function getFileIdFromPath(filePath) {
   );
 
 }
-
 
 
 /**
@@ -116,11 +98,7 @@ function searchFileByName(fileName) {
 
   logStructured(LOG_LEVEL.INFO, 'ファイル名で検索', { fileName: fileName });
 
-  
-
   const files = DriveApp.getFilesByName(fileName);
-
-  
 
   if (!files.hasNext()) {
 
@@ -136,13 +114,9 @@ function searchFileByName(fileName) {
 
   }
 
-  
-
   const file = files.next();
 
   const fileId = file.getId();
-
-  
 
   // 同名ファイルが複数ある場合は警告
 
@@ -158,14 +132,11 @@ function searchFileByName(fileName) {
 
   }
 
-  
-
   logStructured(LOG_LEVEL.INFO, 'ファイルID取得成功', { fileId: fileId });
 
   return fileId;
 
 }
-
 
 
 /**
@@ -188,8 +159,6 @@ function getFileIdFromSharedDrivePath(drivePath) {
 
       const pathParts = drivePath.split('/').filter(part => part.trim() !== '');
 
-      
-
       if (pathParts.length === 0) {
 
         throw new ValidationError(
@@ -204,8 +173,6 @@ function getFileIdFromSharedDrivePath(drivePath) {
 
       }
 
-      
-
       logStructured(LOG_LEVEL.INFO, '共有ドライブパス解析', { 
 
         path: pathParts.join(' > '),
@@ -214,21 +181,15 @@ function getFileIdFromSharedDrivePath(drivePath) {
 
       });
 
-      
-
       // ルートフォルダIDから開始
 
       let currentFolderId = SHARED_DRIVE_CONFIG.audioRootFolderId;
-
-      
 
       // ファイル名は最後の要素
 
       const fileName = pathParts[pathParts.length - 1];
 
       const folderPath = pathParts.slice(0, -1);
-
-      
 
       // フォルダを順番に辿る
 
@@ -237,8 +198,6 @@ function getFileIdFromSharedDrivePath(drivePath) {
         currentFolderId = navigateToFolder(currentFolderId, folderPath[i], i, folderPath);
 
       }
-
-      
 
       // 最終フォルダ内でファイルを検索
 
@@ -253,7 +212,6 @@ function getFileIdFromSharedDrivePath(drivePath) {
   );
 
 }
-
 
 
 /**
@@ -284,13 +242,9 @@ function navigateToFolder(parentFolderId, folderName, depth, fullPath) {
 
   });
 
-  
-
   const parentFolder = DriveApp.getFolderById(parentFolderId);
 
   const folders = parentFolder.getFoldersByName(folderName);
-
-  
 
   if (!folders.hasNext()) {
 
@@ -314,13 +268,9 @@ function navigateToFolder(parentFolderId, folderName, depth, fullPath) {
 
   }
 
-  
-
   const folder = folders.next();
 
   const folderId = folder.getId();
-
-  
 
   logStructured(LOG_LEVEL.DEBUG, 'フォルダ発見', { 
 
@@ -329,8 +279,6 @@ function navigateToFolder(parentFolderId, folderName, depth, fullPath) {
     folderId: folderId 
 
   });
-
-  
 
   // 同名フォルダが複数ある場合は警告
 
@@ -344,13 +292,9 @@ function navigateToFolder(parentFolderId, folderName, depth, fullPath) {
 
   }
 
-  
-
   return folderId;
 
 }
-
-
 
 /**
 
@@ -376,13 +320,9 @@ function findFileInFolder(folderId, fileName, fullPath) {
 
   });
 
-  
-
   const targetFolder = DriveApp.getFolderById(folderId);
 
   const files = targetFolder.getFilesByName(fileName);
-
-  
 
   if (!files.hasNext()) {
 
@@ -406,13 +346,9 @@ function findFileInFolder(folderId, fileName, fullPath) {
 
   }
 
-  
-
   const file = files.next();
 
   const fileId = file.getId();
-
-  
 
   logStructured(LOG_LEVEL.INFO, '共有ドライブファイル発見', { 
 
@@ -422,8 +358,6 @@ function findFileInFolder(folderId, fileName, fullPath) {
 
   });
 
-  
-
   // 同名ファイルが複数ある場合は警告
 
   if (files.hasNext()) {
@@ -432,12 +366,9 @@ function findFileInFolder(folderId, fileName, fullPath) {
 
   }
 
-  
-
   return fileId;
 
 }
-
 
 
 /**
@@ -466,19 +397,13 @@ function getFileFromDrive(fileId) {
 
       const fileSize = blob.getBytes().length;
 
-      
-
       // ファイルサイズチェック
 
       validateFileSize(fileSize, fileName);
 
-      
-
       // ファイル形式チェック
 
       const extension = validateFileFormat(fileName);
-
-      
 
       // MIME type の決定
 
@@ -489,8 +414,6 @@ function getFileFromDrive(fileId) {
         mimeType = AUDIO_CONFIG.mimeTypeMapping[extension];
 
       }
-
-      
 
       logStructured(LOG_LEVEL.INFO, 'ファイル取得成功', {
 
@@ -503,8 +426,6 @@ function getFileFromDrive(fileId) {
         extension: extension
 
       });
-
-      
 
       return {
 
@@ -527,7 +448,6 @@ function getFileFromDrive(fileId) {
   );
 
 }
-
 
 
 /**
@@ -558,11 +478,7 @@ function uploadToCloudStorage(blob, bucketName, fileName) {
 
       const uniqueFileName = `${timestamp}_${fileName}`;
 
-      
-
       const url = `https://storage.googleapis.com/upload/storage/v1/b/${bucketName}/o?uploadType=media&name=${encodeURIComponent(uniqueFileName)}`;
-
-      
 
       logStructured(LOG_LEVEL.INFO, 'Cloud Storageアップロード開始', { 
 
@@ -573,8 +489,6 @@ function uploadToCloudStorage(blob, bucketName, fileName) {
         sizeMB: (blob.getBytes().length / 1024 / 1024).toFixed(2)
 
       });
-
-      
 
       const options = {
 
@@ -594,8 +508,6 @@ function uploadToCloudStorage(blob, bucketName, fileName) {
 
       };
 
-      
-
       const startTime = new Date().getTime();
 
       const response = UrlFetchApp.fetch(url, options);
@@ -604,15 +516,9 @@ function uploadToCloudStorage(blob, bucketName, fileName) {
 
       const responseCode = response.getResponseCode();
 
-      
-
       validateHttpResponse(responseCode, 'Cloud Storage Upload');
 
-      
-
       const gsUri = `gs://${bucketName}/${uniqueFileName}`;
-
-      
 
       logStructured(LOG_LEVEL.INFO, 'Cloud Storageアップロード成功', {
 
@@ -621,8 +527,6 @@ function uploadToCloudStorage(blob, bucketName, fileName) {
         durationSec: duration
 
       });
-
-      
 
       return {
 
@@ -645,7 +549,6 @@ function uploadToCloudStorage(blob, bucketName, fileName) {
 }
 
 
-
 /**
 
  * Cloud Storageからファイルを削除
@@ -664,8 +567,6 @@ function deleteFromCloudStorage(bucketName, fileName) {
 
     const url = `https://storage.googleapis.com/storage/v1/b/${bucketName}/o/${encodeURIComponent(fileName)}`;
 
-    
-
   const options = {
 
     method: 'delete',
@@ -682,8 +583,6 @@ function deleteFromCloudStorage(bucketName, fileName) {
 
     const responseCode = response.getResponseCode();
 
-    
-
     if (responseCode === HTTP_STATUS.NO_CONTENT || responseCode === HTTP_STATUS.NOT_FOUND) {
 
       logStructured(LOG_LEVEL.INFO, 'Cloud Storageファイル削除成功', { 
@@ -696,8 +595,6 @@ function deleteFromCloudStorage(bucketName, fileName) {
 
     }
 
-    
-
     logStructured(LOG_LEVEL.WARN, 'Cloud Storageファイル削除警告', { 
 
       fileName: fileName,
@@ -707,8 +604,6 @@ function deleteFromCloudStorage(bucketName, fileName) {
     });
 
     return false;
-
-    
 
   } catch (error) {
 
@@ -725,4 +620,3 @@ function deleteFromCloudStorage(bucketName, fileName) {
   }
 
 }
-

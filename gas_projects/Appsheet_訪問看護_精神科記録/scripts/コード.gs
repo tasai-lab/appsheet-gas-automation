@@ -1,9 +1,3 @@
-
-
-
-
-
-
 /**
 
  * =================================================================
@@ -23,13 +17,11 @@ const CONFIG = {
   APPSHEET_ACCESS_KEY: 'V2-s6fif-zteYn-AGhoC-EhNLX-NNwgP-nHXAr-hHGZp-XxyPY', // AppSheet APIのアクセスキー
 
 
-
   // --- AppSheet関連 ---
 
   APPSHEET_APP_ID: 'f40c4b11-b140-4e31-a60c-600f3c9637c8', // AppSheetのアプリID
 
   RECORDS_TABLE_NAME: 'Care_Records', // 看護記録が格納されているテーブル名
-
 
 
   // --- 指導・助言マスターのスプレッドシート情報 ---
@@ -41,13 +33,11 @@ const CONFIG = {
   MASTER_COLUMN_NAME: 'Care_Provided', // 読み込むマスターの列名
 
 
-
   // --- その他 ---
 
   ERROR_NOTIFICATION_EMAIL: "t.asai@fractal-group.co.jp", // エラー通知先のメールアドレス
 
 };
-
 
 
 // スクリプト内で使用する定数
@@ -69,9 +59,6 @@ const CONSTANTS = {
 };
 
 
-
-
-
 /**
 
  * AppSheetのWebhookからPOSTリクエストを受け取るメイン関数
@@ -82,10 +69,6 @@ const CONSTANTS = {
 
  */
 
-/**
- * AppSheet Webhook エントリーポイント
- * @param {GoogleAppsScript.Events.DoPost} e
- */
 /**
  * AppSheet Webhook エントリーポイント
  * @param {GoogleAppsScript.Events.DoPost} e
@@ -110,11 +93,7 @@ function processRequest(params) {
 
     console.log("処理開始: WebhookからのPOSTリクエストを受信しました。");
 
-    
-
     recordNoteId = params.recordNoteId;
-
-
 
     // --- 1. 入力パラメータの検証 ---
 
@@ -126,8 +105,6 @@ function processRequest(params) {
 
     console.log(`対象レコードID: ${recordNoteId}`);
 
-
-
     // --- 2. マスターデータをスプレッドシートから読み込む ---
 
     const guidanceMasterText = getGuidanceMasterAsText();
@@ -137,8 +114,6 @@ function processRequest(params) {
         throw new Error("指導・助言マスターのテキストが空です。");
 
     }
-
-
 
     // --- 3. AIで看護記録を生成 ---
 
@@ -150,19 +125,13 @@ function processRequest(params) {
 
     }
 
-
-
     // --- 4. AppSheetに成功結果を書き込み ---
 
     updateAppSheetRecordOnSuccess(recordNoteId, aiAnalysisResult, params.staffId);
 
     console.log(`処理完了: レコードID ${recordNoteId} の看護記録を正常に更新しました。`);
 
-    
-
     return ContentService.createTextOutput("Success");
-
-
 
   } catch (error) {
 
@@ -192,10 +161,6 @@ function processRequest(params) {
  * テスト用関数
  * GASエディタから直接実行してテスト可能
  */
-/**
- * テスト用関数
- * GASエディタから直接実行してテスト可能
- */
 function testProcessRequest() {
   // TODO: テストデータを設定してください
   const testParams = {
@@ -205,8 +170,6 @@ function testProcessRequest() {
 
   return CommonTest.runTest(processRequest, testParams, 'Appsheet_訪問看護_精神科記録');
 }
-
-
 
 
 /**
@@ -227,8 +190,6 @@ function getGuidanceMasterAsText() {
 
   const headers = data.shift(); // ヘッダー行を取得
 
-
-
   const columnIndex = headers.indexOf(CONFIG.MASTER_COLUMN_NAME);
 
   if (columnIndex === -1) {
@@ -236,8 +197,6 @@ function getGuidanceMasterAsText() {
     throw new Error(`マスタースプレッドシートに '${CONFIG.MASTER_COLUMN_NAME}' 列が見つかりません。`);
 
   }
-
-
 
   const masterText = data
 
@@ -249,16 +208,11 @@ function getGuidanceMasterAsText() {
 
     .join('\n');
 
-    
-
   console.log("マスターデータの読み込みが完了しました。");
 
   return masterText;
 
 }
-
-
-
 
 
 /**
@@ -283,8 +237,6 @@ function generateCareRecordWithGemini(context, guidanceMasterText) {
 
 あなたは、Biopsychosocial（生物・心理・社会）モデルを深く理解し、精神科領域における豊富な臨床経験を持つ訪問看護師スペシャリストです。あなたの使命は、単なる情報の書き写しではありません。音声やテキストの断片的な情報から、利用者の言動の背景にある心理社会的要因を洞察し、その人らしさ（個別性）を尊重した上で、記録の読み手（医師、ケアマネージャー、他の看護師など）が具体的な次のアクションを考えられるような、客観的かつ専門的な看護記録を構造化して生成することです。
 
-
-
 # 絶対厳守のルール
 
 1.  **出力形式**: 最終的な出力はJSONオブジェクトそのものとします。説明文、コメント、\`\`\`json ...\`\`\`のようなマークダウンは一切含んではいけません。
@@ -294,8 +246,6 @@ function generateCareRecordWithGemini(context, guidanceMasterText) {
 3.  **情報重複の禁止**: 各JSONキーには明確な役割があります。同じ情報を複数のキーに重複して記述することは固く禁じます。最も適切な一つのキーにのみ情報を配置してください。
 
 4.  **空データの扱い**: 該当する情報が存在しない場合、キーの値は指示されたデータ型に応じて、必ず \`""\` (空文字列) または \`[]\` (空配列) としてください。\`null\` は決して使用しないでください。
-
-
 
 # 思考プロセス（命令）
 
@@ -311,11 +261,7 @@ function generateCareRecordWithGemini(context, guidanceMasterText) {
 
 5.  **ステップ5: 自己レビュー**: 生成したJSON全体が「#絶対厳守のルール」に違反していないか、特に情報の重複や、事実と解釈の混同がないかを厳しく検証し、完璧な状態にしてから出力します。
 
-
-
 # JSONキーごとの詳細指示
-
-
 
 ### \`client_condition\`: (string)
 
@@ -327,8 +273,6 @@ function generateCareRecordWithGemini(context, guidanceMasterText) {
 
 * **【記述例】** 「訪室時、やや疲れた表情で出迎える。BP 130/85, SpO2 98%。『昨夜から頭が重い感じがする』との訴えあり。服装の乱れはない。」
 
-
-
 ### \`daily_living_observation\`: (string)
 
 * **【目的】** [必須項目]セルフケア能力と生活リズムを評価し、ケアマネージャー等が生活支援の必要性を判断するため。
@@ -338,8 +282,6 @@ function generateCareRecordWithGemini(context, guidanceMasterText) {
 * **【記述すべきでないこと】** 対人関係や感情の起伏（他のキーで記述）。
 
 * **【記述例】** 「食事は一日一食、夕食のみ摂取していることが多いと話す。昨夜はほとんど眠れず、朝方に2時間ほどうとうとしたとのこと。3日間入浴できていない。」
-
-
 
 ### \`mental_state_observation\`: (string)
 
@@ -351,8 +293,6 @@ function generateCareRecordWithGemini(context, guidanceMasterText) {
 
 * **【記述例】** 「会話中、時折話が脱線し、元の話題に戻ることが困難な場面があった。無気力な様子で、『何もする気が起きない』と発言。窓の外を気にし、『誰かに見られている気がする』と小声で話す。」
 
-
-
 ### \`medication_adherence\`: (string)
 
 * **【目的】** [必須項目]服薬コンプライアンスと、それに関連する要因（副作用、病識など）を把握するため。
@@ -362,8 +302,6 @@ function generateCareRecordWithGemini(context, guidanceMasterText) {
 * **【記述すべきでないこと】** 薬以外のケア内容。
 
 * **【記述例】** 「週1回のセットは家族が実施。朝薬は自己管理で内服できているが、眠前の薬を飲み忘れることが多い。『この薬を飲むと、翌朝ぼーっとする』と副作用への懸念を話された。」
-
-
 
 ### \`social_functional_observation\`: (string)
 
@@ -375,8 +313,6 @@ function generateCareRecordWithGemini(context, guidanceMasterText) {
 
 * **【記述例】** 「家族とはほとんど会話がない状態が続いている。週3回の予定の作業所は、今週は1回のみの参加。『人が多い場所に行くと疲れてしまう』と話す。」
 
-
-
 ### \`care_provided\`: (array of strings)
 
 * **【目的】】** [必須項目]実施したケアをマスターリストに基づき正確に記録するため。
@@ -386,8 +322,6 @@ function generateCareRecordWithGemini(context, guidanceMasterText) {
 * **【記述すべきでないこと】** マスターリストにないケア、自由記述の文章。
 
 * **【記述例】** \`["精神的支援", "服薬確認・支援", "家族への状況説明"]\`
-
-
 
 ### \`guidance_and_advice\`: (string)
 
@@ -399,8 +333,6 @@ function generateCareRecordWithGemini(context, guidanceMasterText) {
 
 * **【記述例】** 「ご本人に、不眠時の対処法としてリラクゼーション技法を具体的に説明した。『試してみます』と関心を示した。ご家族には、本人の発言を傾聴する際のポイントを助言した。」
 
-
-
 ### \`remarks\`: (string)
 
 * **【目的】** 他の項目に該当しないが、チームで共有すべき特記事項や事務連絡を記録するため。
@@ -411,8 +343,6 @@ function generateCareRecordWithGemini(context, guidanceMasterText) {
 
 * **【記述例】** 「自立支援医療の更新手続きが必要なため、次回訪問時に申請書類の記入支援を予定。」
 
-
-
 ### \`summary_for_next_visit\`: (string)
 
 * **【目的】** 次回訪問者が、今回の訪問結果を踏まえて、優先度の高い観察・ケア項目を短時間で把握するため。
@@ -422,8 +352,6 @@ function generateCareRecordWithGemini(context, guidanceMasterText) {
 * **【記述すべきでないこと】** 今回の訪問の詳細な報告（既に他の項目で記述済み）。
 
 * **【記述例】** 「・幻覚様体験の訴えが再燃。発言の頻度と内容を注意深く観察。\\n・デイケアの参加意欲低下。休んでいる理由を再度傾聴し、阻害要因を探る。\\n・家族の疲労感が強いため、レスパイトの必要性について検討。」
-
-
 
 ---
 
@@ -437,11 +365,7 @@ function generateCareRecordWithGemini(context, guidanceMasterText) {
 
 `;
 
-
-
   const parts = [{ text: prompt }];
-
-
 
   // 音声ファイルがある場合の処理
 
@@ -457,15 +381,11 @@ function generateCareRecordWithGemini(context, guidanceMasterText) {
 
       const fileName = file.getName();
 
-      
-
       const extension = fileName.includes('.') ? fileName.split('.').pop().toLowerCase() : '';
 
       const audioExtensionMap = { 'm4a': 'audio/mp4', 'mp3': 'audio/mpeg' };
 
       const mimeType = audioExtensionMap[extension] || audioBlob.getContentType();
-
-
 
       if (mimeType && mimeType.startsWith('audio/')) {
 
@@ -489,8 +409,6 @@ function generateCareRecordWithGemini(context, guidanceMasterText) {
 
   }
 
-
-
   const requestBody = {
 
     contents: [{ parts: parts }],
@@ -505,8 +423,6 @@ function generateCareRecordWithGemini(context, guidanceMasterText) {
 
   };
 
-
-
   const options = {
 
     method: 'post',
@@ -519,8 +435,6 @@ function generateCareRecordWithGemini(context, guidanceMasterText) {
 
   };
 
-
-
   console.log("Gemini APIにリクエストを送信します。");
 
   const response = UrlFetchApp.fetch(CONSTANTS.GEMINI_API_ENDPOINT, options);
@@ -528,8 +442,6 @@ function generateCareRecordWithGemini(context, guidanceMasterText) {
   const responseCode = response.getResponseCode();
 
   const responseText = response.getContentText();
-
-
 
   if (responseCode !== 200) {
 
@@ -539,11 +451,7 @@ function generateCareRecordWithGemini(context, guidanceMasterText) {
 
   }
 
-  
-
   console.log("Gemini APIから正常な応答を受信しました。");
-
-
 
   // --- ★★★ ここから修正箇所 ★★★ ---
 
@@ -559,13 +467,9 @@ function generateCareRecordWithGemini(context, guidanceMasterText) {
 
     }
 
-
-
     // AIの応答からテキスト部分を取得
 
     const content = jsonResponse.candidates[0].content.parts[0].text;
-
-
 
     // 応答テキストからJSON部分のみを安全に抽出
 
@@ -583,13 +487,9 @@ function generateCareRecordWithGemini(context, guidanceMasterText) {
 
     const jsonString = content.substring(startIndex, endIndex + 1);
 
-    
-
     // 抽出したJSON文字列をパースして返す
 
     return JSON.parse(jsonString);
-
-
 
   } catch(e) {
 
@@ -602,7 +502,6 @@ function generateCareRecordWithGemini(context, guidanceMasterText) {
   // --- ★★★ ここまで修正箇所 ★★★ ---
 
 }
-
 
 
 /**
@@ -620,8 +519,6 @@ function generateCareRecordWithGemini(context, guidanceMasterText) {
 function updateAppSheetRecordOnSuccess(recordNoteId, aiResult, staffId) {
 
   console.log("STEP 4: AppSheetへのレコード更新（成功）を開始します。");
-
-  
 
   // 精神科訪問看護記録の9項目のJSON構造に合わせて列をマッピング
 
@@ -653,8 +550,6 @@ function updateAppSheetRecordOnSuccess(recordNoteId, aiResult, staffId) {
 
   };
 
-
-
   const payload = {
 
     Action: "Edit",
@@ -665,12 +560,9 @@ function updateAppSheetRecordOnSuccess(recordNoteId, aiResult, staffId) {
 
   };
 
-
-
   callAppSheetApi("OnSuccess", payload);
 
 }
-
 
 
 /**
@@ -705,8 +597,6 @@ function updateAppSheetRecordOnError(recordNoteId, error) {
 
   };
 
-
-
   try {
 
     callAppSheetApi("OnError", payload);
@@ -720,7 +610,6 @@ function updateAppSheetRecordOnError(recordNoteId, error) {
   }
 
 }
-
 
 
 /**
@@ -745,25 +634,17 @@ function sendErrorEmail(recordNoteId, error) {
 
 AppSheetの訪問看護記録の自動生成処理でエラーが発生しました。
 
-
-
 ■ 対象レコードID
 
 ${recordNoteId}
-
-
 
 ■ エラー内容
 
 ${error.message}
 
-
-
 ■ 詳細 (スタックトレース)
 
 ${error.stack}
-
-
 
 GASのログをご確認ください。
 
@@ -780,7 +661,6 @@ GASのログをご確認ください。
   }
 
 }
-
 
 
 /**
@@ -811,19 +691,13 @@ function callAppSheetApi(context, payload) {
 
   };
 
-
-
   const response = UrlFetchApp.fetch(CONSTANTS.APPSHEET_API_ENDPOINT, options);
 
   const responseCode = response.getResponseCode();
 
   const responseText = response.getContentText();
 
-
-
   console.log(`AppSheet API 応答 [${context}]: ${responseCode}`);
-
-  
 
   if (responseCode >= 400) {
 
@@ -832,8 +706,6 @@ function callAppSheetApi(context, payload) {
     throw new Error(`AppSheet APIとの通信に失敗しました (HTTP ${responseCode})。`);
 
   }
-
-  
 
   console.log(`AppSheet API呼び出し [${context}] が正常に完了しました。`);
 

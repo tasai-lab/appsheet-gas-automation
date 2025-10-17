@@ -1,9 +1,3 @@
-
-
-
-
-
-
 /**
 
  * ============================================
@@ -23,11 +17,9 @@ const ACCESS_KEY = 'V2-s6fif-zteYn-AGhoC-EhNLX-NNwgP-nHXAr-hHGZp-XxyPY'; // ★ 
 const ERROR_NOTIFICATION_EMAIL = "t.asai@fractal-group.co.jp";       // ★ エラー通知先のメールアドレス
 
 
-
 // 使用するGeminiモデル
 
 const GEMINI_MODEL = 'gemini-2.5-pro';
-
 
 
 /**
@@ -36,10 +28,6 @@ const GEMINI_MODEL = 'gemini-2.5-pro';
 
  */
 
-/**
- * AppSheet Webhook エントリーポイント
- * @param {GoogleAppsScript.Events.DoPost} e
- */
 /**
  * AppSheet Webhook エントリーポイント
  * @param {GoogleAppsScript.Events.DoPost} e
@@ -62,8 +50,6 @@ function processRequest(params) {
 
   const data = params.data;
 
-
-
   if (!config || !data) {
 
     const errorMessage = "WebhookのBodyの形式が不正です。'config'と'data'オブジェクトが必要です。";
@@ -76,8 +62,6 @@ function processRequest(params) {
 
   }
 
-
-
   const rowKey = data.keyValue;
 
   const fileId = data.fileId;
@@ -87,8 +71,6 @@ function processRequest(params) {
   const customInstructions = data.custom_instructions;
 
   const clientContextInfo = data.client_context_info;
-
-
 
   if (!rowKey || !fileId) {
 
@@ -104,25 +86,17 @@ function processRequest(params) {
 
   }
 
-
-
   // ★追加: 重複実行防止ロジック
 
   const properties = PropertiesService.getScriptProperties();
 
   const lock = LockService.getScriptLock();
 
-
-
   try {
 
     lock.waitLock(15000); // 最大15秒待機してロックを取得
 
-
-
     const status = properties.getProperty(rowKey);
-
-
 
     // 既に処理中または完了済みの場合は、何もせずに終了
 
@@ -138,15 +112,11 @@ function processRequest(params) {
 
     }
 
-
-
     // 状態を「処理中」に更新
 
     properties.setProperty(rowKey, 'processing');
 
     lock.releaseLock();
-
-
 
   } catch (lockError) {
 
@@ -160,8 +130,6 @@ function processRequest(params) {
 
   }
 
-
-
   // メイン処理
 
   try {
@@ -170,13 +138,9 @@ function processRequest(params) {
 
     const resultData = analyzeDocumentWithGemini(fileId, documentType, customInstructions, clientContextInfo);
 
-
-
     // 2. 成功したのでAppSheetのテーブルを更新
 
     updateOnSuccess(config, rowKey, resultData);
-
-
 
     // 3. 抽出したタイトルでファイル名を変更
 
@@ -192,13 +156,9 @@ function processRequest(params) {
 
     renameDriveFile(fileId, newFileName);
 
-
-
     // ★追加: 成功したので状態を「完了」に更新
 
     properties.setProperty(rowKey, 'completed');
-
-
 
   } catch (error) {
 
@@ -210,8 +170,6 @@ function processRequest(params) {
 
     sendErrorEmail(rowKey, error.stack);
 
-
-
     // ★追加: エラーが発生したので、再実行できるようにプロパティを削除
 
     properties.deleteProperty(rowKey);
@@ -219,11 +177,6 @@ function processRequest(params) {
   }
 }
 
-
-/**
- * テスト用関数
- * GASエディタから直接実行してテスト可能
- */
 /**
  * テスト用関数
  * GASエディタから直接実行してテスト可能
@@ -237,8 +190,6 @@ function testProcessRequest() {
 
   return CommonTest.runTest(processRequest, testParams, 'Appsheet_訪問看護_書類OCR');
 }
-
-
 
 
 /**
@@ -261,19 +212,13 @@ function analyzeDocumentWithGemini(fileId, documentType, customInstructions, cli
 
   const fileCategory = getFileCategory(mimeType, fileName);
 
-
-
   console.log(`解析開始 - FileName: ${fileName}, Category: ${fileCategory}, DocumentType: ${documentType}`);
-
-
 
   const prompt = generatePrompt(documentType, fileCategory, customInstructions, clientContextInfo);
 
   const textPart = { text: prompt };
 
   const filePart = { inlineData: { mimeType: mimeType, data: Utilities.base64Encode(fileBlob.getBytes()) } };
-
-
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
 
@@ -287,15 +232,11 @@ function analyzeDocumentWithGemini(fileId, documentType, customInstructions, cli
 
   const options = { method: 'post', contentType: 'application/json', payload: JSON.stringify(requestBody), muteHttpExceptions: true };
 
-
-
   const response = UrlFetchApp.fetch(url, options);
 
   const responseText = response.getContentText();
 
   if (response.getResponseCode() !== 200) throw new Error(`Gemini APIエラー: ${responseText}`);
-
-
 
   const jsonResponse = JSON.parse(responseText);
 
@@ -306,8 +247,6 @@ function analyzeDocumentWithGemini(fileId, documentType, customInstructions, cli
   }
 
   let content = jsonResponse.candidates[0].content.parts[0].text;
-
-
 
   const startIndex = content.indexOf('{');
 
@@ -333,15 +272,11 @@ function analyzeDocumentWithGemini(fileId, documentType, customInstructions, cli
 
 }
 
-
-
 // ============================================
 
 // 解析ヘルパー関数
 
 // ============================================
-
-
 
 /**
 
@@ -354,8 +289,6 @@ function analyzeDocumentWithGemini(fileId, documentType, customInstructions, cli
 function determineMimeType(fileName, driveMimeType) {
 
   const extension = fileName.includes('.') ? fileName.split('.').pop().toLowerCase() : '';
-
-
 
   // 拡張子に基づいてMIMEタイプをマッピング
 
@@ -395,11 +328,7 @@ function determineMimeType(fileName, driveMimeType) {
 
   };
 
-
-
   const mimeFromExtension = extensionMap[extension];
-
-
 
   if (mimeFromExtension) {
 
@@ -415,17 +344,11 @@ function determineMimeType(fileName, driveMimeType) {
 
   }
 
-
-
   // 推測できない場合は、Driveの判定をそのまま返す
 
   return driveMimeType;
 
 }
-
-
-
-
 
 /**
 
@@ -441,11 +364,7 @@ function getFileCategory(mimeType, fileName) {
 
   }
 
-
-
   const lowerMimeType = mimeType.toLowerCase();
-
-
 
   // MIMEタイプが汎用的すぎる場合（拡張子からも特定できなかった場合）
 
@@ -456,8 +375,6 @@ function getFileCategory(mimeType, fileName) {
      throw new Error(`ファイル「${fileName}」のMIMEタイプを特定できませんでした (汎用バイナリ形式: ${mimeType})。拡張子が正しいか確認してください。`);
 
   }
-
-
 
   // 画像またはPDF
 
@@ -484,13 +401,11 @@ function getFileCategory(mimeType, fileName) {
 }
 
 
-
 // ============================================
 
 // プロンプト生成関数
 
 // ============================================
-
 
 
 /**
@@ -524,9 +439,6 @@ function generatePrompt(documentType, fileCategory, customInstructions, clientCo
 }
 
 
-
-
-
 /**
 
  * 画像/PDFファイル用のプロンプト（OCR・構造化）
@@ -541,29 +453,19 @@ function generateDocumentPrompt(documentType) {
 
 あなたは、日本の医療・介護分野で使われる様々な書類を、後続のAIが分析しやすいように構造化されたデータとしてデジタル化する、高度なAI OCRエキスパートです。
 
-
-
 # 対象書類の種類
 
 この書類は「${documentType}」として分類されています。この前提知識を用いて、情報の抽出と構造化の精度を最大化してください。もし内容が分類と明らかに異なる場合は、その旨を[分析ノート]としてocr_textの冒頭に記述してください。
-
-
 
 # 基本方針
 
 目標は、単なる文字の羅列ではなく、情報の関連性や階層構造が明確な「セマンティック（意味的）なマークダウン」を生成することです。
 
-
-
 # 実行タスク
 
 提供された書類の画像/PDFから、以下の#出力指示に従って、情報を正確に抽出・再構成してください。
 
-
-
 # 出力指示
-
-
 
 ## 1. 構造化OCRテキスト (ocr_text)
 
@@ -581,13 +483,9 @@ function generateDocumentPrompt(documentType) {
 
 - **判読不能な文字:** 読み取れない文字は\`[判読不能]\` と記述し、AIが独自に内容を推測して補完することは絶対にしないでください。
 
-
-
 ## 2. 要約 (summary)
 
 - 生成したOCRテキストを基に、この書類が「${documentType}」としてどのような目的と結論を持っているのかが200文字程度で簡潔にわかるように、平易な日本語で要約してください。
-
-
 
 ## 3. 推奨タイトル (title)
 
@@ -596,8 +494,6 @@ function generateDocumentPrompt(documentType) {
 - 形式は「日付_書類の種類_主要な名前や組織」のように、検索しやすいものにしてください。
 
 - 日付は書類内に記載があればその日付をYYYY-MM-DD形式で、なければ今日の日付を使用してください。
-
-
 
 # 出力形式
 
@@ -617,8 +513,6 @@ function generateDocumentPrompt(documentType) {
 
 }
 
-
-
 /**
 
  * 音声/動画ファイル用のプロンプト（分析・生成）
@@ -632,8 +526,6 @@ function generateAudioVisualPrompt(documentType, customInstructions, clientConte
   let specificInstructions = "";
 
   let instructionSource = "デフォルト設定"; // 指示のソースを示す
-
-
 
   // カスタム指示が提供されている場合は、それを優先する
 
@@ -771,8 +663,6 @@ ${customInstructions}
 
   }
 
-
-
   // ★追加：コンテキスト情報セクションを構築
 
   let contextSection = "";
@@ -789,13 +679,9 @@ ${customInstructions}
 
 この情報を最大限に活用し、会話内容の理解、登場人物の特定、専門用語や名前の認識精度を向上させてください。
 
-
-
 【提供された背景情報】
 
 ${clientContextInfo}
-
-
 
 ---
 
@@ -803,21 +689,13 @@ ${clientContextInfo}
 
   }
 
-
-
-
-
   return `
 
 # あなたの役割
 
 あなたは、医療・介護現場での会議や面談の音声/動画を分析し、指定された形式の公式な記録として文書化する、高度なAIアシスタントです。
 
-
-
 ${contextSection}
-
-
 
 # 入力情報
 
@@ -825,35 +703,23 @@ ${contextSection}
 
 適用される指示のソース：${instructionSource}
 
-
-
 # 実行タスク
 
 音声/動画ファイルの内容（主に音声トラック）を正確に聞き取り、分析し、以下の指示に従って「${documentType}」を作成してください。単なる文字起こしではなく、内容を理解し、要点をまとめ、公式な記録としてふさわしい体裁（客観的な記述、適切な敬語）に整えることが求められます。
 
 【動画の場合の重要指示】動画が入力された場合は、映像も参考にしながら状況理解（例：発言者の特定、表情、提示された資料の確認）の精度を高めてください。ただし、最終的な出力は音声情報に基づいたテキスト記録としてください。
 
-
-
 # 出力指示
-
-
 
 ## 1. 構造化テキスト (ocr_text)
 
 - 内容を基に、以下の「構成要素/指示」に従ってMarkdown形式で文書を作成してください。
 
-
-
 ${specificInstructions}
-
-
 
 ## 2. 要約 (summary)
 
 - 作成した文書全体の目的と結論（どのようなトピックについて話し合われ、何が決まったか）が200文字程度で簡潔にわかるように、平易な日本語で要約してください。
-
-
 
 ## 3. 推奨タイトル (title)
 
@@ -862,8 +728,6 @@ ${specificInstructions}
 - 形式は「日付_記録の種類_主要な名前や組織」のように、後から検索しやすいものにしてください。
 
 - 日付は記録内で言及があればその日付をYYYY-MM-DD形式で、なければ今日の日付を使用してください。
-
-
 
 # 出力形式
 
@@ -887,17 +751,11 @@ ${specificInstructions}
 
 }
 
-
-
-
-
 // ============================================
 
 // ユーティリティ関数（AppSheet連携・その他）
 
 // ============================================
-
-
 
 /**
 
@@ -928,7 +786,6 @@ function updateOnSuccess(config, keyValue, resultData) {
 }
 
 
-
 /**
 
  * 失敗時にAppSheetのテーブルを更新する
@@ -947,8 +804,6 @@ function updateOnError(config, keyValue, errorMessage) {
 
   }
 
-
-
   const rowData = {
 
     [config.keyColumn]: keyValue,
@@ -964,7 +819,6 @@ function updateOnError(config, keyValue, errorMessage) {
   callAppSheetApi(config.tableName, payload);
 
 }
-
 
 
 /**
@@ -1004,7 +858,6 @@ function renameDriveFile(fileId, newName) {
 }
 
 
-
 /**
 
  * 処理失敗時にメールでエラー内容を通知する
@@ -1032,7 +885,6 @@ function sendErrorEmail(keyValue, errorMessage) {
   }
 
 }
-
 
 
 /**

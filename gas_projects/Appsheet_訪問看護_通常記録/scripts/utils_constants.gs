@@ -1,9 +1,3 @@
-
-
-
-
-
-
 /**
 
  * 定数定義モジュール
@@ -11,7 +5,6 @@
  * アプリケーション全体で使用する定数を管理
 
  */
-
 
 
 // ===================================
@@ -33,7 +26,6 @@ const STATUS = {
 };
 
 
-
 // ===================================
 
 // ログレベル定数
@@ -53,7 +45,6 @@ const LOG_LEVEL = {
   FATAL: 'FATAL'
 
 };
-
 
 
 // ===================================
@@ -79,7 +70,6 @@ const ERROR_CODE = {
   UNSUPPORTED_FORMAT: 'E1006',
 
   
-
   // データ取得エラー (2000番台)
 
   MASTER_DATA_FETCH_FAILED: 'E2001',
@@ -89,7 +79,6 @@ const ERROR_CODE = {
   DRIVE_ACCESS_FAILED: 'E2003',
 
   
-
   // AI処理エラー (3000番台)
 
   VERTEX_AI_ERROR: 'E3001',
@@ -101,7 +90,6 @@ const ERROR_CODE = {
   RESPONSE_VALIDATION_ERROR: 'E3004',
 
   
-
   // 外部API エラー (4000番台)
 
   APPSHEET_API_ERROR: 'E4001',
@@ -109,7 +97,6 @@ const ERROR_CODE = {
   CLOUD_STORAGE_ERROR: 'E4002',
 
   
-
   // システムエラー (5000番台)
 
   UNEXPECTED_ERROR: 'E5001',
@@ -119,7 +106,6 @@ const ERROR_CODE = {
   ASYNC_TRIGGER_ERROR: 'E5003'
 
 };
-
 
 
 // ===================================
@@ -169,7 +155,6 @@ const ERROR_MESSAGES = {
 };
 
 
-
 // ===================================
 
 // API応答コード定数
@@ -197,7 +182,6 @@ const HTTP_STATUS = {
   SERVICE_UNAVAILABLE: 503
 
 };
-
 
 
 // ===================================
@@ -253,7 +237,6 @@ const REQUIRED_FIELDS = {
 };
 
 
-
 // ===================================
 
 // AppSheet フィールドマッピング
@@ -307,7 +290,6 @@ const APPSHEET_FIELD_MAPPING = {
 };
 
 
-
 // ===================================
 
 // 通知タイプ定数
@@ -325,4 +307,3 @@ const NOTIFICATION_TYPE = {
   INFO: 'info'
 
 };
-

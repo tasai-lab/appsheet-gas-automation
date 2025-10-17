@@ -1,9 +1,3 @@
-
-
-
-
-
-
 // --- 1. 基本設定 (★ご自身の環境に合わせて全て修正してください) ---
 
 const APP_ID = '27bceb6f-9a2c-4ab6-9438-31fec25a495e'; // AppSheetのアプリID
@@ -11,7 +5,6 @@ const APP_ID = '27bceb6f-9a2c-4ab6-9438-31fec25a495e'; // AppSheetのアプリID
 const TABLE_NAME = 'Sales_Activities';   // ★対象テーブル名を変更
 
 const ACCESS_KEY = 'V2-A0207-tnP4i-YwteT-Cg55O-7YBvg-zMXQX-sS4Xv-XuaKP'; // AppSheet APIのアクセスキー
-
 
 
 /**
@@ -45,9 +38,6 @@ function handleScriptError(recordId, errorMessage) {
 }
 
 
-
-
-
 /**
 
  * AppSheetのWebhookからPOSTリクエストを受け取るメイン関数
@@ -56,10 +46,6 @@ function handleScriptError(recordId, errorMessage) {
 
  */
 
-/**
- * AppSheet Webhook エントリーポイント
- * @param {GoogleAppsScript.Events.DoPost} e
- */
 /**
  * AppSheet Webhook エントリーポイント
  * @param {GoogleAppsScript.Events.DoPost} e
@@ -82,13 +68,9 @@ function processRequest(params) {
 
   try {
 
-    
-
     activityId = params.activityId; // ★変数名を変更
 
     const folderId = params.folderId;
-
-
 
     if (!activityId || !folderId) {
 
@@ -98,25 +80,17 @@ function processRequest(params) {
 
     Logger.log(`処理開始: Activity ID = ${activityId}, 親Folder ID = ${folderId}`);
 
-
-
     Utilities.sleep(5000); 
-
-
 
     const parentFolder = DriveApp.getFolderById(folderId);
 
     const latestFile = findFileInSubfolders(parentFolder, activityId); // ★検索キーを変更
-
-
 
     if (!latestFile) {
 
       throw new Error(`'${activityId}' を含むファイルが指定されたフォルダ內に見つかりません。`);
 
     }
-
-
 
     const mimeType = latestFile.getMimeType();
 
@@ -126,8 +100,6 @@ function processRequest(params) {
 
     const supportedExtensions = ['m4a', 'mp3'];
 
-
-
     if (supportedExtensions.includes(extension)) {
 
       const fileId = latestFile.getId();
@@ -135,8 +107,6 @@ function processRequest(params) {
       const fileUrl = latestFile.getUrl();
 
       Logger.log(`音声ファイルを検出: ID=${fileId}, URL=${fileUrl}`);
-
-      
 
       rowData = {
 
@@ -166,8 +136,6 @@ function processRequest(params) {
 
     }
 
-    
-
     const apiPayload = {
 
       "Action": "Edit",
@@ -192,8 +160,6 @@ function processRequest(params) {
 
     };
 
-
-
     const response = UrlFetchApp.fetch(apiUrl, options);
 
     Logger.log(`AppSheet API 応答: ${response.getResponseCode()} - ${response.getContentText()}`);
@@ -203,8 +169,6 @@ function processRequest(params) {
         throw new Error(`AppSheet API Error: ${response.getResponseCode()} - ${response.getContentText()}`);
 
     }
-
-
 
   } catch (error) {
 
@@ -220,10 +184,6 @@ function processRequest(params) {
  * テスト用関数
  * GASエディタから直接実行してテスト可能
  */
-/**
- * テスト用関数
- * GASエディタから直接実行してテスト可能
- */
 function testProcessRequest() {
   // TODO: テストデータを設定してください
   const testParams = {
@@ -233,8 +193,6 @@ function testProcessRequest() {
 
   return CommonTest.runTest(processRequest, testParams, 'Appsheet_営業_ファイルID取得');
 }
-
-
 
 
 /**
@@ -254,8 +212,6 @@ function findFileInSubfolders(folder, partOfFileName) {
   let latestFile = null;
 
   let latestDate = new Date(0);
-
-
 
   function searchRecursively(currentFolder) {
 
@@ -290,7 +246,6 @@ function findFileInSubfolders(folder, partOfFileName) {
     }
 
   }
-
 
 
   searchRecursively(folder);

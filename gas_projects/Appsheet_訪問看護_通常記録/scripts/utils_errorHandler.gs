@@ -1,9 +1,3 @@
-
-
-
-
-
-
 /**
 
  * エラーハンドリングモジュール
@@ -11,7 +5,6 @@
  * アプリケーション全体のエラー処理を統一
 
  */
-
 
 
 /**
@@ -37,7 +30,6 @@ class AppError extends Error {
     this.timestamp = new Date().toISOString();
 
   }
-
 
 
   /**
@@ -79,7 +71,6 @@ class AppError extends Error {
 }
 
 
-
 /**
 
  * エラーを適切な AppError に変換
@@ -102,15 +93,11 @@ function normalizeError(error, context = 'Unknown') {
 
   }
 
-
-
   // エラーメッセージからコードを推測
 
   let errorCode = ERROR_CODE.UNEXPECTED_ERROR;
 
   const errorMessage = error.message || error.toString();
-
-
 
   if (errorMessage.includes('Vertex AI')) {
 
@@ -138,8 +125,6 @@ function normalizeError(error, context = 'Unknown') {
 
   }
 
-
-
   return new AppError(
 
     errorCode,
@@ -153,7 +138,6 @@ function normalizeError(error, context = 'Unknown') {
   );
 
 }
-
 
 
 /**
@@ -194,8 +178,6 @@ function logErrorDetails(error, recordNoteId = 'unknown', additionalContext = {}
 
       };
 
-
-
   logStructured(LOG_LEVEL.ERROR, 'エラー詳細', {
 
     recordNoteId: recordNoteId,
@@ -207,8 +189,6 @@ function logErrorDetails(error, recordNoteId = 'unknown', additionalContext = {}
   });
 
 }
-
-
 
 /**
 
@@ -228,13 +208,9 @@ function getUserFriendlyErrorMessage(error) {
 
   }
 
-
-
   if (error instanceof AppError) {
 
     const baseMessage = ERROR_MESSAGES[error.code] || error.message;
-
-    
 
     // 詳細情報があれば追加
 
@@ -250,20 +226,15 @@ function getUserFriendlyErrorMessage(error) {
 
     }
 
-    
-
     return baseMessage;
 
   }
-
-
 
   // 一般的なエラー
 
   return `処理中にエラーが発生しました: ${error.message}`;
 
 }
-
 
 
 /**
@@ -294,8 +265,6 @@ function withErrorHandling(fn, context = 'Unknown', options = {}) {
 
   } = options;
 
-
-
   try {
 
     return fn();
@@ -305,8 +274,6 @@ function withErrorHandling(fn, context = 'Unknown', options = {}) {
     const normalizedError = normalizeError(error, context);
 
     logErrorDetails(normalizedError, recordNoteId, { retryCount });
-
-
 
     // リトライ処理
 
@@ -326,8 +293,6 @@ function withErrorHandling(fn, context = 'Unknown', options = {}) {
 
     }
 
-
-
     // カスタムエラーハンドラ
 
     if (onError) {
@@ -336,15 +301,11 @@ function withErrorHandling(fn, context = 'Unknown', options = {}) {
 
     }
 
-
-
     throw normalizedError;
 
   }
 
 }
-
-
 
 /**
 
@@ -370,15 +331,11 @@ function isRetryableError(error) {
 
   ];
 
-
-
   if (error instanceof AppError) {
 
     return retryableCodes.includes(error.code);
 
   }
-
-
 
   const message = error.message.toLowerCase();
 
@@ -391,8 +348,6 @@ function isRetryableError(error) {
          message.includes('rate limit');
 
 }
-
-
 
 /**
 
@@ -414,15 +369,11 @@ function handleErrorRecovery(recordNoteId, error, context = {}) {
 
     logErrorDetails(error, recordNoteId, context);
 
-
-
     // AppSheetレコード更新
 
     const userMessage = getUserFriendlyErrorMessage(error);
 
     updateRecordOnError(recordNoteId, userMessage);
-
-
 
     // エラー通知送信
 
@@ -435,8 +386,6 @@ function handleErrorRecovery(recordNoteId, error, context = {}) {
       errorDetails: error.details
 
     });
-
-
 
     // Slack通知（有効な場合）
 
@@ -451,8 +400,6 @@ function handleErrorRecovery(recordNoteId, error, context = {}) {
       );
 
     }
-
-
 
   } catch (recoveryError) {
 
@@ -471,4 +418,3 @@ function handleErrorRecovery(recordNoteId, error, context = {}) {
   }
 
 }
-

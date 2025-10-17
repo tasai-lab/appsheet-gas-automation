@@ -1,21 +1,14 @@
-
-
-
 /**
 
  * Webhook受信処理（新ライブラリ対応版）
 
  * AppSheetからのWebhookを受け取り、通話音声ファイルをVertex AIで処理する
 
- * 
-
  * @author Fractal Group
 
  * @version 3.0.0 - 統一重複防止ライブラリ適用
 
  * @date 2025-10-16
-
- * 
 
  * 変更点:
 
@@ -28,12 +21,9 @@
  */
 
 
-
 /**
 
  * WebアプリのPOSTリクエストエントリーポイント
-
- * 
 
  * 重複リクエスト対策（v3.0の機能）:
 
@@ -47,10 +37,6 @@
 
  */
 
-/**
- * AppSheet Webhook エントリーポイント
- * @param {GoogleAppsScript.Events.DoPost} e
- */
 /**
  * AppSheet Webhook エントリーポイント
  * @param {GoogleAppsScript.Events.DoPost} e
@@ -91,10 +77,6 @@ function processRequest(params) {
  * テスト用関数
  * GASエディタから直接実行してテスト可能
  */
-/**
- * テスト用関数
- * GASエディタから直接実行してテスト可能
- */
 function testProcessRequest() {
   // TODO: テストデータを設定してください
   const testParams = {
@@ -106,15 +88,11 @@ function testProcessRequest() {
 }
 
 
-
-
 /**
 
  * 通話要約の実処理
 
  * executeWebhookWithDuplicationPreventionから呼び出される
-
- * 
 
  * @param {Object} params - Webhookパラメータ
 
@@ -128,17 +106,11 @@ function processCallSummary(params) {
 
   const callId = params.callId;
 
-  
-
   Logger.log(`[処理開始] 通話ID: ${callId}`);
-
-  
 
   // パラメータ検証
 
   validateRequiredParams(params);
-
-  
 
   // file_pathからファイルIDとURLを取得
 
@@ -172,8 +144,6 @@ function processCallSummary(params) {
 
   }
 
-
-
   // Vertex AIで音声解析
 
   const analysisResult = analyzeAudioWithVertexAI(
@@ -190,21 +160,15 @@ function processCallSummary(params) {
 
   );
 
-
-
   // 結果の検証
 
   validateAnalysisResult(analysisResult);
-
-  
 
   // ファイル情報を結果に追加
 
   analysisResult.recording_file_id = fileId;
 
   analysisResult.recording_file_url = fileUrl;
-
-
 
   // AppSheet更新
 
@@ -224,8 +188,6 @@ function processCallSummary(params) {
 
   );
 
-
-
   // アクション追加
 
   if (analysisResult.actions.length > 0) {
@@ -234,17 +196,11 @@ function processCallSummary(params) {
 
   }
 
-
-
   Logger.log(`[処理完了] 通話ID: ${callId}`);
-
-  
 
   // 成功通知
 
   sendSuccessNotification(callId, analysisResult.summary, config);
-
-
 
   // 処理結果を返す（自動的に完了マークされる）
 
@@ -266,8 +222,6 @@ function processCallSummary(params) {
 
 }
 
-
-
 /**
 
  * 必須パラメータの検証
@@ -280,15 +234,11 @@ function validateRequiredParams(params) {
 
   const missingFields = requiredFields.filter(key => !params[key]);
 
-  
-
   if (missingFields.length > 0) {
 
     throw new Error(`必須パラメータが不足: ${missingFields.join(', ')}`);
 
   }
-
-  
 
   // filePath または fileId のいずれかが必要
 
@@ -299,7 +249,6 @@ function validateRequiredParams(params) {
   }
 
 }
-
 
 
 /**
@@ -316,8 +265,6 @@ function validateAnalysisResult(result) {
 
   }
 
-  
-
   if (!result.summary || !result.transcript || !Array.isArray(result.actions)) {
 
     throw new Error('解析結果に必須キー (summary, transcript, actions) が不足しています');
@@ -327,7 +274,6 @@ function validateAnalysisResult(result) {
 }
 
 
-
 // ======================================================
 
 // 以下、旧版の関数（後方互換性のため残す）
@@ -335,7 +281,6 @@ function validateAnalysisResult(result) {
 // 新規プロジェクトでは使用しないでください
 
 // ======================================================
-
 
 
 /**
@@ -359,7 +304,6 @@ function parseRequest(e) {
 }
 
 
-
 /**
 
  * @deprecated v3.0でcheckDuplicateRequestに統合
@@ -375,7 +319,6 @@ function isDuplicateRequest(callId) {
 }
 
 
-
 /**
 
  * @deprecated v3.0でmarkAsProcessingWithLockに統合
@@ -387,7 +330,6 @@ function markAsProcessing(callId) {
   return markAsProcessingWithLock(callId);
 
 }
-
 
 
 /**
@@ -414,8 +356,6 @@ function createSuccessResponse(callId, fileId, fileUrl) {
 
 }
 
-
-
 /**
 
  * @deprecated v3.0でcreateErrorResponseに統合
@@ -438,8 +378,6 @@ function createErrorResponse_old(callId, error) {
 
 }
 
-
-
 /**
 
  * @deprecated v3.0でcreateDuplicateResponseに統合
@@ -461,4 +399,3 @@ function createDuplicateResponse_old(callId) {
   })).setMimeType(ContentService.MimeType.JSON);
 
 }
-

@@ -1,9 +1,3 @@
-
-
-
-
-
-
 const Logger = {
 
   /**
@@ -29,7 +23,6 @@ const Logger = {
     }));
 
   },
-
 
 
   /**

@@ -1,9 +1,3 @@
-
-
-
-
-
-
 /**
 
  * 重複実行防止モジュール
@@ -11,7 +5,6 @@
  * CacheServiceを使用してリクエストの重複を検知し、防止します
 
  */
-
 
 
 /**
@@ -31,7 +24,6 @@ const CACHE_PREFIX = {
 };
 
 
-
 /**
 
  * キャッシュの有効期限（秒）
@@ -47,7 +39,6 @@ const CACHE_DURATION = {
   TRIGGER_LOCK: 10           // 10秒（トリガーロック）
 
 };
-
 
 
 /**
@@ -70,15 +61,11 @@ function isAlreadyProcessing(recordNoteId) {
 
   }
 
-  
-
   const cache = CacheService.getScriptCache();
 
   const key = CACHE_PREFIX.PROCESSING + recordNoteId;
 
   const cachedValue = cache.get(key);
-
-  
 
   if (cachedValue) {
 
@@ -88,12 +75,9 @@ function isAlreadyProcessing(recordNoteId) {
 
   }
 
-  
-
   return false;
 
 }
-
 
 
 /**
@@ -118,15 +102,11 @@ function markAsProcessing(recordNoteId) {
 
   }
 
-  
-
   const cache = CacheService.getScriptCache();
 
   const key = CACHE_PREFIX.PROCESSING + recordNoteId;
 
   const timestamp = new Date().toISOString();
-
-  
 
   try {
 
@@ -145,7 +125,6 @@ function markAsProcessing(recordNoteId) {
   }
 
 }
-
 
 
 /**
@@ -168,13 +147,9 @@ function clearProcessingFlag(recordNoteId) {
 
   }
 
-  
-
   const cache = CacheService.getScriptCache();
 
   const key = CACHE_PREFIX.PROCESSING + recordNoteId;
-
-  
 
   try {
 
@@ -193,7 +168,6 @@ function clearProcessingFlag(recordNoteId) {
   }
 
 }
-
 
 
 /**
@@ -224,8 +198,6 @@ function generateWebhookFingerprint(params) {
 
   });
 
-  
-
   const signature = Utilities.computeDigest(
 
     Utilities.DigestAlgorithm.SHA_256,
@@ -236,13 +208,9 @@ function generateWebhookFingerprint(params) {
 
   );
 
-  
-
   return Utilities.base64Encode(signature);
 
 }
-
-
 
 /**
 
@@ -262,11 +230,7 @@ function isDuplicateWebhook(params) {
 
   const key = CACHE_PREFIX.WEBHOOK_FINGERPRINT + fingerprint;
 
-  
-
   const cachedValue = cache.get(key);
-
-  
 
   if (cachedValue) {
 
@@ -276,20 +240,15 @@ function isDuplicateWebhook(params) {
 
   }
 
-  
-
   // 重複でない場合、フィンガープリントをキャッシュ
 
   cache.put(key, new Date().toISOString(), CACHE_DURATION.WEBHOOK_DEDUP);
 
   Logger.log(`✅ Webhook受付: ${params.recordNoteId} (フィンガープリント: ${fingerprint.substring(0, 16)}...)`);
 
-  
-
   return false;
 
 }
-
 
 
 /**
@@ -308,11 +267,7 @@ function acquireTriggerLock(lockId) {
 
   const key = CACHE_PREFIX.TRIGGER_LOCK + lockId;
 
-  
-
   const cachedValue = cache.get(key);
-
-  
 
   if (cachedValue) {
 
@@ -322,8 +277,6 @@ function acquireTriggerLock(lockId) {
 
   }
 
-  
-
   cache.put(key, new Date().toISOString(), CACHE_DURATION.TRIGGER_LOCK);
 
   Logger.log(`✅ トリガーロック取得: ${lockId}`);
@@ -331,7 +284,6 @@ function acquireTriggerLock(lockId) {
   return true;
 
 }
-
 
 
 /**
@@ -355,7 +307,6 @@ function releaseTriggerLock(lockId) {
 }
 
 
-
 /**
 
  * すべての処理中フラグをクリア（メンテナンス用）
@@ -370,8 +321,6 @@ function clearAllProcessingFlags() {
 
   let count = 0;
 
-  
-
   try {
 
     // CacheServiceはキーの一覧取得ができないため、
@@ -381,8 +330,6 @@ function clearAllProcessingFlags() {
     const properties = PropertiesService.getScriptProperties();
 
     const keys = properties.getKeys();
-
-    
 
     keys.forEach(key => {
 
@@ -395,8 +342,6 @@ function clearAllProcessingFlags() {
       }
 
     });
-
-    
 
     Logger.log(`✅ 処理中フラグクリア完了: ${count}件`);
 
@@ -413,7 +358,6 @@ function clearAllProcessingFlags() {
 }
 
 
-
 /**
 
  * 重複実行防止の統計情報を取得（デバッグ用）
@@ -425,8 +369,6 @@ function clearAllProcessingFlags() {
 function getDuplicateCheckerStats() {
 
   const cache = CacheService.getScriptCache();
-
-  
 
   return {
 
@@ -447,4 +389,3 @@ function getDuplicateCheckerStats() {
   };
 
 }
-

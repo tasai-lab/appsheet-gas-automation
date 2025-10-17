@@ -1,9 +1,3 @@
-
-
-
-
-
-
 // --- 1. 基本設定 ---
 
 const GEMINI_API_KEY = 'AIzaSyDUKFlE6_NYGehDYOxiRQcHpjG2l7GZmTY'; // ★ Gemini APIキーを設定
@@ -13,17 +7,12 @@ const DEFAULT_SERVICE_ACCOUNT_JSON_KEY = 'SERVICE_ACCOUNT_JSON';
 const DEFAULT_OAUTH_CALLBACK_FUNCTION = 'authCallback';
 
 
-
 /**
 
  * AppSheetなどからのWebhook POSTリクエストを受け取るメイン関数
 
  */
 
-/**
- * AppSheet Webhook エントリーポイント
- * @param {GoogleAppsScript.Events.DoPost} e
- */
 /**
  * AppSheet Webhook エントリーポイント
  * @param {GoogleAppsScript.Events.DoPost} e
@@ -44,27 +33,17 @@ function doPost(e) {
 function processRequest(params) {
   let result = { status: "error", updatedMessageId: null, errorMessage: null };
 
-
-
   try {
-
-    
 
     Logger.log(`Webhook受信: ${JSON.stringify(params)}`);
 
-
-
     let { impersonatingUserEmail, messageId, originalMessageText, newMessageText } = params;
-
-    
 
     if (!impersonatingUserEmail || !messageId || !newMessageText || !originalMessageText) {
 
       throw new Error("必須パラメータ（impersonatingUserEmail, messageId, originalMessageText, newMessageText）が不足しています。");
 
     }
-
-
 
     // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
 
@@ -88,13 +67,9 @@ function processRequest(params) {
 
     };
 
-
-
     const cleanedOriginalMessage = cleanText(originalMessageText);
 
     const cleanedNewMessage = cleanText(newMessageText);
-
-    
 
     // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
 
@@ -104,8 +79,6 @@ function processRequest(params) {
 
     const changeSummary = generateChangeSummaryWithGemini(cleanedOriginalMessage, cleanedNewMessage);
 
-
-
     // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
 
     // ★ 3. 最終的な投稿メッセージを組み立てる     ★
@@ -114,13 +87,9 @@ function processRequest(params) {
 
     const finalMessageText = `${cleanedNewMessage}\n\n${changeSummary}`;
 
-
-
     // --- Chatメッセージを更新 ---
 
     const chatResult = updateChatMessage(messageId, finalMessageText, impersonatingUserEmail);
-
-
 
     if (chatResult.status === 'SUCCESS') {
 
@@ -136,8 +105,6 @@ function processRequest(params) {
 
     }
 
-
-
   } catch (error) {
 
     Logger.log(`doPostでエラーが発生: ${error.toString()}`);
@@ -146,18 +113,12 @@ function processRequest(params) {
 
   }
 
-  
-
   return ContentService.createTextOutput(JSON.stringify(result))
 
     .setMimeType(ContentService.MimeType.JSON);
 }
 
 
-/**
- * テスト用関数
- * GASエディタから直接実行してテスト可能
- */
 /**
  * テスト用関数
  * GASエディタから直接実行してテスト可能
@@ -171,8 +132,6 @@ function testProcessRequest() {
 
   return CommonTest.runTest(processRequest, testParams, 'Appsheet_ALL_スレッド更新');
 }
-
-
 
 
 /**
@@ -191,13 +150,9 @@ function generateChangeSummaryWithGemini(originalText, newText) {
 
 要約は必ず「変更内容: 」から始めてください。
 
-
-
 # 変更前の文章
 
 ${originalText}
-
-
 
 # 変更後の文章
 
@@ -205,13 +160,9 @@ ${newText}
 
 `;
 
-
-
   const model = 'gemini-2.5-flash';
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
-
-  
 
   const requestBody = {
 
@@ -221,8 +172,6 @@ ${newText}
 
   };
 
-  
-
   const options = { method: 'post', contentType: 'application/json', payload: JSON.stringify(requestBody), muteHttpExceptions: true };
 
   const response = UrlFetchApp.fetch(url, options);
@@ -230,8 +179,6 @@ ${newText}
   const responseText = response.getContentText();
 
   const jsonResponse = JSON.parse(responseText);
-
-
 
   if (!jsonResponse.candidates || jsonResponse.candidates.length === 0) {
 
@@ -241,15 +188,9 @@ ${newText}
 
   }
 
-  
-
   return jsonResponse.candidates[0].content.parts[0].text.trim();
 
 }
-
-
-
-
 
 /**
 
@@ -261,8 +202,6 @@ function updateChatMessage(messageName, newText, email) {
 
   const result = { status: 'FAILURE', updatedMessageId: null, errorMessage: null };
 
-
-
   try {
 
     if (!messageName || !messageName.includes('/messages/')) {
@@ -271,25 +210,17 @@ function updateChatMessage(messageName, newText, email) {
 
     }
 
-    
-
     const chatScopes = ['https://www.googleapis.com/auth/chat.messages'];
 
     const servicePrefix = 'GenericChatUpdateImpersonation';
-
-
 
     const chatService = createOAuth2ServiceForUser(email, chatScopes, servicePrefix);
 
     const accessToken = getAccessToken(chatService);
 
-
-
     const apiUrl = `https://chat.googleapis.com/v1/${messageName}?updateMask=text`;
 
     const payload = { "text": newText };
-
-
 
     const options = {
 
@@ -305,15 +236,11 @@ function updateChatMessage(messageName, newText, email) {
 
     };
 
-    
-
     const response = UrlFetchApp.fetch(apiUrl, options);
 
     const responseCode = response.getResponseCode();
 
     const responseBody = response.getContentText();
-
-
 
     if (responseCode >= 200 && responseCode < 300) {
 
@@ -342,13 +269,11 @@ function updateChatMessage(messageName, newText, email) {
 }
 
 
-
 // =================================================================
 
 // 認証ヘルパー関数群 (他のスクリプトから流用)
 
 // =================================================================
-
 
 
 function createOAuth2ServiceForUser(userEmail, scopes, serviceNamePrefix, serviceAccountJsonKey = DEFAULT_SERVICE_ACCOUNT_JSON_KEY, callbackFunctionName = DEFAULT_OAUTH_CALLBACK_FUNCTION) {

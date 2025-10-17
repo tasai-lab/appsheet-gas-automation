@@ -1,9 +1,3 @@
-
-
-
-
-
-
 // --- 1. 基本設定 (★ご自身の環境に合わせて全て修正してください) ---
 
 // ▼ メインアプリ（Call_Logs）の情報
@@ -13,7 +7,6 @@ const MAIN_APP_ID = '4762f34f-3dbc-4fca-9f84-5b6e809c3f5f';
 const MAIN_APP_ACCESS_KEY = 'V2-I1zMZ-90iua-47BBk-RBjO1-N0mUo-kY25j-VsI4H-eRvwT';
 
 
-
 // ▼ 依頼作成先アプリ（Client_Requests）の情報
 
 const REQUESTS_APP_ID = 'f40c4b11-b140-4e31-a60c-600f3c9637c8'; 
@@ -21,11 +14,9 @@ const REQUESTS_APP_ID = 'f40c4b11-b140-4e31-a60c-600f3c9637c8';
 const REQUESTS_APP_ACCESS_KEY = 'V2-s6fif-zteYn-AGhoC-EhNLX-NNwgP-nHXAr-hHGZp-XxyPY';
 
 
-
 // Gemini APIキー
 
 const GEMINI_API_KEY = 'AIzaSyDUKFlE6_NYGehDYOxiRQcHpjG2l7GZmTY'; 
-
 
 
 // テーブル名
@@ -35,17 +26,12 @@ const LOGS_TABLE_NAME = 'Call_Logs';
 const REQUESTS_TABLE_NAME = 'Client_Requests';
 
 
-
 /**
 
  * AppSheetのWebhookからPOSTリクエストを受け取るメイン関数
 
  */
 
-/**
- * AppSheet Webhook エントリーポイント
- * @param {GoogleAppsScript.Events.DoPost} e
- */
 /**
  * AppSheet Webhook エントリーポイント
  * @param {GoogleAppsScript.Events.DoPost} e
@@ -66,8 +52,6 @@ function doPost(e) {
 function processRequest(params) {
   const callId = params.callId;
 
-
-
   try {
 
     if (!callId || !params.callDatetime || !params.summary || !params.fullTranscript) {
@@ -77,8 +61,6 @@ function processRequest(params) {
     }
 
     console.log(`処理開始: Call ID = ${callId}`);
-
-
 
     // ★ request_idsの有無で処理を分岐 ★
 
@@ -92,15 +74,11 @@ function processRequest(params) {
 
       if (!updatedDetails) throw new Error("AIからの応答(更新)が不正でした。");
 
-      
-
       const targetRequestId = params.request_ids.split(',')[0].trim(); // リストの先頭IDを対象とする
 
       updateExistingRequest(targetRequestId, params, updatedDetails);
 
       updateCallLogOnSuccess(callId, null); // 更新時は新しいIDを追加しない
-
-
 
     } else {
 
@@ -114,19 +92,13 @@ function processRequest(params) {
 
       if (!extractedDetails) throw new Error("AIからの応答(新規)が不正でした。");
 
-
-
       createNewRequest(params, requestId, extractedDetails);
 
       updateCallLogOnSuccess(callId, requestId); // 新しいIDを渡す
 
     }
 
-
-
     console.log(`処理完了: Call ID = ${callId}`);
-
-
 
   } catch (error) {
 
@@ -146,10 +118,6 @@ function processRequest(params) {
  * テスト用関数
  * GASエディタから直接実行してテスト可能
  */
-/**
- * テスト用関数
- * GASエディタから直接実行してテスト可能
- */
 function testProcessRequest() {
   // TODO: テストデータを設定してください
   const testParams = {
@@ -161,14 +129,11 @@ function testProcessRequest() {
 }
 
 
-
-
 // =================================================================
 
 // Gemini API 呼び出し関数群 (新規用と更新用)
 
 // =================================================================
-
 
 
 /**
@@ -224,8 +189,6 @@ function extractNewRequestDetailsWithGemini(summary, fullTranscript) {
   return callGemini(prompt);
 
 }
-
-
 
 /**
 
@@ -289,8 +252,6 @@ function updateRequestDetailsWithGemini(params) {
 
 }
 
-
-
 /**
 
  * Gemini APIを呼び出す共通関数
@@ -330,15 +291,11 @@ function callGemini(prompt) {
 }
 
 
-
-
-
 // =================================================================
 
 // AppSheet API 呼び出し関数群
 
 // =================================================================
-
 
 
 /**
@@ -388,7 +345,6 @@ function createNewRequest(params, requestId, extractedDetails) {
 }
 
 
-
 /**
 
  * AppSheetの既存の依頼行を更新する
@@ -428,7 +384,6 @@ function updateExistingRequest(requestId, params, updatedDetails) {
 }
 
 
-
 /**
 
  * 成功時に元の通話記録を更新する
@@ -452,7 +407,6 @@ function updateCallLogOnSuccess(callId, newRequestId) {
   callAppSheetApi(MAIN_APP_ID, MAIN_APP_ACCESS_KEY, LOGS_TABLE_NAME, payload);
 
 }
-
 
 
 /**
@@ -486,7 +440,6 @@ function updateCallLogOnError(callId, errorMessage) {
 }
 
 
-
 /**
 
  * AppSheet APIを呼び出す共通関数
@@ -518,7 +471,6 @@ function callAppSheetApi(appId, accessKey, tableName, payload) {
   }
 
 }
-
 
 
 // 依頼ID生成関数

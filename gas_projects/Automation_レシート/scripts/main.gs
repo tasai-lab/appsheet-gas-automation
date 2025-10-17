@@ -472,7 +472,6 @@ function isDuplicateEntry_(date, time, amount, payer, existingData) {
     newDateObj.setHours(0, 0, 0, 0);
     const newDateTimestamp = newDateObj.getTime();
 
-
     // --- スプレッドシートの既存データと比較 ---
     for (const row of existingData) {
       // 1. 支払者を比較（違うなら次の行へ）

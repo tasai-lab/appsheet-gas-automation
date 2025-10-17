@@ -1,9 +1,3 @@
-
-
-
-
-
-
 /**
 
  * @fileoverview AppSheetからのWebhookを受け取り、Google Drive内のファイルを検索し、
@@ -17,13 +11,11 @@
  */
 
 
-
 // =================================================================================
 
 // 1. 設定セクション (ここを修正するだけで動作をカスタマイズできます)
 
 // =================================================================================
-
 
 
 /**
@@ -71,65 +63,6 @@ const APPSHEET_CONFIGS = {
 };
 
 
-
-/** デフォルトで使用する設定の名称 */
-
-const DEFAULT_CONFIG_NAME = 'f-hokan';
-
-
-
-/** エラー発生時に通知メールを送信する宛先 */
-
-const ERROR_RECIPIENTS = ['t.asai@fractal-group.co.jp'];
-
-
-
-/** スクリプトの動作を制御する定数 */
-
-const SCRIPT_CONSTANTS = {
-
-  LOCK_TIMEOUT_MS: 30000, // ロックの最大待機時間 (ミリ秒)
-
-  PRE_PROCESS_SLEEP_MS: 5000, // メイン処理前の待機時間 (ミリ秒)
-
-  // 冪等性管理で使用するステータス (タイポ防止のため定数化)
-
-  IDEMPOTENCY_STATUS: {
-
-    PROCESSING: 'processing',
-
-    COMPLETED: 'completed',
-
-  },
-
-  // AppSheetに設定するステータス (タイポ防止のため定数化)
-
-  APPSHEET_STATUS: {
-
-    SUCCESS_DEFAULT: '処理中',
-
-    ERROR: 'エラー',
-
-  },
-
-  // デバッグモードの有効/無効 (trueにすると、より詳細なログが出力されます)
-
-  DEBUG_MODE: false
-
-};
-
-
-
-
-
-// =================================================================================
-
-// 2. メイン実行関数 (エントリーポイント)
-
-// =================================================================================
-
-
-
 /**
 
  * AppSheet WebhookからのPOSTリクエストを処理するメイン関数。
@@ -140,10 +73,6 @@ const SCRIPT_CONSTANTS = {
 
  */
 
-/**
- * AppSheet Webhook エントリーポイント
- * @param {GoogleAppsScript.Events.DoPost} e
- */
 /**
  * AppSheet Webhook エントリーポイント
  * @param {GoogleAppsScript.Events.DoPost} e
@@ -166,8 +95,6 @@ function processRequest(params) {
 
   let executionContext = {}; // 処理全体で引き回すコンテキスト情報
 
-
-
   try {
 
     // --- STEP 1: リクエストの解析とコンテキストの初期化 ---
@@ -175,8 +102,6 @@ function processRequest(params) {
     const { appConfig, config, data, baseFolderId } = parseRequest_(e);
 
     const keyValue = data.keyValue;
-
-
 
     executionContext = {
 
@@ -194,8 +119,6 @@ function processRequest(params) {
 
     logger.info('スクリプト実行開始');
 
-
-
     // --- STEP 2: 重複実行の防止 (冪等性チェック) ---
 
     lock = LockService.getScriptLock();
@@ -207,8 +130,6 @@ function processRequest(params) {
     }
 
     logger.info('スクリプト実行ロック取得成功');
-
-
 
     const currentStatus = PropertiesService.getScriptProperties().getProperty(executionContext.idempotencyKey);
 
@@ -222,13 +143,9 @@ function processRequest(params) {
 
     setIdempotencyStatus_(executionContext.idempotencyKey, SCRIPT_CONSTANTS.IDEMPOTENCY_STATUS.PROCESSING, logger);
 
-    
-
     // --- STEP 3: メイン処理の実行 ---
 
     const rowToUpdate = executeMainLogic_(data, baseFolderId, config, logger);
-
-
 
     // --- STEP 4: 正常完了処理 ---
 
@@ -236,13 +153,9 @@ function processRequest(params) {
 
     updateAppSheetRecord_(appConfig, config.tableName, rowToUpdate, logger);
 
-    
-
     logger.info('スクリプト正常終了');
 
     return ContentService.createTextOutput(JSON.stringify({ status: "Processed" }));
-
-
 
   } catch (error) {
 
@@ -253,8 +166,6 @@ function processRequest(params) {
     const logger = executionContext.idempotencyKey ? new CustomLogger_(executionContext) : new CustomLogger_({configName: 'N/A', keyValue: 'N/A'});
 
     return handleExecutionError_(error, executionContext, logger);
-
-
 
   } finally {
 
@@ -277,11 +188,6 @@ function processRequest(params) {
   }
 }
 
-
-/**
- * テスト用関数
- * GASエディタから直接実行してテスト可能
- */
 /**
  * テスト用関数
  * GASエディタから直接実行してテスト可能
@@ -297,16 +203,11 @@ function testProcessRequest() {
 }
 
 
-
-
-
-
 // =================================================================================
 
 // 3. 機能別ヘルパー関数群 (ロジックの詳細)
 
 // =================================================================================
-
 
 
 /**
@@ -335,8 +236,6 @@ function parseRequest_(e) {
 
   const appConfig = APPSHEET_CONFIGS[configName];
 
-
-
   if (!appConfig) {
 
     const errorMessage = `指定されたAppSheet設定名 "${configName}" はAPPSHEET_CONFIGS内に見つかりません。`;
@@ -355,8 +254,6 @@ function parseRequest_(e) {
 
   appConfig.name = configName; // 後でログ出力に使うため、設定名自体をオブジェクトに追加
 
-
-
   return {
 
     appConfig: appConfig,
@@ -370,8 +267,6 @@ function parseRequest_(e) {
   };
 
 }
-
-
 
 /**
 
@@ -394,9 +289,6 @@ function setIdempotencyStatus_(key, status, logger) {
   logger.info(`冪等性キーのステータスを更新 -> [${status}]`);
 
 }
-
-
-
 
 
 /**
@@ -423,15 +315,11 @@ function executeMainLogic_(data, baseFolderId, config, logger) {
 
   Utilities.sleep(SCRIPT_CONSTANTS.PRE_PROCESS_SLEEP_MS);
 
-
-
   const rowToUpdate = {
 
     [config.keyColumn]: data.keyValue
 
   };
-
-
 
   if (data.currentFileId) {
 
@@ -441,13 +329,9 @@ function executeMainLogic_(data, baseFolderId, config, logger) {
 
     if (!data.fileName) throw new Error("ファイルパス(fileName)が空です。");
 
-    
-
     logger.info(`ファイル検索開始: BaseFolderID=${baseFolderId}, FilePath=${data.fileName}`);
 
     const foundFile = findFileInDrive_(baseFolderId, data.fileName, logger);
-
-    
 
     rowToUpdate[config.fileIdColumn] = foundFile.getId();
 
@@ -456,8 +340,6 @@ function executeMainLogic_(data, baseFolderId, config, logger) {
     logger.info(`ファイル発見成功: ID=${foundFile.getId()}, URL=${foundFile.getUrl()}`);
 
   }
-
-  
 
   // 正常完了時のステータスを設定
 
@@ -471,16 +353,11 @@ function executeMainLogic_(data, baseFolderId, config, logger) {
 
   }
 
-
-
   logger.info('メイン処理正常完了');
 
   return rowToUpdate;
 
 }
-
-
-
 
 
 /**
@@ -509,8 +386,6 @@ function findFileInDrive_(baseFolderId, filePath, logger) {
 
   logger.debug('ファイルパス解析結果', { pathParts, fileName });
 
-
-
   for (const folderName of pathParts) {
 
     const folders = currentFolder.getFoldersByName(folderName);
@@ -527,8 +402,6 @@ function findFileInDrive_(baseFolderId, filePath, logger) {
 
   }
 
-
-
   const files = currentFolder.getFilesByName(fileName);
 
   if (!files.hasNext()) {
@@ -537,14 +410,9 @@ function findFileInDrive_(baseFolderId, filePath, logger) {
 
   }
 
-  
-
   return files.next();
 
 }
-
-
-
 
 
 /**
@@ -575,8 +443,6 @@ function updateAppSheetRecord_(appConfig, tableName, rowData, logger) {
 
   }
 
-  
-
   const apiPayload = {
 
     "Action": "Edit",
@@ -586,8 +452,6 @@ function updateAppSheetRecord_(appConfig, tableName, rowData, logger) {
     "Rows": [ rowData ]
 
   };
-
-  
 
   const apiUrl = `${appConfig.API_ENDPOINT}${appConfig.APP_ID}/tables/${tableName}/Action`;
 
@@ -605,21 +469,15 @@ function updateAppSheetRecord_(appConfig, tableName, rowData, logger) {
 
   };
 
-
-
   logger.info(`AppSheet API への更新リクエスト開始 (URL: ${apiUrl})`);
 
   logger.debug('AppSheet API Request Payload', apiPayload);
-
-
 
   const response = UrlFetchApp.fetch(apiUrl, options);
 
   const responseCode = response.getResponseCode();
 
   const responseBody = response.getContentText();
-
-
 
   if (responseCode >= 200 && responseCode < 300) {
 
@@ -636,9 +494,6 @@ function updateAppSheetRecord_(appConfig, tableName, rowData, logger) {
   }
 
 }
-
-
-
 
 
 /**
@@ -663,11 +518,7 @@ function handleExecutionError_(error, context, logger) {
 
   const errorStack = error.stack || 'スタックトレースなし';
 
-
-
   logger.error(`スクリプト実行中に致命的なエラーが発生しました: ${errorMessage}`, errorStack);
-
-  
 
   // 冪等性キーを削除して再実行を可能にする
 
@@ -679,8 +530,6 @@ function handleExecutionError_(error, context, logger) {
 
   }
 
-
-
   // エラー通知メールを送信
 
   if (ERROR_RECIPIENTS && ERROR_RECIPIENTS.length > 0) {
@@ -690,8 +539,6 @@ function handleExecutionError_(error, context, logger) {
     const body = `
 
 AppSheet連携スクリプト("${context.configName || '不明'}"設定)の実行中にエラーが発生しました。
-
-
 
 --------------------------------------------------
 
@@ -715,8 +562,6 @@ ${errorStack}
 
 --------------------------------------------------
 
-
-
 このエラーにより、該当タスクの冪等性キーは削除されました。
 
 AppSheet上で原因を修正後、再実行が可能です。
@@ -728,8 +573,6 @@ AppSheet上で原因を修正後、再実行が可能です。
     logger.info(`エラー通知メールを送信しました: To=${ERROR_RECIPIENTS.join(',')}`);
 
   }
-
-  
 
   // エラーが発生した場合でも、AppSheet側のステータスを「エラー」に更新する試みを行う
 
@@ -757,16 +600,9 @@ AppSheet上で原因を修正後、再実行が可能です。
 
   }
 
-
-
   return ContentService.createTextOutput(JSON.stringify({ status: "Error", message: errorMessage }));
 
 }
-
-
-
-
-
 
 
 // =================================================================================
@@ -774,7 +610,6 @@ AppSheet上で原因を修正後、再実行が可能です。
 // 4. ユーティリティ (汎用的な補助機能)
 
 // =================================================================================
-
 
 
 /**
@@ -800,7 +635,6 @@ class CustomLogger_ {
   }
 
   
-
   _log(level, message, details = '') {
 
     const timestamp = new Date().toISOString();
@@ -808,7 +642,6 @@ class CustomLogger_ {
     const logEntry = `[${timestamp}] [${level}] [Config: ${this.context.configName}] [Key: ${this.context.keyValue}] - ${message}`;
 
     
-
     // 詳細情報があれば追記
 
     let fullLog = logEntry;
@@ -822,11 +655,9 @@ class CustomLogger_ {
     }
 
     
-
     Logger.log(fullLog);
 
   }
-
 
 
   info(message) {
@@ -836,13 +667,11 @@ class CustomLogger_ {
   }
 
 
-
   warn(message) {
 
     this._log('WARN', message);
 
   }
-
 
 
   error(message, errorStack = '') {
@@ -852,7 +681,6 @@ class CustomLogger_ {
   }
 
   
-
   /**
 
    * デバッグモードが有効な場合のみログを出力する
@@ -876,7 +704,6 @@ class CustomLogger_ {
 }
 
 
-
 /**
 
  * =================================================================================
@@ -888,22 +715,17 @@ class CustomLogger_ {
  */
 
 
-
 /**
 
  * コード内で指定されたID (keyValue) に紐づく処理ステータス（冪等性キー）を強制的に削除する関数。
 
  * 処理がスタックしてしまったタスクを手動でリセットしたい場合に使用します。
 
- *
-
  * @description この関数はGASエディタから手動で実行してください。
 
  */
 
 function resetTaskStatus() {
-
-  
 
   // ▼▼▼▼▼【設定箇所】▼▼▼▼▼
 
@@ -913,15 +735,9 @@ function resetTaskStatus() {
 
   // ▲▲▲▲▲【設定箇所】▲▲▲▲▲
 
-
-
-
-
   // --- 処理開始 ---
 
   Logger.log(`処理ロック解除ツールを開始します。対象ID: [${KEY_VALUE_TO_RESET}]`);
-
-
 
   // 1. 入力チェック
 
@@ -933,8 +749,6 @@ function resetTaskStatus() {
 
   }
 
-
-
   try {
 
     // 2. 冪等性キーを組み立てて、存在確認
@@ -945,8 +759,6 @@ function resetTaskStatus() {
 
     const currentStatus = properties.getProperty(idempotencyKey);
 
-
-
     if (currentStatus === null) {
 
       Logger.log(`完了: 指定されたIDのロックは存在しませんでした。(検索キー: ${idempotencyKey})`);
@@ -955,13 +767,9 @@ function resetTaskStatus() {
 
     }
 
-
-
     // 3. キーを削除
 
     properties.deleteProperty(idempotencyKey);
-
-
 
     // 4. 実行ログに成功メッセージを出力
 
@@ -972,8 +780,6 @@ function resetTaskStatus() {
     Logger.log(` - 解放したキー: ${idempotencyKey}`);
 
     Logger.log(` - 解放前のステータス: ${currentStatus}`);
-
-
 
   } catch (e) {
 

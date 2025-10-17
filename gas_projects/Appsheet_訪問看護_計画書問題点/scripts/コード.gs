@@ -1,9 +1,3 @@
-
-
-
-
-
-
 // --- 1. 基本設定 (★ご自身の環境に合わせて全て修正してください) ---
 
 const GEMINI_API_KEY = 'AIzaSyDUKFlE6_NYGehDYOxiRQcHpjG2l7GZmTY'; // Gemini APIキー
@@ -15,11 +9,9 @@ const ACCESS_KEY = 'V2-s6fif-zteYn-AGhoC-EhNLX-NNwgP-nHXAr-hHGZp-XxyPY'; // AppS
 const ERROR_NOTIFICATION_EMAIL = "t.asai@fractal-group.co.jp"; // ★ エラー通知先のメールアドレス
 
 
-
 // テーブル名
 
 const PROBLEMS_TABLE_NAME = 'VN_Plan_Problems';
-
 
 
 /**
@@ -28,10 +20,6 @@ const PROBLEMS_TABLE_NAME = 'VN_Plan_Problems';
 
  */
 
-/**
- * AppSheet Webhook エントリーポイント
- * @param {GoogleAppsScript.Events.DoPost} e
- */
 /**
  * AppSheet Webhook エントリーポイント
  * @param {GoogleAppsScript.Events.DoPost} e
@@ -52,8 +40,6 @@ function doPost(e) {
 function processRequest(params) {
   const problemId = params.problemId;
 
-
-
   try {
 
     const { contextText, problemPoint, problemIdentifiedDate } = params;
@@ -66,8 +52,6 @@ function processRequest(params) {
 
     console.log(`処理開始: Problem ID = ${problemId}, 問題点 = ${problemPoint}`);
 
-
-
     const plan = generateCarePlanWithGemini(contextText, problemPoint, problemIdentifiedDate);
 
     if (!plan) {
@@ -76,13 +60,9 @@ function processRequest(params) {
 
     }
 
-
-
     updatePlanInAppSheet(problemId, plan);
 
     console.log(`処理完了。ID ${problemId} の看護計画を更新しました。`);
-
-
 
   } catch (error) {
 
@@ -102,10 +82,6 @@ function processRequest(params) {
  * テスト用関数
  * GASエディタから直接実行してテスト可能
  */
-/**
- * テスト用関数
- * GASエディタから直接実行してテスト可能
- */
 function testProcessRequest() {
   // TODO: テストデータを設定してください
   const testParams = {
@@ -115,8 +91,6 @@ function testProcessRequest() {
 
   return CommonTest.runTest(processRequest, testParams, 'Appsheet_訪問看護_計画書問題点');
 }
-
-
 
 
 /**
@@ -135,13 +109,9 @@ function generateCarePlanWithGemini(contextText, problemPoint, identifiedDate) {
 
 これから提供される情報に基づき、質の高い訪問看護計画（O-P, E-P/C-P）を立案してください。
 
-
-
 # 指示
 
 提供された#参照情報と、特に注目している#問題点を専門的に分析し、以下の#出力形式（JSON）に従って、看護計画を生成してください。
-
-
 
 # 参照情報
 
@@ -151,13 +121,9 @@ function generateCarePlanWithGemini(contextText, problemPoint, identifiedDate) {
 
 ${contextText}
 
-
-
 # 問題点
 
 ${problemPoint}
-
-
 
 # 看護計画作成のルール
 
@@ -166,8 +132,6 @@ ${problemPoint}
 - **表現**: 医療専門職が使う、簡潔明瞭な記録様式の表現（常体、「～である」「～する」）を厳守してください。丁寧語（「です」「ます」）は絶対に使用しないでください。
 
 - **具体性**: 抽象的な表現は避け、誰が読んでも具体的に何をすべきか理解できるレベルで記述してください。
-
-
 
 # 出力形式（JSON）
 
@@ -187,8 +151,6 @@ ${problemPoint}
 
 `;
 
-
-
   const textPart = { text: prompt };
 
   const model = 'gemini-2.5-pro';
@@ -201,15 +163,11 @@ ${problemPoint}
 
   const options = { method: 'post', contentType: 'application/json', payload: JSON.stringify(requestBody), muteHttpExceptions: true };
 
-
-
   const response = UrlFetchApp.fetch(url, options);
 
   const responseText = response.getContentText();
 
   Logger.log('Gemini API Response: ' + responseText);
-
-
 
   const jsonResponse = JSON.parse(responseText);
 
@@ -221,20 +179,15 @@ ${problemPoint}
 
   let content = jsonResponse.candidates[0].content.parts[0].text;
 
-  
-
   const startIndex = content.indexOf('{');
 
   const endIndex = content.lastIndexOf('}');
 
   if (startIndex === -1 || endIndex === -1) throw new Error("AIの応答からJSONを抽出できませんでした。");
 
-  
-
   return JSON.parse(content.substring(startIndex, endIndex + 1));
 
 }
-
 
 
 /**
@@ -263,8 +216,6 @@ function updatePlanInAppSheet(problemId, planData) {
 
   const payload = { Action: "Edit", Properties: { "Locale": "ja-JP" }, Rows: [rowData] };
 
-  
-
   const apiUrl = `https://api.appsheet.com/api/v2/apps/${APP_ID}/tables/${PROBLEMS_TABLE_NAME}/Action`;
 
   const options = {
@@ -292,9 +243,6 @@ function updatePlanInAppSheet(problemId, planData) {
   }
 
 }
-
-
-
 
 
 /**

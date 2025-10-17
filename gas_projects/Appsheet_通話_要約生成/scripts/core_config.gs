@@ -1,16 +1,8 @@
-
-
-
-
-
-
 /**
 
  * 設定管理モジュール
 
  * Script Propertiesから設定を取得・管理
-
- * 
 
  * @author Fractal Group
 
@@ -21,14 +13,11 @@
  */
 
 
-
 /**
 
  * 設定を取得
 
  * Script Propertiesから全ての設定値を取得
-
- * 
 
  * @return {Object} 設定オブジェクト
 
@@ -37,8 +26,6 @@
 function getConfig() {
 
   const props = PropertiesService.getScriptProperties();
-
-  
 
   return {
 
@@ -50,13 +37,9 @@ function getConfig() {
 
     gcpBucketName: props.getProperty('GCP_BUCKET_NAME') || '',
 
-    
-
     // Google Drive設定（共有ドライブ）
 
     sharedDriveFolderId: props.getProperty('SHARED_DRIVE_FOLDER_ID') || '15IahaL7lOjTT0QZ2IfDJbO7SXkGnsKOR',
-
-    
 
     // Vertex AI設定
 
@@ -70,8 +53,6 @@ function getConfig() {
 
     topK: parseInt(props.getProperty('TOP_K') || '32'),
 
-    
-
     // AppSheet API設定
 
     appsheetAppId: props.getProperty('APPSHEET_APP_ID') || '',
@@ -82,8 +63,6 @@ function getConfig() {
 
     actionsTableName: props.getProperty('ACTIONS_TABLE_NAME') || 'Call_Actions',
 
-    
-
     // 通知設定
 
     errorNotificationEmail: props.getProperty('ERROR_NOTIFICATION_EMAIL') || '',
@@ -91,8 +70,6 @@ function getConfig() {
     emailNotificationEnabled: props.getProperty('EMAIL_NOTIFICATION_ENABLED') !== 'false',
 
     notifyOnSuccess: props.getProperty('NOTIFY_ON_SUCCESS') === 'true',
-
-    
 
     // システム設定
 
@@ -104,15 +81,11 @@ function getConfig() {
 
 }
 
-
-
 /**
 
  * 初期設定を実行
 
  * Script Propertiesに設定値を一括保存
-
- * 
 
  * ⚠️ この関数は初回のみ実行してください
 
@@ -123,8 +96,6 @@ function getConfig() {
 function setupScriptProperties() {
 
   const props = PropertiesService.getScriptProperties();
-
-  
 
   // ★★★ 以下の値をご自身の環境に合わせて修正してください ★★★
 
@@ -138,13 +109,9 @@ function setupScriptProperties() {
 
     'GCP_BUCKET_NAME': 'macro-shadow-458705-v8-call-logs',
 
-    
-
     // Google Drive設定（共有ドライブ）
 
     'SHARED_DRIVE_FOLDER_ID': '15IahaL7lOjTT0QZ2IfDJbO7SXkGnsKOR',
-
-    
 
     // Vertex AI設定
 
@@ -158,8 +125,6 @@ function setupScriptProperties() {
 
     'TOP_K': '32',
 
-    
-
     // AppSheet API設定
 
     'APPSHEET_APP_ID': '4762f34f-3dbc-4fca-9f84-5b6e809c3f5f',
@@ -170,8 +135,6 @@ function setupScriptProperties() {
 
     'ACTIONS_TABLE_NAME': 'Call_Actions',
 
-    
-
     // 通知設定
 
     'ERROR_NOTIFICATION_EMAIL': 't.asai@fractal-group.co.jp',
@@ -179,8 +142,6 @@ function setupScriptProperties() {
     'EMAIL_NOTIFICATION_ENABLED': 'true',
 
     'NOTIFY_ON_SUCCESS': 'false',
-
-    
 
     // システム設定
 
@@ -190,11 +151,7 @@ function setupScriptProperties() {
 
   };
 
-  
-
   props.setProperties(settings);
-
-  
 
   Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
@@ -210,8 +167,6 @@ function setupScriptProperties() {
 
 }
 
-
-
 /**
 
  * 現在の設定を表示
@@ -223,8 +178,6 @@ function setupScriptProperties() {
 function showCurrentConfig() {
 
   const config = getConfig();
-
-  
 
   Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
@@ -297,12 +250,9 @@ function showCurrentConfig() {
 }
 
 
-
 /**
 
  * Script Propertiesをクリア
-
- * 
 
  * ⚠️ 警告: この関数を実行すると全ての設定が削除されます
 
@@ -314,23 +264,17 @@ function clearScriptProperties() {
 
   props.deleteAllProperties();
 
-  
-
   Logger.log('⚠️ Script Propertiesを全てクリアしました');
 
   Logger.log('再度 setupScriptProperties() を実行して設定してください');
 
 }
 
-
-
 /**
 
  * 設定の検証
 
  * 必須項目が設定されているかチェック
-
- * 
 
  * @return {Object} {isValid: boolean, errors: string[]}
 
@@ -342,8 +286,6 @@ function validateConfig() {
 
   const errors = [];
 
-  
-
   // 必須項目チェック
 
   if (!config.gcpProjectId) {
@@ -352,15 +294,11 @@ function validateConfig() {
 
   }
 
-  
-
   if (!config.appsheetAppId) {
 
     errors.push('APPSHEET_APP_ID が未設定です');
 
   }
-
-  
 
   if (!config.appsheetAccessKey) {
 
@@ -368,15 +306,11 @@ function validateConfig() {
 
   }
 
-  
-
   if (config.emailNotificationEnabled && !config.errorNotificationEmail) {
 
     errors.push('メール通知が有効ですが ERROR_NOTIFICATION_EMAIL が未設定です');
 
   }
-
-  
 
   if (config.useCloudStorage && !config.gcpBucketName) {
 
@@ -384,11 +318,7 @@ function validateConfig() {
 
   }
 
-  
-
   const isValid = errors.length === 0;
-
-  
 
   if (isValid) {
 
@@ -402,9 +332,6 @@ function validateConfig() {
 
   }
 
-  
-
   return { isValid, errors };
 
 }
-

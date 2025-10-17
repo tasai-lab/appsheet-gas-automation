@@ -1,9 +1,3 @@
-
-
-
-
-
-
 /**
 
  * 設定ファイル  // Vertex AI設定
@@ -21,7 +15,6 @@
  */
 
 
-
 // ===================================
 
 // Google Cloud Platform 設定
@@ -37,7 +30,6 @@ const GCP_CONFIG = {
   bucketName: 'nursing-records-audio-macro',
 
   
-
   // Vertex AI設定
 
   vertexAI: {
@@ -51,7 +43,6 @@ const GCP_CONFIG = {
   }
 
 };
-
 
 
 // ===================================
@@ -71,7 +62,6 @@ const GEMINI_CONFIG = {
 };
 
 
-
 // ===================================
 
 // AppSheet 設定
@@ -89,7 +79,6 @@ const APPSHEET_CONFIG = {
 };
 
 
-
 // ===================================
 
 // スプレッドシート設定
@@ -103,7 +92,6 @@ const SPREADSHEET_CONFIG = {
   sheetName: 'Care_Provided'
 
 };
-
 
 
 // ===================================
@@ -123,7 +111,6 @@ const NOTIFICATION_CONFIG = {
 };
 
 
-
 // ===================================
 
 // システム設定
@@ -137,7 +124,6 @@ const SYSTEM_CONFIG = {
   debugMode: false,
 
   
-
   // タイムアウト設定(ミリ秒)
 
   timeout: {
@@ -151,7 +137,6 @@ const SYSTEM_CONFIG = {
   }
 
 };
-
 
 
 // ===================================
@@ -181,7 +166,6 @@ const AUDIO_CONFIG = {
 };
 
 
-
 // ===================================
 
 // 共有ドライブ設定
@@ -193,7 +177,6 @@ const SHARED_DRIVE_CONFIG = {
   audioRootFolderId: '18Fwwm7lsBMy5BMFL_TnnFDh9lNVyAX04' // 音声記録フォルダ(共有ドライブ)
 
 };
-
 
 
 // ===================================
@@ -233,7 +216,6 @@ const RECORD_TYPE_CONFIG = {
   },
 
   
-
   psychiatry: {
 
     name: '精神科',

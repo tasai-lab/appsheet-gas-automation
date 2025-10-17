@@ -1,6 +1,3 @@
-
-
-
 /**
  * 通話関連クエリ処理
  * AppSheetからのWebhookを受け取り、Gemini APIで回答を生成し、AppSheetに書き戻す
@@ -33,10 +30,6 @@ const CONFIG = {
  * Webhookエントリポイント
  * @param {Object} e - Webhookイベント
  * @return {TextOutput} レスポンス
- */
-/**
- * AppSheet Webhook エントリーポイント
- * @param {GoogleAppsScript.Events.DoPost} e
  */
 /**
  * AppSheet Webhook エントリーポイント
@@ -129,10 +122,6 @@ function processRequest(params) {
 }
 
 
-/**
- * テスト用関数
- * GASエディタから直接実行してテスト可能
- */
 /**
  * テスト用関数
  * GASエディタから直接実行してテスト可能

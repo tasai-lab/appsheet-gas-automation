@@ -1,9 +1,3 @@
-
-
-
-
-
-
 // --- 1. 基本設定 (★ご自身の環境に合わせて全て修正してください) ---
 
 const APP_ID = '4762f34f-3dbc-4fca-9f84-5b6e809c3f5f'; // AppSheetのアプリID
@@ -11,7 +5,6 @@ const APP_ID = '4762f34f-3dbc-4fca-9f84-5b6e809c3f5f'; // AppSheetのアプリID
 const TABLE_NAME = 'Call_Logs';     // 対象のテーブル名
 
 const ACCESS_KEY = 'V2-I1zMZ-90iua-47BBk-RBjO1-N0mUo-kY25j-VsI4H-eRvwT'; // AppSheet APIのアクセスキー
-
 
 
 // --- 2. メール通知設定 (★必要に応じて修正してください) ---
@@ -22,17 +15,6 @@ const SEND_ERROR_EMAIL = true;   // ★ 追加: エラー発生時にメール�
 
 const EMAIL_RECIPIENT = 't.asai@fractal-group.co.jp'; // ★ 追加: 通知先メールアドレス
 
-
-
-/**
-
- * スクリプト実行時エラーをAppSheetとメールに記録/通知する関数
-
- * @param {string} callId - 更新対象の通話ID
-
- * @param {string} errorMessage - 記録するエラーメッセージ
-
- */
 
 /**
  * スクリプト実行時エラーを処理
@@ -55,19 +37,6 @@ function handleScriptError(recordId, errorMessage) {
 }
 
 
-
-/**
-
- * AppSheetのWebhookからPOSTリクエストを受け取るメイン関数
-
- * @param {object} e - Webhookイベントオブジェクト
-
- */
-
-/**
- * AppSheet Webhook エントリーポイント
- * @param {GoogleAppsScript.Events.DoPost} e
- */
 /**
  * AppSheet Webhook エントリーポイント
  * @param {GoogleAppsScript.Events.DoPost} e
@@ -257,10 +226,6 @@ function processRequest(params) {
  * テスト用関数
  * GASエディタから直接実行してテスト可能
  */
-/**
- * テスト用関数
- * GASエディタから直接実行してテスト可能
- */
 function testProcessRequest() {
   // TODO: テストデータを設定してください
   const testParams = {
@@ -272,68 +237,37 @@ function testProcessRequest() {
 }
 
 
-
-
 /**
-
  * 指定されたフォルダとその全てのサブフォルダから、ファイル名に特定文字列を含む最新のファイルを検索する
-
  * @param {Folder} folder - 検索を開始する親フォルダ
-
  * @param {string} partOfFileName - ファイル名に含まれる文字列 (callId)
-
  * @return {File|null} - 見つかった最新のファイル、またはnull
-
  */
-
 function findFileInSubfolders(folder, partOfFileName) {
-
   let latestFile = null;
-
   let latestDate = new Date(0);
 
-
-
   function searchRecursively(currentFolder) {
-
     const files = currentFolder.searchFiles(
-
       `title contains '${partOfFileName}' and trashed = false`
-
     );
 
     while (files.hasNext()) {
-
       let currentFile = files.next();
-
       let createdDate = currentFile.getDateCreated();
 
       if (createdDate > latestDate) {
-
         latestFile = currentFile;
-
         latestDate = createdDate;
-
       }
-
     }
-
-
 
     const subFolders = currentFolder.getFolders();
-
     while (subFolders.hasNext()) {
-
       searchRecursively(subFolders.next());
-
     }
-
   }
 
-
-
   searchRecursively(folder);
-
   return latestFile;
-
 }

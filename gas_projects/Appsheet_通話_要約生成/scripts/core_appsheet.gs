@@ -1,16 +1,8 @@
-
-
-
-
-
-
 /**
 
  * AppSheet API連携モジュール
 
  * Call_Logs と Call_Actions テーブルの更新
-
- * 
 
  * @author Fractal Group
 
@@ -21,14 +13,11 @@
  */
 
 
-
 /**
 
  * 通話ログを更新
 
  * Call_Logsテーブルに文字起こしと要約を記録
-
- * 
 
  * @param {string} callId - 通話ID
 
@@ -76,8 +65,6 @@ function updateCallLog(callId, transcript, summary, recordingFileId, recordingFi
 
   };
 
-  
-
   Logger.log(`[AppSheet] Call_Logs更新: ${callId}`);
 
   Logger.log(`[AppSheet] ファイルID: ${recordingFileId}`);
@@ -89,14 +76,11 @@ function updateCallLog(callId, transcript, summary, recordingFileId, recordingFi
 }
 
 
-
 /**
 
  * アクションを追加
 
  * Call_Actionsテーブルに抽出されたアクションを追加
-
- * 
 
  * @param {string} callId - 通話ID
 
@@ -117,8 +101,6 @@ function addCallActions(callId, clientId, actions, config) {
     return;
 
   }
-
-  
 
   const rows = actions.map(action => {
 
@@ -158,8 +140,6 @@ function addCallActions(callId, clientId, actions, config) {
 
     }
 
-    
-
     return {
 
       "call_id": callId,
@@ -184,8 +164,6 @@ function addCallActions(callId, clientId, actions, config) {
 
   });
 
-  
-
   const payload = {
 
     Action: "Add",
@@ -202,8 +180,6 @@ function addCallActions(callId, clientId, actions, config) {
 
   };
 
-  
-
   Logger.log(`[AppSheet] Call_Actions追加: ${rows.length}件`);
 
   callAppSheetAPI(config.actionsTableName, payload, config);
@@ -211,14 +187,11 @@ function addCallActions(callId, clientId, actions, config) {
 }
 
 
-
 /**
 
  * AppSheet APIを呼び出し
 
  * 共通API呼び出し関数
-
- * 
 
  * @param {string} tableName - テーブル名
 
@@ -231,8 +204,6 @@ function addCallActions(callId, clientId, actions, config) {
 function callAppSheetAPI(tableName, payload, config) {
 
   const apiUrl = `https://api.appsheet.com/api/v2/apps/${config.appsheetAppId}/tables/${tableName}/Action`;
-
-  
 
   const options = {
 
@@ -252,8 +223,6 @@ function callAppSheetAPI(tableName, payload, config) {
 
   };
 
-  
-
   try {
 
     const response = UrlFetchApp.fetch(apiUrl, options);
@@ -262,11 +231,7 @@ function callAppSheetAPI(tableName, payload, config) {
 
     const responseText = response.getContentText();
 
-    
-
     Logger.log(`[AppSheet API] ${tableName} - Status: ${statusCode}`);
-
-    
 
     // 200番台以外はエラー
 
@@ -286,11 +251,7 @@ function callAppSheetAPI(tableName, payload, config) {
 
     }
 
-    
-
     Logger.log(`[AppSheet API] ${tableName} - 更新成功`);
-
-    
 
   } catch (error) {
 
@@ -303,14 +264,11 @@ function callAppSheetAPI(tableName, payload, config) {
 }
 
 
-
 /**
 
  * エラーを記録
 
  * Call_Logsテーブルにエラー情報を記録
-
- * 
 
  * @param {string} callId - 通話ID
 
@@ -331,8 +289,6 @@ function recordError(callId, errorMessage, config) {
     return;
 
   }
-
-  
 
   const payload = {
 
@@ -358,8 +314,6 @@ function recordError(callId, errorMessage, config) {
 
   };
 
-  
-
   try {
 
     Logger.log(`[AppSheet] エラー記録: ${callId}`);
@@ -373,4 +327,3 @@ function recordError(callId, errorMessage, config) {
   }
 
 }
-

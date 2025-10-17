@@ -1,9 +1,3 @@
-
-
-
-
-
-
 // --- 1. 基本設定 (★ご自身の環境に合わせて全て修正してください) ---
 
 // ▼ 依頼情報アプリの情報
@@ -13,7 +7,6 @@ const REQUESTS_APP_ID = 'f40c4b11-b140-4e31-a60c-600f3c9637c8';
 const REQUESTS_APP_ACCESS_KEY = 'V2-s6fif-zteYn-AGhoC-EhNLX-NNwgP-nHXAr-hHGZp-XxyPY';
 
 
-
 // ▼ 利用者情報アプリの情報 (もし同じなら、上記と同じID/KEYを設定)
 
 const CLIENTS_APP_ID = 'f40c4b11-b140-4e31-a60c-600f3c9637c8'; 
@@ -21,11 +14,9 @@ const CLIENTS_APP_ID = 'f40c4b11-b140-4e31-a60c-600f3c9637c8';
 const CLIENTS_APP_ACCESS_KEY = 'V2-s6fif-zteYn-AGhoC-EhNLX-NNwgP-nHXAr-hHGZp-XxyPY';
 
 
-
 // Gemini APIキー
 
 const GEMINI_API_KEY = 'AIzaSyDUKFlE6_NYGehDYOxiRQcHpjG2l7GZmTY'; 
-
 
 
 // テーブル名
@@ -37,17 +28,12 @@ const CLIENTS_TABLE_NAME = 'Clients';
 const DOCUMENTS_TABLE_NAME = 'Client_Documents';
 
 
-
 /**
 
  * AppSheetのWebhookからPOSTリクエストを受け取るメイン関数
 
  */
 
-/**
- * AppSheet Webhook エントリーポイント
- * @param {GoogleAppsScript.Events.DoPost} e
- */
 /**
  * AppSheet Webhook エントリーポイント
  * @param {GoogleAppsScript.Events.DoPost} e
@@ -68,8 +54,6 @@ function doPost(e) {
 function processRequest(params) {
   const requestId = params.requestId;
 
-
-
   try {
 
     const { clientInfoTemp, requestReason, documentFileId, staffId } = params;
@@ -82,15 +66,11 @@ function processRequest(params) {
 
     console.log(`処理開始: Request ID = ${requestId}`);
 
-
-
     // 1. 新しいClientIDをAppSheetから取得して採番
 
     const newClientId = getNewClientId();
 
     console.log(`新しいClientIDを採番しました: ${newClientId}`);
-
-
 
     // 2. AIで依頼情報から利用者情報を抽出
 
@@ -98,23 +78,15 @@ function processRequest(params) {
 
     if (!extractedInfo) throw new Error("AIからの応答が不正でした。");
 
-
-
     // 3. Clientsテーブルに新しい利用者を作成
 
     createClientInAppSheet(newClientId, extractedInfo, params); // ★ paramsを丸ごと渡すように修正
-
-    
 
     // 4. 元の依頼ステータスを「反映済み」に更新
 
     updateRequestStatus(requestId, "反映済み", null);
 
-
-
     console.log(`処理完了。新しい利用者ID ${newClientId} を作成しました。`);
-
-
 
   } catch (error) {
 
@@ -134,10 +106,6 @@ function processRequest(params) {
  * テスト用関数
  * GASエディタから直接実行してテスト可能
  */
-/**
- * テスト用関数
- * GASエディタから直接実行してテスト可能
- */
 function testProcessRequest() {
   // TODO: テストデータを設定してください
   const testParams = {
@@ -147,8 +115,6 @@ function testProcessRequest() {
 
   return CommonTest.runTest(processRequest, testParams, 'Appsheet_利用者_反映');
 }
-
-
 
 
 /**
@@ -180,7 +146,6 @@ function getNewClientId() {
 }
 
 
-
 /**
 
  * Gemini APIを呼び出し、依頼情報から利用者情報を抽出する
@@ -197,21 +162,15 @@ function extractClientInfoWithGemini(clientInfoTemp, requestReason, fileId) {
 
 あなたは、訪問看護ステーションの優秀な医療事務スタッフです。以下の#依頼情報と#添付資料（もしあれば）を精査し、新しい利用者（クライアント）の基本情報を日本の公的書類の形式に準拠して、極めて正確に抽出してください。
 
-
-
 # 依頼情報
 
 ## 依頼理由
 
 ${requestReason || '記載なし'}
 
-
-
 ## 利用者に関するメモ
 
 ${clientInfoTemp}
-
-
 
 # 抽出ルールと出力形式
 
@@ -220,8 +179,6 @@ ${clientInfoTemp}
 - 該当する情報がない場合は、値にnullを設定してください。
 
 - JSON以外の説明文は一切含めないでください。
-
-
 
 {
 
@@ -263,8 +220,6 @@ ${clientInfoTemp}
 
   const parts = [textPart];
 
-
-
   if (fileId) {
 
     const file = DriveApp.getFileById(fileId);
@@ -275,8 +230,6 @@ ${clientInfoTemp}
 
   }
 
-
-
   const model = 'gemini-2.5-pro';
 
   const generationConfig = { "responseMimeType": "application/json", "temperature": 0.1 };
@@ -286,8 +239,6 @@ ${clientInfoTemp}
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
 
   const options = { method: 'post', contentType: 'application/json', payload: JSON.stringify(requestBody), muteHttpExceptions: true };
-
-
 
   const response = UrlFetchApp.fetch(url, options);
 
@@ -306,7 +257,6 @@ ${clientInfoTemp}
   return JSON.parse(jsonResponse.candidates[0].content.parts[0].text);
 
 }
-
 
 
 /**
@@ -370,7 +320,6 @@ function createClientInAppSheet(clientId, extractedInfo, params) {
 }
 
 
-
 /**
 
  * 元の依頼レコードのステータスを更新する
@@ -394,7 +343,6 @@ function updateRequestStatus(requestId, status, errorMessage) {
   callAppSheetApi(REQUESTS_APP_ID, REQUESTS_APP_ACCESS_KEY, REQUESTS_TABLE_NAME, payload);
 
 }
-
 
 
 /**
@@ -434,7 +382,6 @@ function callAppSheetApi(appId, accessKey, tableName, payload) {
 }
 
 
-
 /**
 
  * AppSheetのClientsテーブルに新しい行を作成する
@@ -449,8 +396,6 @@ function callAppSheetApi(appId, accessKey, tableName, payload) {
 
 function createClientInAppSheet(clientId, extractedInfo, params) {
 
-
-
   // ★★★ 年齢を計算するヘルパー関数 ★★★
 
   function calculateAge(birthDateString) {
@@ -459,25 +404,17 @@ function createClientInAppSheet(clientId, extractedInfo, params) {
 
     if (!birthDateString) return null;
 
-    
-
     const today = new Date();
 
     const birthDate = new Date(birthDateString);
-
-    
 
     // 日付として無効な場合は null を返す
 
     if (isNaN(birthDate.getTime())) return null;
 
-
-
     let age = today.getFullYear() - birthDate.getFullYear();
 
     const m = today.getMonth() - birthDate.getMonth();
-
-    
 
     // 今年の誕生日がまだ来ていない場合は1歳引く
 
@@ -492,7 +429,6 @@ function createClientInAppSheet(clientId, extractedInfo, params) {
   }
 
   // ★★★★★★★★★★★★★★★★★★★★★★
-
 
 
   const rowData = {
@@ -542,7 +478,6 @@ function createClientInAppSheet(clientId, extractedInfo, params) {
     "updated_by": params.staffId
 
   };
-
 
 
   const payload = { Action: "Add", Properties: { "Locale": "ja-JP" }, Rows: [rowData] };

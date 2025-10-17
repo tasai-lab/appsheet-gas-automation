@@ -1,15 +1,8 @@
-
-
-
 /**
 
  * Webhook重複実行防止ライブラリ
 
- * 
-
  * 全てのAppsheet-GASプロジェクトで使用できる統一された重複防止機能を提供
-
- * 
 
  * 機能:
 
@@ -21,8 +14,6 @@
 
  * 4. エラー時の自動クリーンアップ
 
- * 
-
  * @author Fractal Group
 
  * @version 3.0.0
@@ -32,13 +23,11 @@
  */
 
 
-
 // ========================================
 
 // 定数定義
 
 // ========================================
-
 
 
 /**
@@ -60,7 +49,6 @@ const DEDUP_PREFIX = {
 };
 
 
-
 /**
 
  * キャッシュの有効期限（秒）
@@ -80,7 +68,6 @@ const DEDUP_DURATION = {
 };
 
 
-
 /**
 
  * リトライ設定
@@ -96,7 +83,6 @@ const DEDUP_RETRY = {
 };
 
 
-
 // ========================================
 
 // 主要機能
@@ -104,14 +90,11 @@ const DEDUP_RETRY = {
 // ========================================
 
 
-
 /**
 
  * Webhook重複実行チェック（統合版）
 
  * レコードIDベースとフィンガープリントの両方でチェック
-
- * 
 
  * @param {string} recordId - レコードID（必須）
 
@@ -131,8 +114,6 @@ function checkDuplicateRequest(recordId, webhookParams = null) {
 
   }
 
-
-
   // 1. 処理中/完了フラグチェック
 
   if (isProcessingOrCompleted(recordId)) {
@@ -148,8 +129,6 @@ function checkDuplicateRequest(recordId, webhookParams = null) {
     };
 
   }
-
-
 
   // 2. Webhookフィンガープリントチェック（パラメータが提供された場合）
 
@@ -171,19 +150,14 @@ function checkDuplicateRequest(recordId, webhookParams = null) {
 
   }
 
-
-
   return { isDuplicate: false, reason: 'new_request', recordId: recordId };
 
 }
 
 
-
 /**
 
  * 処理中フラグを設定（ロック取得付き）
-
- * 
 
  * @param {string} recordId - レコードID
 
@@ -203,13 +177,9 @@ function markAsProcessingWithLock(recordId, metadata = {}) {
 
   }
 
-
-
   // LockServiceで排他制御
 
   const lock = LockService.getScriptLock();
-
-  
 
   try {
 
@@ -223,8 +193,6 @@ function markAsProcessingWithLock(recordId, metadata = {}) {
 
     }
 
-
-
     // 再度重複チェック（ロック取得後）
 
     if (isProcessingOrCompleted(recordId)) {
@@ -237,15 +205,11 @@ function markAsProcessingWithLock(recordId, metadata = {}) {
 
     }
 
-
-
     // 処理中フラグ設定
 
     const cache = CacheService.getScriptCache();
 
     const key = DEDUP_PREFIX.PROCESSING + recordId;
-
-    
 
     const flagData = {
 
@@ -259,19 +223,13 @@ function markAsProcessingWithLock(recordId, metadata = {}) {
 
     };
 
-
-
     cache.put(key, JSON.stringify(flagData), DEDUP_DURATION.PROCESSING);
 
     Logger.log(`✅ 処理中フラグ設定: ${recordId}`);
 
-    
-
     lock.releaseLock();
 
     return true;
-
-
 
   } catch (error) {
 
@@ -286,12 +244,9 @@ function markAsProcessingWithLock(recordId, metadata = {}) {
 }
 
 
-
 /**
 
  * 処理完了フラグを設定
-
- * 
 
  * @param {string} recordId - レコードID
 
@@ -309,13 +264,9 @@ function markAsCompleted(recordId, result = {}) {
 
   }
 
-
-
   const cache = CacheService.getScriptCache();
 
   const key = DEDUP_PREFIX.PROCESSING + recordId;
-
-  
 
   const flagData = {
 
@@ -329,8 +280,6 @@ function markAsCompleted(recordId, result = {}) {
 
   };
 
-
-
   // 長期間保持して重複webhook防止
 
   cache.put(key, JSON.stringify(flagData), DEDUP_DURATION.COMPLETED);
@@ -340,12 +289,9 @@ function markAsCompleted(recordId, result = {}) {
 }
 
 
-
 /**
 
  * 処理失敗フラグを設定
-
- * 
 
  * @param {string} recordId - レコードID
 
@@ -357,13 +303,9 @@ function markAsFailed(recordId, error) {
 
   if (!recordId) return;
 
-
-
   const cache = CacheService.getScriptCache();
 
   const key = DEDUP_PREFIX.PROCESSING + recordId;
-
-  
 
   const flagData = {
 
@@ -377,8 +319,6 @@ function markAsFailed(recordId, error) {
 
   };
 
-
-
   // 失敗の場合は短い期間で保持（リトライ可能にする）
 
   cache.put(key, JSON.stringify(flagData), 300); // 5分
@@ -388,12 +328,9 @@ function markAsFailed(recordId, error) {
 }
 
 
-
 /**
 
  * 処理フラグをクリア
-
- * 
 
  * @param {string} recordId - レコードID
 
@@ -402,8 +339,6 @@ function markAsFailed(recordId, error) {
 function clearProcessingFlag(recordId) {
 
   if (!recordId) return;
-
-
 
   const cache = CacheService.getScriptCache();
 
@@ -416,7 +351,6 @@ function clearProcessingFlag(recordId) {
 }
 
 
-
 // ========================================
 
 // 内部ヘルパー関数
@@ -424,12 +358,9 @@ function clearProcessingFlag(recordId) {
 // ========================================
 
 
-
 /**
 
  * 処理中または完了済みかチェック
-
- * 
 
  * @param {string} recordId - レコードID
 
@@ -444,8 +375,6 @@ function isProcessingOrCompleted(recordId) {
   const key = DEDUP_PREFIX.PROCESSING + recordId;
 
   const cachedValue = cache.get(key);
-
-
 
   if (cachedValue) {
 
@@ -467,19 +396,13 @@ function isProcessingOrCompleted(recordId) {
 
   }
 
-
-
   return false;
 
 }
 
-
-
 /**
 
  * Webhookフィンガープリントによる重複チェック
-
- * 
 
  * @param {string} recordId - レコードID
 
@@ -497,11 +420,7 @@ function isDuplicateWebhookFingerprint(recordId, params) {
 
   const key = DEDUP_PREFIX.WEBHOOK + fingerprint;
 
-
-
   const cachedValue = cache.get(key);
-
-
 
   if (cachedValue) {
 
@@ -511,27 +430,20 @@ function isDuplicateWebhookFingerprint(recordId, params) {
 
   }
 
-
-
   // 新規リクエストの場合、フィンガープリントを記録
 
   cache.put(key, new Date().toISOString(), DEDUP_DURATION.WEBHOOK_FINGERPRINT);
 
   Logger.log(`✅ 新規Webhook受付: ${recordId} (フィンガープリント: ${fingerprint.substring(0, 16)}...)`);
 
-
-
   return false;
 
 }
 
 
-
 /**
 
  * フィンガープリント生成
-
- * 
 
  * @param {string} recordId - レコードID
 
@@ -563,11 +475,7 @@ function generateFingerprint(recordId, params) {
 
   };
 
-
-
   const dataString = JSON.stringify(fingerprintData, Object.keys(fingerprintData).sort());
-
-  
 
   const signature = Utilities.computeDigest(
 
@@ -579,13 +487,9 @@ function generateFingerprint(recordId, params) {
 
   );
 
-
-
   return Utilities.base64Encode(signature);
 
 }
-
-
 
 // ========================================
 
@@ -593,13 +497,9 @@ function generateFingerprint(recordId, params) {
 
 // ========================================
 
-
-
 /**
 
  * 成功レスポンス生成
-
- * 
 
  * @param {string} recordId - レコードID
 
@@ -625,13 +525,9 @@ function createSuccessResponse(recordId, data = {}) {
 
 }
 
-
-
 /**
 
  * 重複レスポンス生成
-
- * 
 
  * @param {string} recordId - レコードID
 
@@ -659,13 +555,9 @@ function createDuplicateResponse(recordId, reason = '') {
 
 }
 
-
-
 /**
 
  * エラーレスポンス生成
-
- * 
 
  * @param {string} recordId - レコードID
 
@@ -693,23 +585,17 @@ function createErrorResponse(recordId, error) {
 
 }
 
-
-
 // ========================================
 
 // 統合実行ラッパー関数
 
 // ========================================
 
-
-
 /**
 
  * Webhook処理の統合ラッパー
 
  * 重複チェック、ロック取得、エラーハンドリングを自動化
-
- * 
 
  * 使用例:
 
@@ -719,8 +605,6 @@ function createErrorResponse(recordId, error) {
 
  * }
 
- * 
-
  * function processWebhook(params) {
 
  *   // 実際の処理
@@ -728,8 +612,6 @@ function createErrorResponse(recordId, error) {
  *   return { success: true, data: {...} };
 
  * }
-
- * 
 
  * @param {Object} e - doPost/doGetイベントオブジェクト
 
@@ -757,15 +639,11 @@ function executeWebhookWithDuplicationPrevention(e, processingFunction, options 
 
   };
 
-
-
   const config = { ...defaultOptions, ...options };
 
   let recordId = 'unknown';
 
   let params = {};
-
-
 
   try {
 
@@ -781,11 +659,7 @@ function executeWebhookWithDuplicationPrevention(e, processingFunction, options 
 
     }
 
-
-
     recordId = params[config.recordIdField];
-
-    
 
     if (!recordId) {
 
@@ -793,11 +667,7 @@ function executeWebhookWithDuplicationPrevention(e, processingFunction, options 
 
     }
 
-
-
     Logger.log(`📥 Webhook受信: ${recordId}`);
-
-
 
     // 2. 重複チェック
 
@@ -809,8 +679,6 @@ function executeWebhookWithDuplicationPrevention(e, processingFunction, options 
 
     );
 
-
-
     if (dupCheck.isDuplicate) {
 
       Logger.log(`🔒 重複リクエストをスキップ: ${recordId} (理由: ${dupCheck.reason})`);
@@ -818,8 +686,6 @@ function executeWebhookWithDuplicationPrevention(e, processingFunction, options 
       return createDuplicateResponse(recordId, dupCheck.reason);
 
     }
-
-
 
     // 3. 処理中フラグ設定（ロック取得）
 
@@ -831,15 +697,11 @@ function executeWebhookWithDuplicationPrevention(e, processingFunction, options 
 
     }
 
-
-
     // 4. 実際の処理実行
 
     Logger.log(`▶️ 処理開始: ${recordId}`);
 
     const result = processingFunction(params);
-
-
 
     // 5. 完了マーク
 
@@ -849,25 +711,17 @@ function executeWebhookWithDuplicationPrevention(e, processingFunction, options 
 
     }
 
-
-
     Logger.log(`✅ 処理完了: ${recordId}`);
 
     return createSuccessResponse(recordId, result);
-
-
 
   } catch (error) {
 
     Logger.log(`❌ エラー発生: ${recordId} - ${error.toString()}`);
 
-    
-
     // エラー時は失敗フラグ設定（リトライ可能にする）
 
     markAsFailed(recordId, error);
-
-    
 
     return createErrorResponse(recordId, error);
 
@@ -875,21 +729,15 @@ function executeWebhookWithDuplicationPrevention(e, processingFunction, options 
 
 }
 
-
-
 // ========================================
 
 // メンテナンス・デバッグ関数
 
 // ========================================
 
-
-
 /**
 
  * 特定レコードの状態を確認
-
- * 
 
  * @param {string} recordId - レコードID
 
@@ -905,8 +753,6 @@ function checkRecordStatus(recordId) {
 
   const cachedValue = cache.get(key);
 
-
-
   if (!cachedValue) {
 
     return { 
@@ -920,8 +766,6 @@ function checkRecordStatus(recordId) {
     };
 
   }
-
-
 
   try {
 
@@ -955,15 +799,11 @@ function checkRecordStatus(recordId) {
 
 }
 
-
-
 /**
 
  * すべての処理フラグをクリア（緊急メンテナンス用）
 
  * 注意: この関数は慎重に使用してください
-
- * 
 
  * @return {Object} クリア結果
 
@@ -973,13 +813,9 @@ function emergencyClearAllFlags() {
 
   Logger.log('⚠️ 緊急フラグクリアを実行します');
 
-  
-
   // CacheServiceは全キー取得不可のため、個別にクリアする必要がある
 
   // この関数は主にPropertiesServiceと併用する場合に有効
-
-  
 
   return {
 
@@ -993,13 +829,9 @@ function emergencyClearAllFlags() {
 
 }
 
-
-
 /**
 
  * 重複防止システムの統計情報取得
-
- * 
 
  * @return {Object} 統計情報
 
@@ -1042,4 +874,3 @@ function getDuplicationPreventionStats() {
   };
 
 }
-
