@@ -43,3 +43,9 @@ Thumbs.db
 
 # Temporary files
 deployment_results.json
+
+# Backup files
+*.backup
+*.backup2
+*.backup3
+*.backup_individual_params
