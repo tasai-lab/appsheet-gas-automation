@@ -133,7 +133,7 @@ function setupScriptProperties() {
 
     // Vertex AI設定
 
-    'VERTEX_AI_MODEL': 'gemini-2.5-pro',  // または 'gemini-2.5-pro'
+    'VERTEX_AI_MODEL': 'gemini-2.5-pro',  // 音声解析には高度な推論が必要
 
     'TEMPERATURE': '0.2',
 

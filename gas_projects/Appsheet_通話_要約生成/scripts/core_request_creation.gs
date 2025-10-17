@@ -222,50 +222,27 @@ ${transcript}
 
 /**
  * Gemini APIを呼び出す共通関数（依頼作成用）
+ * 共通のGeminiモデル定義を使用
  * @param {string} prompt - プロンプト
  * @param {Object} config - 設定オブジェクト
  * @return {Object} パース済みのJSON結果
  */
 function callGeminiForRequest(prompt, config) {
-  const textPart = { text: prompt };
-  const model = 'gemini-2.0-flash-exp';
-  const generationConfig = {
-    responseMimeType: "application/json",
-    temperature: 0.3
-  };
-  
-  const requestBody = {
-    contents: [{ parts: [textPart] }],
-    generationConfig: generationConfig
-  };
-  
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${config.geminiApiKey}`;
-  
-  const options = {
-    method: 'post',
-    contentType: 'application/json',
-    payload: JSON.stringify(requestBody),
-    muteHttpExceptions: true
-  };
-  
-  const response = UrlFetchApp.fetch(url, options);
-  const responseText = response.getContentText();
-  
-  Logger.log('[Gemini API] レスポンス: ' + responseText.substring(0, 500));
-  
-  const jsonResponse = JSON.parse(responseText);
-  
-  if (!jsonResponse.candidates || jsonResponse.candidates.length === 0) {
-    throw new Error("AIからの応答に有効な候補が含まれていません: " + responseText);
-  }
-  
-  const resultText = jsonResponse.candidates[0].content.parts[0].text;
-  
   try {
-    return JSON.parse(resultText);
-  } catch (e) {
-    Logger.log('[Gemini API] JSON解析エラー: ' + resultText);
-    throw new Error("AI応答がJSON形式ではありません: " + e.message);
+    // 共通のGemini API呼び出し関数を使用
+    // 中等度の思考力が必要なため、Flash思考モードを使用
+    const result = generateJSON(prompt, config.geminiApiKey, {
+      taskType: 'moderate',
+      temperature: 0.3
+    });
+    
+    Logger.log('[Gemini API] 依頼情報抽出成功');
+    
+    return result;
+    
+  } catch (error) {
+    Logger.log(`[Gemini API] 依頼情報抽出エラー: ${error.message}`);
+    throw error;
   }
 }
 

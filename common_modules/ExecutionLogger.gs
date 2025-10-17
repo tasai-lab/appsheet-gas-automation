@@ -3,7 +3,8 @@
  * 全てのGASスクリプトの実行履歴を共通スプレッドシートに記録
  */
 
-// ログスプレッドシートID（初回実行時に自動作成）
+// ログスプレッドシートID（統一）
+const LOG_SPREADSHEET_ID = '15Z_GT4-pDAnjDpd8vkX3B9FgYlQIQwdUF1QIEj7bVnE';
 const LOG_FOLDER_ID = '16swPUizvdlyPxUjbDpVl9-VBDJZO91kX';
 const LOG_SHEET_NAME = 'GAS実行履歴ログ';
 
@@ -70,7 +71,16 @@ function logExecution(scriptName, status, message, details = null, requestId = n
  */
 function getOrCreateLogSpreadsheet() {
   try {
-    // PropertiesServiceからスプレッドシートIDを取得
+    // 統一されたスプレッドシートIDを使用
+    if (LOG_SPREADSHEET_ID) {
+      try {
+        return SpreadsheetApp.openById(LOG_SPREADSHEET_ID);
+      } catch (e) {
+        console.warn('Log spreadsheet not accessible:', e.message);
+      }
+    }
+    
+    // PropertiesServiceからスプレッドシートIDを取得（フォールバック）
     const scriptProperties = PropertiesService.getScriptProperties();
     let spreadsheetId = scriptProperties.getProperty('LOG_SPREADSHEET_ID');
     
