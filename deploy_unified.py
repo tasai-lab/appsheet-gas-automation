@@ -23,7 +23,9 @@ def run_command(cmd, cwd=None):
         capture_output=True,
         text=True,
         cwd=cwd,
-        shell=True
+        shell=True,
+        encoding='utf-8',
+        errors='replace'
     )
     return result
 
