@@ -6,6 +6,8 @@
 
 ## アーキテクチャ図
 
+> **配色について**: このプロジェクトのMermaid図配色は [アーキテクチャ図配色ガイドライン](../../../docs/ARCHITECTURE_DIAGRAM_COLOR_GUIDE.md) に準拠しています。
+
 ```mermaid
 graph TB
     subgraph "エントリーポイント"
@@ -20,32 +22,38 @@ graph TB
         C[gemini_service.gs]
     end
     
+    subgraph "Google Drive操作"
+        D[drive_utils.gs]
+    end
+    
     subgraph "AppSheet API"
-        D[appsheet_api.gs]
+        E[appsheet_api.gs]
     end
     
     subgraph "ユーティリティ"
-        E[utils_duplicationPrevention.gs]
+        F[utils_duplicationPrevention.gs]
     end
     
     subgraph "テスト"
-        F[test_functions.gs]
+        G[test_functions.gs]
     end
     
     A --> B
     B --> C
-    B --> D
     B --> E
-    F --> B
-    C -.Google Drive.-> G[(音声ファイル)]
+    B --> F
+    G --> B
+    C --> D
+    D -.Google Drive.-> H[(音声ファイル)]
     
-    style A fill:#e3f2fd
-    style B fill:#fff3e0
-    style C fill:#f3e5f5
-    style D fill:#e8f5e9
-    style E fill:#fff9c4
-    style F fill:#fce4ec
-    style G fill:#e0f2f1
+    style A fill:#1e3a5f,stroke:#4a90e2,stroke-width:2px,color:#ffffff
+    style B fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#ffffff
+    style C fill:#4a1e5f,stroke:#b84ae2,stroke-width:2px,color:#ffffff
+    style D fill:#1e5f5f,stroke:#4ae2e2,stroke-width:2px,color:#ffffff
+    style E fill:#1e5f3a,stroke:#4ae290,stroke-width:2px,color:#ffffff
+    style F fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#ffffff
+    style G fill:#5f1e3a,stroke:#e24a90,stroke-width:2px,color:#ffffff
+    style H fill:#2d4a4a,stroke:#6dd6d6,stroke-width:2px,color:#ffffff
 ```
 
 ## ファイル別役割
@@ -173,7 +181,7 @@ sequenceDiagram
     GS->>GS: buildSalesAnalysisPrompt()
     GS->>GS: Base64エンコード
     
-    GS->>GA: POST /v1beta/models/gemini-2.5-pro:generateContent
+    GS->>GA: POST /v1beta/models/gemini-2.0-flash-exp:generateContent
     Note over GS,GA: 音声+プロンプト送信
     GA-->>GS: JSON分析結果（評価指標ID含む）
     GS-->>PR: analysisResult
@@ -183,6 +191,9 @@ sequenceDiagram
     
     PR-->>WH: {status: SUCCESS, analysis}
     WH-->>AS: 成功レスポンス
+    
+    %% スタイル定義（ダークモード対応）
+    %%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e3a5f','primaryTextColor':'#fff','primaryBorderColor':'#4a90e2','lineColor':'#4a90e2','secondaryColor':'#5f4c1e','tertiaryColor':'#1e5f3a'}}}%%
 ```
 
 ### 2. エラー処理フロー
@@ -215,6 +226,9 @@ sequenceDiagram
     
     PR-->>WH: throw Error
     WH-->>AS: エラーレスポンス
+    
+    %% スタイル定義（ダークモード対応）
+    %%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e3a5f','primaryTextColor':'#fff','primaryBorderColor':'#4a90e2','lineColor':'#4a90e2','secondaryColor':'#5f4c1e','tertiaryColor':'#1e5f3a'}}}%%
 ```
 
 ### 3. AI分析プロセス
@@ -240,6 +254,22 @@ graph TD
     
     L --> N[分析結果返却]
     M --> N
+    
+    %% スタイル定義（ダークモード対応）
+    style A fill:#1e5f5f,stroke:#4ae2e2,stroke-width:2px,color:#fff
+    style B fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#fff
+    style C fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#fff
+    style D fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#fff
+    style E fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#fff
+    style F fill:#4a1e5f,stroke:#b84ae2,stroke-width:2px,color:#fff
+    style G fill:#4a1e5f,stroke:#b84ae2,stroke-width:3px,color:#fff
+    style H fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#fff
+    style I fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#fff
+    style J fill:#5f1e3a,stroke:#e24a90,stroke-width:2px,color:#fff
+    style K fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#fff
+    style L fill:#1e5f3a,stroke:#4ae290,stroke-width:2px,color:#fff
+    style M fill:#1e5f3a,stroke:#4ae290,stroke-width:2px,color:#fff
+    style N fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#fff
 ```
 
 ## データフロー

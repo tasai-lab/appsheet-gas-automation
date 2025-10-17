@@ -6,6 +6,8 @@
 
 ## アーキテクチャ図
 
+> **配色について**: このプロジェクトのMermaid図配色は [アーキテクチャ図配色ガイドライン](../../../docs/ARCHITECTURE_DIAGRAM_COLOR_GUIDE.md) に準拠しています。
+
 ```mermaid
 graph TB
     subgraph "エントリーポイント"
@@ -35,12 +37,12 @@ graph TB
     C --> D
     F --> B
     
-    style A fill:#e3f2fd
-    style B fill:#fff3e0
-    style C fill:#f3e5f5
-    style D fill:#f3e5f5
-    style E fill:#e8f5e9
-    style F fill:#fce4ec
+    style A fill:#1e3a5f,stroke:#4a90e2,stroke-width:2px,color:#ffffff
+    style B fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#ffffff
+    style C fill:#4a1e5f,stroke:#b84ae2,stroke-width:2px,color:#ffffff
+    style D fill:#4a1e5f,stroke:#b84ae2,stroke-width:2px,color:#ffffff
+    style E fill:#1e5f3a,stroke:#4ae290,stroke-width:2px,color:#ffffff
+    style F fill:#5f1e3a,stroke:#e24a90,stroke-width:2px,color:#ffffff
 ```
 
 ## ファイル別役割
@@ -142,6 +144,9 @@ sequenceDiagram
     
     AP-->>WH: {success: true, externalId, externalUrl}
     WH-->>AS: レスポンス
+    
+    %% スタイル定義（ダークモード対応）
+    %%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e3a5f','primaryTextColor':'#fff','primaryBorderColor':'#4a90e2','lineColor':'#4a90e2','secondaryColor':'#5f4c1e','tertiaryColor':'#1e5f3a'}}}%%
 ```
 
 ### 2. タスク作成フロー
@@ -179,6 +184,9 @@ sequenceDiagram
     
     AP-->>WH: {success: true, externalId, externalUrl}
     WH-->>AS: レスポンス
+    
+    %% スタイル定義（ダークモード対応）
+    %%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e3a5f','primaryTextColor':'#fff','primaryBorderColor':'#4a90e2','lineColor':'#4a90e2','secondaryColor':'#5f4c1e','tertiaryColor':'#1e5f3a'}}}%%
 ```
 
 ### 3. エラー処理フロー
@@ -208,6 +216,9 @@ sequenceDiagram
     
     AP-->>WH: {success: false, error}
     WH-->>AS: エラーレスポンス
+    
+    %% スタイル定義（ダークモード対応）
+    %%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#1e3a5f','primaryTextColor':'#fff','primaryBorderColor':'#4a90e2','lineColor':'#4a90e2','secondaryColor':'#5f4c1e','tertiaryColor':'#1e5f3a'}}}%%
 ```
 
 ## データフロー
@@ -235,6 +246,24 @@ graph TD
     M --> N{成功?}
     N -->|Yes| O[updateActionOnSuccess]
     N -->|No| P[updateActionOnError]
+    
+    %% スタイル定義（ダークモード対応）
+    style A fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#fff
+    style B fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#fff
+    style C fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#fff
+    style D fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#fff
+    style E fill:#5f1e3a,stroke:#e24a90,stroke-width:2px,color:#fff
+    style F fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#fff
+    style G fill:#4a1e5f,stroke:#b84ae2,stroke-width:2px,color:#fff
+    style H fill:#5f1e3a,stroke:#e24a90,stroke-width:2px,color:#fff
+    style I fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#fff
+    style J fill:#4a1e5f,stroke:#b84ae2,stroke-width:2px,color:#fff
+    style K fill:#5f1e3a,stroke:#e24a90,stroke-width:2px,color:#fff
+    style L fill:#4a1e5f,stroke:#b84ae2,stroke-width:2px,color:#fff
+    style M fill:#4a1e5f,stroke:#b84ae2,stroke-width:3px,color:#fff
+    style N fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#fff
+    style O fill:#1e5f3a,stroke:#4ae290,stroke-width:2px,color:#fff
+    style P fill:#5f1e3a,stroke:#e24a90,stroke-width:2px,color:#fff
 ```
 
 ## パラメータマッピング

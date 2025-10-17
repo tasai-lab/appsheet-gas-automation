@@ -9,6 +9,7 @@ Google Drive上のGoogle Apps Script (GAS)プロジェクトを管理するた�
 - 🔒 **[重複防止機能](docs/ja/重複防止機能.md)** - Webhook重複対策
 - 📊 **[実行ログ管理](docs/ja/実行ログ管理.md)** - ログシステム
 - 🚀 **[デプロイガイド](docs/ja/デプロイガイド.md)** - デプロイ手順
+- 🎨 **[アーキテクチャ図配色ガイド](docs/ARCHITECTURE_DIAGRAM_COLOR_GUIDE.md)** - Mermaid図配色基準
 
 ## プロジェクト概要
 
