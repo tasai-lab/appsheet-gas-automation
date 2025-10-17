@@ -58,6 +58,8 @@ class GeminiClient {
     this.maxOutputTokens = options.maxOutputTokens ?? GEMINI_API_CONFIG.defaults.maxOutputTokens;
     this.topP = options.topP ?? GEMINI_API_CONFIG.defaults.topP;
     this.topK = options.topK ?? GEMINI_API_CONFIG.defaults.topK;
+    this.enableThinking = options.enableThinking ?? true; // 思考モードデフォルト有効
+    this.thinkingBudget = options.thinkingBudget ?? -1; // 動的思考モード
   }
 
   /**
@@ -88,6 +90,13 @@ class GeminiClient {
         topK: this.topK
       }
     };
+    
+    // 思考モード設定追加
+    if (this.enableThinking) {
+      requestBody.generationConfig.thinkingConfig = {
+        thinkingBudget: this.thinkingBudget
+      };
+    }
 
     const url = `${GEMINI_API_CONFIG.baseUrl}/${this.model}:generateContent?key=${this.apiKey}`;
     
@@ -232,6 +241,13 @@ class GeminiClient {
         topK: this.topK
       }
     };
+    
+    // 思考モード設定追加
+    if (this.enableThinking) {
+      requestBody.generationConfig.thinkingConfig = {
+        thinkingBudget: this.thinkingBudget
+      };
+    }
 
     const url = `${GEMINI_API_CONFIG.baseUrl}/${this.model}:generateContent?key=${this.apiKey}`;
     

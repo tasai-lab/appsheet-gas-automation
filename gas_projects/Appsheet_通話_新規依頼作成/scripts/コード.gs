@@ -252,9 +252,15 @@ function callGemini(prompt) {
 
   const textPart = { text: prompt };
 
-  const model = 'gemini-2.5-pro';
+  const model = 'gemini-2.5-flash';
 
-  const generationConfig = { "responseMimeType": "application/json", "temperature": 0.3 };
+  const generationConfig = { 
+    "responseMimeType": "application/json", 
+    "temperature": 0.3,
+    "thinkingConfig": {
+      "thinkingBudget": -1  // 動的思考モード
+    }
+  };
 
   const requestBody = { contents: [{ parts: [textPart] }], generationConfig: generationConfig };
 
