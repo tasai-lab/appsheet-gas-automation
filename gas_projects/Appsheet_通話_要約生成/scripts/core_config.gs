@@ -43,7 +43,7 @@ function getConfig() {
 
     // Vertex AI設定
 
-    vertexAIModel: props.getProperty('VERTEX_AI_MODEL') || 'gemini-2.5-pro',
+    vertexAIModel: props.getProperty('VERTEX_AI_MODEL') || 'gemini-2.5-flash',
 
     temperature: parseFloat(props.getProperty('TEMPERATURE') || '0.2'),
 
@@ -133,7 +133,7 @@ function setupScriptProperties() {
 
     // Vertex AI設定
 
-    'VERTEX_AI_MODEL': 'gemini-2.5-pro',  // 音声解析には高度な推論が必要
+    'VERTEX_AI_MODEL': 'gemini-2.5-flash',  // 音声解析には高速なFlashモデルが最適
 
     'TEMPERATURE': '0.2',
 

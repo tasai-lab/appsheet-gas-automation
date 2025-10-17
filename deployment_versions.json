@@ -1,9 +1,15 @@
 {
-  "last_updated": "2025-10-17T19:28:54.720449",
+  "last_updated": "2025-10-17T19:31:08.074367",
   "projects": {
     "Appsheet_通話_要約生成": {
       "script_id": "1PK1RNjLaA7g-1-JrJ-AFn1S0D_nL5cGHNJeDtyhIap_otDnYsUAquSz6",
       "deployments": [
+        {
+          "version": null,
+          "description": "Vertex AIモデルをgemini-2.5-flashに変更 - 音声解析に最適な高速モデル",
+          "timestamp": "2025-10-17T19:31:08.072553",
+          "status": "failed"
+        },
         {
           "version": null,
           "description": "Geminiモデル定義を正しく修正 - gemini-2.5-flash/proに統一、シート名を実行履歴に変更",
