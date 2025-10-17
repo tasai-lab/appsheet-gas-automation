@@ -1,9 +1,15 @@
 {
-  "last_updated": "2025-10-17T19:09:15.665639",
+  "last_updated": "2025-10-17T19:15:47.384246",
   "projects": {
     "Appsheet_通話_要約生成": {
       "script_id": "1PK1RNjLaA7g-1-JrJ-AFn1S0D_nL5cGHNJeDtyhIap_otDnYsUAquSz6",
       "deployments": [
+        {
+          "version": null,
+          "description": "新規依頼作成機能を統合 - 要約生成後に自動的にClient_Requestsに依頼を作成",
+          "timestamp": "2025-10-17T19:15:47.382626",
+          "status": "failed"
+        },
         {
           "version": null,
           "description": "ユーザー情報取得のエラーハンドリング改善とOAuthスコープ追加",

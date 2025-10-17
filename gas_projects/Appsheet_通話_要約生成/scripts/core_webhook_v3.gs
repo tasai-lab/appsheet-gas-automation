@@ -240,6 +240,41 @@ function processCallSummary(params) {
     fileSize: analysisResult.fileSize
   });
 
+  // 【統合機能】新規依頼作成（有効な場合のみ）
+  let requestCreationResult = null;
+  if (config.enableRequestCreation) {
+    try {
+      Logger.log(`[統合機能] 新規依頼作成を開始`);
+      
+      requestCreationResult = createOrUpdateRequestFromSummary(
+        callId,
+        callDatetime,
+        analysisResult.summary,
+        analysisResult.transcript,
+        clientId,
+        config,
+        params.request_ids || params.requestIds,
+        params.requester_org_id || params.requesterOrgId,
+        params.requester_id || params.requesterId,
+        params.creator_id || params.creatorId,
+        params.existing_request_reason || params.existingRequestReason,
+        params.existing_client_info || params.existingClientInfo,
+        params.existing_next_action || params.existingNextAction
+      );
+      
+      Logger.log(`[統合機能] 依頼作成完了 - Request ID: ${requestCreationResult.requestId}`);
+      
+      // Call_Logsにrequest_idsを更新（新規作成時のみ）
+      if (requestCreationResult.isNew) {
+        updateCallLogWithRequestId(callId, requestCreationResult.requestId, config);
+      }
+      
+    } catch (error) {
+      Logger.log(`[統合機能] 依頼作成エラー: ${error.message}`);
+      // 依頼作成エラーは全体の処理を失敗にしない（ログのみ）
+    }
+  }
+
   // 処理結果を返す（自動的に完了マークされる）
   return {
     success: true,
@@ -247,6 +282,10 @@ function processCallSummary(params) {
     recording_file_id: resolvedFileId,
     recording_file_url: fileUrl,
     summary_length: analysisResult.summary.length,
-    actions_count: analysisResult.actions.length
+    actions_count: analysisResult.actions.length,
+    request_created: requestCreationResult ? {
+      request_id: requestCreationResult.requestId,
+      is_new: requestCreationResult.isNew
+    } : null
   };
 }

@@ -53,7 +53,7 @@ function getConfig() {
 
     topK: parseInt(props.getProperty('TOP_K') || '32'),
 
-    // AppSheet API設定
+    // AppSheet API設定（Call_Logsアプリ）
 
     appsheetAppId: props.getProperty('APPSHEET_APP_ID') || '',
 
@@ -62,6 +62,24 @@ function getConfig() {
     logsTableName: props.getProperty('LOGS_TABLE_NAME') || 'Call_Logs',
 
     actionsTableName: props.getProperty('ACTIONS_TABLE_NAME') || 'Call_Actions',
+
+    // AppSheet API設定（依頼作成用）
+
+    mainAppId: props.getProperty('MAIN_APP_ID') || '',
+
+    mainAppAccessKey: props.getProperty('MAIN_APP_ACCESS_KEY') || '',
+
+    requestsAppId: props.getProperty('REQUESTS_APP_ID') || '',
+
+    requestsAppAccessKey: props.getProperty('REQUESTS_APP_ACCESS_KEY') || '',
+
+    requestsTableName: props.getProperty('REQUESTS_TABLE_NAME') || 'Client_Requests',
+
+    geminiApiKey: props.getProperty('GEMINI_API_KEY') || '',
+
+    // 統合機能設定
+
+    enableRequestCreation: props.getProperty('ENABLE_REQUEST_CREATION') === 'true',
 
     // 通知設定
 
@@ -125,7 +143,7 @@ function setupScriptProperties() {
 
     'TOP_K': '32',
 
-    // AppSheet API設定
+    // AppSheet API設定（Call_Logsアプリ）
 
     'APPSHEET_APP_ID': '4762f34f-3dbc-4fca-9f84-5b6e809c3f5f',
 
@@ -134,6 +152,24 @@ function setupScriptProperties() {
     'LOGS_TABLE_NAME': 'Call_Logs',
 
     'ACTIONS_TABLE_NAME': 'Call_Actions',
+
+    // AppSheet API設定（依頼作成用）
+
+    'MAIN_APP_ID': '4762f34f-3dbc-4fca-9f84-5b6e809c3f5f',
+
+    'MAIN_APP_ACCESS_KEY': 'V2-I1zMZ-90iua-47BBk-RBjO1-N0mUo-kY25j-VsI4H-eRvwT',
+
+    'REQUESTS_APP_ID': 'f40c4b11-b140-4e31-a60c-600f3c9637c8',
+
+    'REQUESTS_APP_ACCESS_KEY': 'V2-s6fif-zteYn-AGhoC-EhNLX-NNwgP-nHXAr-hHGZp-XxyPY',
+
+    'REQUESTS_TABLE_NAME': 'Client_Requests',
+
+    'GEMINI_API_KEY': 'AIzaSyDUKFlE6_NYGehDYOxiRQcHpjG2l7GZmTY',
+
+    // 統合機能設定
+
+    'ENABLE_REQUEST_CREATION': 'true',  // 新規依頼作成機能を有効化
 
     // 通知設定
 
@@ -226,6 +262,20 @@ function showCurrentConfig() {
   Logger.log(`  Logsテーブル: ${config.logsTableName}`);
 
   Logger.log(`  Actionsテーブル: ${config.actionsTableName}`);
+
+  Logger.log('');
+
+  Logger.log('[依頼作成設定]');
+
+  Logger.log(`  依頼作成機能: ${config.enableRequestCreation ? '有効' : '無効'}`);
+
+  Logger.log(`  Requests App ID: ${config.requestsAppId ? '***設定済み***' : '未設定'}`);
+
+  Logger.log(`  Requests Access Key: ${config.requestsAppAccessKey ? '***設定済み***' : '未設定'}`);
+
+  Logger.log(`  Requestsテーブル: ${config.requestsTableName}`);
+
+  Logger.log(`  Gemini API Key: ${config.geminiApiKey ? '***設定済み***' : '未設定'}`);
 
   Logger.log('');
 
