@@ -1,6 +1,3 @@
-**/*.md
-**/node_modules/**
-**/.git/**
-**/_backup/**
-**/*_backup.gs
-**/*_v[0-9]*.gs
+_backup/**
+*_backup.gs
+*_v[0-9]*.gs
