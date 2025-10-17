@@ -1,6 +1,10 @@
 /**
  * Gemini API連携サービス
  * 営業音声の文字起こしと分析を実行
+ * 
+ * @author Fractal Group
+ * @version 2.0.0
+ * @date 2025-10-17
  */
 
 /**
@@ -13,7 +17,13 @@ const GEMINI_API_KEY = 'AIzaSyDUKFlE6_NYGehDYOxiRQcHpjG2l7GZmTY';
  * 使用するGeminiモデル
  * @type {string}
  */
-const GEMINI_MODEL = 'gemini-2.5-pro';
+const GEMINI_MODEL = 'gemini-2.0-flash-exp';
+
+/**
+ * ファイルサイズ制限（MB）
+ * @type {number}
+ */
+const MAX_FILE_SIZE_MB = 20;
 
 /**
  * Gemini APIを使用して営業音声を分析・評価する
@@ -26,22 +36,45 @@ const GEMINI_MODEL = 'gemini-2.5-pro';
  * @returns {Object} - 分析結果のJSONオブジェクト
  */
 function analyzeSalesCallWithGemini(context) {
-  // Google Driveから音声ファイルを取得
-  const file = DriveApp.getFileById(context.audioFileId);
-  const audioBlob = file.getBlob();
-  const fileName = file.getName();
+  Logger.log('[Gemini] 音声分析開始');
   
-  // MIMEタイプを判定
-  const mimeType = determineMimeType(fileName, audioBlob);
+  // 音声ファイルを取得（drive_utils.gsのgetAudioFile使用）
+  const audioFile = getAudioFile(context.audioFileId);
   
-  if (!mimeType || !mimeType.startsWith('audio/')) {
-    throw new Error(`ファイル「${fileName}」はサポートされている音声形式ではありません。`);
-  }
+  // ファイルサイズチェック
+  validateFileSize(audioFile.blob, MAX_FILE_SIZE_MB);
   
-  Logger.log(`音声ファイル: ${fileName}, MIMEタイプ: ${mimeType}`);
+  // Base64エンコード
+  const base64Data = encodeAudioToBase64(audioFile.blob);
+  
+  Logger.log(`[Gemini] ファイル準備完了: ${audioFile.fileName}`);
+  Logger.log(`[Gemini] MIMEタイプ: ${audioFile.mimeType}`);
   
   // AIへのプロンプトを生成
   const prompt = buildSalesAnalysisPrompt(context);
+  
+  // Gemini APIを呼び出し
+  const analysisResult = callGeminiAPIForSalesAnalysis(
+    prompt,
+    base64Data,
+    audioFile.mimeType
+  );
+  
+  Logger.log('[Gemini] 音声分析完了');
+  
+  return analysisResult;
+}
+
+/**
+ * Gemini APIを呼び出して営業分析を実行
+ * 
+ * @param {string} prompt - プロンプト
+ * @param {string} base64Data - Base64エンコードされた音声データ
+ * @param {string} mimeType - MIMEタイプ
+ * @returns {Object} - 分析結果のJSONオブジェクト
+ */
+function callGeminiAPIForSalesAnalysis(prompt, base64Data, mimeType) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
   
   // リクエストボディを構築
   const requestBody = {
@@ -50,7 +83,7 @@ function analyzeSalesCallWithGemini(context) {
         { text: prompt },
         {
           inlineData: {
-            data: Utilities.base64Encode(audioBlob.getBytes()),
+            data: base64Data,
             mimeType: mimeType
           }
         }
@@ -62,8 +95,6 @@ function analyzeSalesCallWithGemini(context) {
     }
   };
   
-  // Gemini APIを呼び出し
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
   const options = {
     method: 'post',
     contentType: 'application/json',
@@ -71,49 +102,38 @@ function analyzeSalesCallWithGemini(context) {
     muteHttpExceptions: true
   };
   
+  Logger.log('[Gemini] API呼び出し開始');
+  const startTime = new Date().getTime();
+  
   const response = UrlFetchApp.fetch(url, options);
+  
+  const endTime = new Date().getTime();
+  const responseTime = endTime - startTime;
+  
+  const responseCode = response.getResponseCode();
   const responseText = response.getContentText();
   
-  Logger.log('Gemini API Response: ' + responseText);
+  Logger.log(`[Gemini] API応答: ${responseCode}, 処理時間: ${responseTime}ms`);
+  
+  if (responseCode !== 200) {
+    Logger.log(`[Gemini] エラーレスポンス: ${responseText}`);
+    throw new Error(`Gemini API Error: ${responseCode} - ${responseText.substring(0, 200)}`);
+  }
   
   // レスポンスを解析
   const jsonResponse = JSON.parse(responseText);
   
   if (!jsonResponse.candidates || jsonResponse.candidates.length === 0) {
-    throw new Error('AIからの応答に有効な候補が含まれていません: ' + responseText);
+    throw new Error('AIからの応答に有効な候補が含まれていません: ' + responseText.substring(0, 200));
   }
   
-  // 分析結果を抽出
-  const analysisResult = JSON.parse(jsonResponse.candidates[0].content.parts[0].text);
+  // 分析結果を抽出してパース
+  const analysisText = jsonResponse.candidates[0].content.parts[0].text;
+  const analysisResult = JSON.parse(analysisText);
+  
+  Logger.log(`[Gemini] JSON解析完了: ${Object.keys(analysisResult).length}個のフィールド`);
   
   return analysisResult;
-}
-
-/**
- * ファイル名と拡張子からMIMEタイプを判定
- * 
- * @param {string} fileName - ファイル名
- * @param {GoogleAppsScript.Base.Blob} blob - ファイルのBlob
- * @returns {string} - MIMEタイプ
- */
-function determineMimeType(fileName, blob) {
-  // 拡張子からMIMEタイプを判定
-  const extension = fileName.includes('.') ? fileName.split('.').pop().toLowerCase() : '';
-  
-  const audioExtensionMap = {
-    'm4a': 'audio/mp4',
-    'mp3': 'audio/mpeg',
-    'wav': 'audio/wav',
-    'ogg': 'audio/ogg',
-    'flac': 'audio/flac'
-  };
-  
-  if (audioExtensionMap[extension]) {
-    return audioExtensionMap[extension];
-  }
-  
-  // Blobから取得
-  return blob.getContentType();
 }
 
 /**

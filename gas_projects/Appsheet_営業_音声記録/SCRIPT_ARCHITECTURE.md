@@ -56,8 +56,9 @@ graph TB
 - **役割**: Webhookリクエスト受信とパラメータ抽出
 - **主な関数**:
   - `doPost(e)` - POSTリクエストエントリーポイント
-  - `processSalesAudioAnalysisDirect(...)` - 直接実行用ラッパー（5引数）
+  - `processSalesAudioAnalysisDirect(...)` - 直接実行用関数（個別引数5つ）
 - **責務**: パラメータ解析、processSalesAudioAnalysis呼び出し
+- **改善点（v3）**: 個別引数での直接実行に対応、ログ出力強化
 
 ### 2. メイン処理
 
@@ -78,13 +79,13 @@ graph TB
 - **役割**: Gemini APIによる音声分析と評価
 - **主な関数**:
   - `analyzeSalesCallWithGemini(context)` - 音声ファイルを分析
-  - `determineMimeType(fileName, blob)` - MIMEタイプ判定
+  - `callGeminiAPIForSalesAnalysis(...)` - Gemini API呼び出し
   - `buildSalesAnalysisPrompt(context)` - 分析用プロンプト生成
 - **機能**:
-  - Google Driveからの音声ファイル取得
-  - 音声形式判定（m4a, mp3, wav, ogg, flac）
+  - drive_utils統合による音声ファイル取得
+  - ファイルサイズ検証（20MB上限）
   - Base64エンコーディング
-  - Gemini 2.5 Pro APIでの分析
+  - Gemini 2.0 Flash APIでの分析
   - 評価指標に基づくJSON生成
 - **評価指標**: 
   - 関心度（INT-01～05）
@@ -92,7 +93,31 @@ graph TB
   - 印象（IMP-01～05）
   - サービス理解度（UND-01～03）
   - など全14項目
-- **依存関係**: Google Drive API
+- **依存関係**: drive_utils.gs
+- **改善点（v3）**: 
+  - モデル変更（gemini-2.5-pro → gemini-2.0-flash-exp）
+  - エラーハンドリング強化
+  - ログ出力の詳細化
+
+### 4. Google Drive操作
+
+#### `drive_utils.gs`
+- **役割**: 音声ファイルの取得、検証、エンコーディング
+- **主な関数**:
+  - `getAudioFile(fileId)` - ファイル取得とMIMEタイプ判定
+  - `determineMimeType(fileName, blob)` - MIMEタイプ判定
+  - `encodeAudioToBase64(blob)` - Base64エンコード
+  - `validateFileSize(blob, maxSizeMB)` - ファイルサイズ検証
+  - `getFileIdFromPath(filePath, baseFolderId)` - パスからファイルID取得
+- **機能**:
+  - 音声・動画形式のサポート（m4a, mp3, wav, ogg, flac, aac, opus, webm, 3gp, mov）
+  - 拡張子とBlobからのMIMEタイプ判定
+  - ファイルサイズチェック
+  - 共有ドライブ対応
+- **改善点（v3）**: 
+  - 通話_要約生成のVertex AIパターンに準拠
+  - ログ出力の統一（[Drive]プレフィックス）
+  - 処理時間計測機能追加
 
 ### 4. AppSheet API
 
@@ -381,6 +406,15 @@ clasp deploy --description "v2: 説明"
 3. AppSheetアプリがデプロイされているか確認
 
 ## 変更履歴
+
+### v3 (2025-10-17)
+- 🔧 音声ファイル・Gemini取扱の最適化
+- ✨ drive_utils.gs追加（通話_要約生成のVertex AIパターンに準拠）
+- 🎯 Webhookの個別引数対応（直接実行可能に）
+- 📝 ログ出力の統一とプレフィックス追加（[Drive], [Gemini]）
+- 🚀 Geminiモデル変更（gemini-2.5-pro → gemini-2.0-flash-exp）
+- ⚡ ファイルサイズ検証機能追加
+- 🔍 エラーハンドリング強化
 
 ### v2 (2025-10-17)
 - ✨ スクリプト役割別分割実施
