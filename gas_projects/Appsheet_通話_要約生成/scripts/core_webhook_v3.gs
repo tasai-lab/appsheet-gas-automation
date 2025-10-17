@@ -92,6 +92,24 @@ function processCallSummaryWithErrorHandling(params) {
  * @param {string} userInfoText - ユーザー情報
  * @param {string} clientId - クライアントID
  */
+/**
+ * 直接実行用のラッパー関数（個別引数版）
+ * AppSheetから直接呼び出す際に使用
+ * 
+ * @param {string} callId - 通話ID
+ * @param {string} callDatetime - 通話日時
+ * @param {string} filePath - ファイルパス
+ * @param {string} fileId - ファイルID
+ * @param {string} callContextText - 通話コンテキスト
+ * @param {string} userInfoText - ユーザー情報
+ * @param {string} clientId - クライアントID
+ * @param {string} callType - 通話種別（'新規依頼' で依頼作成モード）
+ * @param {string} requestId - 既存依頼ID（指定時は更新モード）
+ * @param {string} creatorId - 作成者ID
+ * @param {string} requesterId - 依頼者ID
+ * @param {string} requesterOrgId - 依頼元組織ID
+ * @return {Object} 処理結果
+ */
 function processCallSummaryDirect(
   callId,
   callDatetime,
@@ -99,7 +117,12 @@ function processCallSummaryDirect(
   fileId,
   callContextText,
   userInfoText,
-  clientId
+  clientId,
+  callType,
+  requestId,
+  creatorId,
+  requesterId,
+  requesterOrgId
 ) {
   // 個別引数をparamsオブジェクトに変換
   const params = {
@@ -109,7 +132,12 @@ function processCallSummaryDirect(
     fileId: fileId,
     callContextText: callContextText,
     userInfoText: userInfoText,
-    clientId: clientId
+    clientId: clientId,
+    callType: callType,
+    requestId: requestId,
+    creatorId: creatorId,
+    requesterId: requesterId,
+    requesterOrgId: requesterOrgId
   };
   
   Logger.log('[直接実行] パラメータ:', JSON.stringify(params, null, 2));
@@ -122,7 +150,7 @@ function processCallSummaryDirect(
 }
 
 /**
- * テスト用関数
+ * テスト用関数: 通常要約モード
  * GASエディタから直接実行してテスト可能
  */
 function testProcessRequest() {
@@ -133,6 +161,7 @@ function testProcessRequest() {
     callContextText: "テスト通話",
     userInfoText: "テストユーザー",
     clientId: "test_client"
+    // callType, requestId なし → summary_onlyモード
   };
   
   Logger.log('[テスト] パラメータ:', JSON.stringify(testParams, null, 2));
@@ -140,6 +169,58 @@ function testProcessRequest() {
   const result = processCallSummary(testParams);
   
   Logger.log('[テスト] 結果:', JSON.stringify(result, null, 2));
+  
+  return result;
+}
+
+/**
+ * テスト用関数: 新規依頼作成モード
+ * GASエディタから直接実行してテスト可能
+ */
+function testProcessRequestCreate() {
+  const testParams = {
+    callId: "test_" + new Date().getTime(),
+    callDatetime: new Date().toISOString(),
+    filePath: "test/audio.m4a",
+    callContextText: "新規依頼のテスト通話\n顧客: テスト株式会社",
+    userInfoText: "営業担当: テスト太郎",
+    clientId: "test_client",
+    callType: "新規依頼", // 新規依頼作成モード
+    creatorId: "test_creator",
+    requesterId: "test_requester",
+    requesterOrgId: "test_org"
+  };
+  
+  Logger.log('[テスト:新規依頼] パラメータ:', JSON.stringify(testParams, null, 2));
+  
+  const result = processCallSummary(testParams);
+  
+  Logger.log('[テスト:新規依頼] 結果:', JSON.stringify(result, null, 2));
+  
+  return result;
+}
+
+/**
+ * テスト用関数: 既存依頼更新モード
+ * GASエディタから直接実行してテスト可能
+ */
+function testProcessRequestUpdate() {
+  const testParams = {
+    callId: "test_" + new Date().getTime(),
+    callDatetime: new Date().toISOString(),
+    filePath: "test/audio.m4a",
+    callContextText: "既存依頼の更新通話\n追加情報あり",
+    userInfoText: "営業担当: テスト太郎",
+    clientId: "test_client",
+    requestId: "CLRQ-202510151200", // 既存依頼更新モード
+    creatorId: "test_creator"
+  };
+  
+  Logger.log('[テスト:依頼更新] パラメータ:', JSON.stringify(testParams, null, 2));
+  
+  const result = processCallSummary(testParams);
+  
+  Logger.log('[テスト:依頼更新] 結果:', JSON.stringify(result, null, 2));
   
   return result;
 }
