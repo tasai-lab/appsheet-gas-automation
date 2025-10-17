@@ -28,6 +28,46 @@ function doPost(e) {
 }
 
 /**
+ * 直接実行用関数（個別引数版）
+ * GASエディタから個別の引数を指定して直接実行可能
+ * @param {string} callId - 通話ID
+ * @param {string} callDatetime - 通話日時（ISO形式）
+ * @param {string} filePath - ファイルパス（オプション）
+ * @param {string} fileId - ファイルID（オプション）
+ * @param {string} callContextText - 通話コンテキスト
+ * @param {string} userInfoText - ユーザー情報
+ * @param {string} clientId - クライアントID
+ */
+function processCallSummaryDirect(
+  callId,
+  callDatetime,
+  filePath,
+  fileId,
+  callContextText,
+  userInfoText,
+  clientId
+) {
+  // 個別引数をparamsオブジェクトに変換
+  const params = {
+    callId: callId,
+    callDatetime: callDatetime,
+    filePath: filePath,
+    fileId: fileId,
+    callContextText: callContextText,
+    userInfoText: userInfoText,
+    clientId: clientId
+  };
+  
+  Logger.log('[直接実行] パラメータ:', JSON.stringify(params, null, 2));
+  
+  const result = processCallSummary(params);
+  
+  Logger.log('[直接実行] 結果:', JSON.stringify(result, null, 2));
+  
+  return result;
+}
+
+/**
  * テスト用関数
  * GASエディタから直接実行してテスト可能
  */
