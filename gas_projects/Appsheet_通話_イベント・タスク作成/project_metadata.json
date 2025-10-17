@@ -1,0 +1,8 @@
+{
+  "id": "1RjyqHHxpIzie-egnx3AK8nFIwfu9mSGFYQdQ7h5bfwRVNBsnXD0Atabg",
+  "name": "Appsheet_通話_イベント・タスク作成",
+  "mimeType": "application/vnd.google-apps.script",
+  "createdTime": "2025-10-17T11:55:00.000Z",
+  "modifiedTime": "2025-10-17T11:55:00.000Z",
+  "description": "通話アクションに基づいて、Googleカレンダーイベントまたは Googleタスクを作成する統合プロジェクト"
+}

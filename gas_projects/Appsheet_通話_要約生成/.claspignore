@@ -1,0 +1,15 @@
+**/*.md
+**/node_modules/**
+**/.git/**
+scripts/_backup/**
+scripts/*_backup.gs
+scripts/*_v[0-9]*.gs
+*.md
+README.md
+FLOW.md
+GCP_SETUP_GUIDE.md
+MIGRATION_GUIDE.md
+OPTIMIZATION_GUIDE_v95.md
+OPTIMIZATION_SUMMARY.md
+PROCESSING_MODE_GUIDE_v100.md
+SPECIFICATIONS.md
