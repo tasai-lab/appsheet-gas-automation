@@ -85,13 +85,13 @@ Google Driveフォルダー（ID: `16swPUizvdlyPxUjbDpVl9-VBDJZO91kX`）内のGo
 
 #### モデル使用方針
 
-**複雑な思考が必要なタスク → `gemini-2.0-flash-thinking-exp-01-21`**
+**複雑な思考が必要なタスク → `gemini-2.5-pro`**
 - 通話の要約生成
 - 看護記録の作成
 - 質疑応答処理
 - 複雑なデータ分析
 
-**シンプルなタスク → `gemini-2.0-flash-exp`**
+**シンプルなタスク → `gemini-2.5-flash`**
 - データ抽出
 - フォーマット変換
 - 単純な分類

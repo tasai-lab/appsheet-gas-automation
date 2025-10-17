@@ -4,19 +4,23 @@
 - スプレッドシートへのログ記録を追加
 - Gemini APIキーを統一
 - モデルを最適化（flash/pro）
+
+Usage:
+    python update_all_scripts_with_logging.py [--projects-dir DIR] [--api-key KEY] [--filter PATTERN]
 """
 import os
 import re
 import json
 import shutil
+import argparse
 from pathlib import Path
 
-# 設定
-GAS_PROJECTS_DIR = 'gas_projects'
-COMMON_MODULES_DIR = 'common_modules'
-UNIFIED_API_KEY = 'AIzaSyDUKFlE6_NYGehDYOxiRQcHpjG2l7GZmTY'
-FLASH_MODEL = 'gemini-2.5-flash'  # 最新のFlashモデル（2025年1月）
-PRO_MODEL = 'gemini-2.5-pro'  # 最新のProモデル（2025年1月）
+# デフォルト設定
+DEFAULT_PROJECTS_DIR = 'gas_projects'
+DEFAULT_COMMON_MODULES_DIR = 'common_modules'
+DEFAULT_API_KEY = 'AIzaSyDUKFlE6_NYGehDYOxiRQcHpjG2l7GZmTY'
+DEFAULT_FLASH_MODEL = 'gemini-2.5-flash'  # 最新のFlashモデル（2025年1月）
+DEFAULT_PRO_MODEL = 'gemini-2.5-pro'  # 最新のProモデル（2025年1月）
 
 # 複雑な思考が必要なスクリプト（Proモデル使用）
 PRO_SCRIPTS = [
@@ -28,16 +32,69 @@ PRO_SCRIPTS = [
     'Appsheet_営業レポート'
 ]
 
-def get_model_for_script(script_name):
+def parse_arguments():
+    """引数をパース"""
+    parser = argparse.ArgumentParser(
+        description='GASスクリプトにログ記録機能を追加',
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+
+    parser.add_argument(
+        '--projects-dir',
+        type=Path,
+        default=Path(DEFAULT_PROJECTS_DIR),
+        help=f'GASプロジェクトディレクトリ (デフォルト: {DEFAULT_PROJECTS_DIR})'
+    )
+
+    parser.add_argument(
+        '--common-modules-dir',
+        type=Path,
+        default=Path(DEFAULT_COMMON_MODULES_DIR),
+        help=f'共通モジュールディレクトリ (デフォルト: {DEFAULT_COMMON_MODULES_DIR})'
+    )
+
+    parser.add_argument(
+        '--api-key',
+        default=DEFAULT_API_KEY,
+        help='Gemini API キー'
+    )
+
+    parser.add_argument(
+        '--flash-model',
+        default=DEFAULT_FLASH_MODEL,
+        help=f'Flashモデル名 (デフォルト: {DEFAULT_FLASH_MODEL})'
+    )
+
+    parser.add_argument(
+        '--pro-model',
+        default=DEFAULT_PRO_MODEL,
+        help=f'Proモデル名 (デフォルト: {DEFAULT_PRO_MODEL})'
+    )
+
+    parser.add_argument(
+        '--filter',
+        help='プロジェクト名フィルター (例: Appsheet_通話)'
+    )
+
+    parser.add_argument(
+        '--verbose', '-v',
+        action='store_true',
+        help='詳細ログを表示'
+    )
+
+    return parser.parse_args()
+
+
+def get_model_for_script(script_name, flash_model, pro_model):
     """スクリプト名に応じて適切なモデルを返す"""
     for pro_script in PRO_SCRIPTS:
         if pro_script in script_name:
-            return PRO_MODEL
-    return FLASH_MODEL
+            return pro_model
+    return flash_model
 
-def update_api_key_in_content(content, script_name):
+def update_api_key_in_content(content, script_name, args):
     """コンテンツ内のAPIキーを統一し、モデルを最適化"""
-    model = get_model_for_script(script_name)
+    model = get_model_for_script(script_name, args.flash_model, args.pro_model)
     
     # APIキーのパターン
     api_key_patterns = [
@@ -49,15 +106,16 @@ def update_api_key_in_content(content, script_name):
     # APIキーを統一
     for pattern in api_key_patterns:
         if 'const' in pattern:
-            content = re.sub(pattern, f"const GEMINI_API_KEY = '{UNIFIED_API_KEY}'", content)
+            content = re.sub(pattern, f"const GEMINI_API_KEY = '{args.api_key}'", content)
         else:
-            content = re.sub(pattern, f"apiKey: '{UNIFIED_API_KEY}'", content)
+            content = re.sub(pattern, f"apiKey: '{args.api_key}'", content)
     
     # モデル名を更新
     model_patterns = [
-        (r'gemini-1\.5-pro-[a-z0-9-]+', model if model == PRO_MODEL else FLASH_MODEL),
-        (r'gemini-1\.5-flash-[a-z0-9-]+', FLASH_MODEL),
-        (r'gemini-pro', model if model == PRO_MODEL else FLASH_MODEL),
+        (r'gemini-1\.5-pro-[a-z0-9-]+', model if model == args.pro_model else args.flash_model),
+        (r'gemini-2\.0-[a-z0-9-]+', model),
+        (r'gemini-1\.5-flash-[a-z0-9-]+', args.flash_model),
+        (r'gemini-pro', model if model == args.pro_model else args.flash_model),
         (r'models/gemini-[a-z0-9.-]+', f'models/{model}'),
     ]
     
@@ -163,9 +221,9 @@ def add_logging_to_dopost(content, script_name):
     # 代わりに簡単なマーカーを追加のみ
     return content
 
-def copy_logger_to_project(project_dir):
+def copy_logger_to_project(project_dir, common_modules_dir):
     """ExecutionLogger.gsをプロジェクトにコピー"""
-    logger_source = os.path.join(COMMON_MODULES_DIR, 'ExecutionLogger.gs')
+    logger_source = os.path.join(common_modules_dir, 'ExecutionLogger.gs')
     logger_dest = os.path.join(project_dir, 'scripts', 'ExecutionLogger.gs')
     
     if not os.path.exists(logger_source):
@@ -185,21 +243,21 @@ def copy_logger_to_project(project_dir):
     print(f"  ✓ Copied: ExecutionLogger.gs")
     return True
 
-def update_script_file(file_path, script_name):
+def update_script_file(file_path, script_name, args):
     """スクリプトファイルを更新"""
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()
-        
+
         # バックアップ作成
         backup_path = file_path + '.backup'
         with open(backup_path, 'w', encoding='utf-8') as f:
             f.write(content)
-        
+
         original_content = content
-        
+
         # 1. APIキーとモデルを更新
-        content = update_api_key_in_content(content, script_name)
+        content = update_api_key_in_content(content, script_name, args)
         
         # 2. Loggerインポートを追加
         content = add_logger_import(content, script_name)
@@ -223,28 +281,29 @@ def update_script_file(file_path, script_name):
         print(f"  ✗ Error updating {file_path}: {e}")
         return False
 
-def process_project(project_dir):
+def process_project(project_dir, args):
     """プロジェクトを処理"""
     project_name = os.path.basename(project_dir)
     print(f"\n[{project_name}]")
-    
+
     scripts_dir = os.path.join(project_dir, 'scripts')
     if not os.path.exists(scripts_dir):
         print(f"  ⚠ No scripts directory found")
         return
-    
+
     # ExecutionLogger.gsをコピー
-    copy_logger_to_project(project_dir)
-    
+    copy_logger_to_project(project_dir, args.common_modules_dir)
+
     # .gsファイルを処理
     updated_count = 0
     for file_name in os.listdir(scripts_dir):
         if file_name.endswith('.gs') and file_name != 'ExecutionLogger.gs':
             file_path = os.path.join(scripts_dir, file_name)
-            if update_script_file(file_path, project_name):
-                print(f"  ✓ Updated: {file_name}")
+            if update_script_file(file_path, project_name, args):
+                if args.verbose:
+                    print(f"  ✓ Updated: {file_name}")
                 updated_count += 1
-    
+
     if updated_count > 0:
         print(f"  ✓ Total updated: {updated_count} file(s)")
     else:
@@ -252,20 +311,30 @@ def process_project(project_dir):
 
 def main():
     """メイン処理"""
+    args = parse_arguments()
+
     print("=" * 60)
     print("GASスクリプト一括更新")
     print("=" * 60)
-    print(f"- API Key: {UNIFIED_API_KEY}")
-    print(f"- Flash Model: {FLASH_MODEL}")
-    print(f"- Pro Model: {PRO_MODEL}")
+    print(f"- API Key: {args.api_key[:20]}...")
+    print(f"- Flash Model: {args.flash_model}")
+    print(f"- Pro Model: {args.pro_model}")
+    if args.filter:
+        print(f"- Filter: {args.filter}")
     print("=" * 60)
-    
+
     # gas_projectsディレクトリ内の全プロジェクトを処理
-    for project_name in sorted(os.listdir(GAS_PROJECTS_DIR)):
-        project_dir = os.path.join(GAS_PROJECTS_DIR, project_name)
+    for project_name in sorted(os.listdir(args.projects_dir)):
+        project_dir = os.path.join(args.projects_dir, project_name)
         if os.path.isdir(project_dir):
-            process_project(project_dir)
-    
+            # フィルター適用
+            if args.filter and args.filter not in project_name:
+                if args.verbose:
+                    print(f"\nスキップ: {project_name} (フィルター条件に不一致)")
+                continue
+
+            process_project(project_dir, args)
+
     print("\n" + "=" * 60)
     print("✓ 更新完了")
     print("=" * 60)

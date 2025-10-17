@@ -202,15 +202,29 @@ const CONSTANTS = {
 
  */
 
+/**
+ * AppSheet Webhook エントリーポイント
+ * @param {GoogleAppsScript.Events.DoPost} e
+ */
 function doPost(e) {
+  const params = JSON.parse(e.postData.contents);
+  return processRequest(params);
+}
 
+
+/**
+ * メイン処理関数（引数ベース）
+ * @param {Object} params - リクエストパラメータ
+ * @returns {Object} - 処理結果
+ */
+function processRequest(params) {
   let recordNoteId = null;
 
   try {
 
     console.log("処理開始: WebhookからのPOSTリクエストを受信しました。");
 
-    const params = JSON.parse(e.postData.contents);
+    
 
     recordNoteId = params.recordNoteId;
 
@@ -285,8 +299,35 @@ function doPost(e) {
     return ContentService.createTextOutput(`Error: ${error.message}`).setMimeType(ContentService.MimeType.TEXT);
 
   }
-
 }
+
+
+/**
+ * テスト用関数
+ * GASエディタから直接実行してテスト可能
+ */
+function testProcessRequest() {
+  // TODO: テストデータを設定してください
+  const testParams = {
+    // 例: callId: "test-123",
+    // 例: recordId: "rec-456",
+    // 例: action: "CREATE"
+  };
+
+  console.log('=== テスト実行: Appsheet_訪問看護_精神科記録 ===');
+  console.log('入力パラメータ:', JSON.stringify(testParams, null, 2));
+
+  try {
+    const result = processRequest(testParams);
+    console.log('処理成功:', JSON.stringify(result, null, 2));
+    return result;
+  } catch (error) {
+    console.error('処理エラー:', error.message);
+    console.error('スタックトレース:', error.stack);
+    throw error;
+  }
+}
+
 
 
 

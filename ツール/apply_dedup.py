@@ -11,8 +11,8 @@ import logging
 import argparse
 from pathlib import Path
 
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent))
+# Add src to path (parent directory)
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src import config
 from src.services import ProjectAnalyzer, DedupApplicator

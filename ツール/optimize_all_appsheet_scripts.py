@@ -6,16 +6,16 @@ Optimize all Appsheet GAS scripts
 - Remove email notifications
 - Add execution logging to spreadsheet
 - Delete HTML files
+
+Usage:
+    python optimize_all_appsheet_scripts.py [--projects-dir DIR] [--spreadsheet-id ID] [--api-key KEY]
 """
 
 import os
 import re
 import json
+import argparse
 from pathlib import Path
-
-# Configuration
-EXECUTION_LOG_SPREADSHEET_ID = '15Z_GT4-pDAnjDpd8vkX3B9FgYlQIQwdUF1QIEj7bVnE'
-API_KEY = 'AIzaSyDUKFlE6_NYGehDYOxiRQcHpjG2l7GZmTY'
 
 # Model selection based on complexity
 COMPLEX_MODELS = [
@@ -31,8 +31,62 @@ COMPLEX_MODELS = [
     '利用者_フェースシート',
 ]
 
-FLASH_MODEL = 'gemini-2.0-flash-exp'
-PRO_MODEL = 'gemini-1.5-pro-latest'
+DEFAULT_FLASH_MODEL = 'gemini-2.5-flash'
+DEFAULT_PRO_MODEL = 'gemini-2.5-pro'
+DEFAULT_SPREADSHEET_ID = '15Z_GT4-pDAnjDpd8vkX3B9FgYlQIQwdUF1QIEj7bVnE'
+DEFAULT_API_KEY = 'AIzaSyDUKFlE6_NYGehDYOxiRQcHpjG2l7GZmTY'
+
+
+def parse_arguments():
+    """引数をパース"""
+    parser = argparse.ArgumentParser(
+        description='Appsheet GASスクリプトの最適化',
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+
+    parser.add_argument(
+        '--projects-dir',
+        type=Path,
+        default=Path('gas_projects'),
+        help='GASプロジェクトディレクトリ (デフォルト: gas_projects)'
+    )
+
+    parser.add_argument(
+        '--spreadsheet-id',
+        default=DEFAULT_SPREADSHEET_ID,
+        help=f'実行ログスプレッドシートID (デフォルト: {DEFAULT_SPREADSHEET_ID})'
+    )
+
+    parser.add_argument(
+        '--api-key',
+        default=DEFAULT_API_KEY,
+        help='Gemini API キー'
+    )
+
+    parser.add_argument(
+        '--flash-model',
+        default=DEFAULT_FLASH_MODEL,
+        help=f'Flashモデル名 (デフォルト: {DEFAULT_FLASH_MODEL})'
+    )
+
+    parser.add_argument(
+        '--pro-model',
+        default=DEFAULT_PRO_MODEL,
+        help=f'Proモデル名 (デフォルト: {DEFAULT_PRO_MODEL})'
+    )
+
+    parser.add_argument(
+        '--filter',
+        help='プロジェクト名フィルター (例: Appsheet_通話)'
+    )
+
+    parser.add_argument(
+        '--verbose', '-v',
+        action='store_true',
+        help='詳細ログを表示'
+    )
+
+    return parser.parse_args()
 
 
 def should_use_pro_model(script_name):
@@ -334,29 +388,30 @@ def add_logging_to_function(content, script_name):
     return content
 
 
-def optimize_script_file(file_path, script_name):
+def optimize_script_file(file_path, script_name, args):
     """Optimize a single script file"""
-    print(f"  Optimizing: {file_path.name}")
-    
+    if args.verbose:
+        print(f"  Optimizing: {file_path.name}")
+
     with open(file_path, 'r', encoding='utf-8') as f:
         content = f.read()
-    
+
     original_content = content
-    
+
     # Determine model
-    model = PRO_MODEL if should_use_pro_model(script_name) else FLASH_MODEL
-    
+    model = args.pro_model if should_use_pro_model(script_name) else args.flash_model
+
     # Apply optimizations
-    content = update_api_key(content, API_KEY)
+    content = update_api_key(content, args.api_key)
     content = update_model_name(content, model)
     content = remove_email_code(content)
-    
+
     # Add modules at the beginning if not already present
     if 'DuplicationPrevention' not in content:
         content = create_deduplication_module() + '\n\n' + content
-    
+
     if 'ExecutionLogger' not in content:
-        content = create_logging_module(EXECUTION_LOG_SPREADSHEET_ID) + '\n\n' + content
+        content = create_logging_module(args.spreadsheet_id) + '\n\n' + content
     
     # Add deduplication to webhook handler
     if 'doPost' in content:
@@ -392,55 +447,63 @@ def delete_html_files(project_dir):
     return deleted
 
 
-def optimize_project(project_dir):
+def optimize_project(project_dir, args):
     """Optimize a single GAS project"""
     script_name = project_dir.name
     print(f"\n[{script_name}]")
-    
+
     scripts_dir = project_dir / 'scripts'
     if not scripts_dir.exists():
         print(f"  ✗ No scripts directory found")
         return False
-    
+
     # Delete HTML files
     delete_html_files(project_dir)
-    
+
     # Optimize GS files
     optimized = False
     for gs_file in scripts_dir.glob('*.gs'):
-        if optimize_script_file(gs_file, script_name):
+        if optimize_script_file(gs_file, script_name, args):
             optimized = True
-    
+
     return optimized
 
 
 def main():
+    args = parse_arguments()
+
     print("=" * 70)
     print("Appsheet GAS Scripts Optimization")
     print("=" * 70)
-    print(f"Execution Log Spreadsheet: {EXECUTION_LOG_SPREADSHEET_ID}")
-    print(f"API Key: {API_KEY[:20]}...")
-    print(f"Flash Model: {FLASH_MODEL}")
-    print(f"Pro Model: {PRO_MODEL}")
+    print(f"Execution Log Spreadsheet: {args.spreadsheet_id}")
+    print(f"API Key: {args.api_key[:20]}...")
+    print(f"Flash Model: {args.flash_model}")
+    print(f"Pro Model: {args.pro_model}")
+    if args.filter:
+        print(f"Filter: {args.filter}")
     print("=" * 70)
-    
-    gas_projects_dir = Path('gas_projects')
-    
+
+    gas_projects_dir = args.projects_dir
+
     if not gas_projects_dir.exists():
-        print("✗ gas_projects directory not found")
+        print(f"✗ {gas_projects_dir} directory not found")
         return
-    
+
     # Process all Appsheet projects
     projects = [d for d in gas_projects_dir.iterdir() if d.is_dir() and 'appsheet' in d.name.lower()]
-    
+
+    # Apply filter if specified
+    if args.filter:
+        projects = [d for d in projects if args.filter in d.name]
+
     total = len(projects)
     optimized_count = 0
-    
+
     for idx, project_dir in enumerate(sorted(projects), 1):
         print(f"\n[{idx}/{total}] ", end='')
-        if optimize_project(project_dir):
+        if optimize_project(project_dir, args):
             optimized_count += 1
-    
+
     print("\n" + "=" * 70)
     print(f"✓ Optimization complete!")
     print(f"  Total projects: {total}")

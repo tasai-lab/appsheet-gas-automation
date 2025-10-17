@@ -110,8 +110,22 @@ const ExecutionLogger = {
 
  */
 
+/**
+ * AppSheet Webhook エントリーポイント
+ * @param {GoogleAppsScript.Events.DoPost} e
+ */
 function doPost(e) {
+  const params = JSON.parse(e.postData.contents);
+  return processRequest(params);
+}
 
+
+/**
+ * メイン処理関数（引数ベース）
+ * @param {Object} params - リクエストパラメータ
+ * @returns {Object} - 処理結果
+ */
+function processRequest(params) {
   return executeWebhookWithDuplicationPrevention(e, processCallSummary, {
 
     recordIdField: 'callId',
@@ -127,8 +141,35 @@ function doPost(e) {
     }
 
   });
-
 }
+
+
+/**
+ * テスト用関数
+ * GASエディタから直接実行してテスト可能
+ */
+function testProcessRequest() {
+  // TODO: テストデータを設定してください
+  const testParams = {
+    // 例: callId: "test-123",
+    // 例: recordId: "rec-456",
+    // 例: action: "CREATE"
+  };
+
+  console.log('=== テスト実行: Appsheet_通話_要約生成 ===');
+  console.log('入力パラメータ:', JSON.stringify(testParams, null, 2));
+
+  try {
+    const result = processRequest(testParams);
+    console.log('処理成功:', JSON.stringify(result, null, 2));
+    return result;
+  } catch (error) {
+    console.error('処理エラー:', error.message);
+    console.error('スタックトレース:', error.stack);
+    throw error;
+  }
+}
+
 
 
 

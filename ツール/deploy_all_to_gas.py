@@ -2,11 +2,15 @@
 # -*- coding: utf-8 -*-
 """
 全てのAppSheet GASプロジェクトを一括デプロイするスクリプト
+
+Usage:
+    python deploy_all_to_gas.py [--projects-dir DIR] [--description DESC] [--filter PATTERN]
 """
 import os
 import sys
 import json
 import pickle
+import argparse
 from pathlib import Path
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -26,16 +30,20 @@ SCOPES = [
     'https://www.googleapis.com/auth/spreadsheets'
 ]
 
-def get_credentials():
+def get_credentials(credentials_path=None, token_path=None):
     """認証情報を取得"""
     creds = None
-    token_path = Path(__file__).parent / 'token.pickle'
-    credentials_path = Path(__file__).parent / 'credentials.json'
-    
+
+    # デフォルトパスを設定
+    if credentials_path is None:
+        credentials_path = Path(__file__).parent.parent / 'credentials.json'
+    if token_path is None:
+        token_path = Path(__file__).parent.parent / 'token.pickle'
+
     if token_path.exists():
         with open(token_path, 'rb') as token:
             creds = pickle.load(token)
-    
+
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
@@ -43,10 +51,10 @@ def get_credentials():
             flow = InstalledAppFlow.from_client_secrets_file(
                 str(credentials_path), SCOPES)
             creds = flow.run_local_server(port=0)
-        
+
         with open(token_path, 'wb') as token:
             pickle.dump(creds, token)
-    
+
     return creds
 
 def read_project_files(project_dir):
@@ -189,27 +197,97 @@ def deploy_version(service, script_id, description):
         print(f"  デプロイエラー: {e}")
         return False
 
+def parse_arguments():
+    """引数をパース"""
+    parser = argparse.ArgumentParser(
+        description='全てのAppSheet GASプロジェクトを一括デプロイ',
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+
+    parser.add_argument(
+        '--projects-dir',
+        type=Path,
+        default=Path(__file__).parent.parent / 'gas_projects',
+        help='GASプロジェクトディレクトリ (デフォルト: gas_projects)'
+    )
+
+    parser.add_argument(
+        '--description',
+        default='Updated: Gemini API最適化とログ改善',
+        help='デプロイメントの説明 (デフォルト: Updated: Gemini API最適化とログ改善)'
+    )
+
+    parser.add_argument(
+        '--filter',
+        help='プロジェクト名フィルター (例: Appsheet_通話)'
+    )
+
+    parser.add_argument(
+        '--credentials',
+        type=Path,
+        default=Path(__file__).parent.parent / 'credentials.json',
+        help='認証情報ファイル (デフォルト: credentials.json)'
+    )
+
+    parser.add_argument(
+        '--token',
+        type=Path,
+        default=Path(__file__).parent.parent / 'token.pickle',
+        help='トークンファイル (デフォルト: token.pickle)'
+    )
+
+    parser.add_argument(
+        '--verbose', '-v',
+        action='store_true',
+        help='詳細ログを表示'
+    )
+
+    return parser.parse_args()
+
+
 def main():
     """メイン処理"""
+    args = parse_arguments()
+
     print("全AppSheet GASプロジェクトのデプロイを開始します...")
-    
+
+    if args.verbose:
+        print(f"プロジェクトディレクトリ: {args.projects_dir}")
+        print(f"デプロイメント説明: {args.description}")
+        if args.filter:
+            print(f"フィルター: {args.filter}")
+
     # 認証
-    creds = get_credentials()
+    creds = get_credentials(
+        credentials_path=args.credentials if hasattr(args, 'credentials') else None,
+        token_path=args.token if hasattr(args, 'token') else None
+    )
     service = build('script', 'v1', credentials=creds)
-    
+
     # プロジェクトディレクトリ
-    base_dir = Path(__file__).parent / 'gas_projects'
-    
+    base_dir = args.projects_dir
+
+    if not base_dir.exists():
+        print(f"エラー: プロジェクトディレクトリが見つかりません: {base_dir}")
+        return
+
     # 全プロジェクトを処理
     success_count = 0
     fail_count = 0
     results = []
-    
+
     for project_dir in sorted(base_dir.glob('*')):
         if not project_dir.is_dir():
             continue
-        
+
         project_name = project_dir.name
+
+        # フィルター適用
+        if args.filter and args.filter not in project_name:
+            if args.verbose:
+                print(f"\nスキップ: {project_name} (フィルター条件に不一致)")
+            continue
+
         print(f"\n処理中: {project_name}")
         
         # スクリプトIDを取得
@@ -256,9 +334,9 @@ def main():
             
             # バージョンをデプロイ
             deploy_success = deploy_version(
-                service, 
-                script_id, 
-                'Updated: Gemini API最適化とログ改善'
+                service,
+                script_id,
+                args.description
             )
             
             if deploy_success:
