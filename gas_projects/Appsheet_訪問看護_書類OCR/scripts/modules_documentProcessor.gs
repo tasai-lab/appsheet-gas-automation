@@ -838,5 +838,18 @@ function callAppSheetApi(tableName, action, rows) {
     throw new Error(errorMsg);
   }
 
-  return JSON.parse(response.getContentText());
+  // レスポンスボディを取得
+  const responseText = response.getContentText();
+
+  // 空レスポンスの場合は空オブジェクトを返す
+  if (!responseText || responseText.trim() === '') {
+    logStructured(LOG_LEVEL.WARN, 'AppSheet APIから空レスポンス', {
+      tableName: tableName,
+      action: action,
+      responseCode: responseCode
+    });
+    return {};
+  }
+
+  return JSON.parse(responseText);
 }
