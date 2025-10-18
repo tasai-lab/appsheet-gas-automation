@@ -30,6 +30,17 @@ function doPost(e) {
  */
 function processRequest(recordNoteId, staffId, recordText, recordType, filePath, fileId) {
   const startTime = Date.now();
+
+  // パラメータをログ用に保存
+  const params = {
+    recordNoteId: recordNoteId,
+    staffId: staffId,
+    recordText: recordText ? recordText.substring(0, 100) + '...' : '',
+    recordType: recordType,
+    filePath: filePath,
+    fileId: fileId
+  };
+
   try {
 
     // Validate required parameters
@@ -46,9 +57,11 @@ function processRequest(recordNoteId, staffId, recordText, recordType, filePath,
 
     const guidanceMasterText = getGuidanceMasterAsText();
 
-    // --- 2. 記録タイプを判定 ---
+    // --- 2. 記録タイプを判定（日本語「通常」「精神」 → 内部形式 'normal' / 'psychiatry'） ---
 
-    const recordType = determineRecordType(recordType);
+    const normalizedRecordType = determineRecordType(recordType);
+
+    Logger.log(`📋 記録タイプ判定: "${recordType}" → "${normalizedRecordType}"`);
 
     // --- 3. ファイル処理 (音声ファイルがある場合) ---
 
@@ -58,15 +71,15 @@ function processRequest(recordNoteId, staffId, recordText, recordType, filePath,
 
     if (filePath || fileId) {
 
-      const fileId = fileId || getFileIdFromPath(filePath);
+      const actualFileId = fileId || getFileIdFromPath(filePath);
 
-      const fileData = getFileFromDrive(fileId);
+      const fileData = getFileFromDrive(actualFileId);
 
       const uploadResult = uploadToCloudStorage(
 
-        fileData.blob, 
+        fileData.blob,
 
-        GCP_CONFIG.bucketName, 
+        GCP_CONFIG.bucketName,
 
         fileData.fileName
 
@@ -78,7 +91,7 @@ function processRequest(recordNoteId, staffId, recordText, recordType, filePath,
 
     }
 
-    // --- 4. AIで看護記録を生成 ---
+    // --- 4. AIで看護記録を生成（記録タイプに応じてプロンプトを選択） ---
 
     let analysisResult;
 
@@ -86,13 +99,15 @@ function processRequest(recordNoteId, staffId, recordText, recordType, filePath,
 
       // Vertex AI (音声ファイルあり)
 
-      const prompt = recordType === 'psychiatry' 
+      const prompt = normalizedRecordType === 'psychiatry'
 
         ? buildPsychiatryPrompt(recordText, guidanceMasterText)
 
         : buildNormalPrompt(recordText, guidanceMasterText);
 
-      analysisResult = callVertexAIWithPrompt(gsUri, mimeType, prompt, recordType);
+      Logger.log(`🤖 Vertex AI呼び出し: ${normalizedRecordType === 'psychiatry' ? '精神科' : '通常'}記録プロンプト`);
+
+      analysisResult = callVertexAIWithPrompt(gsUri, mimeType, prompt, normalizedRecordType);
 
     } else {
 
@@ -100,21 +115,23 @@ function processRequest(recordNoteId, staffId, recordText, recordType, filePath,
 
       const fileData = gsUri ? { blob: null, mimeType: mimeType } : null;
 
-      const prompt = recordType === 'psychiatry'
+      const prompt = normalizedRecordType === 'psychiatry'
 
         ? buildPsychiatryPrompt(recordText, guidanceMasterText)
 
         : buildNormalPrompt(recordText, guidanceMasterText);
 
-      analysisResult = callGeminiAPIWithPrompt(fileData, prompt, recordType);
+      Logger.log(`🤖 Gemini API呼び出し: ${normalizedRecordType === 'psychiatry' ? '精神科' : '通常'}記録プロンプト`);
+
+      analysisResult = callGeminiAPIWithPrompt(fileData, prompt, normalizedRecordType);
 
     }
 
     if (!analysisResult) throw new Error("AIからの応答が不正でした。");
 
-    // --- 5. AppSheetに結果を書き込み ---
+    // --- 5. AppSheetに結果を書き込み（記録タイプに応じたフィールドマッピング） ---
 
-    updateRecordOnSuccess(recordNoteId, analysisResult, staffId, recordType);
+    updateRecordOnSuccess(recordNoteId, analysisResult, staffId, normalizedRecordType);
 
     // --- 6. Cloud Storageのファイルをクリーンアップ ---
 

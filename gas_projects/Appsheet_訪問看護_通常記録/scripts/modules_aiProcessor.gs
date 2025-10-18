@@ -723,7 +723,7 @@ function buildPsychiatryPrompt(recordText, guidanceMasterText) {
 
 /**
 
- * 記録タイプを判定する
+ * 記録タイプを判定する（日本語「通常」「精神」→内部形式 'normal' / 'psychiatry' に変換）
 
  * @param {string} recordType - Webhookからのrecord Type（「通常」または「精神」）
 
@@ -733,33 +733,39 @@ function buildPsychiatryPrompt(recordText, guidanceMasterText) {
 
 function determineRecordType(recordType) {
 
+  // recordTypeが指定されていない場合はデフォルトで通常記録
+
   if (!recordType) {
 
-    Logger.log('記録タイプ判定: 通常（デフォルト）');
+    Logger.log('📋 記録タイプ判定: 未指定 → デフォルト「通常」記録');
 
     return 'normal';
 
   }
 
-  // 日本語での完全一致で判定
+  // 日本語「精神」での完全一致で精神科記録を判定
 
   if (recordType === '精神' || recordType === RECORD_TYPE_CONFIG.psychiatry.matchText) {
 
-    logDebug('記録タイプ判定: 精神科', { input: recordType });
+    Logger.log(`📋 記録タイプ判定: 「${recordType}」→ 精神科記録 (psychiatry)`);
 
     return 'psychiatry';
 
   }
 
+  // 日本語「通常」での完全一致で通常記録を判定
+
   if (recordType === '通常' || recordType === RECORD_TYPE_CONFIG.normal.matchText) {
 
-    logDebug('記録タイプ判定: 通常', { input: recordType });
+    Logger.log(`📋 記録タイプ判定: 「${recordType}」→ 通常記録 (normal)`);
 
     return 'normal';
 
   }
 
-  // 一致しない場合は警告してデフォルト
+  // 一致しない場合は警告してデフォルトで通常記録
+
+  Logger.log(`⚠️ 不明な記録タイプ: 「${recordType}」→ デフォルト「通常」記録`);
 
   logStructured(LOG_LEVEL.WARN, '不明な記録タイプ', { input: recordType, defaultTo: 'normal' });
 
