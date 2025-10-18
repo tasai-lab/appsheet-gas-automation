@@ -110,9 +110,31 @@ function processRequest(params) {
     // 3. ファイル名を変更
     renameFile(fileId, resultData.title);
 
-    // 4. 書類仕分け処理（構造化データがある場合のみ）
+    // 4. 書類仕分け処理
     let recordId = null;
-    if (resultData.structured_data && clientId && staffId) {
+
+    // 提供票は特殊処理（OCRテキストが必要）
+    if (documentType === '提供票' && clientId && staffId) {
+      const context = {
+        documentId: rowKey,
+        clientId: clientId,
+        staffId: staffId,
+        driveFileId: fileId,
+        clientName: clientName,
+        staffName: staffName,
+        ocrText: resultData.ocr_text  // 提供票用にOCRテキストを渡す
+      };
+
+      recordId = processStructuredData(documentType, null, context);
+
+      // 5. 完了通知メール送信（提供票は別途実装が必要）
+      if (recordId) {
+        // TODO: 提供票用の通知メール
+        logStructured(LOG_LEVEL.INFO, '提供票の完了通知はスキップ', { recordId });
+      }
+
+    } else if (resultData.structured_data && clientId && staffId) {
+      // 提供票以外の書類仕分け処理
       const context = {
         documentId: rowKey,
         clientId: clientId,
@@ -128,6 +150,7 @@ function processRequest(params) {
       if (recordId) {
         sendCompletionNotificationEmail(context, documentType, resultData.structured_data, recordId);
       }
+
     } else {
       logStructured(LOG_LEVEL.INFO, '書類仕分けスキップ', {
         reason: !resultData.structured_data ? 'No structured_data' : 'Missing clientId/staffId'

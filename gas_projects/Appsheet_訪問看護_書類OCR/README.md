@@ -20,15 +20,16 @@
 
 ### 対応書類タイプ
 
-| 書類タイプ | 対象テーブル | 抽出データ例 |
-|----------|------------|-----------|
-| 医療保険証 | Client_Medical_Insurances | 保険者番号、記号・番号、給付割合、有効期間 |
-| 介護保険証 | Client_LTCI_Insurances | 被保険者番号、要介護度、認定期間 |
-| 公費 | Client_Public_Subsidies | 公費番号、受給者番号、有効期間 |
-| 口座情報 | Client_Bank_Accounts | 金融機関名、支店名、口座番号 |
-| 指示書 | VN_Instructions | 指示期間、医療機関名、病名 |
-| 負担割合証 | Client_LTCI_Copayment_Certificates | 負担割合、適用期間 |
-| 汎用ドキュメント | - | OCRのみ（構造化データなし） |
+| 書類タイプ | 対象テーブル | 抽出データ例 | 処理方式 |
+|----------|------------|-----------|----------|
+| 医療保険証 | Client_Medical_Insurances | 保険者番号、記号・番号、給付割合、有効期間 | 1回API |
+| 介護保険証 | Client_LTCI_Insurances | 被保険者番号、要介護度、認定期間 | 1回API |
+| 公費 | Client_Public_Subsidies | 公費番号、受給者番号、有効期間 | 1回API |
+| 口座情報 | Client_Bank_Accounts | 金融機関名、支店名、口座番号 | 1回API |
+| 指示書 | VN_Instructions | 指示期間、医療機関名、病名 | 1回API |
+| 負担割合証 | Client_LTCI_Copayment_Certificates | 負担割合、適用期間 | 1回API |
+| 提供票 | Service_Provision_Form + Details | 適用月、作成日、サービス明細 | ハイブリッド（OCR + 専用API） |
+| 汎用ドキュメント | - | OCRのみ（構造化データなし） | OCRのみ |
 
 ## プロジェクト構成
 
@@ -51,14 +52,14 @@ Appsheet_訪問看護_書類OCR/
 
 | ファイル | 役割 | 行数 |
 |---------|------|------|
-| main.gs | doPost()、processRequest()、直接実行関数、パス解決 | 478 |
-| config_settings.gs | 全ての設定値を一元管理（Drive設定含む） | 183 |
+| main.gs | doPost()、processRequest()、直接実行関数、パス解決 | 501 |
+| config_settings.gs | 全ての設定値を一元管理（Drive設定、LOG_LEVEL含む） | 203 |
+| modules_documentProcessor.gs | 種類別テーブルへのレコード作成（提供票含む） | 842 |
 | modules_geminiClient.gs | Gemini API連携、プロンプト生成 | 436 |
-| modules_documentProcessor.gs | 種類別テーブルへのレコード作成 | 389 |
-| modules_notification.gs | 完了通知・エラー通知メール送信 | 160 |
 | CommonWebhook.gs | Webhook共通処理 | 236 |
+| modules_notification.gs | 完了通知・エラー通知メール送信 | 160 |
 | utils_logger.gs | 構造化ロギング、パフォーマンス計測 | 139 |
-| **合計** | | **2,021行** |
+| **合計** | | **2,517行** |
 
 ## セットアップ
 
