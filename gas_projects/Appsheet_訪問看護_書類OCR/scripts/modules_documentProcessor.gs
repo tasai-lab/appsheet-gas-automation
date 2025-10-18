@@ -161,14 +161,47 @@ function createLtciInsuranceRecord(context, data) {
   const nowJST = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd HH:mm:ss');
   const newId = `LTCI-${Utilities.getUuid().substring(0, 8)}`;
 
+  // Geminiが異なるスキーマで返す場合があるため、データを正規化
+  let insuredPersonNumber = data.insured_person_number;
+  let insurerName = data.insurer_name;
+  let insurerCode = data.insurer_code;
+  let careLevel = data.care_level;
+  let certStartDate = data.cert_start_date;
+  let certEndDate = data.cert_end_date;
+  let nextRenewalCheckDate = data.next_renewal_check_date;
+
+  // ネストされた被保険者情報の変換
+  if (!insuredPersonNumber && data.insured_person && data.insured_person.number) {
+    insuredPersonNumber = data.insured_person.number;
+  }
+
+  // ネストされた保険者情報の変換
+  if (!insurerName && data.insurer && data.insurer.name) {
+    insurerName = data.insurer.name;
+  }
+  if (!insurerCode && data.insurer && data.insurer.code) {
+    insurerCode = data.insurer.code;
+  }
+
+  // ネストされた認定情報の変換
+  if (!careLevel && data.certification && data.certification.care_level) {
+    careLevel = data.certification.care_level;
+  }
+  if (!certStartDate && data.certification && data.certification.start_date) {
+    certStartDate = data.certification.start_date;
+  }
+  if (!certEndDate && data.certification && data.certification.end_date) {
+    certEndDate = data.certification.end_date;
+  }
+
   // 有効/無効判定
   const todayJSTStr = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd');
   const todayJST = new Date(todayJSTStr);
   let isActive = null;
 
-  if (data.cert_start_date && data.cert_end_date) {
-    const startDate = new Date(data.cert_start_date.replace(/\//g, '-'));
-    const endDate = new Date(data.cert_end_date.replace(/\//g, '-'));
+  if (certStartDate && certEndDate) {
+    const startDate = new Date(certStartDate.replace(/\//g, '-'));
+    const endDate = new Date(certEndDate.replace(/\//g, '-'));
 
     if (startDate <= todayJST && endDate >= todayJST) {
       isActive = true;
@@ -180,13 +213,13 @@ function createLtciInsuranceRecord(context, data) {
   const rowData = {
     ltci_insurance_id: newId,
     client_id: context.clientId,
-    insured_person_number: data.insured_person_number,
-    insurer_name: data.insurer_name,
-    insurer_code: data.insurer_code,
-    care_level: data.care_level,
-    cert_start_date: data.cert_start_date ? data.cert_start_date.replace(/\//g, '-') : null,
-    cert_end_date: data.cert_end_date ? data.cert_end_date.replace(/\//g, '-') : null,
-    next_renewal_check_date: data.next_renewal_check_date ? data.next_renewal_check_date.replace(/\//g, '-') : null,
+    insured_person_number: insuredPersonNumber,
+    insurer_name: insurerName,
+    insurer_code: insurerCode,
+    care_level: careLevel,
+    cert_start_date: certStartDate ? certStartDate.replace(/\//g, '-') : null,
+    cert_end_date: certEndDate ? certEndDate.replace(/\//g, '-') : null,
+    next_renewal_check_date: nextRenewalCheckDate ? nextRenewalCheckDate.replace(/\//g, '-') : null,
     is_active: isActive,
     created_at: nowJST,
     created_by: context.staffId,
@@ -205,14 +238,43 @@ function createPublicSubsidyRecord(context, data) {
   const nowJST = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd HH:mm:ss');
   const newId = `PSUB-${Utilities.getUuid().substring(0, 8)}`;
 
+  // Geminiが異なるスキーマで返す場合があるため、データを正規化
+  let subsidyNumber = data.subsidy_number;
+  let subsidyName = data.subsidy_name;
+  let recipientNumber = data.recipient_number;
+  let subsidyStartDate = data.subsidy_start_date;
+  let subsidyEndDate = data.subsidy_end_date;
+  let burdenLimitAmount = data.burden_limit_amount;
+
+  // ネストされた公費情報の変換
+  if (!subsidyNumber && data.subsidy && data.subsidy.number) {
+    subsidyNumber = data.subsidy.number;
+  }
+  if (!subsidyName && data.subsidy && data.subsidy.name) {
+    subsidyName = data.subsidy.name;
+  }
+
+  // ネストされた受給者情報の変換
+  if (!recipientNumber && data.recipient && data.recipient.number) {
+    recipientNumber = data.recipient.number;
+  }
+
+  // ネストされた有効期間の変換
+  if (!subsidyStartDate && data.validity_period && data.validity_period.start_date) {
+    subsidyStartDate = data.validity_period.start_date;
+  }
+  if (!subsidyEndDate && data.validity_period && data.validity_period.end_date) {
+    subsidyEndDate = data.validity_period.end_date;
+  }
+
   // 有効/無効判定
   const todayJSTStr = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd');
   const todayJST = new Date(todayJSTStr);
   let isActive = null;
 
-  if (data.subsidy_start_date && data.subsidy_end_date) {
-    const startDate = new Date(data.subsidy_start_date.replace(/\//g, '-'));
-    const endDate = new Date(data.subsidy_end_date.replace(/\//g, '-'));
+  if (subsidyStartDate && subsidyEndDate) {
+    const startDate = new Date(subsidyStartDate.replace(/\//g, '-'));
+    const endDate = new Date(subsidyEndDate.replace(/\//g, '-'));
 
     if (startDate <= todayJST && endDate >= todayJST) {
       isActive = true;
@@ -224,12 +286,12 @@ function createPublicSubsidyRecord(context, data) {
   const rowData = {
     public_subsidy_id: newId,
     client_id: context.clientId,
-    subsidy_number: data.subsidy_number,
-    subsidy_name: data.subsidy_name,
-    recipient_number: data.recipient_number,
-    subsidy_start_date: data.subsidy_start_date ? data.subsidy_start_date.replace(/\//g, '-') : null,
-    subsidy_end_date: data.subsidy_end_date ? data.subsidy_end_date.replace(/\//g, '-') : null,
-    burden_limit_amount: data.burden_limit_amount,
+    subsidy_number: subsidyNumber,
+    subsidy_name: subsidyName,
+    recipient_number: recipientNumber,
+    subsidy_start_date: subsidyStartDate ? subsidyStartDate.replace(/\//g, '-') : null,
+    subsidy_end_date: subsidyEndDate ? subsidyEndDate.replace(/\//g, '-') : null,
+    burden_limit_amount: burdenLimitAmount,
     is_active: isActive,
     created_at: nowJST,
     created_by: context.staffId,
@@ -248,16 +310,52 @@ function createBankAccountRecord(context, data) {
   const nowJST = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd HH:mm:ss');
   const newId = `BANK-${Utilities.getUuid().substring(0, 8)}`;
 
+  // Geminiが異なるスキーマで返す場合があるため、データを正規化
+  let bankName = data.bank_name;
+  let bankCode = data.bank_code;
+  let branchName = data.branch_name;
+  let branchCode = data.branch_code;
+  let accountType = data.account_type;
+  let accountNumber = data.account_number;
+  let accountHolderName = data.account_holder_name;
+
+  // ネストされた銀行情報の変換
+  if (!bankName && data.bank && data.bank.name) {
+    bankName = data.bank.name;
+  }
+  if (!bankCode && data.bank && data.bank.code) {
+    bankCode = data.bank.code;
+  }
+
+  // ネストされた支店情報の変換
+  if (!branchName && data.branch && data.branch.name) {
+    branchName = data.branch.name;
+  }
+  if (!branchCode && data.branch && data.branch.code) {
+    branchCode = data.branch.code;
+  }
+
+  // ネストされた口座情報の変換
+  if (!accountType && data.account && data.account.type) {
+    accountType = data.account.type;
+  }
+  if (!accountNumber && data.account && data.account.number) {
+    accountNumber = data.account.number;
+  }
+  if (!accountHolderName && data.account && data.account.holder_name) {
+    accountHolderName = data.account.holder_name;
+  }
+
   const rowData = {
     bank_account_id: newId,
     client_id: context.clientId,
-    bank_name: data.bank_name,
-    bank_code: data.bank_code,
-    branch_name: data.branch_name,
-    branch_code: data.branch_code,
-    account_type: data.account_type,
-    account_number: data.account_number,
-    account_holder_name: data.account_holder_name,
+    bank_name: bankName,
+    bank_code: bankCode,
+    branch_name: branchName,
+    branch_code: branchCode,
+    account_type: accountType,
+    account_number: accountNumber,
+    account_holder_name: accountHolderName,
     is_primary: false, // デフォルトfalse
     created_at: nowJST,
     created_by: context.staffId,
@@ -340,14 +438,38 @@ function createInstructionRecord(context, data) {
   const nowJST = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd HH:mm:ss');
   const newId = `INST-${Utilities.getUuid().substring(0, 8)}`;
 
+  // Geminiが異なるスキーマで返す場合があるため、データを正規化
+  let instructionPeriodStart = data.instruction_period_start;
+  let instructionPeriodEnd = data.instruction_period_end;
+  let medicalInstitutionName = data.medical_institution_name;
+  let doctorName = data.doctor_name;
+  let diseaseName = data.disease_name;
+  let instructionsSummary = data.instructions_summary;
+
+  // ネストされた指示期間の変換
+  if (!instructionPeriodStart && data.instruction_period && data.instruction_period.start_date) {
+    instructionPeriodStart = data.instruction_period.start_date;
+  }
+  if (!instructionPeriodEnd && data.instruction_period && data.instruction_period.end_date) {
+    instructionPeriodEnd = data.instruction_period.end_date;
+  }
+
+  // ネストされた医療機関情報の変換
+  if (!medicalInstitutionName && data.medical_institution && data.medical_institution.name) {
+    medicalInstitutionName = data.medical_institution.name;
+  }
+  if (!doctorName && data.doctor && data.doctor.name) {
+    doctorName = data.doctor.name;
+  }
+
   // 有効/無効判定
   const todayJSTStr = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd');
   const todayJST = new Date(todayJSTStr);
   let isActive = null;
 
-  if (data.instruction_period_start && data.instruction_period_end) {
-    const startDate = new Date(data.instruction_period_start.replace(/\//g, '-'));
-    const endDate = new Date(data.instruction_period_end.replace(/\//g, '-'));
+  if (instructionPeriodStart && instructionPeriodEnd) {
+    const startDate = new Date(instructionPeriodStart.replace(/\//g, '-'));
+    const endDate = new Date(instructionPeriodEnd.replace(/\//g, '-'));
 
     if (startDate <= todayJST && endDate >= todayJST) {
       isActive = true;
@@ -359,12 +481,12 @@ function createInstructionRecord(context, data) {
   const rowData = {
     instruction_id: newId,
     client_id: context.clientId,
-    instruction_period_start: data.instruction_period_start ? data.instruction_period_start.replace(/\//g, '-') : null,
-    instruction_period_end: data.instruction_period_end ? data.instruction_period_end.replace(/\//g, '-') : null,
-    medical_institution_name: data.medical_institution_name,
-    doctor_name: data.doctor_name,
-    disease_name: data.disease_name,
-    instructions_summary: data.instructions_summary,
+    instruction_period_start: instructionPeriodStart ? instructionPeriodStart.replace(/\//g, '-') : null,
+    instruction_period_end: instructionPeriodEnd ? instructionPeriodEnd.replace(/\//g, '-') : null,
+    medical_institution_name: medicalInstitutionName,
+    doctor_name: doctorName,
+    disease_name: diseaseName,
+    instructions_summary: instructionsSummary,
     is_active: isActive,
     created_at: nowJST,
     created_by: context.staffId,
