@@ -104,8 +104,8 @@ function processRequest(params) {
       clientBirthDate
     );
 
-    // 2. 書類管理テーブルを更新
-    updateDocumentOnSuccess(config, rowKey, resultData);
+    // 2. 書類管理テーブルを更新（file_id, file_urlも含む）
+    updateDocumentOnSuccess(config, rowKey, resultData, fileId);
 
     // 3. ファイル名を変更
     renameFile(fileId, resultData.title);
@@ -192,13 +192,17 @@ function processRequest(params) {
 /**
  * 成功時に書類管理テーブルを更新
  */
-function updateDocumentOnSuccess(config, keyValue, resultData) {
+function updateDocumentOnSuccess(config, keyValue, resultData, fileId) {
+  const fileUrl = `https://drive.google.com/file/d/${fileId}/view`;
+
   const rowData = {
     [config.keyColumn]: keyValue,
     [config.titleColumn]: resultData.title,
     [config.summaryColumn]: resultData.summary,
     [config.ocrColumn]: resultData.ocr_text,
-    [config.statusColumn]: "完了"
+    [config.statusColumn]: "完了",
+    "file_id": fileId,
+    "file_url": fileUrl
   };
 
   const payload = {
@@ -427,7 +431,8 @@ function searchFileInFolder(folderId, fileName) {
  * 直接実行用関数（個別引数版）
  * GASエディタから直接実行してテスト可能
  *
- * @param {string} driveFileName - Googleドライブのファイル名、URL、またはファイルID（★必須）
+ * @param {string} filePath - ファイルパス、ファイル名、またはDrive URL（fileIdとどちらか必須）
+ * @param {string} fileId - ファイルID（filePathとどちらか必須、指定時は優先）
  * @param {string} documentType - 書類種類（医療保険証/介護保険証/公費/口座情報/指示書/負担割合証/汎用ドキュメント）
  * @param {string} clientId - 利用者ID（書類仕分け用）
  * @param {string} staffId - スタッフID（書類仕分け用）
@@ -438,7 +443,8 @@ function searchFileInFolder(folderId, fileName) {
  * @returns {Object} - 処理結果（success, documentId, recordId, fileId, fileUrl）
  */
 function directProcessRequest(
-  driveFileName = 'テスト用ファイル名.pdf',
+  filePath = null,
+  fileId = null,
   documentType = '医療保険証',
   clientId = 'TEST-CLIENT-001',
   staffId = 'test@fractal-group.co.jp',
@@ -451,16 +457,29 @@ function directProcessRequest(
   console.log('🚀 書類OCR+仕分け 直接実行');
   console.log('='.repeat(60));
 
-  // ファイルIDを取得
-  const fileId = getFileIdFromPath(driveFileName);
-  const fileUrl = `https://drive.google.com/file/d/${fileId}/view`;
+  // ファイルIDを取得（fileId優先、なければfilePathから検索）
+  let finalFileId;
+
+  if (fileId) {
+    // ファイルIDが指定されている場合はそれを使用
+    finalFileId = fileId;
+    console.log(`🆔 ファイルID指定: ${fileId}`);
+  } else if (filePath) {
+    // ファイルパスから検索
+    finalFileId = getFileIdFromPath(filePath);
+    console.log(`📁 ファイルパス指定: ${filePath}`);
+    console.log(`🆔 取得したファイルID: ${finalFileId}`);
+  } else {
+    // どちらも指定されていない場合はエラー
+    throw new Error('filePathまたはfileIdのいずれかを指定してください');
+  }
+
+  const fileUrl = `https://drive.google.com/file/d/${finalFileId}/view`;
 
   // 書類IDを生成（省略時）
   const finalDocumentId = documentId || `DIRECT-${new Date().getTime()}`;
 
   console.log(`📄 書類種類: ${documentType}`);
-  console.log(`📁 ファイル名: ${driveFileName}`);
-  console.log(`🆔 ファイルID: ${fileId}`);
   console.log(`🔗 ファイルURL: ${fileUrl}`);
   console.log(`📋 書類ID: ${finalDocumentId}`);
   console.log(`👤 利用者: ${clientName} (${clientId})`);
@@ -479,7 +498,7 @@ function directProcessRequest(
     },
     data: {
       keyValue: finalDocumentId,
-      fileId: fileId,
+      fileId: finalFileId,
       document_type: documentType,
       client_id: clientId,
       staff_id: staffId,
@@ -495,7 +514,7 @@ function directProcessRequest(
   // 戻り値にfileIdとfileUrlを追加
   return {
     ...result,
-    fileId: fileId,
+    fileId: finalFileId,
     fileUrl: fileUrl
   };
 }
