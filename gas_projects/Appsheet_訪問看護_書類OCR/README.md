@@ -51,14 +51,14 @@ Appsheet_訪問看護_書類OCR/
 
 | ファイル | 役割 | 行数 |
 |---------|------|------|
-| main.gs | doPost()、processRequest()、直接実行関数 | 394 |
-| config_settings.gs | 全ての設定値を一元管理 | 171 |
-| modules_geminiClient.gs | Gemini API連携、プロンプト生成 | 455 |
-| modules_documentProcessor.gs | 種類別テーブルへのレコード作成 | 361 |
-| modules_notification.gs | 完了通知・エラー通知メール送信 | 165 |
+| main.gs | doPost()、processRequest()、直接実行関数、パス解決 | 478 |
+| config_settings.gs | 全ての設定値を一元管理（Drive設定含む） | 183 |
+| modules_geminiClient.gs | Gemini API連携、プロンプト生成 | 436 |
+| modules_documentProcessor.gs | 種類別テーブルへのレコード作成 | 389 |
+| modules_notification.gs | 完了通知・エラー通知メール送信 | 160 |
 | CommonWebhook.gs | Webhook共通処理 | 236 |
 | utils_logger.gs | 構造化ロギング、パフォーマンス計測 | 139 |
-| **合計** | | **1,921行** |
+| **合計** | | **2,021行** |
 
 ## セットアップ
 
@@ -86,6 +86,11 @@ const APPSHEET_CONFIG = {
   appId: 'YOUR_APPSHEET_APP_ID',
   accessKey: 'YOUR_APPSHEET_ACCESS_KEY',
   appName: '訪問看護_利用者管理-XXXXXXXX'
+};
+
+// Google Drive設定
+const DRIVE_CONFIG = {
+  baseFolderId: 'YOUR_BASE_FOLDER_ID' // 書類ファイルの基準フォルダーID
 };
 
 // 通知設定
@@ -132,12 +137,15 @@ AppSheetから以下のJSONペイロードをPOSTします:
 // 基本的な使い方（ファイル名のみ指定）
 directProcessRequest('テスト保険証.pdf')
 
+// ファイルパスで指定（基準フォルダーからの相対パス）
+directProcessRequest('利用者A/書類/保険証.pdf')
+
 // 書類種類も指定
-directProcessRequest('テスト保険証.pdf', '医療保険証')
+directProcessRequest('利用者A/書類/保険証.pdf', '医療保険証')
 
 // 利用者情報も指定
 directProcessRequest(
-  'テスト保険証.pdf',
+  '利用者A/書類/保険証.pdf',
   '医療保険証',
   'CLIENT-001',
   'staff@example.com',
@@ -151,6 +159,17 @@ directProcessRequest('https://drive.google.com/file/d/1a2b3c4d5e6f.../view')
 // ファイルIDで実行
 directProcessRequest('1a2b3c4d5e6f...')
 ```
+
+**ファイル指定方法:**
+- **ファイル名**: `config_settings.gs`で設定した基準フォルダー配下（サブフォルダー含む）を再帰的に検索
+  - 例: `'テスト保険証.pdf'`
+- **ファイルパス**: 基準フォルダーからの相対パス（フォルダ階層を指定）
+  - 例: `'利用者A/書類/保険証.pdf'`
+  - 例: `'/サブフォルダA/サブフォルダB/ファイル.pdf'`
+- **Drive URL**: URLから直接ファイルIDを抽出
+  - 例: `'https://drive.google.com/file/d/1a2b3c4d5e6f.../view'`
+- **ファイルID**: そのまま使用
+  - 例: `'1a2b3c4d5e6f...'`
 
 **実行方法:**
 1. GASエディタで`main.gs`を開く

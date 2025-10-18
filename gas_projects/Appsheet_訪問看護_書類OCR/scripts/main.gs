@@ -277,8 +277,8 @@ function renameFile(fileId, newName) {
 }
 
 /**
- * ファイル名またはURLからファイルIDを取得
- * @param {string} filePathOrUrl - ファイル名、Drive URL、またはファイルID
+ * ファイルパス、ファイル名、またはURLからファイルIDを取得
+ * @param {string} filePathOrUrl - ファイルパス、ファイル名、Drive URL、またはファイルID
  * @returns {string} - ファイルID
  */
 function getFileIdFromPath(filePathOrUrl) {
@@ -302,18 +302,102 @@ function getFileIdFromPath(filePathOrUrl) {
     }
   }
 
-  // ファイル名で検索
-  const files = DriveApp.getFilesByName(filePathOrUrl);
-  if (files.hasNext()) {
-    const file = files.next();
-    logStructured(LOG_LEVEL.INFO, 'ファイル名からファイルIDを取得', {
-      fileName: filePathOrUrl,
-      fileId: file.getId()
-    });
-    return file.getId();
+  // パス区切り文字が含まれている場合はパスとして解釈
+  if (filePathOrUrl.includes('/')) {
+    const fileId = getFileIdFromFolderPath(filePathOrUrl);
+    if (fileId) {
+      logStructured(LOG_LEVEL.INFO, 'ファイルパスからファイルIDを取得', {
+        filePath: filePathOrUrl,
+        fileId: fileId,
+        baseFolderId: DRIVE_CONFIG.baseFolderId
+      });
+      return fileId;
+    }
+    throw new Error(`ファイルが見つかりません（パス指定）: ${filePathOrUrl}`);
   }
 
-  throw new Error(`ファイルが見つかりません: ${filePathOrUrl}`);
+  // ファイル名で検索（基準フォルダー配下を再帰的に検索）
+  const fileId = searchFileInFolder(DRIVE_CONFIG.baseFolderId, filePathOrUrl);
+  if (fileId) {
+    logStructured(LOG_LEVEL.INFO, 'ファイル名からファイルIDを取得', {
+      fileName: filePathOrUrl,
+      fileId: fileId,
+      baseFolderId: DRIVE_CONFIG.baseFolderId
+    });
+    return fileId;
+  }
+
+  throw new Error(`ファイルが見つかりません: ${filePathOrUrl}（基準フォルダー: ${DRIVE_CONFIG.baseFolderId}）`);
+}
+
+/**
+ * フォルダパスからファイルIDを取得
+ * @param {string} path - フォルダパス（例: "フォルダA/フォルダB/ファイル.pdf"）
+ * @returns {string|null} - ファイルID（見つからない場合はnull）
+ */
+function getFileIdFromFolderPath(path) {
+  // パスを正規化（先頭の'/'を削除）
+  const normalizedPath = path.replace(/^\/+/, '');
+
+  // パスを分割
+  const parts = normalizedPath.split('/');
+
+  // 基準フォルダーから開始
+  let currentFolder = DriveApp.getFolderById(DRIVE_CONFIG.baseFolderId);
+
+  // フォルダー階層をたどる（最後の要素はファイル名）
+  for (let i = 0; i < parts.length - 1; i++) {
+    const folderName = parts[i];
+    const folders = currentFolder.getFoldersByName(folderName);
+
+    if (!folders.hasNext()) {
+      logStructured(LOG_LEVEL.WARN, 'フォルダーが見つかりません', {
+        folderName: folderName,
+        currentPath: parts.slice(0, i + 1).join('/')
+      });
+      return null;
+    }
+
+    currentFolder = folders.next();
+  }
+
+  // 最後の要素をファイル名として取得
+  const fileName = parts[parts.length - 1];
+  const files = currentFolder.getFilesByName(fileName);
+
+  if (files.hasNext()) {
+    return files.next().getId();
+  }
+
+  return null;
+}
+
+/**
+ * フォルダー内のファイルを再帰的に検索
+ * @param {string} folderId - 検索対象フォルダーID
+ * @param {string} fileName - 検索するファイル名
+ * @returns {string|null} - ファイルID（見つからない場合はnull）
+ */
+function searchFileInFolder(folderId, fileName) {
+  const folder = DriveApp.getFolderById(folderId);
+
+  // 現在のフォルダー内でファイルを検索
+  const files = folder.getFilesByName(fileName);
+  if (files.hasNext()) {
+    return files.next().getId();
+  }
+
+  // サブフォルダーを再帰的に検索
+  const subfolders = folder.getFolders();
+  while (subfolders.hasNext()) {
+    const subfolder = subfolders.next();
+    const fileId = searchFileInFolder(subfolder.getId(), fileName);
+    if (fileId) {
+      return fileId;
+    }
+  }
+
+  return null;
 }
 
 /**
