@@ -23,44 +23,20 @@ const CommonWebhook = {
       // リクエストパラメータをパース
       params = this.parseRequest(e);
 
-      // 重複チェック（オプション）
-      if (params.enableDuplicationCheck !== false) {
-        const requestId = DuplicationPrevention.generateRequestId(params);
-        if (!DuplicationPrevention.checkDuplicate(requestId)) {
-          return this.createDuplicateResponse(params);
-        }
-      }
-
       // メイン処理を実行
       const result = processFunction(params);
 
-      // 成功ログ記録
+      // 成功ログ記録（utils_logger.gsを使用）
       const executionTime = (new Date() - startTime) / 1000;
-      if (typeof ExecutionLogger !== 'undefined') {
-        ExecutionLogger.success(
-          params.scriptName || 'Unknown Script',
-          params.processId || '',
-          '処理完了',
-          executionTime,
-          params
-        );
-      }
+      Logger.log(`✅ 処理成功: ${params.scriptName || 'Unknown'} (${executionTime.toFixed(2)}秒)`);
 
       return this.createSuccessResponse(result);
 
     } catch (error) {
-      // エラーログ記録
+      // エラーログ記録（utils_logger.gsを使用）
       const executionTime = (new Date() - startTime) / 1000;
-      if (typeof ExecutionLogger !== 'undefined') {
-        ExecutionLogger.error(
-          params?.scriptName || 'Unknown Script',
-          params?.processId || '',
-          error.message,
-          error,
-          executionTime,
-          params
-        );
-      }
+      Logger.log(`❌ 処理エラー: ${params?.scriptName || 'Unknown'} - ${error.message} (${executionTime.toFixed(2)}秒)`);
+      console.error(error);
 
       return this.createErrorResponse(error, params);
     }
@@ -131,25 +107,6 @@ const CommonWebhook = {
       .setMimeType(ContentService.MimeType.JSON);
   },
 
-  /**
-   * 重複レスポンスを作成
-   * @param {Object} params - リクエストパラメータ
-   * @return {GoogleAppsScript.Content.TextOutput}
-   */
-  createDuplicateResponse: function(params) {
-    const response = {
-      status: 'duplicate',
-      timestamp: new Date().toISOString(),
-      message: '重複リクエストのため処理をスキップしました',
-      params: params
-    };
-
-    Logger.log('Duplicate request: ' + JSON.stringify(response));
-
-    return ContentService
-      .createTextOutput(JSON.stringify(response))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
 };
 
 /**

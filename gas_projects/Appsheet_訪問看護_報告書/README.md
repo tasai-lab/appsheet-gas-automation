@@ -2,8 +2,8 @@
 
 **Script ID:** 1FfRoozBGOfvGl5USWhe4VuYu7bkIIY0yEuzZjiQnBfc7k6osfw02u7ZB
 **Created:** 2025-08-05T01:10:39.809Z
-**Last Modified:** 2025-10-18T16:59:00.000Z
-**Version:** v2.0.0
+**Last Modified:** 2025-10-18T17:15:00.000Z
+**Version:** v2.1.0
 
 ## 概要
 
@@ -22,18 +22,32 @@
 ```
 Appsheet_訪問看護_報告書/
 ├── scripts/
-│   ├── コード.gs                    # メイン処理
-│   ├── config_settings.gs          # 設定ファイル
-│   ├── utils_logger.gs             # ロギングユーティリティ
-│   ├── CommonWebhook.gs            # Webhook共通処理
-│   ├── ErrorHandler.gs             # エラーハンドリング
-│   ├── utils_duplicationPrevention.gs  # 重複防止
-│   └── appsscript.json             # プロジェクトマニフェスト
-├── FLOW.md                         # 処理フロー図
-├── SPECIFICATIONS.md               # 技術仕様書
-├── README.md                       # 本ファイル
-└── project_metadata.json           # プロジェクトメタデータ
+│   ├── main.gs                         # メインエントリーポイント
+│   ├── modules_geminiClient.gs         # Gemini API連携
+│   ├── modules_appsheetClient.gs       # AppSheet API連携
+│   ├── modules_notification.gs         # 通知処理
+│   ├── CommonWebhook.gs                # Webhook共通処理
+│   ├── config_settings.gs              # 設定ファイル
+│   ├── utils_logger.gs                 # ロギングユーティリティ
+│   └── appsscript.json                 # プロジェクトマニフェスト
+├── FLOW.md                             # 処理フロー図
+├── SPECIFICATIONS.md                   # 技術仕様書
+├── README.md                           # 本ファイル
+└── project_metadata.json               # プロジェクトメタデータ
 ```
+
+### スクリプト説明
+
+| ファイル | 役割 | 行数 |
+|---------|------|------|
+| main.gs | doPost()、processRequest()、テスト関数 | 113 |
+| modules_geminiClient.gs | Gemini APIとの通信、プロンプト構築 | 153 |
+| modules_appsheetClient.gs | AppSheetへのデータ更新 | 85 |
+| modules_notification.gs | エラー通知メール送信 | 42 |
+| CommonWebhook.gs | Webhook共通処理（リクエストパース、レスポンス生成） | 193 |
+| config_settings.gs | 全ての設定値を一元管理 | 77 |
+| utils_logger.gs | 構造化ロギング、パフォーマンス計測 | 139 |
+| **合計** | | **802行** |
 
 ## セットアップ
 
@@ -97,7 +111,7 @@ function testReportGeneration(
 ```
 
 **実行方法:**
-1. GASエディタで`コード.gs`を開く
+1. GASエディタで`main.gs`を開く
 2. 関数選択で`testReportGeneration`を選択
 3. 実行ボタンをクリック
 
@@ -199,6 +213,7 @@ function testReportGeneration(
 
 | バージョン | 日時 | 説明 | ステータス |
 |---------|------|------|----------|
+| v2.1 | 2025-10-18 17:15 | スクリプト最適化 - 役割ごとに分割、命名規則統一、不要コード削除 (802行に削減) | ✓ 成功 |
 | v2.0 | 2025-10-18 16:59 | リファクタリング完了 - Gemini 2.5-pro統合、共通モジュール採用、構造化ロギング実装 | ✓ 成功 |
 
 ## 参照ドキュメント
