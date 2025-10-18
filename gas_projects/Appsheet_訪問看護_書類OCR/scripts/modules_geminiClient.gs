@@ -288,7 +288,24 @@ ${clientBirthDate ? `**利用者生年月日**: ${clientBirthDate}（年齢計�
 - 複数行に分かれている場合は連結してください
 - ハイフンやスペースは除去して数字のみを抽出してください
 
-**負担割合 (copayment_rate)**: 「1割」→ 10, 「2割」→ 20, 「3割」→ 30 (整数)
+**負担割合 (copayment_rate)** - ★最重要項目★:
+- 「1割」→ 10, 「2割」→ 20, 「3割」→ 30 (整数で返す)
+- 「利用者負担の割合」「負担割合」などのラベルの近くに記載されています
+- 必ず整数値で返してください（10, 20, 30のいずれか）
+
+**適用期間 (copay_cert_start_date, copay_cert_end_date)** - ★最重要項目★:
+- 「適用期間」「有効期間」「認定有効期間」などのラベルで記載されています
+- 通常「令和○年○月○日から令和○年○月○日まで」のような形式です
+- 和暦（令和・平成等）は必ず西暦に変換してください
+  - 令和1年 = 2019年
+  - 令和2年 = 2020年
+  - 令和3年 = 2021年
+  - 令和4年 = 2022年
+  - 令和5年 = 2023年
+  - 令和6年 = 2024年
+  - 令和7年 = 2025年
+- 出力形式は「yyyy/mm/dd」で統一してください（例: 2025/04/01）
+- 両方の日付を必ず抽出してください
 
 # 出力形式
 
@@ -298,9 +315,9 @@ ${clientBirthDate ? `**利用者生年月日**: ${clientBirthDate}（年齢計�
   "title": "（推奨ファイル名）",
   "structured_data": {
     "insured_person_number": "string or null (10桁程度の数字、ハイフン・スペース除去)",
-    "copayment_rate": 10,
-    "copay_cert_start_date": "yyyy/mm/dd or null",
-    "copay_cert_end_date": "yyyy/mm/dd or null"
+    "copayment_rate": 10 or 20 or 30 or null (必ず整数),
+    "copay_cert_start_date": "yyyy/mm/dd or null (和暦を西暦に変換)",
+    "copay_cert_end_date": "yyyy/mm/dd or null (和暦を西暦に変換)"
   }
 }
 `

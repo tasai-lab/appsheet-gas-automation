@@ -276,6 +276,11 @@ function createCopayCertRecord(context, data) {
   const nowJST = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd HH:mm:ss');
   const newId = `COPAY-${Utilities.getUuid().substring(0, 8)}`;
 
+  // デバッグ: 抽出されたデータをログ出力
+  logStructured(LOG_LEVEL.INFO, '負担割合証: Geminiから抽出されたデータ', {
+    data: JSON.stringify(data)
+  });
+
   // 有効/無効判定
   const todayJSTStr = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd');
   const todayJST = new Date(todayJSTStr);

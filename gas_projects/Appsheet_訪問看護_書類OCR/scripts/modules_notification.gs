@@ -156,5 +156,19 @@ function formatValueForEmail(value) {
   if (typeof value === 'boolean') {
     return value ? 'はい' : 'いいえ';
   }
+  if (typeof value === 'object') {
+    // オブジェクトの場合はキー・値のペアを展開して表示
+    const pairs = [];
+    for (const key in value) {
+      if (value.hasOwnProperty(key)) {
+        const displayKey = KEY_TO_JAPANESE_MAP[key] || key;
+        const displayValue = formatValueForEmail(value[key]); // 再帰的に処理
+        if (displayValue !== '') {
+          pairs.push(`${displayKey}: ${displayValue}`);
+        }
+      }
+    }
+    return pairs.length > 0 ? pairs.join('<br>') : '';
+  }
   return String(value);
 }
