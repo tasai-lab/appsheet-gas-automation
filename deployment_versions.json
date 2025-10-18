@@ -1,9 +1,15 @@
 {
-  "last_updated": "2025-10-18T06:22:44.398067",
+  "last_updated": "2025-10-18T15:30:00.000000",
   "projects": {
     "Appsheet_訪問看護_通常記録": {
       "script_id": "1YkRRcL3fBJ-gMiC3lCkScM3fe_IrawqXrmKoIIWmE-nQokw4rY6rATZa",
       "deployments": [
+        {
+          "version": 46,
+          "description": "v2.2: recordType条件分岐の修正とログ改善",
+          "timestamp": "2025-10-18T15:30:00.000000",
+          "status": "success"
+        },
         {
           "version": 45,
           "description": "v2.1: テスト関数追加 - 引数を個別設定して直接実行可能に",
