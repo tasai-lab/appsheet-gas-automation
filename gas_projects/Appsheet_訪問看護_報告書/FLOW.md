@@ -5,6 +5,7 @@
 ## 1. メイン処理フロー
 
 ```mermaid
+%%{init: {'theme':'dark'}}%%
 graph TB
     Start([AppSheet Webhook]):::webhook --> Parse[リクエストパース]:::process
     Parse --> Validate{パラメータ<br/>検証}:::decision
@@ -39,6 +40,7 @@ graph TB
 ## 2. Webhook受信処理
 
 ```mermaid
+%%{init: {'theme':'dark'}}%%
 sequenceDiagram
     participant AS as AppSheet
     participant WH as doPost()
@@ -62,6 +64,7 @@ sequenceDiagram
 ## 3. Gemini API呼び出しフロー
 
 ```mermaid
+%%{init: {'theme':'dark'}}%%
 graph TB
     Start([generateReportWithGemini]):::entry --> BuildPrompt[プロンプト構築]:::process
 
@@ -93,6 +96,7 @@ graph TB
 ## 4. 状態遷移図
 
 ```mermaid
+%%{init: {'theme':'dark'}}%%
 stateDiagram-v2
     [*] --> 受付: Webhook受信
 
@@ -122,6 +126,7 @@ stateDiagram-v2
 ## 5. コンポーネント構成図
 
 ```mermaid
+%%{init: {'theme':'dark'}}%%
 graph TB
     subgraph "エントリーポイント"
         doPost[doPost]:::webhook
@@ -187,5 +192,5 @@ graph TB
 
 ---
 
-**最終更新**: 2025-10-18  
-**バージョン**: v2.0.0
+**最終更新**: 2025-10-18
+**バージョン**: v2.1.0
