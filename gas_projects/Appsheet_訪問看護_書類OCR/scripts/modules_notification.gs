@@ -150,11 +150,13 @@ function formatValueForEmail(value) {
   if (value === null || value === undefined) {
     return '';
   }
-  if (Array.isArray(value)) {
-    return value.join(', ');
-  }
   if (typeof value === 'boolean') {
     return value ? 'はい' : 'いいえ';
+  }
+  if (Array.isArray(value)) {
+    // 配列の場合は各要素を再帰的に処理して連結
+    const formattedItems = value.map(item => formatValueForEmail(item)).filter(item => item !== '');
+    return formattedItems.join(', ');
   }
   if (typeof value === 'object') {
     // オブジェクトの場合はキー・値のペアを展開して表示

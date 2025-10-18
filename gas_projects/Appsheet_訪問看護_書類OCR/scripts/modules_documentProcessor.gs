@@ -281,16 +281,34 @@ function createCopayCertRecord(context, data) {
     data: JSON.stringify(data)
   });
 
+  // Geminiが異なるスキーマで返す場合があるため、データを正規化
+  let insuredPersonNumber = data.insured_person_number;
+  let copaymentRate = data.copayment_rate;
+  let startDate = data.copay_cert_start_date;
+  let endDate = data.copay_cert_end_date;
+
+  // ネストされた構造の場合の変換
+  if (!insuredPersonNumber && data.insured_person && data.insured_person.number) {
+    insuredPersonNumber = data.insured_person.number;
+  }
+
+  if (!copaymentRate && data.copayment_rates && Array.isArray(data.copayment_rates) && data.copayment_rates.length > 0) {
+    const latestRate = data.copayment_rates[0];
+    copaymentRate = latestRate.rate;
+    startDate = latestRate.start_date;
+    endDate = latestRate.end_date;
+  }
+
   // 有効/無効判定
   const todayJSTStr = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd');
   const todayJST = new Date(todayJSTStr);
   let isActive = null;
 
-  if (data.copay_cert_start_date && data.copay_cert_end_date) {
-    const startDate = new Date(data.copay_cert_start_date.replace(/\//g, '-'));
-    const endDate = new Date(data.copay_cert_end_date.replace(/\//g, '-'));
+  if (startDate && endDate) {
+    const startDateObj = new Date(startDate.replace(/\//g, '-'));
+    const endDateObj = new Date(endDate.replace(/\//g, '-'));
 
-    if (startDate <= todayJST && endDate >= todayJST) {
+    if (startDateObj <= todayJST && endDateObj >= todayJST) {
       isActive = true;
     } else {
       isActive = false;
@@ -300,10 +318,10 @@ function createCopayCertRecord(context, data) {
   const rowData = {
     copay_cert_id: newId,
     client_id: context.clientId,
-    insured_person_number: data.insured_person_number,
-    copayment_rate: data.copayment_rate,
-    copay_cert_start_date: data.copay_cert_start_date ? data.copay_cert_start_date.replace(/\//g, '-') : null,
-    copay_cert_end_date: data.copay_cert_end_date ? data.copay_cert_end_date.replace(/\//g, '-') : null,
+    insured_person_number: insuredPersonNumber,
+    copayment_rate: copaymentRate,
+    copay_cert_start_date: startDate ? startDate.replace(/\//g, '-') : null,
+    copay_cert_end_date: endDate ? endDate.replace(/\//g, '-') : null,
     is_active: isActive,
     created_at: nowJST,
     created_by: context.staffId,
