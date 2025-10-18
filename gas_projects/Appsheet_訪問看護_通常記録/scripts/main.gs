@@ -65,83 +65,37 @@ function processRequest(recordNoteId, staffId, recordText, recordType, filePath,
 
     // --- 3. ファイル処理 (音声ファイルがある場合) ---
 
-    let gsUri = null;
-
-    let mimeType = null;
+    let fileData = null;
 
     if (filePath || fileId) {
 
       const actualFileId = fileId || getFileIdFromPath(filePath);
 
-      const fileData = getFileFromDrive(actualFileId);
+      fileData = getFileFromDrive(actualFileId);
 
-      const uploadResult = uploadToCloudStorage(
-
-        fileData.blob,
-
-        GCP_CONFIG.bucketName,
-
-        fileData.fileName
-
-      );
-
-      gsUri = uploadResult.gsUri;
-
-      mimeType = fileData.mimeType;
+      Logger.log(`📁 音声ファイル取得完了: ${fileData.fileName} (${(fileData.blob.getBytes().length / (1024 * 1024)).toFixed(2)}MB)`);
 
     }
 
     // --- 4. AIで看護記録を生成（記録タイプに応じてプロンプトを選択） ---
 
-    let analysisResult;
+    const prompt = normalizedRecordType === 'psychiatry'
 
-    if (SYSTEM_CONFIG.processingMode === 'vertex-ai' && gsUri) {
+      ? buildPsychiatryPrompt(recordText, guidanceMasterText)
 
-      // Vertex AI (音声ファイルあり)
+      : buildNormalPrompt(recordText, guidanceMasterText);
 
-      const prompt = normalizedRecordType === 'psychiatry'
+    Logger.log(`🤖 AI呼び出し: ${normalizedRecordType === 'psychiatry' ? '精神科' : '通常'}記録プロンプト`);
 
-        ? buildPsychiatryPrompt(recordText, guidanceMasterText)
+    // Gemini APIで処理（base64エンコード使用）
 
-        : buildNormalPrompt(recordText, guidanceMasterText);
-
-      Logger.log(`🤖 Vertex AI呼び出し: ${normalizedRecordType === 'psychiatry' ? '精神科' : '通常'}記録プロンプト`);
-
-      analysisResult = callVertexAIWithPrompt(gsUri, mimeType, prompt, normalizedRecordType);
-
-    } else {
-
-      // Gemini API (フォールバック)
-
-      const fileData = gsUri ? { blob: null, mimeType: mimeType } : null;
-
-      const prompt = normalizedRecordType === 'psychiatry'
-
-        ? buildPsychiatryPrompt(recordText, guidanceMasterText)
-
-        : buildNormalPrompt(recordText, guidanceMasterText);
-
-      Logger.log(`🤖 Gemini API呼び出し: ${normalizedRecordType === 'psychiatry' ? '精神科' : '通常'}記録プロンプト`);
-
-      analysisResult = callGeminiAPIWithPrompt(fileData, prompt, normalizedRecordType);
-
-    }
+    const analysisResult = callGeminiAPIWithPrompt(fileData, prompt, normalizedRecordType);
 
     if (!analysisResult) throw new Error("AIからの応答が不正でした。");
 
     // --- 5. AppSheetに結果を書き込み（記録タイプに応じたフィールドマッピング） ---
 
     updateRecordOnSuccess(recordNoteId, analysisResult, staffId, normalizedRecordType);
-
-    // --- 6. Cloud Storageのファイルをクリーンアップ ---
-
-    if (gsUri) {
-
-      const fileName = gsUri.split('/').pop();
-
-      deleteFromCloudStorage(GCP_CONFIG.bucketName, fileName);
-
-    }
 
     const duration = Date.now() - startTime;
 

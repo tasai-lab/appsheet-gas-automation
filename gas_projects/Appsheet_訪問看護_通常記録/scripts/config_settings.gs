@@ -119,11 +119,11 @@ const NOTIFICATION_CONFIG = {
 
 const SYSTEM_CONFIG = {
 
-  processingMode: 'vertex-ai',
+  processingMode: 'gemini-api',  // 'vertex-ai' から 'gemini-api' に変更（Cloud Storage不要）
 
   debugMode: false,
 
-  
+
   // タイムアウト設定(ミリ秒)
 
   timeout: {
