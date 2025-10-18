@@ -34,7 +34,22 @@
       "Bash(chmod:*)",
       "Bash(npm uninstall:*)",
       "Bash(npm install:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(for file in ./Appsheet_訪問看護_書類仕分け/scripts/main.gs ./Appsheet_利用者_基本情報上書き/scripts/コード.gs ./Appsheet_利用者_質疑応答/scripts/コード.gs ./Appsheet_訪問看護_計画書問題点/scripts/コード.gs ./Appsheet_通話_質疑応答/scripts/コード.gs)",
+      "Bash(do echo \"=== $file ===\")",
+      "Bash(done)",
+      "Bash(for dir in Appsheet_訪問看護_書類仕分け Appsheet_利用者_基本情報上書き Appsheet_利用者_質疑応答 Appsheet_訪問看護_計画書問題点 Appsheet_訪問看護_報告書)",
+      "Bash(do echo \"=== $dir ===\")",
+      "Bash(for project in \"Appsheet_訪問看護_書類仕分け\" \"Appsheet_利用者_基本情報上書き\" \"Appsheet_利用者_質疑応答\" \"Appsheet_訪問看護_計画書問題点\" \"Appsheet_訪問看護_報告書\" \"Appsheet_営業レポート\" \"Appsheet_ALL_スレッド更新\" \"Appsheet_利用者_フェースシート\" \"Appsheet_利用者_反映\" \"Appsheet_利用者_家族情報作成\" \"Automation_レシート\" \"Appsheet_訪問看護_計画書問題点_評価\" \"Appsheet_名刺取り込み\")",
+      "Bash(do echo \"=== $project ===\" find \"$project\" -name \"*.gs\" ! -path \"*/_backup/*\" ! -path \"*/_archived/*\" -exec grep -l \"generativelanguage.googleapis.com\" {})",
+      "Bash(for file in \"/Users/t.asai/code/appsheet-gas-automation/gas_projects/Appsheet_ALL_スレッド更新/scripts/コード.gs\" \"/Users/t.asai/code/appsheet-gas-automation/gas_projects/Appsheet_利用者_フェースシート/scripts/コード.gs\" \"/Users/t.asai/code/appsheet-gas-automation/gas_projects/Appsheet_利用者_反映/scripts/コード.gs\" \"/Users/t.asai/code/appsheet-gas-automation/gas_projects/Appsheet_利用者_家族情報作成/scripts/コード.gs\" \"/Users/t.asai/code/appsheet-gas-automation/gas_projects/Automation_レシート/scripts/main.gs\" \"/Users/t.asai/code/appsheet-gas-automation/gas_projects/Appsheet_訪問看護_計画書問題点_評価/scripts/コード.gs\" \"/Users/t.asai/code/appsheet-gas-automation/gas_projects/Appsheet_名刺取り込み/scripts/コード.gs\")",
+      "Bash(\"Appsheet_利用者_家族情報作成/scripts/コード.gs\" )",
+      "Bash(\"Automation_レシート/scripts/main.gs\" )",
+      "Bash(\"Appsheet_訪問看護_計画書問題点_評価/scripts/コード.gs\" )",
+      "Bash(\"Appsheet_名刺取り込み/scripts/コード.gs\")",
+      "Bash(gcloud:*)",
+      "Bash(awk:*)",
+      "Bash(tree:*)"
     ],
     "deny": [],
     "ask": []
