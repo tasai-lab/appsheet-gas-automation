@@ -82,14 +82,39 @@ function analyzeDocumentWithGemini(fileId, documentType, customInstructions, cli
 
   // JSON抽出
   let content = jsonResponse.candidates[0].content.parts[0].text;
+
+  // finishReasonを確認
+  const finishReason = jsonResponse.candidates[0].finishReason;
+  if (finishReason === 'MAX_TOKENS') {
+    logStructured(LOG_LEVEL.ERROR, 'Gemini APIの出力がトークン制限に達しました', {
+      finishReason: finishReason,
+      maxOutputTokens: GEMINI_CONFIG.maxOutputTokens,
+      contentLength: content.length
+    });
+    throw new Error(`Gemini APIの出力がトークン制限（${GEMINI_CONFIG.maxOutputTokens}）に達しました。書類が長すぎる可能性があります。`);
+  }
+
   const jsonMatch = content.match(/\{[\s\S]*\}/);
 
   if (!jsonMatch) {
-    logStructured(LOG_LEVEL.ERROR, 'JSONの抽出に失敗', { content: content.substring(0, 500) });
-    throw new Error("AIの応答からJSONを抽出できませんでした");
+    logStructured(LOG_LEVEL.ERROR, 'JSONの抽出に失敗', {
+      content: content.substring(0, 500),
+      finishReason: finishReason,
+      contentLength: content.length
+    });
+    throw new Error(`AIの応答からJSONを抽出できませんでした（finishReason: ${finishReason}）。Geminiの応答が不完全です。`);
   }
 
-  const resultData = JSON.parse(jsonMatch[0]);
+  let resultData;
+  try {
+    resultData = JSON.parse(jsonMatch[0]);
+  } catch (parseError) {
+    logStructured(LOG_LEVEL.ERROR, 'JSON解析に失敗', {
+      json: jsonMatch[0].substring(0, 500),
+      error: parseError.toString()
+    });
+    throw new Error(`Geminiから返されたJSONの解析に失敗しました: ${parseError.message}`);
+  }
 
   logStructured(LOG_LEVEL.INFO, '解析完了', {
     documentType: documentType,
