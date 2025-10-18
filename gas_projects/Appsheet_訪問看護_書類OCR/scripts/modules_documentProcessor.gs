@@ -295,6 +295,7 @@ function createCopayCertRecord(context, data) {
   const rowData = {
     copay_cert_id: newId,
     client_id: context.clientId,
+    insured_person_number: data.insured_person_number,
     copayment_rate: data.copayment_rate,
     copay_cert_start_date: data.copay_cert_start_date ? data.copay_cert_start_date.replace(/\//g, '-') : null,
     copay_cert_end_date: data.copay_cert_end_date ? data.copay_cert_end_date.replace(/\//g, '-') : null,
@@ -813,6 +814,14 @@ function callAppSheetApi(tableName, action, rows) {
     },
     Rows: rows
   };
+
+  // デバッグ: ペイロードをログ出力
+  logStructured(LOG_LEVEL.INFO, 'AppSheet APIリクエスト送信', {
+    tableName: tableName,
+    action: action,
+    rowCount: rows.length,
+    payload: JSON.stringify(payload)
+  });
 
   const options = {
     method: 'post',

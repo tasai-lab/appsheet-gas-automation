@@ -193,6 +193,14 @@ ${clientBirthDate ? `**利用者生年月日**: ${clientBirthDate}（年齢計�
     '介護保険証': `
 # 介護保険証の構造化データ抽出ルール
 
+**被保険者番号 (insured_person_number)** - ★最重要項目★:
+- 介護保険証の最も重要な識別情報です
+- 通常10桁の数字で表示されます（例: 1234567890）
+- 「被保険者番号」というラベルの近くに記載されています
+- OCR認識が困難な場合でも、数字の並びを注意深く読み取ってください
+- 複数行に分かれている場合は連結してください
+- ハイフンやスペースは除去して数字のみを抽出してください
+
 **要介護状態区分 (care_level)**: 以下のコードに変換
 - "非該当" → "01", "要支援１" → "12", "要支援２" → "13"
 - "要介護１" → "21", "要介護２" → "22", "要介護３" → "23"
@@ -207,7 +215,7 @@ ${clientBirthDate ? `**利用者生年月日**: ${clientBirthDate}（年齢計�
   "summary": "（200文字程度の要約）",
   "title": "（推奨ファイル名）",
   "structured_data": {
-    "insured_person_number": "string or null",
+    "insured_person_number": "string or null (10桁程度の数字、ハイフン・スペース除去)",
     "insurer_name": "string or null",
     "insurer_code": "string or null",
     "care_level": "01 or 12 or 13 or 21-25 or null",
@@ -272,7 +280,15 @@ ${clientBirthDate ? `**利用者生年月日**: ${clientBirthDate}（年齢計�
     '負担割合証': `
 # 負担割合証の構造化データ抽出ルール
 
-**負担割合**: 「1割」→ 10, 「2割」→ 20, 「3割」→ 30 (整数)
+**被保険者番号 (insured_person_number)** - ★最重要項目★:
+- 介護保険の被保険者を識別する重要な情報です
+- 通常10桁の数字で表示されます（例: 1234567890）
+- 「被保険者番号」というラベルの近くに記載されています
+- OCR認識が困難な場合でも、数字の並びを注意深く読み取ってください
+- 複数行に分かれている場合は連結してください
+- ハイフンやスペースは除去して数字のみを抽出してください
+
+**負担割合 (copayment_rate)**: 「1割」→ 10, 「2割」→ 20, 「3割」→ 30 (整数)
 
 # 出力形式
 
@@ -281,6 +297,7 @@ ${clientBirthDate ? `**利用者生年月日**: ${clientBirthDate}（年齢計�
   "summary": "（200文字程度の要約）",
   "title": "（推奨ファイル名）",
   "structured_data": {
+    "insured_person_number": "string or null (10桁程度の数字、ハイフン・スペース除去)",
     "copayment_rate": 10,
     "copay_cert_start_date": "yyyy/mm/dd or null",
     "copay_cert_end_date": "yyyy/mm/dd or null"
