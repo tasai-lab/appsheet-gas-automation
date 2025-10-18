@@ -1,5 +1,5 @@
 {
-  "last_updated": "2025-10-18T16:50:00.000000",
+  "last_updated": "2025-10-18T16:59:00.000000",
   "projects": {
     "Appsheet_訪問看護_通常記録": {
       "script_id": "1YkRRcL3fBJ-gMiC3lCkScM3fe_IrawqXrmKoIIWmE-nQokw4rY6rATZa",
@@ -103,6 +103,17 @@
           "description": "Spreadsheets APIのOAuthスコープを追加",
           "timestamp": "2025-10-17T18:54:06.787371",
           "status": "failed"
+        }
+      ]
+    },
+    "Appsheet_訪問看護_報告書": {
+      "script_id": "1FfRoozBGOfvGl5USWhe4VuYu7bkIIY0yEuzZjiQnBfc7k6osfw02u7ZB",
+      "deployments": [
+        {
+          "version": null,
+          "description": "v2.0: リファクタリング完了 - Gemini 2.5-pro統合、共通モジュール採用、構造化ロギング実装",
+          "timestamp": "2025-10-18T16:59:00.000000",
+          "status": "success"
         }
       ]
     }

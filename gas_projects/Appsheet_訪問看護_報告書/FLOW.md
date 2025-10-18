@@ -1,261 +1,191 @@
-# Appsheet_訪問看護_報告書 - フロー図
+# Appsheet_訪問看護_報告書 - 処理フロー図
 
-## システムフロー図
+本ドキュメントでは、医療機関向け報告書生成システムの処理フローを図解します。
 
-### メイン処理フロー
+## 1. メイン処理フロー
 
 ```mermaid
-flowchart TD
-    A[AppSheet Webhook] -->|POST Request| B[doPost]
-    B --> C{JSONパース}
-    C -->|成功| D[リクエストID生成]
-    C -->|失敗| E[エラーログ記録]
-    E --> F[エラーレスポンス返却]
-    
-    D --> G{重複チェック}
-    G -->|重複あり| H[警告ログ記録]
-    H --> I[スキップレスポンス返却]
-    
-    G -->|重複なし| J[キャッシュに処理済みマーク]
-    J --> K[ビジネスロジック実行]
-    
-    K -->|成功| L[成功ログ記録]
-    K -->|エラー| M[エラーログ記録]
-    
-    L --> N[成功レスポンス返却]
-    M --> F
+graph TB
+    Start([AppSheet Webhook]):::webhook --> Parse[リクエストパース]:::process
+    Parse --> Validate{パラメータ<br/>検証}:::decision
+
+    Validate -->|不足| Error1[エラーレスポンス]:::error
+    Validate -->|OK| Log1[処理開始ログ]:::log
+
+    Log1 --> BuildContext[コンテキスト構築]:::process
+    BuildContext --> CallGemini[Gemini API呼び出し]:::gemini
+
+    CallGemini -->|成功| ParseResponse[レスポンス解析]:::process
+    CallGemini -->|失敗| Error2[エラー処理]:::error
+
+    ParseResponse --> UpdateSuccess[AppSheet更新<br/>ステータス: 編集中]:::appsheet
+    UpdateSuccess --> Log2[処理完了ログ]:::log
+    Log2 --> End([成功レスポンス]):::success
+
+    Error2 --> UpdateError[AppSheet更新<br/>ステータス: エラー]:::appsheet
+    UpdateError --> SendMail[エラー通知メール]:::process
+    SendMail --> ErrorEnd([エラーレスポンス]):::error
+
+    classDef webhook fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef process fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef decision fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef gemini fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef appsheet fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    classDef log fill:#e0f2f1,stroke:#004d40,stroke-width:2px
+    classDef success fill:#c8e6c9,stroke:#2e7d32,stroke-width:3px
+    classDef error fill:#ffcdd2,stroke:#c62828,stroke-width:3px
 ```
 
-## 重複防止フロー
+## 2. Webhook受信処理
 
 ```mermaid
 sequenceDiagram
     participant AS as AppSheet
-    participant GAS as GAS Script
-    participant Cache as ScriptCache
-    participant Lock as LockService
-    participant Log as 実行ログ
-    
-    AS->>GAS: POST Request
-    GAS->>GAS: リクエストデータからハッシュ生成
-    GAS->>Cache: キャッシュ確認
-    
-    alt キャッシュにあり
-        Cache-->>GAS: 処理済み
-        GAS->>Log: 警告ログ記録
-        GAS-->>AS: スキップレスポンス
-    else キャッシュになし
-        Cache-->>GAS: 未処理
-        GAS->>Lock: ロック取得
-        Lock-->>GAS: ロック成功
-        GAS->>Cache: 再度確認（ダブルチェック）
-        
-        alt 再確認で処理済み
-            Cache-->>GAS: 処理済み
-            GAS->>Lock: ロック解放
-            GAS->>Log: 警告ログ記録
-            GAS-->>AS: スキップレスポンス
-        else 再確認で未処理
-            Cache-->>GAS: 未処理
-            GAS->>Cache: 処理済みマーク設定
-            GAS->>GAS: ビジネスロジック実行
-            GAS->>Log: 成功/エラーログ記録
-            GAS->>Lock: ロック解放
-            GAS-->>AS: 処理結果レスポンス
-        end
-    end
+    participant WH as doPost()
+    participant CW as CommonWebhook
+    participant PR as processRequest()
+
+    AS->>WH: POST リクエスト
+    WH->>CW: handleDoPost(e, processFunction)
+    CW->>CW: parseRequest(e)
+    Note over CW: JSONパース<br/>タイムスタンプ追加
+
+    CW->>PR: processFunction(params)
+    Note over PR: reportId, clientName,<br/>targetMonth, visitRecords,<br/>staffId
+
+    PR-->>CW: 処理結果
+    CW->>CW: createSuccessResponse(result)
+    CW-->>WH: JSONレスポンス
+    WH-->>AS: HTTPレスポンス
 ```
 
-## データフロー図
-
-```mermaid
-flowchart LR
-    A[Webhook Data] --> B[JSON Parse]
-    B --> C[Data Validation]
-    C --> D[Data Transformation]
-    D --> E{処理タイプ}
-    
-    E -->|Gemini API| F[AI Processing]
-    E -->|Spreadsheet| G[Sheet Operations]
-    E -->|Calendar| H[Calendar Events]
-    E -->|Chat| I[Chat Messages]
-    
-    F --> J[Results]
-    G --> J
-    H --> J
-    I --> J
-    
-    J --> K[Log Recording]
-    K --> L[Response Generation]
-```
-
-## エラーハンドリングフロー
-
-```mermaid
-flowchart TD
-    A[処理開始] --> B[Try Block]
-    B --> C{エラー発生?}
-    
-    C -->|なし| D[正常処理完了]
-    D --> E[成功ログ記録]
-    E --> F[実行時間記録]
-    F --> G[成功レスポンス]
-    
-    C -->|あり| H[Catch Block]
-    H --> I[エラー情報取得]
-    I --> J[スタックトレース取得]
-    J --> K[エラーログ記録]
-    K --> L[実行時間記録]
-    L --> M[エラーレスポンス]
-    
-    G --> N[処理終了]
-    M --> N
-```
-
-## ログ記録フロー
-
-```mermaid
-sequenceDiagram
-    participant Script as GAS Script
-    participant Logger as ExecutionLogger
-    participant Sheet as Log Spreadsheet
-    
-    Script->>Logger: log() 呼び出し
-    Logger->>Logger: タイムスタンプ生成
-    Logger->>Logger: ユーザー情報取得
-    Logger->>Logger: データフォーマット
-    
-    Logger->>Sheet: スプレッドシート取得
-    Sheet-->>Logger: シート参照
-    
-    Logger->>Sheet: 行追加
-    Sheet-->>Logger: 追加完了
-    
-    alt ログ記録成功
-        Logger-->>Script: 成功
-    else ログ記録失敗
-        Logger->>Logger: コンソールログ出力
-        Logger-->>Script: 無視（処理継続）
-    end
-```
-
-## 状態遷移図
-
-```mermaid
-stateDiagram-v2
-    [*] --> Idle: システム待機
-    Idle --> Receiving: Webhook受信
-    Receiving --> Validating: データ検証
-    
-    Validating --> Error: 検証失敗
-    Validating --> Checking: 検証成功
-    
-    Checking --> Duplicate: 重複検出
-    Checking --> Processing: 新規リクエスト
-    
-    Duplicate --> Logging: 警告ログ
-    Processing --> Executing: ビジネスロジック
-    
-    Executing --> Success: 処理成功
-    Executing --> Error: 処理失敗
-    
-    Success --> Logging
-    Error --> Logging
-    
-    Logging --> Responding: レスポンス生成
-    Responding --> [*]: 処理完了
-```
-
-## タイミング図
-
-```mermaid
-gantt
-    title 処理タイミング
-    dateFormat  HH:mm:ss.SSS
-    axisFormat  %S.%L秒
-    
-    section リクエスト受信
-    Webhook受信           :a1, 00:00:00.000, 10ms
-    JSONパース            :a2, after a1, 20ms
-    
-    section 重複チェック
-    ハッシュ生成          :b1, after a2, 30ms
-    キャッシュ確認        :b2, after b1, 50ms
-    ロック取得            :b3, after b2, 100ms
-    
-    section ビジネスロジック
-    データ処理            :c1, after b3, 500ms
-    API呼び出し           :c2, after c1, 2000ms
-    結果保存              :c3, after c2, 300ms
-    
-    section ログ記録
-    ログ記録              :d1, after c3, 100ms
-    
-    section レスポンス
-    レスポンス生成        :e1, after d1, 50ms
-```
-
-## コンポーネント図
+## 3. Gemini API呼び出しフロー
 
 ```mermaid
 graph TB
-    subgraph "AppSheet"
-        A[Workflow]
-    end
-    
-    subgraph "Google Apps Script"
-        B[doPost Handler]
-        C[DuplicationPrevention]
-        D[ExecutionLogger]
-        E[Business Logic]
-    end
-    
-    subgraph "Google Services"
-        F[ScriptCache]
-        G[LockService]
-        H[SpreadsheetApp]
-        I[DriveApp]
-    end
-    
-    subgraph "External APIs"
-        J[Gemini API]
-    end
-    
-    A -->|Webhook| B
-    B --> C
-    B --> E
-    E --> D
-    
-    C --> F
-    C --> G
-    D --> H
-    E --> I
-    E --> J
+    Start([generateReportWithGemini]):::entry --> BuildPrompt[プロンプト構築]:::process
+
+    BuildPrompt --> CallAPI[Gemini API呼び出し]:::gemini
+
+    CallAPI --> CheckStatus{HTTPステータス}:::decision
+    CheckStatus -->|200| ParseJSON[JSON解析]:::process
+    CheckStatus -->|4xx/5xx| APIError[APIエラー]:::error
+
+    ParseJSON --> ValidateResponse{候補データ<br/>存在確認}:::decision
+    ValidateResponse -->|あり| ExtractText[テキスト抽出]:::process
+    ValidateResponse -->|なし| NoCandidate[候補なしエラー]:::error
+
+    ExtractText --> LogAPI[API呼び出しログ]:::log
+    LogAPI --> Return([生成テキスト返却]):::success
+
+    APIError --> Return
+    NoCandidate --> Return
+
+    classDef entry fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef process fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef decision fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef gemini fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef log fill:#e0f2f1,stroke:#004d40,stroke-width:2px
+    classDef success fill:#c8e6c9,stroke:#2e7d32,stroke-width:3px
+    classDef error fill:#ffcdd2,stroke:#c62828,stroke-width:3px
 ```
 
-## 使用例
+## 4. 状態遷移図
 
-### 正常フロー
+```mermaid
+stateDiagram-v2
+    [*] --> 受付: Webhook受信
 
-1. AppSheetからWebhook送信
-2. doPost関数でリクエスト受信
-3. 重複チェック（初回なのでパス）
-4. ビジネスロジック実行
-5. 成功ログ記録
-6. 成功レスポンス返却
+    受付 --> 処理中: パラメータ検証OK
+    受付 --> エラー: パラメータ不足
 
-### 重複検出フロー
+    処理中 --> Gemini呼び出し: コンテキスト構築完了
 
-1. AppSheetから同じリクエストを2回送信
-2. 1回目: 正常処理
-3. 2回目: キャッシュで重複検出
-4. 警告ログ記録
-5. スキップレスポンス返却
+    Gemini呼び出し --> レスポンス解析: API成功(200)
+    Gemini呼び出し --> エラー: API失敗(4xx/5xx)
 
-### エラーフロー
+    レスポンス解析 --> AppSheet更新: テキスト抽出成功
+    レスポンス解析 --> エラー: 候補データなし
 
-1. AppSheetからWebhook送信
-2. ビジネスロジック実行中にエラー
-3. Catchブロックでエラー捕捉
-4. エラーログ記録（詳細とスタックトレース）
-5. エラーレスポンス返却
+    AppSheet更新 --> 編集中: status="編集中"
+    AppSheet更新 --> エラー: API失敗
+
+    編集中 --> [*]: 成功レスポンス返却
+
+    エラー --> AppSheetエラー更新: reportId存在
+    エラー --> [*]: reportIdなし
+
+    AppSheetエラー更新 --> メール通知: status="エラー"
+    メール通知 --> [*]: エラーレスポンス返却
+```
+
+## 5. コンポーネント構成図
+
+```mermaid
+graph TB
+    subgraph "エントリーポイント"
+        doPost[doPost]:::webhook
+        testFunc[testReportGeneration]:::test
+    end
+
+    subgraph "共通モジュール"
+        CommonWebhook[CommonWebhook]:::common
+        ErrorHandler[ErrorHandler]:::common
+        DuplicationPrevention[DuplicationPrevention]:::common
+    end
+
+    subgraph "メイン処理"
+        processRequest[processRequest]:::main
+        generateReport[generateReportWithGemini]:::main
+    end
+
+    subgraph "AppSheet連携"
+        updateSuccess[updateReportOnSuccess]:::appsheet
+        updateError[updateReportOnError]:::appsheet
+        callAPI[callAppSheetApi]:::appsheet
+    end
+
+    subgraph "ユーティリティ"
+        logger[utils_logger.gs]:::util
+        config[config_settings.gs]:::util
+    end
+
+    subgraph "通知"
+        sendMail[sendErrorEmail]:::mail
+    end
+
+    doPost --> CommonWebhook
+    CommonWebhook --> processRequest
+    testFunc --> processRequest
+
+    processRequest --> logger
+    processRequest --> generateReport
+    processRequest --> updateSuccess
+    processRequest --> updateError
+    processRequest --> sendMail
+
+    generateReport --> logger
+    generateReport --> config
+
+    updateSuccess --> callAPI
+    updateError --> callAPI
+
+    callAPI --> logger
+    callAPI --> config
+
+    sendMail --> logger
+    sendMail --> config
+
+    classDef webhook fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef test fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    classDef common fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef main fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    classDef appsheet fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef util fill:#e0f2f1,stroke:#004d40,stroke-width:2px
+    classDef mail fill:#fff3e0,stroke:#e65100,stroke-width:2px
+```
+
+---
+
+**最終更新**: 2025-10-18  
+**バージョン**: v2.0.0

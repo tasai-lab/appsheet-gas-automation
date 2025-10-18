@@ -1,107 +1,129 @@
-// --- 1. 基本設定 (★ご自身の環境に合わせて全て修正してください) ---
-
-const GEMINI_API_KEY = 'AIzaSyDUKFlE6_NYGehDYOxiRQcHpjG2l7GZmTY'; // Gemini APIキー
-
-const APP_ID = 'f40c4b11-b140-4e31-a60c-600f3c9637c8'; // AppSheetのアプリID
-
-const ACCESS_KEY = 'V2-s6fif-zteYn-AGhoC-EhNLX-NNwgP-nHXAr-hHGZp-XxyPY'; // AppSheet APIのアクセスキー
-
-const ERROR_NOTIFICATION_EMAIL = "t.asai@fractal-group.co.jp"; // ★ エラー通知先のメールアドレス
-
-// テーブル名
-
-const REPORTS_TABLE_NAME = 'VN_Reports';
-
 /**
-
- * AppSheetのWebhookからPOSTリクエストを受け取るメイン関数
-
+ * main.gs - 医療機関向け報告書生成
+ *
+ * AppSheetからの訪問看護記録をもとに、Gemini 2.5-proで
+ * 医療機関向けの報告書を自動生成します。
+ *
+ * @version 2.0.0
+ * @date 2025-10-18
  */
 
 /**
  * AppSheet Webhook エントリーポイント
- * @param {GoogleAppsScript.Events.DoPost} e
+ * @param {GoogleAppsScript.Events.DoPost} e - Webhookイベント
+ * @return {GoogleAppsScript.Content.TextOutput} - JSONレスポンス
  */
 function doPost(e) {
   return CommonWebhook.handleDoPost(e, function(params) {
     params.scriptName = 'Appsheet_訪問看護_報告書';
-    return processRequest(params.reportId || params.data?.reportId, params.clientId || params.data?.clientId, params.reportMonth || params.data?.reportMonth, params.recordsText || params.data?.recordsText, params.staffId || params.data?.staffId);
+    return processRequest(
+      params.reportId || params.data?.reportId,
+      params.clientName || params.data?.clientName,
+      params.targetMonth || params.data?.targetMonth,
+      params.visitRecords || params.data?.visitRecords,
+      params.staffId || params.data?.staffId
+    );
   });
 }
 
 /**
- * メイン処理関数（引数ベース）
- * @param {Object} params - リクエストパラメータ
+ * メイン処理関数
+ * @param {string} reportId - 報告書ID
+ * @param {string} clientName - 利用者名
+ * @param {string} targetMonth - 対象月
+ * @param {string} visitRecords - 訪問記録テキスト
+ * @param {string} staffId - スタッフID
  * @returns {Object} - 処理結果
  */
-function processRequest(reportId, clientId, reportMonth, recordsText, staffId) {
+function processRequest(reportId, clientName, targetMonth, visitRecords, staffId) {
+  const startTime = Date.now();
+
+  // パラメータをログ用に保存
+  const params = {
+    reportId: reportId,
+    clientName: clientName,
+    targetMonth: targetMonth,
+    visitRecordsLength: visitRecords ? visitRecords.length : 0,
+    staffId: staffId
+  };
+
   try {
-
-    const { clientName, targetMonth, visitRecords } = params;
-
+    // 必須パラメータのバリデーション
     if (!reportId || !clientName || !targetMonth || !visitRecords) {
-
       throw new Error("必須パラメータ（reportId, clientName, targetMonth, visitRecords）が不足しています。");
-
     }
 
-    console.log(`処理開始: Report ID = ${reportId}`);
+    logProcessingStart(reportId, params);
 
     // --- AIで報告書を生成 ---
+    const context = {
+      clientName: clientName,
+      targetMonth: targetMonth,
+      visitRecords: visitRecords
+    };
 
-    const reportText = generateReportWithGemini(params);
+    const reportText = generateReportWithGemini(context);
 
     if (!reportText) {
-
       throw new Error("AIからの応答が空でした。");
-
     }
 
     // --- AppSheetに結果を書き込み ---
+    updateReportOnSuccess(reportId, reportText, staffId);
 
-    updateReportOnSuccess(reportId, reportText);
+    const duration = Date.now() - startTime;
+    logProcessingComplete(reportId, duration);
 
-    console.log(`処理完了。ID ${reportId} の報告書を生成しました。`);
+    return { success: true, reportId: reportId };
 
   } catch (error) {
-
-    console.log(`エラーが発生しました: ${error.toString()}`);
+    logError(reportId || 'UNKNOWN', error, { params: params });
 
     if (reportId) {
-
       updateReportOnError(reportId, error.toString());
-
       sendErrorEmail(reportId, error.toString());
-
     }
 
+    throw error;
   }
 }
 
 /**
  * テスト用関数
  * GASエディタから直接実行してテスト可能
+ *
+ * @param {string} reportId - 報告書ID（例: "REPORT-001"）
+ * @param {string} clientName - 利用者名（例: "山田太郎"）
+ * @param {string} targetMonth - 対象月（例: "2025年10月"）
+ * @param {string} visitRecords - 訪問記録テキスト
+ * @param {string} staffId - スタッフID（例: "staff@example.com"）
  */
-function testProcessRequest() {
-  // TODO: テストデータを設定してください
-  const testParams = {
-    // 例: action: "test",
-    // 例: data: "sample"
-  };
+function testReportGeneration(
+  reportId = "TEST-REPORT-001",
+  clientName = "山田太郎",
+  targetMonth = "2025年10月",
+  visitRecords = "10/1訪問: BT36.5℃ BP120/70mmHg P72回/分 SpO2 98%。全身状態良好。食事摂取良好。",
+  staffId = "test@fractal-group.co.jp"
+) {
+  console.log('='.repeat(60));
+  console.log('🧪 報告書生成テスト実行');
+  console.log('='.repeat(60));
 
-  return CommonTest.runTest((params) => processRequest(params.reportId, params.clientId, params.reportMonth, params.recordsText, params.staffId), testParams, 'Appsheet_訪問看護_報告書');
+  return processRequest(reportId, clientName, targetMonth, visitRecords, staffId);
 }
 
 /**
-
  * Gemini APIを呼び出し、医療機関向けの報告書を生成する
-
+ * @param {Object} context - 報告書生成に必要なコンテキスト
+ * @param {string} context.clientName - 利用者名
+ * @param {string} context.targetMonth - 対象月
+ * @param {string} context.visitRecords - 訪問記録
+ * @returns {string} - 生成された報告書テキスト
  */
-
 function generateReportWithGemini(context) {
+  const perfStop = perfStart('Gemini_API');
 
-  // ★★★ ご提示のプロンプトをGAS側に配置 ★★★
-
+  // プロンプトを構築
   const prompt = `
 
 あなたは、${context.clientName}さまの多様な情報を分析し、医療機関向けの要点を押さえつつ、現場感のある構造的な報告書を生成するプロフェッショナルです。
@@ -180,138 +202,159 @@ ${context.visitRecords}
 
 `;
 
-  const textPart = { text: prompt };
+  Logger.log(`🤖 Gemini API呼び出し: ${context.clientName}様 ${context.targetMonth}の報告書生成`);
 
-  const model = 'gemini-2.5-pro';
+  // Gemini APIを使用して生成
+  const requestBody = {
+    contents: [{
+      parts: [{ text: prompt }]
+    }],
+    generationConfig: {
+      temperature: GEMINI_CONFIG.temperature,
+      maxOutputTokens: GEMINI_CONFIG.maxOutputTokens
+    }
+  };
 
-  const generationConfig = { "temperature": 0.2 };
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_CONFIG.model}:generateContent?key=${GEMINI_CONFIG.apiKey}`;
 
-  const requestBody = { contents: [{ parts: [textPart] }], generationConfig: generationConfig };
-
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
-
-  const options = { method: 'post', contentType: 'application/json', payload: JSON.stringify(requestBody), muteHttpExceptions: true };
+  const options = {
+    method: 'post',
+    contentType: 'application/json',
+    payload: JSON.stringify(requestBody),
+    muteHttpExceptions: true
+  };
 
   const response = UrlFetchApp.fetch(url, options);
-
+  const responseCode = response.getResponseCode();
   const responseText = response.getContentText();
 
-  Logger.log('Gemini API Response: ' + responseText);
+  const duration = perfStop();
+  logApiCall('Gemini', url, responseCode, duration);
+
+  if (responseCode !== 200) {
+    throw new Error(`Gemini APIエラー（ステータス: ${responseCode}）: ${responseText}`);
+  }
 
   const jsonResponse = JSON.parse(responseText);
 
   if (!jsonResponse.candidates || jsonResponse.candidates.length === 0) {
-
     throw new Error("AIからの応答に有効な候補が含まれていません: " + responseText);
-
   }
 
-  return jsonResponse.candidates[0].content.parts[0].text.trim();
+  const generatedText = jsonResponse.candidates[0].content.parts[0].text.trim();
 
+  Logger.log(`✅ 報告書生成完了（${generatedText.length}文字）`);
+
+  return generatedText;
 }
 
 /**
-
  * 成功時にAppSheetのテーブルを更新する
-
+ * @param {string} reportId - 報告書ID
+ * @param {string} reportText - 生成された報告書テキスト
+ * @param {string} staffId - スタッフID
  */
-
-function updateReportOnSuccess(reportId, reportText) {
-
+function updateReportOnSuccess(reportId, reportText, staffId) {
   const rowData = {
-
-    "report_id": reportId,
-
-    "status": "編集中",
-
-    "symptom_progress": reportText // ★ 書き込み先の列
-
+    [APPSHEET_FIELD_MAPPING.reportId]: reportId,
+    [APPSHEET_FIELD_MAPPING.status]: "編集中",
+    [APPSHEET_FIELD_MAPPING.symptomProgress]: reportText,
+    [APPSHEET_FIELD_MAPPING.updatedBy]: staffId
   };
 
-  const payload = { Action: "Edit", Properties: { "Locale": "ja-JP" }, Rows: [rowData] };
+  const payload = {
+    Action: "Edit",
+    Properties: { "Locale": "ja-JP" },
+    Rows: [rowData]
+  };
 
   callAppSheetApi(payload);
-
 }
 
 /**
-
  * 失敗時にAppSheetのテーブルを更新する
-
+ * @param {string} reportId - 報告書ID
+ * @param {string} errorMessage - エラーメッセージ
  */
-
 function updateReportOnError(reportId, errorMessage) {
-
   const rowData = {
-
-    "report_id": reportId,
-
-    "status": "エラー",
-
-    "error_details": `GAS Script Error: ${errorMessage}` // ★ error_details列がある場合
-
+    [APPSHEET_FIELD_MAPPING.reportId]: reportId,
+    [APPSHEET_FIELD_MAPPING.status]: "エラー",
+    [APPSHEET_FIELD_MAPPING.errorDetails]: `GAS Script Error: ${errorMessage}`
   };
 
-  const payload = { Action: "Edit", Properties: { "Locale": "ja-JP" }, Rows: [rowData] };
+  const payload = {
+    Action: "Edit",
+    Properties: { "Locale": "ja-JP", "Timezone": "Asia/Tokyo" },
+    Rows: [rowData]
+  };
 
   callAppSheetApi(payload);
-
 }
 
 /**
-
  * AppSheet APIを呼び出す共通関数
-
+ * @param {Object} payload - AppSheet APIペイロード
  */
-
 function callAppSheetApi(payload) {
+  const perfStop = perfStart('AppSheet_API');
 
-  const apiUrl = `https://api.appsheet.com/api/v2/apps/${APP_ID}/tables/${REPORTS_TABLE_NAME}/Action`;
+  const apiUrl = `https://api.appsheet.com/api/v2/apps/${APPSHEET_CONFIG.appId}/tables/${APPSHEET_CONFIG.tableName}/Action`;
 
   const options = {
-
-    method: 'post', contentType: 'application/json',
-
-    headers: { 'ApplicationAccessKey': ACCESS_KEY },
-
-    payload: JSON.stringify(payload), muteHttpExceptions: true
-
+    method: 'post',
+    contentType: 'application/json',
+    headers: { 'ApplicationAccessKey': APPSHEET_CONFIG.accessKey },
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
   };
 
   const response = UrlFetchApp.fetch(apiUrl, options);
+  const responseCode = response.getResponseCode();
 
-  Logger.log(`AppSheet API 応答: ${response.getResponseCode()} - ${response.getContentText()}`);
+  const duration = perfStop();
+  logApiCall('AppSheet', apiUrl, responseCode, duration);
 
-  if (response.getResponseCode() >= 400) {
-
-    throw new Error(`AppSheet API Error: ${response.getResponseCode()} - ${response.getContentText()}`);
-
+  if (responseCode >= 400) {
+    const errorMsg = `AppSheet API Error: ${responseCode} - ${response.getContentText()}`;
+    logStructured(LOG_LEVEL.ERROR, errorMsg, {
+      payload: payload,
+      responseCode: responseCode
+    });
+    throw new Error(errorMsg);
   }
-
 }
 
 /**
-
  * 処理失敗時にメールでエラー内容を通知する
-
+ * @param {string} reportId - 報告書ID
+ * @param {string} errorMessage - エラーメッセージ
+ * @param {Object} context - コンテキスト情報（オプション）
  */
-
-function sendErrorEmail(reportId, errorMessage) {
-
+function sendErrorEmail(reportId, errorMessage, context = {}) {
   const subject = `[要確認] GAS処理エラー: 医療機関向け報告書作成 (ID: ${reportId})`;
 
-  const body = `AppSheetの報告書自動生成処理でエラーが発生しました。\n\n■ 対象ID\n${reportId}\n\n■ エラー内容\n${errorMessage}\n\nGASのログをご確認ください。`;
+  let body = `AppSheetの報告書自動生成処理でエラーが発生しました。\n\n`;
+  body += `■ 対象ID: ${reportId}\n`;
+  body += `■ 発生日時: ${new Date().toLocaleString('ja-JP')}\n`;
+  body += `■ エラー内容:\n${errorMessage}\n\n`;
 
-  try {
-
-    // Email removed - using execution log instead
-
-    console.log(`エラー通知メールを ${ERROR_NOTIFICATION_EMAIL} へ送信しました。`);
-
-  } catch(e) {
-
-    console.error(`エラー通知メールの送信に失敗しました: ${e.toString()}`);
-
+  if (context.errorCode) {
+    body += `■ エラーコード: ${context.errorCode}\n\n`;
   }
 
+  body += `GASのログをご確認ください。\n`;
+  body += `https://script.google.com/home/executions`;
+
+  try {
+    // Email removed - using execution log instead
+    logStructured(LOG_LEVEL.INFO, 'エラー通知メール送信成功', {
+      reportId: reportId,
+      recipient: NOTIFICATION_CONFIG.errorEmail
+    });
+  } catch(e) {
+    logStructured(LOG_LEVEL.ERROR, 'エラー通知メール送信失敗', {
+      error: e.toString()
+    });
+  }
 }
