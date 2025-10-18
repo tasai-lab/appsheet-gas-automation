@@ -138,52 +138,46 @@ AppSheetから以下のJSONペイロードをPOSTします:
 // ファイルパスで指定（基準フォルダーからの相対パス）
 directProcessRequest('利用者A/書類/保険証.pdf')
 
-// ファイルIDで指定（優先）
-directProcessRequest(null, '1a2b3c4d5e6f...')
-
 // ファイルパスと書類種類を指定
-directProcessRequest('利用者A/書類/保険証.pdf', null, '医療保険証')
-
-// ファイルIDと書類種類を指定
-directProcessRequest(null, '1a2b3c4d5e6f...', '医療保険証')
+directProcessRequest('利用者A/書類/保険証.pdf', '医療保険証')
 
 // 完全な引数指定（ファイルパス版）
 directProcessRequest(
   '利用者A/書類/保険証.pdf',  // filePath
-  null,                        // fileId
   '医療保険証',                 // documentType
   'CLIENT-001',                // clientId
   'staff@example.com',         // staffId
   '山田太郎',                   // clientName
   'テスト担当者',               // staffName
   '1950/01/01',                // clientBirthDate
-  null                         // documentId (自動生成)
+  null,                        // documentId (自動生成)
+  null                         // fileId (filePathから検索)
 )
 
-// 完全な引数指定（ファイルID版）
+// ファイルIDで指定（ファイル名変更後も確実に実行可能）
 directProcessRequest(
   null,                        // filePath
-  '1a2b3c4d5e6f...',          // fileId（優先）
   '医療保険証',                 // documentType
   'CLIENT-001',                // clientId
   'staff@example.com',         // staffId
   '山田太郎',                   // clientName
   'テスト担当者',               // staffName
   '1950/01/01',                // clientBirthDate
-  null                         // documentId (自動生成)
+  null,                        // documentId (自動生成)
+  '1a2b3c4d5e6f...'           // fileId（優先）
 )
 ```
 
 **引数:**
 1. `filePath` (string|null) - ファイルパス、ファイル名、またはDrive URL（fileIdとどちらか必須）
-2. `fileId` (string|null) - ファイルID（filePathとどちらか必須、指定時は優先）
-3. `documentType` (string) - 書類種類（デフォルト: '医療保険証'）
-4. `clientId` (string) - 利用者ID
-5. `staffId` (string) - スタッフID
-6. `clientName` (string) - 利用者名
-7. `staffName` (string) - スタッフ名
-8. `clientBirthDate` (string) - 生年月日（yyyy/mm/dd）
-9. `documentId` (string|null) - 書類ID（省略時は自動生成）
+2. `documentType` (string) - 書類種類（デフォルト: '医療保険証'）
+3. `clientId` (string) - 利用者ID
+4. `staffId` (string) - スタッフID
+5. `clientName` (string) - 利用者名
+6. `staffName` (string) - スタッフ名
+7. `clientBirthDate` (string) - 生年月日（yyyy/mm/dd）
+8. `documentId` (string|null) - 書類ID（省略時は自動生成）
+9. `fileId` (string|null) - ファイルID（指定時はfilePathより優先、ファイル名変更後も確実に実行可能）
 
 **ファイル指定方法:**
 - **ファイル名**: `config_settings.gs`で設定した基準フォルダー配下（サブフォルダー含む）を再帰的に検索

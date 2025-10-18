@@ -432,7 +432,6 @@ function searchFileInFolder(folderId, fileName) {
  * GASエディタから直接実行してテスト可能
  *
  * @param {string} filePath - ファイルパス、ファイル名、またはDrive URL（fileIdとどちらか必須）
- * @param {string} fileId - ファイルID（filePathとどちらか必須、指定時は優先）
  * @param {string} documentType - 書類種類（医療保険証/介護保険証/公費/口座情報/指示書/負担割合証/汎用ドキュメント）
  * @param {string} clientId - 利用者ID（書類仕分け用）
  * @param {string} staffId - スタッフID（書類仕分け用）
@@ -440,18 +439,19 @@ function searchFileInFolder(folderId, fileName) {
  * @param {string} staffName - スタッフ名（通知用）
  * @param {string} clientBirthDate - 利用者生年月日（yyyy/mm/dd形式、医療保険証・公費で使用）
  * @param {string} documentId - 書類ID（省略時は自動生成）
+ * @param {string} fileId - ファイルID（指定時はfilePathより優先、ファイル名変更後も確実に実行可能）
  * @returns {Object} - 処理結果（success, documentId, recordId, fileId, fileUrl）
  */
 function directProcessRequest(
   filePath = null,
-  fileId = null,
   documentType = '医療保険証',
   clientId = 'TEST-CLIENT-001',
   staffId = 'test@fractal-group.co.jp',
   clientName = '山田太郎',
   staffName = 'テスト担当者',
   clientBirthDate = '1950/01/01',
-  documentId = null
+  documentId = null,
+  fileId = null
 ) {
   console.log('='.repeat(60));
   console.log('🚀 書類OCR+仕分け 直接実行');
@@ -461,9 +461,9 @@ function directProcessRequest(
   let finalFileId;
 
   if (fileId) {
-    // ファイルIDが指定されている場合はそれを使用
+    // ファイルIDが指定されている場合はそれを使用（優先）
     finalFileId = fileId;
-    console.log(`🆔 ファイルID指定: ${fileId}`);
+    console.log(`🆔 ファイルID指定（優先）: ${fileId}`);
   } else if (filePath) {
     // ファイルパスから検索
     finalFileId = getFileIdFromPath(filePath);
