@@ -277,39 +277,91 @@ function renameFile(fileId, newName) {
 }
 
 /**
- * テスト用関数（個別引数版）
+ * ファイル名またはURLからファイルIDを取得
+ * @param {string} filePathOrUrl - ファイル名、Drive URL、またはファイルID
+ * @returns {string} - ファイルID
+ */
+function getFileIdFromPath(filePathOrUrl) {
+  // すでにファイルIDの形式の場合（英数字とハイフン、アンダースコア）
+  if (/^[a-zA-Z0-9_-]+$/.test(filePathOrUrl) && filePathOrUrl.length > 20) {
+    return filePathOrUrl;
+  }
+
+  // Drive URLからファイルIDを抽出
+  // https://drive.google.com/file/d/{fileId}/view
+  // https://drive.google.com/open?id={fileId}
+  const urlPatterns = [
+    /\/file\/d\/([a-zA-Z0-9_-]+)/,
+    /[?&]id=([a-zA-Z0-9_-]+)/
+  ];
+
+  for (const pattern of urlPatterns) {
+    const match = filePathOrUrl.match(pattern);
+    if (match) {
+      return match[1];
+    }
+  }
+
+  // ファイル名で検索
+  const files = DriveApp.getFilesByName(filePathOrUrl);
+  if (files.hasNext()) {
+    const file = files.next();
+    logStructured(LOG_LEVEL.INFO, 'ファイル名からファイルIDを取得', {
+      fileName: filePathOrUrl,
+      fileId: file.getId()
+    });
+    return file.getId();
+  }
+
+  throw new Error(`ファイルが見つかりません: ${filePathOrUrl}`);
+}
+
+/**
+ * 直接実行用関数（個別引数版）
  * GASエディタから直接実行してテスト可能
  *
- * @param {string} fileId - Google DriveファイルID（★必須：実際のファイルIDに変更してください）
+ * @param {string} driveFileName - Googleドライブのファイル名、URL、またはファイルID（★必須）
  * @param {string} documentType - 書類種類（医療保険証/介護保険証/公費/口座情報/指示書/負担割合証/汎用ドキュメント）
  * @param {string} clientId - 利用者ID（書類仕分け用）
  * @param {string} staffId - スタッフID（書類仕分け用）
  * @param {string} clientName - 利用者名（通知用）
  * @param {string} staffName - スタッフ名（通知用）
  * @param {string} clientBirthDate - 利用者生年月日（yyyy/mm/dd形式、医療保険証・公費で使用）
- * @param {string} keyValue - テスト用書類ID
+ * @param {string} documentId - 書類ID（省略時は自動生成）
+ * @returns {Object} - 処理結果（success, documentId, recordId, fileId, fileUrl）
  */
-function testProcessRequest(
-  fileId = 'YOUR_TEST_FILE_ID',
+function directProcessRequest(
+  driveFileName = 'テスト用ファイル名.pdf',
   documentType = '医療保険証',
   clientId = 'TEST-CLIENT-001',
   staffId = 'test@fractal-group.co.jp',
   clientName = '山田太郎',
   staffName = 'テスト担当者',
   clientBirthDate = '1950/01/01',
-  keyValue = 'TEST-DOC-001'
+  documentId = null
 ) {
   console.log('='.repeat(60));
-  console.log('🧪 書類OCR+仕分け 統合テスト実行');
+  console.log('🚀 書類OCR+仕分け 直接実行');
   console.log('='.repeat(60));
+
+  // ファイルIDを取得
+  const fileId = getFileIdFromPath(driveFileName);
+  const fileUrl = `https://drive.google.com/file/d/${fileId}/view`;
+
+  // 書類IDを生成（省略時）
+  const finalDocumentId = documentId || `DIRECT-${new Date().getTime()}`;
+
   console.log(`📄 書類種類: ${documentType}`);
-  console.log(`📁 ファイルID: ${fileId}`);
+  console.log(`📁 ファイル名: ${driveFileName}`);
+  console.log(`🆔 ファイルID: ${fileId}`);
+  console.log(`🔗 ファイルURL: ${fileUrl}`);
+  console.log(`📋 書類ID: ${finalDocumentId}`);
   console.log(`👤 利用者: ${clientName} (${clientId})`);
   console.log(`👨‍💼 スタッフ: ${staffName} (${staffId})`);
   console.log('='.repeat(60));
 
-  // 引数から testParams オブジェクトを構築
-  const testParams = {
+  // processRequest用のパラメータを構築
+  const params = {
     config: {
       tableName: 'Client_Documents',
       keyColumn: 'document_id',
@@ -319,7 +371,7 @@ function testProcessRequest(
       statusColumn: 'status'
     },
     data: {
-      keyValue: keyValue,
+      keyValue: finalDocumentId,
       fileId: fileId,
       document_type: documentType,
       client_id: clientId,
@@ -330,5 +382,13 @@ function testProcessRequest(
     }
   };
 
-  return CommonTest.runTest(processRequest, testParams, 'Appsheet_訪問看護_書類OCR');
+  // メイン処理を実行
+  const result = processRequest(params);
+
+  // 戻り値にfileIdとfileUrlを追加
+  return {
+    ...result,
+    fileId: fileId,
+    fileUrl: fileUrl
+  };
 }

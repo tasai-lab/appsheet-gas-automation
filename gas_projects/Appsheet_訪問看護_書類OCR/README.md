@@ -51,14 +51,14 @@ Appsheet_訪問看護_書類OCR/
 
 | ファイル | 役割 | 行数 |
 |---------|------|------|
-| main.gs | doPost()、processRequest()、テスト関数 | 285 |
+| main.gs | doPost()、processRequest()、直接実行関数 | 394 |
 | config_settings.gs | 全ての設定値を一元管理 | 171 |
 | modules_geminiClient.gs | Gemini API連携、プロンプト生成 | 455 |
 | modules_documentProcessor.gs | 種類別テーブルへのレコード作成 | 361 |
 | modules_notification.gs | 完了通知・エラー通知メール送信 | 165 |
 | CommonWebhook.gs | Webhook共通処理 | 236 |
 | utils_logger.gs | 構造化ロギング、パフォーマンス計測 | 139 |
-| **合計** | | **1,812行** |
+| **合計** | | **1,921行** |
 
 ## セットアップ
 
@@ -124,33 +124,49 @@ AppSheetから以下のJSONペイロードをPOSTします:
 }
 ```
 
-### GASエディタからのテスト実行
+### GASエディタからの直接実行
 
-`testProcessRequest`関数を使用してテスト実行できます:
+`directProcessRequest`関数を使用して簡単にテスト実行できます:
 
 ```javascript
-function testProcessRequest() {
-  const testParams = {
-    config: { /* ... */ },
-    data: {
-      keyValue: 'TEST-DOC-001',
-      fileId: 'YOUR_TEST_FILE_ID', // ★要変更
-      document_type: '医療保険証',
-      client_id: 'TEST-CLIENT-001',
-      staff_id: 'test@example.com'
-      // ...
-    }
-  };
+// 基本的な使い方（ファイル名のみ指定）
+directProcessRequest('テスト保険証.pdf')
 
-  return CommonTest.runTest(processRequest, testParams, 'Appsheet_訪問看護_書類OCR');
-}
+// 書類種類も指定
+directProcessRequest('テスト保険証.pdf', '医療保険証')
+
+// 利用者情報も指定
+directProcessRequest(
+  'テスト保険証.pdf',
+  '医療保険証',
+  'CLIENT-001',
+  'staff@example.com',
+  '山田太郎',
+  'テスト担当者'
+)
+
+// Drive URLから実行
+directProcessRequest('https://drive.google.com/file/d/1a2b3c4d5e6f.../view')
+
+// ファイルIDで実行
+directProcessRequest('1a2b3c4d5e6f...')
 ```
 
 **実行方法:**
 1. GASエディタで`main.gs`を開く
-2. 関数選択で`testProcessRequest`を選択
-3. テストデータを編集
-4. 実行ボタンをクリック
+2. 関数選択で`directProcessRequest`を選択
+3. 引数を指定して実行ボタンをクリック
+
+**戻り値:**
+```javascript
+{
+  success: true,
+  documentId: 'DIRECT-1729267200000',
+  recordId: 'MEDI-12345678',
+  fileId: '1a2b3c4d5e6f...',
+  fileUrl: 'https://drive.google.com/file/d/1a2b3c4d5e6f.../view'
+}
+```
 
 ## パラメータ
 
