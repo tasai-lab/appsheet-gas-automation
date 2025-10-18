@@ -277,15 +277,38 @@ function renameFile(fileId, newName) {
 }
 
 /**
- * テスト用関数
+ * テスト用関数（個別引数版）
  * GASエディタから直接実行してテスト可能
+ *
+ * @param {string} fileId - Google DriveファイルID（★必須：実際のファイルIDに変更してください）
+ * @param {string} documentType - 書類種類（医療保険証/介護保険証/公費/口座情報/指示書/負担割合証/汎用ドキュメント）
+ * @param {string} clientId - 利用者ID（書類仕分け用）
+ * @param {string} staffId - スタッフID（書類仕分け用）
+ * @param {string} clientName - 利用者名（通知用）
+ * @param {string} staffName - スタッフ名（通知用）
+ * @param {string} clientBirthDate - 利用者生年月日（yyyy/mm/dd形式、医療保険証・公費で使用）
+ * @param {string} keyValue - テスト用書類ID
  */
-function testProcessRequest() {
+function testProcessRequest(
+  fileId = 'YOUR_TEST_FILE_ID',
+  documentType = '医療保険証',
+  clientId = 'TEST-CLIENT-001',
+  staffId = 'test@fractal-group.co.jp',
+  clientName = '山田太郎',
+  staffName = 'テスト担当者',
+  clientBirthDate = '1950/01/01',
+  keyValue = 'TEST-DOC-001'
+) {
   console.log('='.repeat(60));
   console.log('🧪 書類OCR+仕分け 統合テスト実行');
   console.log('='.repeat(60));
+  console.log(`📄 書類種類: ${documentType}`);
+  console.log(`📁 ファイルID: ${fileId}`);
+  console.log(`👤 利用者: ${clientName} (${clientId})`);
+  console.log(`👨‍💼 スタッフ: ${staffName} (${staffId})`);
+  console.log('='.repeat(60));
 
-  // TODO: テストデータを設定してください
+  // 引数から testParams オブジェクトを構築
   const testParams = {
     config: {
       tableName: 'Client_Documents',
@@ -296,14 +319,14 @@ function testProcessRequest() {
       statusColumn: 'status'
     },
     data: {
-      keyValue: 'TEST-DOC-001',
-      fileId: 'YOUR_TEST_FILE_ID', // ★要変更
-      document_type: '医療保険証',
-      client_id: 'TEST-CLIENT-001',
-      staff_id: 'test@fractal-group.co.jp',
-      client_name: '山田太郎',
-      staff_name: 'テスト担当者',
-      client_birth_date: '1950/01/01'
+      keyValue: keyValue,
+      fileId: fileId,
+      document_type: documentType,
+      client_id: clientId,
+      staff_id: staffId,
+      client_name: clientName,
+      staff_name: staffName,
+      client_birth_date: clientBirthDate
     }
   };
 
