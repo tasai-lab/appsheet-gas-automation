@@ -135,15 +135,18 @@ AppSheetから以下のJSONペイロードをPOSTします:
 `directProcessRequest`関数を使用して簡単にテスト実行できます:
 
 ```javascript
+// ファイル名で指定（基準フォルダー配下を再帰検索）
+directProcessRequest('テスト保険証.pdf')
+
 // ファイルパスで指定（基準フォルダーからの相対パス）
 directProcessRequest('利用者A/書類/保険証.pdf')
 
-// ファイルパスと書類種類を指定
-directProcessRequest('利用者A/書類/保険証.pdf', '医療保険証')
+// ファイル名と書類種類を指定
+directProcessRequest('テスト保険証.pdf', '医療保険証')
 
-// 完全な引数指定（ファイルパス版）
+// 完全な引数指定（ファイル名/パス版）
 directProcessRequest(
-  '利用者A/書類/保険証.pdf',  // filePath
+  '利用者A/書類/保険証.pdf',  // driveFileName
   '医療保険証',                 // documentType
   'CLIENT-001',                // clientId
   'staff@example.com',         // staffId
@@ -151,12 +154,12 @@ directProcessRequest(
   'テスト担当者',               // staffName
   '1950/01/01',                // clientBirthDate
   null,                        // documentId (自動生成)
-  null                         // fileId (filePathから検索)
+  null                         // fileId (driveFileNameから検索)
 )
 
 // ファイルIDで指定（ファイル名変更後も確実に実行可能）
 directProcessRequest(
-  null,                        // filePath
+  null,                        // driveFileName (fileIdが優先されるので不要)
   '医療保険証',                 // documentType
   'CLIENT-001',                // clientId
   'staff@example.com',         // staffId
@@ -169,7 +172,7 @@ directProcessRequest(
 ```
 
 **引数:**
-1. `filePath` (string|null) - ファイルパス、ファイル名、またはDrive URL（fileIdとどちらか必須）
+1. `driveFileName` (string) - ファイル名、ファイルパス、Drive URL、またはファイルID（fileIdとどちらか必須）
 2. `documentType` (string) - 書類種類（デフォルト: '医療保険証'）
 3. `clientId` (string) - 利用者ID
 4. `staffId` (string) - スタッフID
@@ -177,7 +180,7 @@ directProcessRequest(
 6. `staffName` (string) - スタッフ名
 7. `clientBirthDate` (string) - 生年月日（yyyy/mm/dd）
 8. `documentId` (string|null) - 書類ID（省略時は自動生成）
-9. `fileId` (string|null) - ファイルID（指定時はfilePathより優先、ファイル名変更後も確実に実行可能）
+9. `fileId` (string|null) - ファイルID（指定時はdriveFileNameより優先、ファイル名変更後も確実に実行可能）
 
 **ファイル指定方法:**
 - **ファイル名**: `config_settings.gs`で設定した基準フォルダー配下（サブフォルダー含む）を再帰的に検索

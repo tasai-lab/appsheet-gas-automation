@@ -431,7 +431,7 @@ function searchFileInFolder(folderId, fileName) {
  * 直接実行用関数（個別引数版）
  * GASエディタから直接実行してテスト可能
  *
- * @param {string} filePath - ファイルパス、ファイル名、またはDrive URL（fileIdとどちらか必須）
+ * @param {string} driveFileName - ファイル名、ファイルパス、Drive URL、またはファイルID（fileIdが指定されていない場合に使用）
  * @param {string} documentType - 書類種類（医療保険証/介護保険証/公費/口座情報/指示書/負担割合証/汎用ドキュメント）
  * @param {string} clientId - 利用者ID（書類仕分け用）
  * @param {string} staffId - スタッフID（書類仕分け用）
@@ -439,11 +439,11 @@ function searchFileInFolder(folderId, fileName) {
  * @param {string} staffName - スタッフ名（通知用）
  * @param {string} clientBirthDate - 利用者生年月日（yyyy/mm/dd形式、医療保険証・公費で使用）
  * @param {string} documentId - 書類ID（省略時は自動生成）
- * @param {string} fileId - ファイルID（指定時はfilePathより優先、ファイル名変更後も確実に実行可能）
+ * @param {string} fileId - ファイルID（指定時はdriveFileNameより優先、ファイル名変更後も確実に実行可能）
  * @returns {Object} - 処理結果（success, documentId, recordId, fileId, fileUrl）
  */
 function directProcessRequest(
-  filePath = null,
+  driveFileName = 'テスト用ファイル名.pdf',
   documentType = '医療保険証',
   clientId = 'TEST-CLIENT-001',
   staffId = 'test@fractal-group.co.jp',
@@ -457,21 +457,21 @@ function directProcessRequest(
   console.log('🚀 書類OCR+仕分け 直接実行');
   console.log('='.repeat(60));
 
-  // ファイルIDを取得（fileId優先、なければfilePathから検索）
+  // ファイルIDを取得（fileId優先、なければdriveFileNameから検索）
   let finalFileId;
 
   if (fileId) {
     // ファイルIDが指定されている場合はそれを使用（優先）
     finalFileId = fileId;
     console.log(`🆔 ファイルID指定（優先）: ${fileId}`);
-  } else if (filePath) {
-    // ファイルパスから検索
-    finalFileId = getFileIdFromPath(filePath);
-    console.log(`📁 ファイルパス指定: ${filePath}`);
+  } else if (driveFileName) {
+    // ファイル名/パスから検索
+    finalFileId = getFileIdFromPath(driveFileName);
+    console.log(`📁 ファイル名/パス指定: ${driveFileName}`);
     console.log(`🆔 取得したファイルID: ${finalFileId}`);
   } else {
     // どちらも指定されていない場合はエラー
-    throw new Error('filePathまたはfileIdのいずれかを指定してください');
+    throw new Error('driveFileNameまたはfileIdのいずれかを指定してください');
   }
 
   const fileUrl = `https://drive.google.com/file/d/${finalFileId}/view`;
