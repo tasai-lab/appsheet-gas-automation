@@ -56,37 +56,6 @@ function processRequest(params) {
     throw new Error(errorMessage);
   }
 
-  // 重複実行防止ロジック
-  const properties = PropertiesService.getScriptProperties();
-  const lock = LockService.getScriptLock();
-
-  try {
-    lock.waitLock(15000); // 最大15秒待機
-
-    const status = properties.getProperty(rowKey);
-
-    // 既に処理中または完了済みの場合はスキップ
-    if (status === 'processing' || status === 'completed') {
-      logStructured(LOG_LEVEL.INFO, `重複リクエスト検知: ${rowKey}をスキップ`, {
-        status: status
-      });
-      lock.releaseLock();
-      return { success: true, message: 'Skipped: Already processing or completed' };
-    }
-
-    // 状態を「処理中」に更新
-    properties.setProperty(rowKey, 'processing');
-    lock.releaseLock();
-
-  } catch (lockError) {
-    logStructured(LOG_LEVEL.ERROR, 'ロック取得エラー', {
-      rowKey: rowKey,
-      error: lockError.toString()
-    });
-    sendErrorEmail(rowKey, `ロック取得エラー: ${lockError.toString()}`);
-    throw new Error(`Could not acquire lock: ${lockError.message}`);
-  }
-
   // メイン処理
   try {
     logProcessingStart(rowKey, {
@@ -158,8 +127,6 @@ function processRequest(params) {
     }
 
     // 処理完了
-    properties.setProperty(rowKey, 'completed');
-
     const duration = Date.now() - startTime;
     logProcessingComplete(rowKey, duration);
 
@@ -181,9 +148,6 @@ function processRequest(params) {
       documentType: documentType,
       fileId: fileId
     });
-
-    // 再実行できるようにプロパティを削除
-    properties.deleteProperty(rowKey);
 
     throw error;
   }

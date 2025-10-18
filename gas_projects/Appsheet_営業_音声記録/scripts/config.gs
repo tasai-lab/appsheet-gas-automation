@@ -37,7 +37,7 @@ function getConfig() {
     executionLogSpreadsheetId: props.getProperty('EXECUTION_LOG_SPREADSHEET_ID') || '',
     
     // ファイルサイズ制限（MB）
-    maxFileSizeMB: parseInt(props.getProperty('MAX_FILE_SIZE_MB') || '20')
+    maxFileSizeMB: parseInt(props.getProperty('MAX_FILE_SIZE_MB') || '25')
   };
 }
 

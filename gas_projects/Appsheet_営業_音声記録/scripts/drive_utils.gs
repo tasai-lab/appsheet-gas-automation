@@ -141,7 +141,7 @@ function getFileSizeMB(blob) {
  * @param {number} maxSizeMB - 最大サイズ（MB）
  * @throws {Error} - サイズ制限を超えた場合
  */
-function validateFileSize(blob, maxSizeMB = 20) {
+function validateFileSize(blob, maxSizeMB = 25) {
   const fileSizeMB = getFileSizeMB(blob);
   
   Logger.log(`[Drive] ファイルサイズ: ${fileSizeMB.toFixed(2)}MB`);
