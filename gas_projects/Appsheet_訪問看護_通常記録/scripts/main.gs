@@ -146,17 +146,81 @@ function processRequest(recordNoteId, staffId, recordText, recordType, filePath,
 }
 
 /**
- * テスト用関数
+ * テスト用関数 - 通常記録
  * GASエディタから直接実行してテスト可能
+ *
+ * @param {string} recordNoteId - 記録ID（例: "RN-001"）
+ * @param {string} staffId - スタッフID（例: "staff@example.com"）
+ * @param {string} recordText - 記録テキスト
+ * @param {string} filePath - ファイルパス（オプション）
+ * @param {string} fileId - ファイルID（オプション）
  */
-function testProcessRequest() {
-  // TODO: テストデータを設定してください
-  const testParams = {
-    // 例: action: "test",
-    // 例: data: "sample"
-  };
+function testNormalRecord(
+  recordNoteId = "TEST-NORMAL-001",
+  staffId = "test@fractal-group.co.jp",
+  recordText = "利用者は元気そうでした。血圧130/80、体温36.5度。食事は良好。",
+  filePath = null,
+  fileId = null
+) {
+  console.log('='.repeat(60));
+  console.log('🧪 通常記録テスト実行');
+  console.log('='.repeat(60));
 
-  return CommonTest.runTest((params) => processRequest(params.recordNoteId, params.staffId, params.recordText, params.recordType, params.filePath, params.fileId), testParams, 'Appsheet_訪問看護_通常記録');
+  return processRequest(recordNoteId, staffId, recordText, '通常', filePath, fileId);
+}
+
+/**
+ * テスト用関数 - 精神科記録
+ * GASエディタから直接実行してテスト可能
+ *
+ * @param {string} recordNoteId - 記録ID（例: "RN-002"）
+ * @param {string} staffId - スタッフID（例: "staff@example.com"）
+ * @param {string} recordText - 記録テキスト
+ * @param {string} filePath - ファイルパス（オプション）
+ * @param {string} fileId - ファイルID（オプション）
+ */
+function testPsychiatryRecord(
+  recordNoteId = "TEST-PSYCH-001",
+  staffId = "test@fractal-group.co.jp",
+  recordText = "利用者は落ち着いた様子。服薬確認済み。幻聴の訴えなし。デイケアへの参加を促した。",
+  filePath = null,
+  fileId = null
+) {
+  console.log('='.repeat(60));
+  console.log('🧪 精神科記録テスト実行');
+  console.log('='.repeat(60));
+
+  return processRequest(recordNoteId, staffId, recordText, '精神', filePath, fileId);
+}
+
+/**
+ * カスタムパラメータでのテスト実行
+ * GASエディタから直接実行してテスト可能
+ *
+ * @param {string} recordNoteId - 記録ID
+ * @param {string} staffId - スタッフID
+ * @param {string} recordText - 記録テキスト
+ * @param {string} recordType - 記録タイプ（'通常' or '精神'）
+ * @param {string} filePath - ファイルパス（オプション）
+ * @param {string} fileId - ファイルID（オプション）
+ */
+function testCustomRecord(
+  recordNoteId,
+  staffId,
+  recordText,
+  recordType = '通常',
+  filePath = null,
+  fileId = null
+) {
+  console.log('='.repeat(60));
+  console.log(`🧪 カスタムテスト実行: ${recordType}記録`);
+  console.log('='.repeat(60));
+  console.log(`記録ID: ${recordNoteId}`);
+  console.log(`スタッフID: ${staffId}`);
+  console.log(`記録タイプ: ${recordType}`);
+  console.log('='.repeat(60));
+
+  return processRequest(recordNoteId, staffId, recordText, recordType, filePath, fileId);
 }
 
 /**

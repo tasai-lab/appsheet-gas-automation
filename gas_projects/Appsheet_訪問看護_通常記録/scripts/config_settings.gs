@@ -34,7 +34,7 @@ const GCP_CONFIG = {
 
   vertexAI: {
 
-    model: 'gemini-1.5-pro-latest',
+    model: 'gemini-2.5-pro',
 
     temperature: 0.2,
 
@@ -55,7 +55,7 @@ const GEMINI_CONFIG = {
 
   apiKey: "AIzaSyDUKFlE6_NYGehDYOxiRQcHpjG2l7GZmTY",
 
-  model: 'gemini-1.5-pro-latest',
+  model: 'gemini-2.5-pro',
 
   temperature: 0.3
 

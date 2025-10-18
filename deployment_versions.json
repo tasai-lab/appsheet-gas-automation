@@ -1,6 +1,58 @@
 {
-  "last_updated": "2025-10-17T19:31:08.074367",
+  "last_updated": "2025-10-18T06:22:44.398067",
   "projects": {
+    "Appsheet_訪問看護_通常記録": {
+      "script_id": "1YkRRcL3fBJ-gMiC3lCkScM3fe_IrawqXrmKoIIWmE-nQokw4rY6rATZa",
+      "deployments": [
+        {
+          "version": 45,
+          "description": "v2.1: テスト関数追加 - 引数を個別設定して直接実行可能に",
+          "timestamp": "2025-10-18T06:24:15.000000",
+          "status": "success"
+        },
+        {
+          "version": 44,
+          "description": "v2.0: Gemini 2.5-pro統合版 - 精神科記録統合 + Gemini 2.5-pro対応",
+          "timestamp": "2025-10-18T06:22:44.398067",
+          "status": "success"
+        },
+        {
+          "version": 43,
+          "description": "v1.0: 精神科記録統合版 - 通常記録と精神科記録の両対応",
+          "timestamp": "2025-10-18T06:20:02.355259",
+          "status": "success"
+        }
+      ]
+    },
+    "Appsheet_通話_スレッド投稿": {
+      "script_id": "1zs7zZjmjMpWvOT6ButOcmpZ87kg7R6992Xvbx_XCI6Co-0OuIXhbDLPu",
+      "deployments": [
+        {
+          "version": 2,
+          "description": "v1.3: 新プロジェクトへの移行完了 - clasp 3.1.0環境での再構築",
+          "timestamp": "2025-10-17T18:04:57.640464",
+          "status": "success"
+        },
+        {
+          "version": 22,
+          "description": "v1.2: 完全なChat API統合とAppSheet連携実装",
+          "timestamp": "2025-10-18T02:08:00.000000",
+          "status": "success"
+        },
+        {
+          "version": 19,
+          "description": "v1.1: Chat API統合とOAuth2認証実装",
+          "timestamp": "2025-10-18T02:05:00.000000",
+          "status": "success"
+        },
+        {
+          "version": 16,
+          "description": "v1.0: 通話質疑応答スレッド投稿機能の実装",
+          "timestamp": "2025-10-18T01:45:00.000000",
+          "status": "success"
+        }
+      ]
+    },
     "Appsheet_通話_要約生成": {
       "script_id": "1PK1RNjLaA7g-1-JrJ-AFn1S0D_nL5cGHNJeDtyhIap_otDnYsUAquSz6",
       "deployments": [
