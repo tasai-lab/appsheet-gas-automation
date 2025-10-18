@@ -1,249 +1,908 @@
-# Appsheet_訪問看護_通常記録 - 詳細仕様書
+# Appsheet_訪問看護_通常記録 - 技術仕様書
 
-## 目的
+**Document Version:** 2.1
+**Last Updated:** 2025-10-18
+**Script Version:** v2.1 (version 45)
 
-このスクリプトは、AppSheetアプリケーションと連携し、データ処理、API呼び出し、スプレッドシート操作などの自動化タスクを実行します。
+## 目次
 
-## システム構成
+1. [システム概要](#システム概要)
+2. [アーキテクチャ](#アーキテクチャ)
+3. [技術仕様](#技術仕様)
+4. [API仕様](#api仕様)
+5. [データモデル](#データモデル)
+6. [処理ロジック](#処理ロジック)
+7. [設定仕様](#設定仕様)
+8. [セキュリティ](#セキュリティ)
+9. [エラーハンドリング](#エラーハンドリング)
+10. [パフォーマンス](#パフォーマンス)
+11. [テスト仕様](#テスト仕様)
+12. [デプロイメント](#デプロイメント)
+13. [依存関係](#依存関係)
 
-### コンポーネント
+---
 
-1. **Webhook受信ハンドラ** (`doPost`)
-   - AppSheetからのPOSTリクエストを受信
-   - JSONペイロードをパース
-   - 重複チェックを実行
+## システム概要
 
-2. **重複防止モジュール** (`DuplicationPrevention`)
-   - SHA-256ハッシュによるリクエスト識別
-   - ScriptCacheによる処理済みマーク
-   - LockServiceによる排他制御
+### 目的
 
-3. **実行ログモジュール** (`ExecutionLogger`)
-   - すべての処理結果を記録
-   - タイムスタンプ、ステータス、エラー詳細を保存
-   - スプレッドシートに集約
+訪問看護記録の自動生成システム。AppSheetからのWebhookリクエストを受け取り、Gemini 2.5-proを使用してテキスト・音声から構造化された看護記録を自動生成し、AppSheetデータベースに反映します。
 
-4. **ビジネスロジック**
-   - プロジェクト固有の処理
-   - 外部API呼び出し（Gemini APIなど）
-   - データ変換と保存
+### 対応記録タイプ
 
-## 関数一覧
+1. **通常記録** (`recordType: "通常"`)
+   - 一般的な訪問看護記録
+   - バイタルサイン、主観情報、利用者状態など
 
-- `logExecution` (ExecutionLogger)
-- `getOrCreateLogSpreadsheet` (ExecutionLogger)
-- `acquireLock` (ExecutionLogger)
-- `releaseLock` (ExecutionLogger)
-- `isDuplicateRequest` (ExecutionLogger)
-- `formatError` (ExecutionLogger)
-- `doPost` (main)
-- `updateRecordOnSuccess` (main)
-- `sendErrorEmail` (main)
-- `updateRecordOnError` (main)
-- `callAppSheetApi` (main)
-- `callVertexAIWithPrompt` (modules_aiProcessor)
-- `callVertexAIWithPromptInternal` (modules_aiProcessor)
-- `callGeminiAPIWithPrompt` (modules_aiProcessor)
-- `parseGeneratedJSON` (modules_aiProcessor)
-- `buildNormalPrompt` (modules_aiProcessor)
-- `buildPsychiatryPrompt` (modules_aiProcessor)
-- `determineRecordType` (modules_aiProcessor)
-- `callAppSheetApi` (modules_appsheetClient)
-- `updateRecordOnSuccess` (modules_appsheetClient)
-- `updateRecordOnError` (modules_appsheetClient)
-- `updateRecordToProcessing` (modules_appsheetClient)
-- `getGuidanceMasterAsText` (modules_dataAccess)
-- `getGuidanceMasterCached` (modules_dataAccess)
-- `getFileIdFromPath` (modules_fileHandler)
-- `searchFileByName` (modules_fileHandler)
-- `getFileIdFromSharedDrivePath` (modules_fileHandler)
-- `navigateToFolder` (modules_fileHandler)
-- `findFileInFolder` (modules_fileHandler)
-- `getFileFromDrive` (modules_fileHandler)
-- `uploadToCloudStorage` (modules_fileHandler)
-- `deleteFromCloudStorage` (modules_fileHandler)
-- `sendErrorEmail` (modules_notificationService)
-- `sendSlackNotification` (modules_notificationService)
-- `logStructured` (modules_notificationService)
-- `logProcessingStart` (modules_notificationService)
-- `logProcessingComplete` (modules_notificationService)
-- `logError` (modules_notificationService)
-- `debugCurrentSettings` (utils_debugTests)
-- `testVertexAIConnection` (utils_debugTests)
-- `checkGCPProjectBinding` (utils_debugTests)
-- `testCloudStorageConnection` (utils_debugTests)
-- `runAllTests` (utils_debugTests)
-- `isAlreadyProcessing` (utils_duplicateChecker)
-- `markAsProcessing` (utils_duplicateChecker)
-- `clearProcessingFlag` (utils_duplicateChecker)
-- `generateWebhookFingerprint` (utils_duplicateChecker)
-- `isDuplicateWebhook` (utils_duplicateChecker)
-- `acquireTriggerLock` (utils_duplicateChecker)
-- `releaseTriggerLock` (utils_duplicateChecker)
-- `clearAllProcessingFlags` (utils_duplicateChecker)
-- `getDuplicateCheckerStats` (utils_duplicateChecker)
-- `checkDuplicateRequest` (utils_duplicationPrevention)
-- `markAsProcessingWithLock` (utils_duplicationPrevention)
-- `markAsCompleted` (utils_duplicationPrevention)
-- `markAsFailed` (utils_duplicationPrevention)
-- `clearProcessingFlag` (utils_duplicationPrevention)
-- `isProcessingOrCompleted` (utils_duplicationPrevention)
-- `isDuplicateWebhookFingerprint` (utils_duplicationPrevention)
-- `generateFingerprint` (utils_duplicationPrevention)
-- `createSuccessResponse` (utils_duplicationPrevention)
-- `createDuplicateResponse` (utils_duplicationPrevention)
-- `createErrorResponse` (utils_duplicationPrevention)
-- `doPost` (utils_duplicationPrevention)
-- `processWebhook` (utils_duplicationPrevention)
-- `executeWebhookWithDuplicationPrevention` (utils_duplicationPrevention)
-- `checkRecordStatus` (utils_duplicationPrevention)
-- `emergencyClearAllFlags` (utils_duplicationPrevention)
-- `getDuplicationPreventionStats` (utils_duplicationPrevention)
-- `normalizeError` (utils_errorHandler)
-- `logErrorDetails` (utils_errorHandler)
-- `getUserFriendlyErrorMessage` (utils_errorHandler)
-- `withErrorHandling` (utils_errorHandler)
-- `isRetryableError` (utils_errorHandler)
-- `handleErrorRecovery` (utils_errorHandler)
-- `logStructured` (utils_logger)
-- `logProcessingStart` (utils_logger)
-- `logProcessingComplete` (utils_logger)
-- `logError` (utils_logger)
-- `logApiCall` (utils_logger)
-- `logDebug` (utils_logger)
-- `logFileOperation` (utils_logger)
-- `perfStart` (utils_logger)
-- `perfStop` (utils_logger)
-- `traced` (utils_logger)
-- `validateWebhookParams` (utils_validators)
-- `validateFilePath` (utils_validators)
-- `validateRecordType` (utils_validators)
-- `validateFileSize` (utils_validators)
-- `validateFileFormat` (utils_validators)
-- `validateAIResult` (utils_validators)
-- `validateHttpResponse` (utils_validators)
-- `validateAndParseJSON` (utils_validators)
+2. **精神科記録** (`recordType: "精神"`)
+   - 精神科訪問看護記録
+   - 精神状態観察、服薬遵守、社会機能など
 
-## データフロー
+### 主要機能
+
+- マルチモーダル入力処理（テキスト + 音声）
+- Vertex AI / Gemini API統合
+- 自動フィールドマッピング
+- エラーハンドリングと通知
+- 構造化ログ記録
+
+---
+
+## アーキテクチャ
+
+### システム構成図
 
 ```
-AppSheet Webhook
-    ↓
-doPost(e)
-    ↓
-重複チェック (DuplicationPrevention)
-    ↓
-処理実行 (ビジネスロジック)
-    ↓
-結果記録 (ExecutionLogger)
-    ↓
-レスポンス返却
+┌─────────────────┐
+│  AppSheet App   │
+│  (Webhook送信)  │
+└────────┬────────┘
+         │ HTTPS POST
+         ↓
+┌─────────────────────────────────────┐
+│    Google Apps Script               │
+│  ┌──────────────────────────────┐  │
+│  │  main.gs                     │  │
+│  │  - doPost (Webhook受信)      │  │
+│  │  - processRequest            │  │
+│  └──────────┬───────────────────┘  │
+│             │                       │
+│             ↓                       │
+│  ┌──────────────────────────────┐  │
+│  │  Common Modules              │  │
+│  │  - CommonWebhook             │  │
+│  │  - CommonTest                │  │
+│  └──────────┬───────────────────┘  │
+│             │                       │
+│             ↓                       │
+│  ┌──────────────────────────────┐  │
+│  │  Business Logic Modules      │  │
+│  │  - modules_aiProcessor       │  │
+│  │  - modules_dataAccess        │  │
+│  │  - modules_fileHandler       │  │
+│  │  - modules_appsheetClient    │  │
+│  └──────────┬───────────────────┘  │
+│             │                       │
+└─────────────┼───────────────────────┘
+              │
+              ├──────────────┐
+              │              │
+              ↓              ↓
+    ┌──────────────┐  ┌──────────────┐
+    │  Vertex AI   │  │ Cloud Storage│
+    │ (Gemini 2.5) │  │  (音声一時保存)│
+    └──────────────┘  └──────────────┘
+              │
+              ↓
+    ┌──────────────────┐
+    │  AppSheet API    │
+    │ (Care_Records更新)│
+    └──────────────────┘
 ```
 
-## エラーハンドリング
+### モジュール構成
 
-### エラーレベル
+#### エントリーポイント
 
-1. **SUCCESS**: 正常終了
-2. **WARNING**: 警告（重複リクエストなど）
-3. **ERROR**: エラー発生
+- **main.gs**
+  - `doPost(e)`: Webhookエントリーポイント
+  - `processRequest(...)`: メイン処理関数
+  - `testNormalRecord()`: 通常記録テスト関数
+  - `testPsychiatryRecord()`: 精神科記録テスト関数
+  - `testCustomRecord()`: カスタムテスト関数
 
-### エラー記録
+#### 共通モジュール
 
-すべてのエラーは実行ログスプレッドシートに記録されます:
-- エラーメッセージ
-- スタックトレース
-- 入力データ
-- 実行時間
+- **CommonWebhook**
+  - `handleDoPost(e, callback)`: Webhook共通処理
 
-## パフォーマンス考慮事項
+- **CommonTest**
+  - テスト支援機能
 
-### キャッシュ戦略
+#### ビジネスロジックモジュール
 
-- **有効期限**: 1時間 (3600秒)
-- **用途**: 重複リクエストの検出
+- **modules_aiProcessor.gs**
+  - `callVertexAIWithPrompt()`: Vertex AI呼び出し
+  - `callGeminiAPIWithPrompt()`: Gemini API呼び出し
+  - `buildNormalPrompt()`: 通常記録プロンプト構築
+  - `buildPsychiatryPrompt()`: 精神科記録プロンプト構築
+  - `parseGeneratedJSON()`: AI応答解析
+  - `determineRecordType()`: 記録タイプ判定
 
-### ロック戦略
+- **modules_dataAccess.gs**
+  - `getGuidanceMasterAsText()`: マスターデータ取得
+  - `getGuidanceMasterCached()`: キャッシュ付きマスター取得
 
-- **タイムアウト**: 5分 (300,000ミリ秒)
-- **スコープ**: スクリプトレベル
+- **modules_fileHandler.gs**
+  - `getFileIdFromPath()`: ファイルID取得
+  - `getFileFromDrive()`: Driveファイル取得
+  - `uploadToCloudStorage()`: Cloud Storageアップロード
+  - `deleteFromCloudStorage()`: Cloud Storage削除
+
+- **modules_appsheetClient.gs**
+  - `callAppSheetApi()`: AppSheet API呼び出し
+  - `updateRecordOnSuccess()`: 成功時レコード更新
+  - `updateRecordOnError()`: エラー時レコード更新
+
+#### ユーティリティモジュール
+
+- **utils_constants.gs**: 定数定義（エラーコード、ステータス、マッピング）
+- **utils_validators.gs**: バリデーション機能
+- **utils_errorHandler.gs**: エラーハンドリング
+- **utils_logger.gs**: 構造化ログ記録
+
+---
+
+## 技術仕様
+
+### プラットフォーム
+
+- **実行環境**: Google Apps Script (V8 Runtime)
+- **言語**: JavaScript (ES6+)
+- **GASバージョン**: Runtime V8
+
+### 制約事項
+
+| 項目 | 制約値 |
+|------|--------|
+| 最大実行時間 | 6分 |
+| URL Fetchサイズ | 50MB |
+| 同時実行数 | ユーザーあたり30 |
+| スクリプトキャッシュ | 10MB / 100,000アイテム |
+| プロパティストア | 500KB |
+| 音声ファイルサイズ | 2GB |
+
+### サポート音声形式
+
+| 形式 | MIMEタイプ | 説明 |
+|------|------------|------|
+| m4a | audio/mp4 | Apple標準形式 |
+| mp3 | audio/mpeg | 汎用圧縮形式 |
+| wav | audio/wav | 非圧縮形式 |
+| ogg | audio/ogg | Ogg Vorbis形式 |
+
+---
+
+## API仕様
+
+### 1. Webhook API (入力)
+
+#### エンドポイント
+
+```
+POST https://script.google.com/macros/s/{deploymentId}/exec
+```
+
+#### リクエストボディ
+
+**共通パラメータ:**
+
+```json
+{
+  "recordNoteId": "string (required)",
+  "staffId": "string (required)",
+  "recordText": "string (required)",
+  "recordType": "string (optional, default: '通常')",
+  "filePath": "string (optional)",
+  "fileId": "string (optional)"
+}
+```
+
+**パラメータ説明:**
+
+| パラメータ | 型 | 必須 | 説明 | 例 |
+|-----------|-----|------|------|-----|
+| `recordNoteId` | string | ✓ | 記録ノートID | "RN-001" |
+| `staffId` | string | ✓ | スタッフID | "staff@example.com" |
+| `recordText` | string | ✓ | 記録テキスト | "利用者は元気..." |
+| `recordType` | string | - | 記録タイプ | "通常" or "精神" |
+| `filePath` | string | - | Driveファイルパス | "共有ドライブ/..." |
+| `fileId` | string | - | DriveファイルID | "1AbCd..." |
+
+#### レスポンス
+
+**成功時 (200 OK):**
+
+```json
+{
+  "status": "success",
+  "message": "処理が完了しました",
+  "recordNoteId": "RN-001"
+}
+```
+
+**エラー時 (200 OK with error status):**
+
+```json
+{
+  "status": "error",
+  "message": "エラーメッセージ",
+  "errorCode": "E1001",
+  "recordNoteId": "RN-001"
+}
+```
+
+### 2. Vertex AI API
+
+#### エンドポイント
+
+```
+POST https://us-central1-aiplatform.googleapis.com/v1/projects/{projectId}/locations/us-central1/publishers/google/models/gemini-2.5-pro:generateContent
+```
+
+#### リクエストボディ
+
+```json
+{
+  "contents": [
+    {
+      "role": "user",
+      "parts": [
+        { "text": "プロンプト文字列" },
+        {
+          "fileData": {
+            "mimeType": "audio/mp4",
+            "fileUri": "gs://bucket-name/file.m4a"
+          }
+        }
+      ]
+    }
+  ],
+  "generationConfig": {
+    "temperature": 0.2,
+    "maxOutputTokens": 8192,
+    "responseMimeType": "application/json"
+  }
+}
+```
+
+#### レスポンス
+
+```json
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "{\"processedAudioText\": \"...\", ...}"
+          }
+        ]
+      },
+      "finishReason": "STOP"
+    }
+  ]
+}
+```
+
+### 3. Gemini API (フォールバック)
+
+#### エンドポイント
+
+```
+POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key={apiKey}
+```
+
+#### リクエストボディ
+
+```json
+{
+  "contents": [
+    {
+      "parts": [
+        { "text": "プロンプト文字列" },
+        {
+          "inlineData": {
+            "mimeType": "audio/mp4",
+            "data": "base64エンコードされた音声データ"
+          }
+        }
+      ]
+    }
+  ],
+  "generationConfig": {
+    "temperature": 0.3,
+    "responseMimeType": "application/json"
+  }
+}
+```
+
+### 4. AppSheet API (出力)
+
+#### エンドポイント
+
+```
+POST https://api.appsheet.com/api/v2/apps/{appId}/tables/Care_Records/Action
+```
+
+#### リクエストボディ
+
+```json
+{
+  "Action": "Edit",
+  "Properties": {
+    "Locale": "ja-JP",
+    "Timezone": "Asia/Tokyo"
+  },
+  "Rows": [
+    {
+      "record_note_id": "RN-001",
+      "status": "編集中",
+      "extracted_text": "...",
+      "vital_signs": "...",
+      "client_condition": "...",
+      "updated_by": "staff@example.com"
+    }
+  ]
+}
+```
+
+#### ヘッダー
+
+```
+ApplicationAccessKey: {accessKey}
+Content-Type: application/json
+```
+
+---
+
+## データモデル
+
+### 通常記録 (Normal Record)
+
+#### AI出力スキーマ
+
+```json
+{
+  "processedAudioText": "string",
+  "vitalSigns": {
+    "bt": "string",
+    "bp": "string",
+    "hr": "string",
+    "spo2": "string"
+  },
+  "subjectiveInformation": "string",
+  "userCondition": "string",
+  "guidanceAndAdvice": "string",
+  "nursingAndRehabilitationItems": ["string"],
+  "specialNotes": "string",
+  "summaryForNextVisit": "string"
+}
+```
+
+#### AppSheetフィールドマッピング
+
+| AIフィールド | AppSheetフィールド | データ型 | 変換 |
+|-------------|-------------------|---------|------|
+| `processedAudioText` | `extracted_text` | string | そのまま |
+| `vitalSigns` | `vital_signs` | string | JSON文字列化 |
+| `subjectiveInformation` | `subjective_information` | string | そのまま |
+| `userCondition` | `client_condition` | string | そのまま |
+| `guidanceAndAdvice` | `guidance_and_advice` | string | そのまま |
+| `nursingAndRehabilitationItems` | `care_provided` | string | カンマ区切り |
+| `specialNotes` | `remarks` | string | そのまま |
+| `summaryForNextVisit` | `summary_for_next_visit` | string | そのまま |
+
+### 精神科記録 (Psychiatry Record)
+
+#### AI出力スキーマ
+
+```json
+{
+  "clientCondition": "string",
+  "dailyLivingObservation": "string",
+  "mentalStateObservation": "string",
+  "medicationAdherence": "string",
+  "socialFunctionalObservation": "string",
+  "careProvided": ["string"],
+  "guidanceAndAdvice": "string",
+  "remarks": "string",
+  "summaryForNextVisit": "string"
+}
+```
+
+#### AppSheetフィールドマッピング
+
+| AIフィールド | AppSheetフィールド | データ型 | 変換 |
+|-------------|-------------------|---------|------|
+| `clientCondition` | `client_condition` | string | そのまま |
+| `dailyLivingObservation` | `daily_living_observation` | string | そのまま |
+| `mentalStateObservation` | `mental_state_observation` | string | そのまま |
+| `medicationAdherence` | `medication_adherence` | string | そのまま |
+| `socialFunctionalObservation` | `social_functional_observation` | string | そのまま |
+| `careProvided` | `care_provided` | string | カンマ区切り |
+| `guidanceAndAdvice` | `guidance_and_advice` | string | そのまま |
+| `remarks` | `remarks` | string | そのまま |
+| `summaryForNextVisit` | `summary_for_next_visit` | string | そのまま |
+
+---
+
+## 処理ロジック
+
+### メイン処理フロー
+
+```javascript
+function processRequest(recordNoteId, staffId, recordText, recordType, filePath, fileId) {
+  // 1. パラメータ検証
+  validateWebhookParams(recordNoteId, staffId, recordText);
+
+  // 2. マスターデータ取得（1時間キャッシュ）
+  const guidanceMasterText = getGuidanceMasterAsText();
+
+  // 3. 記録タイプ判定
+  const normalizedRecordType = determineRecordType(recordType);
+
+  // 4. ファイル処理（音声がある場合）
+  let gsUri = null, mimeType = null;
+  if (filePath || fileId) {
+    const fileData = getFileFromDrive(fileId || getFileIdFromPath(filePath));
+    const uploadResult = uploadToCloudStorage(fileData.blob, bucketName, fileData.fileName);
+    gsUri = uploadResult.gsUri;
+    mimeType = fileData.mimeType;
+  }
+
+  // 5. AI処理
+  let analysisResult;
+  if (processingMode === 'vertex-ai' && gsUri) {
+    const prompt = normalizedRecordType === 'psychiatry'
+      ? buildPsychiatryPrompt(recordText, guidanceMasterText)
+      : buildNormalPrompt(recordText, guidanceMasterText);
+    analysisResult = callVertexAIWithPrompt(gsUri, mimeType, prompt, normalizedRecordType);
+  } else {
+    // Gemini APIフォールバック
+    analysisResult = callGeminiAPIWithPrompt(fileData, prompt, normalizedRecordType);
+  }
+
+  // 6. フィールドマッピングとAppSheet更新
+  updateRecordOnSuccess(recordNoteId, analysisResult, staffId, normalizedRecordType);
+
+  // 7. クリーンアップ
+  if (gsUri) {
+    deleteFromCloudStorage(bucketName, fileName);
+  }
+}
+```
+
+### リトライロジック
+
+Vertex AI呼び出しには自動リトライ機構があります。
+
+```javascript
+const maxRetries = 3;
+const retryDelays = [30000, 60000, 120000]; // 30秒, 1分, 2分
+
+for (let attempt = 1; attempt <= maxRetries; attempt++) {
+  try {
+    return callVertexAIWithPromptInternal(gsUri, mimeType, prompt, recordType);
+  } catch (error) {
+    if (error.message.includes('Service agents are being provisioned') && attempt < maxRetries) {
+      Utilities.sleep(retryDelays[attempt - 1]);
+      continue;
+    }
+    throw error;
+  }
+}
+```
+
+### キャッシュロジック
+
+マスターデータは1時間キャッシュされます。
+
+```javascript
+function getGuidanceMasterCached() {
+  const cache = CacheService.getScriptCache();
+  const cacheKey = 'guidance_master_text';
+
+  let cached = cache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  const masterText = getGuidanceMasterAsText();
+  cache.put(cacheKey, masterText, 3600); // 1時間
+  return masterText;
+}
+```
+
+---
+
+## 設定仕様
+
+### config_settings.gs
+
+#### GCP_CONFIG
+
+```javascript
+const GCP_CONFIG = {
+  projectId: 'macro-shadow-458705-v8',          // GCPプロジェクトID
+  location: 'us-central1',                       // Vertex AIリージョン
+  bucketName: 'nursing-records-audio-macro',     // Cloud Storageバケット
+  vertexAI: {
+    model: 'gemini-2.5-pro',                     // Vertex AIモデル
+    temperature: 0.2,                            // 温度パラメータ
+    maxOutputTokens: 8192                        // 最大出力トークン
+  }
+};
+```
+
+#### GEMINI_CONFIG
+
+```javascript
+const GEMINI_CONFIG = {
+  apiKey: 'AIzaSyD...',                          // Gemini APIキー
+  model: 'gemini-2.5-pro',                       // モデル名
+  temperature: 0.3                               // 温度パラメータ
+};
+```
+
+#### APPSHEET_CONFIG
+
+```javascript
+const APPSHEET_CONFIG = {
+  appId: 'f40c4b11-b140-4e31-a60c-600f3c9637c8', // AppSheetアプリID
+  accessKey: 'V2-s6fif-...',                     // AppSheetアクセスキー
+  tableName: 'Care_Records'                      // テーブル名
+};
+```
+
+#### SYSTEM_CONFIG
+
+```javascript
+const SYSTEM_CONFIG = {
+  processingMode: 'vertex-ai',                   // 'vertex-ai' or 'fallback'
+  debugMode: false,                              // デバッグモード
+  timeout: {
+    vertexAI: 120000,                            // Vertex AIタイムアウト (ms)
+    geminiAPI: 60000,                            // Gemini APIタイムアウト (ms)
+    appSheetAPI: 30000                           // AppSheet APIタイムアウト (ms)
+  }
+};
+```
+
+---
 
 ## セキュリティ
 
-### 認証
+### 認証・認可
 
-- AppSheet Webhookからのリクエストは認証不要（公開URL）
-- 必要に応じてシークレットトークンによる検証を追加可能
+#### Google Cloud Platform
+
+- **サービスアカウント**: GASの組み込みOAuth2トークン使用
+- **必要な権限**:
+  - Vertex AI User
+  - Storage Object Admin
+  - Cloud Run Invoker
+
+#### AppSheet API
+
+- **認証方式**: Application Access Key
+- **キー管理**: config_settings.gsに直接記載（推奨: Script Properties使用）
+
+#### Gemini API
+
+- **認証方式**: APIキー
+- **キー管理**: config_settings.gsに直接記載（推奨: Script Properties使用）
 
 ### データ保護
 
-- APIキーはスクリプトプロパティで管理（推奨）
-- 実行ログには機密情報を含めない
+| データ種別 | 保護方法 |
+|-----------|---------|
+| 音声ファイル | Cloud Storageに一時保存、処理後即座に削除 |
+| 患者情報 | AppSheetデータベース（暗号化） |
+| APIキー | Script Properties推奨（現在はconfig直記載） |
+| ログデータ | Google Sheets（アクセス制限付き） |
 
-## 制限事項
+### セキュリティベストプラクティス
 
-### Google Apps Script制限
+1. **APIキーの管理**
+   - Script Propertiesへの移行を推奨
+   - 定期的なローテーション
 
-- **実行時間**: 最大6分
-- **URL Fetchサイズ**: 50MB
-- **同時実行**: ユーザーあたり30
+2. **音声ファイルの取り扱い**
+   - 処理後即座に削除
+   - バケットのライフサイクルポリシー設定
 
-### 推奨事項
+3. **ログの取り扱い**
+   - 個人情報のマスキング
+   - アクセス権限の最小化
 
-- 大量データ処理は分割実行
-- タイムアウト対策としてバックグラウンド処理を検討
+---
 
-## テスト
+## エラーハンドリング
+
+### エラーコード体系
+
+| コード範囲 | カテゴリ | 例 |
+|-----------|---------|-----|
+| E1xxx | 入力エラー | E1001: 必須パラメータ不足 |
+| E2xxx | データ取得エラー | E2001: マスターデータ取得失敗 |
+| E3xxx | AI処理エラー | E3001: Vertex AI処理エラー |
+| E4xxx | 外部API エラー | E4001: AppSheet API エラー |
+| E5xxx | システムエラー | E5001: 予期しないエラー |
+
+### エラーコード一覧
+
+```javascript
+const ERROR_CODE = {
+  // 入力エラー (1000番台)
+  MISSING_REQUIRED_PARAMS: 'E1001',
+  INVALID_FILE_PATH: 'E1002',
+  INVALID_RECORD_TYPE: 'E1003',
+  FILE_NOT_FOUND: 'E1004',
+  FILE_SIZE_EXCEEDED: 'E1005',
+  UNSUPPORTED_FORMAT: 'E1006',
+
+  // データ取得エラー (2000番台)
+  MASTER_DATA_FETCH_FAILED: 'E2001',
+  FILE_FETCH_FAILED: 'E2002',
+  DRIVE_ACCESS_FAILED: 'E2003',
+
+  // AI処理エラー (3000番台)
+  VERTEX_AI_ERROR: 'E3001',
+  GEMINI_API_ERROR: 'E3002',
+  JSON_PARSE_ERROR: 'E3003',
+  RESPONSE_VALIDATION_ERROR: 'E3004',
+
+  // 外部API エラー (4000番台)
+  APPSHEET_API_ERROR: 'E4001',
+  CLOUD_STORAGE_ERROR: 'E4002',
+
+  // システムエラー (5000番台)
+  UNEXPECTED_ERROR: 'E5001',
+  TIMEOUT_ERROR: 'E5002',
+  ASYNC_TRIGGER_ERROR: 'E5003'
+};
+```
+
+### エラー処理フロー
+
+```javascript
+try {
+  // メイン処理
+  processRequest(...);
+} catch (error) {
+  // 1. エラーログ記録
+  logError(recordNoteId, error, { params: params });
+
+  // 2. AppSheetにエラーステータス記録
+  if (recordNoteId) {
+    updateRecordOnError(recordNoteId, error.toString());
+  }
+
+  // 3. エラーメール送信
+  if (recordNoteId) {
+    sendErrorEmail(recordNoteId, error.toString());
+  }
+
+  // 4. エラーレスポンス返却
+  return createErrorResponse(error);
+}
+```
+
+---
+
+## パフォーマンス
+
+### 処理時間の目標値
+
+| 処理タイプ | 目標時間 | 実績時間 |
+|-----------|---------|---------|
+| テキストのみ（通常） | < 5秒 | 3-5秒 |
+| テキストのみ（精神科） | < 5秒 | 3-5秒 |
+| 音声あり（通常） | < 30秒 | 15-30秒 |
+| 音声あり（精神科） | < 30秒 | 15-30秒 |
+
+### 最適化手法
+
+#### 1. マスターデータキャッシュ
+
+```javascript
+// 1時間キャッシュで高速化
+function getGuidanceMasterCached() {
+  const cache = CacheService.getScriptCache();
+  const cacheKey = 'guidance_master_text';
+
+  let cached = cache.get(cacheKey);
+  if (cached) return cached;
+
+  const masterText = getGuidanceMasterAsText();
+  cache.put(cacheKey, masterText, 3600);
+  return masterText;
+}
+```
+
+#### 2. リトライ戦略
+
+- Vertex AIエラー時の指数バックオフ
+- 30秒 → 1分 → 2分の間隔でリトライ
+
+#### 3. Cloud Storage自動クリーンアップ
+
+```javascript
+// 処理後即座に削除
+if (gsUri) {
+  const fileName = gsUri.split('/').pop();
+  deleteFromCloudStorage(GCP_CONFIG.bucketName, fileName);
+}
+```
+
+### パフォーマンス監視
+
+構造化ログで以下を記録:
+
+- 処理開始時刻
+- 処理完了時刻
+- 各ステップの処理時間
+- API呼び出し時間
+
+```javascript
+const startTime = Date.now();
+// ... 処理 ...
+const duration = Date.now() - startTime;
+logProcessingComplete(recordNoteId, duration);
+```
+
+---
+
+## テスト仕様
 
 ### 単体テスト
 
+#### 通常記録テスト
+
 ```javascript
-function testDoPost() {
-  const testData = {
-    postData: {
-      contents: JSON.stringify({
-        // Test data here
-      })
-    }
-  };
-  
-  const result = doPost(testData);
-  Logger.log(result);
+function testNormalRecord(
+  recordNoteId = "TEST-NORMAL-001",
+  staffId = "test@fractal-group.co.jp",
+  recordText = "利用者は元気そうでした。血圧130/80、体温36.5度。食事は良好。",
+  filePath = null,
+  fileId = null
+) {
+  return processRequest(recordNoteId, staffId, recordText, '通常', filePath, fileId);
+}
+```
+
+#### 精神科記録テスト
+
+```javascript
+function testPsychiatryRecord(
+  recordNoteId = "TEST-PSYCH-001",
+  staffId = "test@fractal-group.co.jp",
+  recordText = "利用者は落ち着いた様子。服薬確認済み。幻聴の訴えなし。",
+  filePath = null,
+  fileId = null
+) {
+  return processRequest(recordNoteId, staffId, recordText, '精神', filePath, fileId);
 }
 ```
 
 ### 統合テスト
 
-AppSheetから実際のWebhookを送信してテストします。
+AppSheetから実際のWebhookを送信してテスト。
 
-## 保守
+#### テストケース
 
-### ログ確認
+| ケース | recordType | 音声 | 期待結果 |
+|-------|-----------|------|---------|
+| TC-001 | 通常 | なし | 正常処理 |
+| TC-002 | 通常 | あり | 正常処理 |
+| TC-003 | 精神 | なし | 正常処理 |
+| TC-004 | 精神 | あり | 正常処理 |
+| TC-005 | なし | なし | デフォルト通常 |
+| TC-006 | 不正値 | なし | エラー |
 
-定期的に実行ログスプレッドシートを確認:
-- エラー率
-- 実行時間の傾向
-- 重複リクエストの頻度
+---
 
-### アップデート手順
+## デプロイメント
 
-1. スクリプトを更新
-2. バージョン作成
-3. デプロイメント更新
-4. テスト実行
-5. ログで動作確認
+### デプロイ手順
+
+```bash
+# プロジェクトルートに移動
+cd /Users/t.asai/code/appsheet-gas-automation
+
+# 統合デプロイスクリプト実行
+python deployment/deploy_unified.py
+```
+
+### バージョン管理
+
+デプロイメント情報は `deployment_versions.json` で管理:
+
+```json
+{
+  "last_updated": "2025-10-18T06:22:44.398067",
+  "projects": {
+    "Appsheet_訪問看護_通常記録": {
+      "script_id": "1YkRRcL3fBJ-gMiC3lCkScM3fe_IrawqXrmKoIIWmE-nQokw4rY6rATZa",
+      "deployments": [
+        {
+          "version": 45,
+          "description": "v2.1: テスト関数追加",
+          "timestamp": "2025-10-18T06:24:15.000000",
+          "status": "success"
+        }
+      ]
+    }
+  }
+}
+```
+
+### ロールバック手順
+
+1. GAS Editorでバージョン履歴を確認
+2. 適切なバージョンを選択
+3. デプロイメントを更新
+4. テスト実行で動作確認
+
+---
+
+## 依存関係
+
+### 外部サービス
+
+| サービス | 用途 | バージョン/エンドポイント |
+|---------|------|-------------------------|
+| Vertex AI | AI記録生成 | gemini-2.5-pro |
+| Gemini API | フォールバックAI | gemini-2.5-pro |
+| AppSheet API | データベース更新 | v2 |
+| Cloud Storage | 音声ファイル一時保存 | - |
+| Google Drive | 音声ファイル取得 | - |
+| Google Sheets | マスターデータ、ログ | - |
+
+### Google Apps Script ライブラリ
+
+- なし（すべて標準API使用）
+
+### 共通モジュール
+
+| モジュール | バージョン | リポジトリパス |
+|----------|-----------|---------------|
+| CommonWebhook | latest | `common_modules/CommonWebhook/` |
+| CommonTest | latest | `common_modules/CommonTest/` |
+
+---
 
 ## 付録
 
-### 設定値
+### 設定値一覧
 
 | 項目 | 値 |
 |------|-----|
-| 実行ログスプレッドシートID | 15Z_GT4-pDAnjDpd8vkX3B9FgYlQIQwdUF1QIEj7bVnE |
-| キャッシュ有効期限 | 3600秒 |
-| ロックタイムアウト | 300000ミリ秒 |
+| GCPプロジェクトID | macro-shadow-458705-v8 |
+| Vertex AIリージョン | us-central1 |
+| Cloud Storageバケット | nursing-records-audio-macro |
+| AppSheetアプリID | f40c4b11-b140-4e31-a60c-600f3c9637c8 |
+| AppSheetテーブル | Care_Records |
+| マスタースプレッドシートID | 1EhLGOPKrxqMNl2b1_c0mA1M3w1tXiHN4PsnXWfWHSPw |
+| ログスプレッドシートID | 15Z_GT4-pDAnjDpd8vkX3B9FgYlQIQwdUF1QIEj7bVnE |
+| キャッシュ有効期限 | 3600秒 (1時間) |
 
 ### 関連リソース
 
 - [Google Apps Script Documentation](https://developers.google.com/apps-script)
-- [AppSheet Automation](https://help.appsheet.com/en/collections/1885643-automation)
+- [Vertex AI Documentation](https://cloud.google.com/vertex-ai/docs)
+- [Gemini API Documentation](https://ai.google.dev/docs)
+- [AppSheet API Documentation](https://support.google.com/appsheet/answer/10105768)
+- [FLOW.md](./FLOW.md) - 詳細フロー図
+- [README.md](./README.md) - ユーザーガイド
