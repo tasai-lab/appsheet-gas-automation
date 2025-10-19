@@ -193,61 +193,11 @@ function createMedicalInsuranceRecord(context, data) {
 // ============================================
 
 function createLtciInsuranceRecord(context, data) {
-  const nowJST = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd HH:mm:ss');
   const newId = `LTCI-${Utilities.getUuid().substring(0, 8)}`;
 
-  // Geminiが異なるスキーマで返す場合があるため、データを正規化
-  let insuredPersonNumber = data.insured_person_number;
-  let insurerName = data.insurer_name;
-  let insurerCode = data.insurer_code;
-  let careLevel = data.care_level;
-  let certStartDate = data.cert_start_date;
-  let certEndDate = data.cert_end_date;
-  let nextRenewalCheckDate = data.next_renewal_check_date;
-
-  // ネストされた被保険者情報の変換
-  if (!insuredPersonNumber && data.insured_person && data.insured_person.number) {
-    insuredPersonNumber = data.insured_person.number;
-  }
-
-  // ネストされた保険者情報の変換
-  if (!insurerName && data.insurer && data.insurer.name) {
-    insurerName = data.insurer.name;
-  }
-  if (!insurerCode && data.insurer && data.insurer.code) {
-    insurerCode = data.insurer.code;
-  }
-
-  // ネストされた認定情報の変換
-  if (!careLevel && data.certification && data.certification.care_level) {
-    careLevel = data.certification.care_level;
-  }
-  if (!certStartDate && data.certification && data.certification.start_date) {
-    certStartDate = data.certification.start_date;
-  }
-  if (!certEndDate && data.certification && data.certification.end_date) {
-    certEndDate = data.certification.end_date;
-  }
-
-  // 有効/無効判定
-  const todayJSTStr = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd');
-  const todayJST = new Date(todayJSTStr);
-  let isActive = null;
-
-  if (certStartDate && certEndDate) {
-    const startDate = new Date(certStartDate.replace(/\//g, '-'));
-    const endDate = new Date(certEndDate.replace(/\//g, '-'));
-
-    if (startDate <= todayJST && endDate >= todayJST) {
-      isActive = true;
-    } else {
-      isActive = false;
-    }
-  }
-
   // 終了日が設定されていない場合のデフォルト値
-  let finalCertEndDate = certEndDate;
-  if (certStartDate && !finalCertEndDate) {
+  let finalCertEndDate = data.cert_end_date;
+  if (data.cert_start_date && !finalCertEndDate) {
     finalCertEndDate = '2999/12/31';
   }
 
@@ -258,14 +208,14 @@ function createLtciInsuranceRecord(context, data) {
     status: '編集中',
     created_by: context.staffId,
     updated_by: context.staffId,
-    insured_person_number: insuredPersonNumber,
-    insurer_number: insurerCode,  // ← insurer_codeではなくinsurer_number
-    insurer_name: insurerName,
-    care_level: careLevel,
-    cert_start_date: certStartDate ? certStartDate.replace(/\//g, '-') : null,
-    cert_end_date: finalCertEndDate ? finalCertEndDate.replace(/\//g, '-') : null,
-    benefit_rate: null,  // ← 元のスクリプトにあるフィールド
-    next_renewal_check_date: nextRenewalCheckDate ? nextRenewalCheckDate.replace(/\//g, '-') : null
+    insured_person_number: data.insured_person_number,
+    insurer_number: data.insurer_number,
+    insurer_name: data.insurer_name,
+    care_level: data.care_level,
+    cert_start_date: data.cert_start_date,
+    cert_end_date: finalCertEndDate,
+    benefit_rate: data.benefit_rate,
+    next_renewal_check_date: data.next_renewal_check_date
   };
 
   callAppSheetApi(TABLE_NAMES.ltciInsurance, 'Add', [rowData]);
@@ -383,57 +333,18 @@ function createPublicSubsidyRecord(context, data) {
 function createBankAccountRecord(context, data) {
   const newId = `BACC-${Utilities.getUuid().substring(0, 8)}`;
 
-  // Geminiが異なるスキーマで返す場合があるため、データを正規化
-  let bankName = data.bank_name;
-  let bankCode = data.bank_code;
-  let branchName = data.branch_name;
-  let branchCode = data.branch_code;
-  let accountType = data.account_type;
-  let accountNumber = data.account_number;
-  let accountHolderName = data.account_holder_name;
-  let bankNameKana = data.bank_name_kana;
-  let accountHolderNameKana = data.account_holder_name_kana;
-  let billerNameKana = data.biller_name_kana;
-
-  // ネストされた銀行情報の変換
-  if (!bankName && data.bank && data.bank.name) {
-    bankName = data.bank.name;
-  }
-  if (!bankCode && data.bank && data.bank.code) {
-    bankCode = data.bank.code;
-  }
-
-  // ネストされた支店情報の変換
-  if (!branchName && data.branch && data.branch.name) {
-    branchName = data.branch.name;
-  }
-  if (!branchCode && data.branch && data.branch.code) {
-    branchCode = data.branch.code;
-  }
-
-  // ネストされた口座情報の変換
-  if (!accountType && data.account && data.account.type) {
-    accountType = data.account.type;
-  }
-  if (!accountNumber && data.account && data.account.number) {
-    accountNumber = data.account.number;
-  }
-  if (!accountHolderName && data.account && data.account.holder_name) {
-    accountHolderName = data.account.holder_name;
-  }
-
   // 半角カナ変換関数
   const toHalfWidthKana = (str) => str ? String(str).replace(/[\u30A1-\u30F6]/g, m => String.fromCharCode(m.charCodeAt(0) - 0x60)) : null;
 
-  bankNameKana = toHalfWidthKana(bankNameKana);
-  accountHolderNameKana = toHalfWidthKana(accountHolderNameKana);
-  billerNameKana = toHalfWidthKana(billerNameKana);
+  const bankNameKana = toHalfWidthKana(data.bank_name_kana);
+  const accountHolderNameKana = toHalfWidthKana(data.account_holder_name_kana);
+  const billerNameKana = toHalfWidthKana(data.biller_name_kana);
 
   // 口座番号の調整（ゆうちょ銀行などの特殊処理）
-  let adjustedAccountNumber = accountNumber ? String(accountNumber).trim() : null;
+  let adjustedAccountNumber = data.account_number ? String(data.account_number).trim() : null;
   if (adjustedAccountNumber && adjustedAccountNumber.length === 8) {
     const originalNumber = adjustedAccountNumber;
-    if (bankCode === '9900') {
+    if (data.bank_code === '9900') {
       // ゆうちょ銀行の場合
       if (adjustedAccountNumber.endsWith('1')) {
         adjustedAccountNumber = adjustedAccountNumber.substring(0, 7);
@@ -447,23 +358,31 @@ function createBankAccountRecord(context, data) {
   }
 
   // extractedInfoのその他のフィールドもすべて含める（元のスクリプトと同じ）
-  const extractedInfo = {
-    ...data,
-    bank_name_kana: bankNameKana,
-    account_holder_name_kana: accountHolderNameKana,
-    biller_name_kana: billerNameKana,
-    account_number: adjustedAccountNumber
-  };
+  var extractedInfo = {};
+  for (var key in data) {
+    if (data.hasOwnProperty(key)) {
+      extractedInfo[key] = data[key];
+    }
+  }
+  extractedInfo.bank_name_kana = bankNameKana;
+  extractedInfo.account_holder_name_kana = accountHolderNameKana;
+  extractedInfo.biller_name_kana = billerNameKana;
+  extractedInfo.account_number = adjustedAccountNumber;
 
-  const rowData = {
+  var rowData = {
     bank_account_id: newId,
     client_id: context.clientId,
     source_document_id: context.documentId,
     status: '編集中',
     created_by: context.staffId,
-    updated_by: context.staffId,
-    ...extractedInfo
+    updated_by: context.staffId
   };
+
+  for (var key in extractedInfo) {
+    if (extractedInfo.hasOwnProperty(key)) {
+      rowData[key] = extractedInfo[key];
+    }
+  }
 
   callAppSheetApi(TABLE_NAMES.bankAccount, 'Add', [rowData]);
   return newId;
@@ -474,66 +393,25 @@ function createBankAccountRecord(context, data) {
 // ============================================
 
 function createCopayCertRecord(context, data) {
-  const nowJST = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd HH:mm:ss');
   const newId = `COPAY-${Utilities.getUuid().substring(0, 8)}`;
 
-  // デバッグ: 抽出されたデータをログ出力
-  logStructured(LOG_LEVEL.INFO, '負担割合証: Geminiから抽出されたデータ', {
-    data: JSON.stringify(data)
-  });
-
-  // Geminiが異なるスキーマで返す場合があるため、データを正規化
-  let insuredPersonNumber = data.insured_person_number;
-  let copaymentRate = data.copayment_rate;
-  let startDate = data.copay_cert_start_date;
-  let endDate = data.copay_cert_end_date;
-
-  // ネストされた構造の場合の変換
-  if (!insuredPersonNumber && data.insured_person && data.insured_person.number) {
-    insuredPersonNumber = data.insured_person.number;
-  }
-
-  if (!copaymentRate && data.copayment_rates && Array.isArray(data.copayment_rates) && data.copayment_rates.length > 0) {
-    const latestRate = data.copayment_rates[0];
-    copaymentRate = latestRate.rate;
-    startDate = latestRate.start_date;
-    endDate = latestRate.end_date;
-  }
-
-  // 有効/無効判定
-  const todayJSTStr = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd');
-  const todayJST = new Date(todayJSTStr);
-  let isActive = null;
-
-  if (startDate && endDate) {
-    const startDateObj = new Date(startDate.replace(/\//g, '-'));
-    const endDateObj = new Date(endDate.replace(/\//g, '-'));
-
-    if (startDateObj <= todayJST && endDateObj >= todayJST) {
-      isActive = true;
-    } else {
-      isActive = false;
-    }
-  }
-
-  // 終了日が設定されていない場合のデフォルト値
-  let effectiveEndDate = endDate;
-  if (startDate && !effectiveEndDate) {
+  let effectiveEndDate = data.effective_end_date;
+  if (data.effective_start_date && !effectiveEndDate) {
     effectiveEndDate = '2999/12/31';
   }
 
   const rowData = {
     copay_cert_id: newId,
     client_id: context.clientId,
-    source_document_id: context.documentId,  // ← document_idではなくsource_document_id
-    status: '編集中',                         // ← 必須フィールド
+    source_document_id: context.documentId,
+    status: '編集中',
     created_by: context.staffId,
-    updated_by: context.staffId,              // ← 必須フィールド
-    copayment_rate: copaymentRate,
-    benefit_rate: copaymentRate ? 100 - copaymentRate : null,  // 給付割合 = 100 - 負担割合
-    effective_start_date: startDate ? startDate.replace(/\//g, '-') : null,
-    effective_end_date: effectiveEndDate ? effectiveEndDate.replace(/\//g, '-') : null,
-    issue_date: data.issuance_date ? data.issuance_date.replace(/\//g, '-') : null  // 発行日
+    updated_by: context.staffId,
+    copayment_rate: data.copayment_rate,
+    benefit_rate: data.benefit_rate,
+    effective_start_date: data.effective_start_date,
+    effective_end_date: effectiveEndDate,
+    issue_date: data.issue_date
   };
 
   callAppSheetApi(TABLE_NAMES.copaymentCert, 'Add', [rowData]);
@@ -577,41 +455,17 @@ function getPrefectureCode(address) {
 function createInstructionRecord(context, data) {
   const newId = `ODR-${Utilities.getUuid().substring(0, 8)}`;
 
-  // Geminiが異なるスキーマで返す場合があるため、データを正規化
-  let instructionType = data.instructionType || data.instruction_type;
-  let instructionStartDate = data.instructionStartDate || data.instruction_period_start || data.start_date;
-  let instructionEndDate = data.instructionEndDate || data.instruction_period_end || data.end_date;
-  let dripInfusionStartDate = data.dripInfusionStartDate || data.iv_drip_start_date;
-  let dripInfusionEndDate = data.dripInfusionEndDate || data.iv_drip_end_date;
-  let issueDate = data.issueDate || data.issue_date;
-  let clinicAddress = data.clinicAddress || data.clinic_address;
-  let specifiedDiseaseNoticeCode = data.specifiedDiseaseNoticeCode || data.notified_disease_category;
-  let specifiedDiseaseCodes = data.specifiedDiseaseCodes || data.notified_disease_codes;
-  let diseaseMedicalCode1 = data.diseaseMedicalCode1 || data.disease_1_code;
-  let diseaseMedicalCode2 = data.diseaseMedicalCode2 || data.disease_2_code;
-  let diseaseMedicalCode3 = data.diseaseMedicalCode3 || data.disease_3_code;
-  let diseaseNameList = data.diseaseNameList || data.disease_names;
+  const prefectureCode = getPrefectureCode(data.clinicAddress);
 
-  // ネストされた構造の変換
-  if (!instructionStartDate && data.instruction_period && data.instruction_period.start_date) {
-    instructionStartDate = data.instruction_period.start_date;
-  }
-  if (!instructionEndDate && data.instruction_period && data.instruction_period.end_date) {
-    instructionEndDate = data.instruction_period.end_date;
-  }
-
-  // 終了日のデフォルト値設定
-  if (instructionStartDate && !instructionEndDate) {
+  let instructionEndDate = data.instructionEndDate;
+  if (data.instructionStartDate && !instructionEndDate) {
     instructionEndDate = '2999/12/31';
   }
 
-  let dripEndDate = dripInfusionEndDate;
-  if (dripInfusionStartDate && !dripEndDate) {
+  let dripEndDate = data.dripInfusionEndDate;
+  if (data.dripInfusionStartDate && !dripEndDate) {
     dripEndDate = '2999/12/31';
   }
-
-  // 都道府県コードを取得
-  const prefectureCode = getPrefectureCode(clinicAddress);
 
   const rowData = {
     instruction_id: newId,
@@ -620,29 +474,26 @@ function createInstructionRecord(context, data) {
     status: '適用前（編集中）',
     created_by: context.staffId,
     updated_by: context.staffId,
-    instruction_type: instructionType,
-    start_date: instructionStartDate ? instructionStartDate.replace(/\//g, '-') : null,
-    end_date: instructionEndDate ? instructionEndDate.replace(/\//g, '-') : null,
-    iv_drip_start_date: dripInfusionStartDate ? dripInfusionStartDate.replace(/\//g, '-') : null,
-    iv_drip_end_date: dripEndDate ? dripEndDate.replace(/\//g, '-') : null,
-    issue_date: issueDate ? issueDate.replace(/\//g, '-') : null,
+    instruction_type: data.instructionType,
+    start_date: data.instructionStartDate,
+    end_date: instructionEndDate,
+    iv_drip_start_date: data.dripInfusionStartDate,
+    iv_drip_end_date: dripEndDate,
+    issue_date: data.issueDate,
     clinic_prefecture_code: prefectureCode
   };
 
-  // 指示書タイプが '02'（精神科訪問看護）または '04'（衛生材料等提供）以外の場合、疾病関連フィールドを追加
+  const instructionType = data.instructionType;
   if (instructionType !== '02' && instructionType !== '04') {
-    rowData.notified_disease_category = specifiedDiseaseNoticeCode;
-    rowData.notified_disease_codes = Array.isArray(specifiedDiseaseCodes) ? specifiedDiseaseCodes.join(', ') : specifiedDiseaseCodes;
-    rowData.disease_1_code = diseaseMedicalCode1;
-    rowData.disease_2_code = diseaseMedicalCode2;
-    rowData.disease_3_code = diseaseMedicalCode3;
+    rowData.notified_disease_category = data.specifiedDiseaseNoticeCode;
+    rowData.notified_disease_codes = (data.specifiedDiseaseCodes || []).join(', ');
+    rowData.disease_1_code = data.diseaseMedicalCode1;
+    rowData.disease_2_code = data.diseaseMedicalCode2;
+    rowData.disease_3_code = data.diseaseMedicalCode3;
 
-    // 疾病コードがない場合のみ疾病名を設定
-    if (Array.isArray(diseaseNameList)) {
-      rowData.disease_1_unlisted_name = diseaseMedicalCode1 ? null : (diseaseNameList.length > 0 ? diseaseNameList[0] : null);
-      rowData.disease_2_unlisted_name = diseaseMedicalCode2 ? null : (diseaseNameList.length > 1 ? diseaseNameList[1] : null);
-      rowData.disease_3_unlisted_name = diseaseMedicalCode3 ? null : (diseaseNameList.length > 2 ? diseaseNameList[2] : null);
-    }
+    rowData.disease_1_unlisted_name = data.diseaseMedicalCode1 ? null : (data.diseaseNameList && data.diseaseNameList.length > 0 ? data.diseaseNameList[0] : null);
+    rowData.disease_2_unlisted_name = data.diseaseMedicalCode2 ? null : (data.diseaseNameList && data.diseaseNameList.length > 1 ? data.diseaseNameList[1] : null);
+    rowData.disease_3_unlisted_name = data.diseaseMedicalCode3 ? null : (data.diseaseNameList && data.diseaseNameList.length > 2 ? data.diseaseNameList[2] : null);
   }
 
   callAppSheetApi(TABLE_NAMES.instruction, 'Add', [rowData]);

@@ -18,49 +18,62 @@ const CommonWebhook = {
   handleDoPost: function(e, processFunction) {
     const startTime = new Date();
     let params = null;
+    let recordId = null;
 
     try {
       // リクエストパラメータをパース
       params = this.parseRequest(e);
 
-      // 重複チェック（オプション）
-      if (params.enableDuplicationCheck !== false) {
-        const requestId = DuplicationPrevention.generateRequestId(params);
-        if (!DuplicationPrevention.checkDuplicate(requestId)) {
+      // レコードIDを取得
+      recordId = params.data?.keyValue || params.config?.keyValue || params.recordId || 'UNKNOWN';
+
+      // 重複チェック（スクリプトプロパティのENABLE_DUPLICATION_PREVENTIONで制御）
+      const scriptName = params.scriptName || 'Unknown Script';
+      const dupPrevention = new DuplicationPrevention(scriptName);
+
+      if (dupPrevention.isEnabled()) {
+        // 重複チェックが有効
+        if (dupPrevention.isAlreadyProcessed(recordId)) {
+          Logger.log(`[重複検出] レコードID: ${recordId} は既に処理済みです`);
           return this.createDuplicateResponse(params);
         }
+
+        // 処理開始をマーク
+        if (!dupPrevention.markAsProcessing(recordId)) {
+          Logger.log(`[重複検出] レコードID: ${recordId} は現在処理中です`);
+          return this.createDuplicateResponse(params);
+        }
+      } else {
+        Logger.log('[重複回避] 無効化されています - 重複チェックをスキップ');
       }
 
       // メイン処理を実行
       const result = processFunction(params);
 
+      // 処理完了をマーク
+      if (dupPrevention.isEnabled()) {
+        dupPrevention.markAsCompleted(recordId, true);
+      }
+
       // 成功ログ記録
       const executionTime = (new Date() - startTime) / 1000;
-      if (typeof ExecutionLogger !== 'undefined') {
-        ExecutionLogger.success(
-          params.scriptName || 'Unknown Script',
-          params.processId || '',
-          '処理完了',
-          executionTime,
-          params
-        );
-      }
+      Logger.log(`[処理完了] レコードID: ${recordId}, 実行時間: ${executionTime}秒`);
 
       return this.createSuccessResponse(result);
 
     } catch (error) {
+      // エラー時も処理完了をマーク（エラー状態として）
+      if (recordId) {
+        const scriptName = params?.scriptName || 'Unknown Script';
+        const dupPrevention = new DuplicationPrevention(scriptName);
+        if (dupPrevention.isEnabled()) {
+          dupPrevention.markAsCompleted(recordId, false);
+        }
+      }
+
       // エラーログ記録
       const executionTime = (new Date() - startTime) / 1000;
-      if (typeof ExecutionLogger !== 'undefined') {
-        ExecutionLogger.error(
-          params?.scriptName || 'Unknown Script',
-          params?.processId || '',
-          error.message,
-          error,
-          executionTime,
-          params
-        );
-      }
+      Logger.log(`[処理エラー] レコードID: ${recordId}, エラー: ${error.message}`);
 
       return this.createErrorResponse(error, params);
     }

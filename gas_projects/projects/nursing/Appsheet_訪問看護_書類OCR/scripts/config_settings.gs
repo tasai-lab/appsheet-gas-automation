@@ -83,19 +83,13 @@ function getApiCallCount() {
 
 /**
  * GCP設定を取得（Script Propertiesから）
- * @returns {Object} GCP設定オブジェクト
+ *
+ * ⚠️ この関数は script_properties_manager.gs に統一されました
+ * このファイルの関数は削除され、script_properties_manager.gs のバージョンを使用します
+ *
+ * @deprecated script_properties_manager.gs の getGCPConfig() を使用してください
  */
-function getGCPConfig() {
-  const props = PropertiesService.getScriptProperties();
-
-  return {
-    projectId: props.getProperty('GCP_PROJECT_ID') || '',
-    location: props.getProperty('GCP_LOCATION') || 'us-central1',
-    vertexAIModel: props.getProperty('VERTEX_AI_MODEL') || 'gemini-2.5-pro',
-    temperature: parseFloat(props.getProperty('VERTEX_AI_TEMPERATURE') || '0.1'),
-    maxOutputTokens: parseInt(props.getProperty('VERTEX_AI_MAX_OUTPUT_TOKENS') || '20000')
-  };
-}
+// function getGCPConfig() { ... } - script_properties_manager.gs に移動
 
 /**
  * Vertex AI APIエンドポイントURLを取得
@@ -106,7 +100,8 @@ function getVertexAIEndpoint() {
   if (!config.projectId) {
     throw new Error('GCP_PROJECT_IDが設定されていません。Script Propertiesで設定してください。');
   }
-  return `https://${config.location}-aiplatform.googleapis.com/v1/projects/${config.projectId}/locations/${config.location}/publishers/google/models/${config.vertexAIModel}:generateContent`;
+  // config.model を使用（script_properties_manager.gs のプロパティ名に統一）
+  return `https://${config.location}-aiplatform.googleapis.com/v1/projects/${config.projectId}/locations/${config.location}/publishers/google/models/${config.model}:generateContent`;
 }
 
 /**

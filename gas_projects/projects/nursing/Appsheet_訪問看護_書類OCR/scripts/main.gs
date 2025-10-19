@@ -24,7 +24,7 @@ function doPost(e) {
  * @returns {Object} - 処理結果
  */
 function processRequest(params) {
-  const startTime = Date.now();
+  const timer = new ExecutionTimer();
 
   // パラメータ抽出
   const config = params.config;
@@ -33,7 +33,6 @@ function processRequest(params) {
   if (!config || !data) {
     const errorMessage = "WebhookのBodyの形式が不正です。'config'と'data'オブジェクトが必要です。";
     logStructured(LOG_LEVEL.ERROR, errorMessage);
-    sendErrorEmail("Unknown", errorMessage);
     throw new Error(errorMessage);
   }
 
@@ -52,16 +51,16 @@ function processRequest(params) {
     const errorMessage = `必須パラメータ（keyValue, fileId）がWebhookの'data'オブジェクトに含まれていません。`;
     logStructured(LOG_LEVEL.ERROR, errorMessage);
     updateDocumentOnError(config, rowKey || "Unknown", errorMessage);
-    sendErrorEmail(rowKey || "Unknown", errorMessage);
     throw new Error(errorMessage);
   }
 
   // メイン処理
   try {
-    logProcessingStart(rowKey, {
-      documentType: documentType,
+    // 処理開始をログ記録
+    logStartExec(rowKey, {
       fileId: fileId,
-      clientId: clientId
+      documentType: documentType,
+      fileName: data.file_name || ''
     });
 
     // 1. Gemini APIでOCR + 構造化データ抽出（★1回の呼び出しで完結）
@@ -126,28 +125,46 @@ function processRequest(params) {
       });
     }
 
+    // API使用量情報を取得
+    const usageMetadata = resultData.usageMetadata || null;
+
     // 処理完了
-    const duration = Date.now() - startTime;
-    logProcessingComplete(rowKey, duration);
+    const fileSize = usageMetadata && usageMetadata.fileSize ? usageMetadata.fileSize : '';
+
+    // 成功ログを記録
+    logSuccessExec(rowKey, {
+      fileId: fileId,
+      documentType: documentType,
+      fileName: resultData.title || '',
+      summary: (resultData.summary || '').substring(0, 200),
+      processingTime: timer.getElapsedSeconds(),
+      modelName: usageMetadata ? usageMetadata.model : '',
+      fileSize: fileSize,
+      inputTokens: usageMetadata ? usageMetadata.inputTokens : '',
+      outputTokens: usageMetadata ? usageMetadata.outputTokens : '',
+      inputCost: usageMetadata ? usageMetadata.inputCostJPY.toFixed(2) : '',
+      outputCost: usageMetadata ? usageMetadata.outputCostJPY.toFixed(2) : '',
+      totalCost: usageMetadata ? usageMetadata.totalCostJPY.toFixed(2) : '',
+      notes: recordId ? `書類仕分け完了 (Record ID: ${recordId})` : '書類仕分けスキップ'
+    });
 
     return {
       success: true,
       documentId: rowKey,
-      recordId: recordId
+      recordId: recordId,
+      usageMetadata: usageMetadata
     };
 
   } catch (error) {
-    logError(rowKey, error, {
+    // エラーログを記録
+    logFailureExec(rowKey, error, {
       documentType: documentType,
-      fileId: fileId
+      fileId: fileId,
+      processingTime: timer.getElapsedSeconds()
     });
 
     // エラー時の処理
     updateDocumentOnError(config, rowKey, error.toString());
-    sendErrorEmail(rowKey, error.stack, {
-      documentType: documentType,
-      fileId: fileId
-    });
 
     throw error;
   }
@@ -157,17 +174,16 @@ function processRequest(params) {
  * 成功時に書類管理テーブルを更新
  */
 function updateDocumentOnSuccess(config, keyValue, resultData, fileId) {
-  const fileUrl = `https://drive.google.com/file/d/${fileId}/view`;
+  const fileUrl = 'https://drive.google.com/file/d/' + fileId + '/view';
 
-  const rowData = {
-    [config.keyColumn]: keyValue,
-    [config.titleColumn]: resultData.title,
-    [config.summaryColumn]: resultData.summary,
-    [config.ocrColumn]: resultData.ocr_text,
-    [config.statusColumn]: "完了",
-    "file_id": fileId,
-    "file_url": fileUrl
-  };
+  var rowData = {};
+  rowData[config.keyColumn] = keyValue;
+  rowData[config.titleColumn] = resultData.title;
+  rowData[config.summaryColumn] = resultData.summary;
+  rowData[config.ocrColumn] = resultData.ocr_text;
+  rowData[config.statusColumn] = "完了";
+  rowData["file_id"] = fileId;
+  rowData["file_url"] = fileUrl;
 
   const payload = {
     Action: "Edit",
@@ -175,7 +191,9 @@ function updateDocumentOnSuccess(config, keyValue, resultData, fileId) {
     Rows: [rowData]
   };
 
-  callDocumentTableApi(config.tableName, payload);
+  // テストレコードの場合、404エラーを許可（レコードが存在しない可能性がある）
+  const isTestRecord = keyValue && keyValue.toString().indexOf('TEST_') === 0;
+  callDocumentTableApi(config.tableName, payload, isTestRecord);
 }
 
 /**
@@ -188,11 +206,10 @@ function updateDocumentOnError(config, keyValue, errorMessage) {
     return;
   }
 
-  const rowData = {
-    [config.keyColumn]: keyValue,
-    [config.statusColumn]: "エラー",
-    "error_details": `GAS Script Error: ${errorMessage}`
-  };
+  var rowData = {};
+  rowData[config.keyColumn] = keyValue;
+  rowData[config.statusColumn] = "エラー";
+  rowData["error_details"] = 'GAS Script Error: ' + errorMessage;
 
   const payload = {
     Action: "Edit",
@@ -200,16 +217,25 @@ function updateDocumentOnError(config, keyValue, errorMessage) {
     Rows: [rowData]
   };
 
-  callDocumentTableApi(config.tableName, payload);
+  // テストレコードの場合、404エラーを許可（レコードが存在しない可能性がある）
+  const isTestRecord = keyValue && keyValue.toString().indexOf('TEST_') === 0;
+  callDocumentTableApi(config.tableName, payload, isTestRecord);
 }
 
 /**
  * 書類管理テーブル用のAPI呼び出し
+ * @param {string} tableName - テーブル名
+ * @param {Object} payload - リクエストペイロード
+ * @param {boolean} allowNotFound - 404エラーを許可するか（デフォルト: false）
  */
-function callDocumentTableApi(tableName, payload) {
+function callDocumentTableApi(tableName, payload, allowNotFound) {
+  if (allowNotFound === undefined) {
+    allowNotFound = false;
+  }
+
   const perfStop = perfStart('AppSheet_Documents');
 
-  const apiUrl = `https://api.appsheet.com/api/v2/apps/${APPSHEET_CONFIG.appId}/tables/${encodeURIComponent(tableName)}/Action`;
+  const apiUrl = 'https://api.appsheet.com/api/v2/apps/' + APPSHEET_CONFIG.appId + '/tables/' + encodeURIComponent(tableName) + '/Action';
 
   const options = {
     method: 'post',
@@ -225,8 +251,17 @@ function callDocumentTableApi(tableName, payload) {
   const duration = perfStop();
   logApiCall('AppSheet_Documents', apiUrl, responseCode, duration);
 
+  // 404エラーを許可する場合（テストモードなど）
+  if (responseCode === 404 && allowNotFound) {
+    logStructured(LOG_LEVEL.WARN, 'レコードが見つかりません（404）。新規作成が必要です。', {
+      tableName: tableName,
+      action: payload.Action
+    });
+    return; // エラーをスローせずに戻る
+  }
+
   if (responseCode >= 400) {
-    const errorMsg = `AppSheet API Error: ${responseCode} - ${response.getContentText()}`;
+    const errorMsg = 'AppSheet API Error: ' + responseCode + ' - ' + response.getContentText();
     logStructured(LOG_LEVEL.ERROR, errorMsg);
     throw new Error(errorMsg);
   }

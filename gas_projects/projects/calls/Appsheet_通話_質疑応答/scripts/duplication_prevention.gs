@@ -1,9 +1,9 @@
 /**
  * 重複実行防止モジュール
  * Webhook受信時の重複実行を防止するための共通モジュール
- * 
- * @version 1.0.0
- * @date 2025-10-16
+ *
+ * @version 2.0.0
+ * @date 2025-10-20
  */
 
 /**
@@ -12,20 +12,31 @@
 const DUPLICATION_PREVENTION_CONFIG = {
   // タイムアウト時間（ミリ秒）
   lockTimeout: 300000, // 5分
-  
+
   // リトライ設定
   maxRetries: 3,
   retryDelay: 1000, // 1秒
-  
+
   // クリーンアップ設定
   cleanupAfterHours: 24 // 24時間後に処理済みレコードを削除
 };
 
 /**
+ * 重複回避機能が有効かを確認
+ * script_properties_manager.gs の関数を使用
+ * @return {boolean} 有効ならtrue、無効ならfalse
+ */
+function isDuplicationPreventionEnabled() {
+  const value = PropertiesService.getScriptProperties().getProperty('ENABLE_DUPLICATION_PREVENTION');
+  // デフォルトは有効（明示的にfalseが設定されている場合のみ無効）
+  return value !== 'false';
+}
+
+/**
  * 重複実行防止クラス
  */
 class DuplicationPrevention {
-  
+
   /**
    * コンストラクタ
    * @param {string} scriptName - スクリプト名（ユニークなキーとして使用）
@@ -35,6 +46,15 @@ class DuplicationPrevention {
     this.lockService = LockService.getScriptLock();
     this.cacheService = CacheService.getScriptCache();
     this.propertyService = PropertiesService.getScriptProperties();
+    this.enabled = isDuplicationPreventionEnabled();
+  }
+
+  /**
+   * 重複回避機能が有効かを確認
+   * @return {boolean} 有効ならtrue
+   */
+  isEnabled() {
+    return this.enabled;
   }
 
   /**
@@ -43,15 +63,20 @@ class DuplicationPrevention {
    * @return {boolean} true: 既に処理済み, false: 未処理
    */
   isAlreadyProcessed(recordId) {
+    // 重複回避が無効な場合は常にfalseを返す（重複チェックをスキップ）
+    if (!this.enabled) {
+      return false;
+    }
+
     const cacheKey = this._getCacheKey(recordId);
     const propertyKey = this._getPropertyKey(recordId);
-    
+
     // まずキャッシュをチェック（高速）
     const cachedValue = this.cacheService.get(cacheKey);
     if (cachedValue === 'processed') {
       return true;
     }
-    
+
     // 次にPropertiesをチェック（永続化）
     const propertyValue = this.propertyService.getProperty(propertyKey);
     if (propertyValue) {
@@ -59,7 +84,7 @@ class DuplicationPrevention {
       this.cacheService.put(cacheKey, 'processed', 21600); // 6時間
       return true;
     }
-    
+
     return false;
   }
 
@@ -70,38 +95,43 @@ class DuplicationPrevention {
    * @return {boolean} true: ロック取得成功, false: 失敗（他の処理が実行中）
    */
   markAsProcessing(recordId, timeout = DUPLICATION_PREVENTION_CONFIG.lockTimeout) {
+    // 重複回避が無効な場合は常にtrueを返す（処理を許可）
+    if (!this.enabled) {
+      return true;
+    }
+
     const cacheKey = this._getCacheKey(recordId);
     const lockKey = `lock_${cacheKey}`;
-    
+
     // 既に処理済みの場合は false を返す
     if (this.isAlreadyProcessed(recordId)) {
       return false;
     }
-    
+
     try {
       // グローバルロックを取得（短時間）
       if (!this.lockService.tryLock(5000)) {
         console.warn(`ロック取得に失敗: ${recordId}`);
         return false;
       }
-      
+
       try {
         // ロック状態をチェック
         const lockValue = this.cacheService.get(lockKey);
         if (lockValue === 'locked') {
           return false; // 他の処理が実行中
         }
-        
+
         // ロックを設定
         this.cacheService.put(lockKey, 'locked', timeout / 1000);
         this.cacheService.put(cacheKey, 'processing', timeout / 1000);
-        
+
         return true;
-        
+
       } finally {
         this.lockService.releaseLock();
       }
-      
+
     } catch (e) {
       console.error(`処理開始記録エラー: ${e.toString()}`);
       return false;
@@ -114,17 +144,22 @@ class DuplicationPrevention {
    * @param {boolean} success - 成功したかどうか
    */
   markAsCompleted(recordId, success = true) {
+    // 重複回避が無効な場合は何もしない
+    if (!this.enabled) {
+      return;
+    }
+
     const cacheKey = this._getCacheKey(recordId);
     const propertyKey = this._getPropertyKey(recordId);
     const lockKey = `lock_${cacheKey}`;
-    
+
     try {
       const timestamp = new Date().toISOString();
       const status = success ? 'processed' : 'error';
-      
+
       // キャッシュに記録（6時間）
       this.cacheService.put(cacheKey, status, 21600);
-      
+
       // Propertiesに永続化（タイムスタンプ付き）
       const propertyValue = JSON.stringify({
         status: status,
@@ -132,10 +167,10 @@ class DuplicationPrevention {
         scriptName: this.scriptName
       });
       this.propertyService.setProperty(propertyKey, propertyValue);
-      
+
       // ロックを解除
       this.cacheService.remove(lockKey);
-      
+
     } catch (e) {
       console.error(`処理完了記録エラー: ${e.toString()}`);
     }

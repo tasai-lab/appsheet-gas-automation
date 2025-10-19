@@ -169,9 +169,11 @@ function parseGeminiResponse(responseText) {
 
 /**
  * APIレスポンスからusageMetadataを抽出（日本円計算）
- * Vertex AI Gemini 2.5 Flashの価格設定に基づいて料金を計算
+ * モデル名と入力タイプに応じて動的に料金を計算
  *
  * @param {Object} jsonResponse - Vertex AIのAPIレスポンス
+ * @param {string} modelName - 使用したモデル名（デフォルト: CONFIG.GEMINI.MODEL_NAME）
+ * @param {string} inputType - 入力タイプ ('audio' | 'text')
  * @return {Object|null} usageMetadata情報
  * @return {string} return.model - モデル名
  * @return {number} return.inputTokens - 入力トークン数
@@ -180,22 +182,24 @@ function parseGeminiResponse(responseText) {
  * @return {number} return.outputCostJPY - 出力コスト（円）
  * @return {number} return.totalCostJPY - 合計コスト（円）
  */
-function extractUsageMetadata(jsonResponse) {
+function extractUsageMetadata(jsonResponse, modelName = null, inputType = 'text') {
   if (!jsonResponse.usageMetadata) {
     return null;
+  }
+
+  // モデル名が指定されていない場合はCONFIGから取得
+  if (!modelName) {
+    modelName = CONFIG.GEMINI.MODEL_NAME || 'gemini-2.5-flash';
   }
 
   const usage = jsonResponse.usageMetadata;
   const inputTokens = usage.promptTokenCount || 0;
   const outputTokens = usage.candidatesTokenCount || 0;
 
-  // Vertex AI Gemini 2.5 Flash価格（USD/100万トークン）
-  // 出典: https://cloud.google.com/vertex-ai/generative-ai/pricing
-  const inputPer1M = 0.075;    // $0.075/1M tokens (≤128K)
-  const outputPer1M = 0.30;    // $0.30/1M tokens (テキスト出力)
-
-  const inputCostUSD = (inputTokens / 1000000) * inputPer1M;
-  const outputCostUSD = (outputTokens / 1000000) * outputPer1M;
+  // モデル名と入力タイプに応じた価格を取得
+  const pricing = getVertexAIPricing(modelName, inputType);
+  const inputCostUSD = (inputTokens / 1000000) * pricing.inputPer1M;
+  const outputCostUSD = (outputTokens / 1000000) * pricing.outputPer1M;
   const totalCostUSD = inputCostUSD + outputCostUSD;
 
   // 日本円に換算
@@ -204,11 +208,74 @@ function extractUsageMetadata(jsonResponse) {
   const totalCostJPY = totalCostUSD * EXCHANGE_RATE_USD_TO_JPY;
 
   return {
-    model: 'vertex-ai-gemini-2.5-flash',
+    model: modelName,
     inputTokens: inputTokens,
     outputTokens: outputTokens,
     inputCostJPY: inputCostJPY,
     outputCostJPY: outputCostJPY,
     totalCostJPY: totalCostJPY
   };
+}
+
+/**
+ * モデル名を正規化（バージョン番号やプレフィックスを削除）
+ * @param {string} modelName - モデル名
+ * @return {string} 正規化されたモデル名
+ */
+function normalizeModelName(modelName) {
+  // 'gemini-2.5-flash-001' → 'gemini-2.5-flash'
+  // 'publishers/google/models/gemini-2.5-flash' → 'gemini-2.5-flash'
+  const match = modelName.match(/(gemini-[\d.]+-(?:flash|pro|flash-lite))/i);
+  return match ? match[1].toLowerCase() : modelName.toLowerCase();
+}
+
+/**
+ * Vertex AIモデルの価格情報を取得（モデル名と入力タイプに応じて動的に決定）
+ * @param {string} modelName - モデル名
+ * @param {string} inputType - 入力タイプ ('audio' | 'text')
+ * @return {Object} {inputPer1M, outputPer1M}
+ */
+function getVertexAIPricing(modelName, inputType = 'text') {
+  // 2025年1月時点のVertex AI価格（USD/100万トークン）
+  // 実際の価格はGCPドキュメントを参照: https://cloud.google.com/vertex-ai/generative-ai/pricing
+  const pricingTable = {
+    'gemini-2.5-flash': {
+      text: { inputPer1M: 0.075, outputPer1M: 0.30 },
+      audio: { inputPer1M: 1.00, outputPer1M: 2.50 }  // 音声入力（GA版）
+    },
+    'gemini-2.5-flash-lite': {
+      text: { inputPer1M: 0.0188, outputPer1M: 0.075 },
+      audio: { inputPer1M: 0.0188, outputPer1M: 0.075 }
+    },
+    'gemini-2.5-pro': {
+      text: { inputPer1M: 1.25, outputPer1M: 10.00 },
+      audio: { inputPer1M: 1.25, outputPer1M: 10.00 }  // 音声入力
+    },
+    'gemini-1.5-flash': {
+      text: { inputPer1M: 0.075, outputPer1M: 0.30 },
+      audio: { inputPer1M: 0.075, outputPer1M: 0.30 }
+    },
+    'gemini-1.5-pro': {
+      text: { inputPer1M: 1.25, outputPer1M: 5.00 },
+      audio: { inputPer1M: 1.25, outputPer1M: 5.00 }
+    }
+  };
+
+  // モデル名を正規化
+  const normalizedModelName = normalizeModelName(modelName);
+
+  // モデルが見つからない場合はデフォルト価格を使用
+  if (!pricingTable[normalizedModelName]) {
+    Logger.log(`[価格取得] ⚠️ 未知のモデル: ${modelName}, デフォルト価格（gemini-2.5-flash）を使用`);
+    return pricingTable['gemini-2.5-flash'][inputType] || pricingTable['gemini-2.5-flash']['text'];
+  }
+
+  // 入力タイプが見つからない場合はテキスト価格を使用
+  if (!pricingTable[normalizedModelName][inputType]) {
+    Logger.log(`[価格取得] ⚠️ 未知の入力タイプ: ${inputType}, テキスト価格を使用`);
+    return pricingTable[normalizedModelName]['text'];
+  }
+
+  Logger.log(`[価格取得] モデル: ${normalizedModelName}, 入力タイプ: ${inputType}, Input: $${pricingTable[normalizedModelName][inputType].inputPer1M}/1M, Output: $${pricingTable[normalizedModelName][inputType].outputPer1M}/1M`);
+  return pricingTable[normalizedModelName][inputType];
 }

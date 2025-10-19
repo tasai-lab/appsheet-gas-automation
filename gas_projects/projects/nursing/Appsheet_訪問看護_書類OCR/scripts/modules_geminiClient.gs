@@ -123,6 +123,17 @@ function analyzeDocumentWithVertexAI(fileId, documentType, customInstructions, c
   let content = candidate.content.parts[0].text;
   const resultData = extractJSONFromText(content);
 
+  // usageMetadataを抽出して追加（料金計算）
+  const usageMetadata = extractVertexAIUsageMetadata(jsonResponse, gcpConfig.model, 'text');
+  if (usageMetadata) {
+    resultData.usageMetadata = usageMetadata;
+    logStructured(LOG_LEVEL.INFO, 'API使用量', {
+      inputTokens: usageMetadata.inputTokens,
+      outputTokens: usageMetadata.outputTokens,
+      totalCostJPY: `¥${usageMetadata.totalCostJPY.toFixed(2)}`
+    });
+  }
+
   logStructured(LOG_LEVEL.INFO, '解析完了 (Vertex AI)', {
     documentType: documentType,
     hasStructuredData: !!resultData.structured_data
@@ -287,20 +298,21 @@ ${clientBirthDate ? `**利用者生年月日**: ${clientBirthDate}（年齢計�
     '介護保険証': `
 # 介護保険証の構造化データ抽出ルール
 
-**被保険者番号 (insured_person_number)** - ★最重要項目★:
-- 介護保険証の最も重要な識別情報です
-- 通常10桁の数字で表示されます（例: 1234567890）
-- 「被保険者番号」というラベルの近くに記載されています
-- OCR認識が困難な場合でも、数字の並びを注意深く読み取ってください
-- 複数行に分かれている場合は連結してください
-- ハイフンやスペースは除去して数字のみを抽出してください
+**要介護状態区分 (care_level)**: テキストから要介護度を読み取り、以下の対応表に基づいて**2桁のコード**を返してください。
+- "非該当" → "01"
+- "要支援１" → "12"
+- "要支援２" → "13"
+- "要介護１" → "21"
+- "要介護２" → "22"
+- "要介護３" → "23"
+- "要介護４" → "24"
+- "要介護５" → "25"
 
-**要介護状態区分 (care_level)**: 以下のコードに変換
-- "非該当" → "01", "要支援１" → "12", "要支援２" → "13"
-- "要介護１" → "21", "要介護２" → "22", "要介護３" → "23"
-- "要介護４" → "24", "要介護５" → "25"
+**給付率 (benefit_rate)**: 「9割」であれば 90、「8割」であれば 80 のように、**整数**で返してください。
 
-**次回更新確認日 (next_renewal_check_date)**: 認定有効期間（終了）の1ヶ月前
+**次回更新確認日 (next_renewal_check_date)**: 「認定有効期間（終了）」の日付を読み取り、その**1ヶ月前の日付**を計算して「yyyy/mm/dd」形式で返してください。
+
+**日付**: 全て西暦の「yyyy/mm/dd」形式に変換してください。和暦は正しく西暦に変換してください。
 
 # 出力形式
 
@@ -309,13 +321,14 @@ ${clientBirthDate ? `**利用者生年月日**: ${clientBirthDate}（年齢計�
   "summary": "（200文字程度の要約）",
   "title": "（推奨ファイル名）",
   "structured_data": {
-    "insured_person_number": "string or null (10桁程度の数字、ハイフン・スペース除去)",
+    "insured_person_number": "string or null",
+    "insurer_number": "string or null",
     "insurer_name": "string or null",
-    "insurer_code": "string or null",
-    "care_level": "01 or 12 or 13 or 21-25 or null",
-    "cert_start_date": "yyyy/mm/dd or null",
-    "cert_end_date": "yyyy/mm/dd or null",
-    "next_renewal_check_date": "yyyy/mm/dd or null (cert_end_dateの1ヶ月前)"
+    "care_level": "string ('12', '21'など) or null",
+    "cert_start_date": "string (yyyy/mm/dd) or null",
+    "cert_end_date": "string (yyyy/mm/dd) or null",
+    "benefit_rate": "number (90, 80, 70など) or null",
+    "next_renewal_check_date": "string (yyyy/mm/dd) or null"
   }
 }
 `,
@@ -331,6 +344,8 @@ ${clientBirthDate ? `**利用者生年月日**: ${clientBirthDate}（年齢計�
 - "51" → "特定疾患（指定難病）"
 - "54" → "小児慢性特定疾患"
 
+**有効期限終了日がない場合**: effective_end_date は「9999/12/31」
+
 # 出力形式
 
 {
@@ -338,12 +353,19 @@ ${clientBirthDate ? `**利用者生年月日**: ${clientBirthDate}（年齢計�
   "summary": "（200文字程度の要約）",
   "title": "（推奨ファイル名）",
   "structured_data": {
-    "subsidy_number": "string or null",
     "subsidy_name": "string or null",
+    "payer_number": "string or null",
     "recipient_number": "string or null",
-    "subsidy_start_date": "yyyy/mm/dd or null",
-    "subsidy_end_date": "yyyy/mm/dd or null",
-    "burden_limit_amount": "string or null"
+    "subsidy_category_number": "string or null",
+    "copayment_category": "string or null",
+    "income_category": "string or null",
+    "benefit_rate_percent": "number or null",
+    "limit_unit_type": "string or null",
+    "monthly_limit_amount": "number or null",
+    "per_service_limit_amount": "number or null",
+    "monthly_visit_limit": "number or null",
+    "effective_start_date": "yyyy/mm/dd or null",
+    "effective_end_date": "yyyy/mm/dd or null (なければ9999/12/31)"
   }
 }
 `,
@@ -351,7 +373,30 @@ ${clientBirthDate ? `**利用者生年月日**: ${clientBirthDate}（年齢計�
     '口座情報': `
 # 口座振替依頼書の構造化データ抽出ルール
 
-**口座種目**: 「普通」「当座」「貯蓄」等
+## 思考プロセス
+
+1. まず、OCRテキスト全体を注意深く読み、どの金融機関が指定されているか（ゆうちょ銀行か、それ以外の銀行か）を特定します。取消線が引かれている金融機関は無視します。
+
+2. **ゆうちょ銀行の場合:**
+   * bank_name_kana には「ﾕｳﾁﾖｷﾞﾝｺｳ」と設定します。
+   * bank_code には「9900」と設定します。
+   * OCRテキスト内の「記号」（通常5桁の数字）を探します。
+   * **【重要】記号から支店コードを生成します。記号の真ん中の3桁（左から2桁目, 3桁目, 4桁目）をそのまま抜き出し、3桁の支店コードとしてbranch_codeに設定します。（例：記号が「12345」なら、真ん中の3桁「234」を支店コードとします）**
+   * account_number にはOCRテキスト内の「番号」（通常8桁）を抽出します。
+   * account_type は「普通」と設定します。
+
+3. **ゆうちょ銀行以外の場合:**
+   * OCRテキスト内の「金融機関番号」をbank_codeとして抽出します。
+   * 「店舗番号」をbranch_codeとして抽出します。
+   * 「口座番号」をaccount_numberとして抽出します。
+   * 「預金種目」から「普通」または「当座」を判断し、account_typeに設定します。
+
+4. 上記で特定した金融機関情報に加え、以下の共通項目を抽出します。
+   * account_holder_name_kana: 「カナ預金者名」を抽出します。
+   * biller_number: 「委託者番号」を抽出します。
+   * その他、対応する項目があれば抽出します。
+
+**重要**: カナ名称は、必ず**半角カタカナ**で記述してください。
 
 # 出力形式
 
@@ -360,13 +405,19 @@ ${clientBirthDate ? `**利用者生年月日**: ${clientBirthDate}（年齢計�
   "summary": "（200文字程度の要約）",
   "title": "（推奨ファイル名）",
   "structured_data": {
-    "bank_name": "string or null",
-    "bank_code": "string or null",
-    "branch_name": "string or null",
-    "branch_code": "string or null",
-    "account_type": "普通 or 当座 or 貯蓄 or null",
-    "account_number": "string or null",
-    "account_holder_name": "string or null"
+    "bank_code": "金融機関コード（4桁）",
+    "bank_name_kana": "金融機関名（半角カナ）",
+    "branch_code": "支店コード（3桁）",
+    "account_type": "預金種目（「普通」「当座」など）",
+    "account_number": "口座番号",
+    "account_holder_name_kana": "口座名義人（半角カナ）",
+    "handling_date": "取扱日をYYYY-MM-DD形式で抽出",
+    "terminal_number": "端末番号",
+    "voucher_number": "伝票番号",
+    "biller_client_number": "お客様番号",
+    "biller_name_kana": "委託者カナ氏名（半角カナ）",
+    "biller_number": "委託者番号",
+    "biller_specific_code": "委託者特定コード"
   }
 }
 `,
@@ -374,20 +425,17 @@ ${clientBirthDate ? `**利用者生年月日**: ${clientBirthDate}（年齢計�
     '負担割合証': `
 # 負担割合証の構造化データ抽出ルール
 
-**被保険者番号 (insured_person_number)** - ★最重要項目★:
-- 介護保険の被保険者を識別する重要な情報です
-- 通常10桁の数字で表示されます（例: 1234567890）
-- 「被保険者番号」というラベルの近くに記載されています
-- OCR認識が困難な場合でも、数字の並びを注意深く読み取ってください
-- 複数行に分かれている場合は連結してください
-- ハイフンやスペースは除去して数字のみを抽出してください
-
 **負担割合 (copayment_rate)** - ★最重要項目★:
-- 「1割」→ 10, 「2割」→ 20, 「3割」→ 30 (整数で返す)
+- 「1割」「2割」「3割」のいずれかの文字列で返してください。
 - 「利用者負担の割合」「負担割合」などのラベルの近くに記載されています
-- 必ず整数値で返してください（10, 20, 30のいずれか）
 
-**適用期間 (copay_cert_start_date, copay_cert_end_date)** - ★最重要項目★:
+**給付率 (benefit_rate)** - ★最重要項目★:
+- 負担割合に応じて、90, 80, 70 のいずれかの**整数**で返してください。
+- 1割負担 → 90（9割給付）
+- 2割負担 → 80（8割給付）
+- 3割負担 → 70（7割給付）
+
+**適用期間 (effective_start_date, effective_end_date)**:
 - 「適用期間」「有効期間」「認定有効期間」などのラベルで記載されています
 - 通常「令和○年○月○日から令和○年○月○日まで」のような形式です
 - 和暦（令和・平成等）は必ず西暦に変換してください
@@ -399,7 +447,11 @@ ${clientBirthDate ? `**利用者生年月日**: ${clientBirthDate}（年齢計�
   - 令和6年 = 2024年
   - 令和7年 = 2025年
 - 出力形式は「yyyy/mm/dd」で統一してください（例: 2025/04/01）
-- 両方の日付を必ず抽出してください
+
+**発行日 (issue_date)**:
+- 「交付年月日」「発行日」などのラベルで記載されています
+- 和暦を西暦に変換してください
+- 出力形式は「yyyy/mm/dd」で統一してください
 
 # 出力形式
 
@@ -408,10 +460,11 @@ ${clientBirthDate ? `**利用者生年月日**: ${clientBirthDate}（年齢計�
   "summary": "（200文字程度の要約）",
   "title": "（推奨ファイル名）",
   "structured_data": {
-    "insured_person_number": "string or null (10桁程度の数字、ハイフン・スペース除去)",
-    "copayment_rate": 10 or 20 or 30 or null (必ず整数),
-    "copay_cert_start_date": "yyyy/mm/dd or null (和暦を西暦に変換)",
-    "copay_cert_end_date": "yyyy/mm/dd or null (和暦を西暦に変換)"
+    "copayment_rate": "string ('1割', '2割', '3割') or null",
+    "benefit_rate": "number (90, 80, 70) or null",
+    "effective_start_date": "string (yyyy/mm/dd) or null",
+    "effective_end_date": "string (yyyy/mm/dd) or null",
+    "issue_date": "string (yyyy/mm/dd) or null"
   }
 }
 `
@@ -422,8 +475,46 @@ ${clientBirthDate ? `**利用者生年月日**: ${clientBirthDate}（年齢計�
     return `
 # 訪問看護指示書の構造化データ抽出ルール
 
-**指示期間**: 開始日と終了日を必ず抽出
-**病名・主たる傷病名**: すべての記載を抽出
+**指示区分 (instructionType)**: テキストの内容から最も適切なものを以下のマスターから選び、コードを返す。
+- 在宅患者訪問点滴注射指示書については、instructionStartDateの値が存在しない場合のみ適用とする。
+  - 01: 訪問看護指示
+  - 02: 特別訪問看護指示
+  - 03: 精神科訪問看護指示
+  - 04: 精神科特別訪問看護指示
+  - 05: 医療観察精神科訪問看護指示
+  - 06: 医療観察精神科特別訪問看護指示
+  - 00: 在宅患者訪問点滴注射指示書
+
+**日付 (instructionStartDate, instructionEndDate, dripInfusionStartDate, dripInfusionEndDate, issueDate)**: 日付はすべて西暦の「yyyy/mm/dd」形式に変換する。和暦（令和、昭和など）は正しく西暦に変換する。該当がない場合は null を返す。
+
+**基準告示第２の１に規定する疾病 (specifiedDiseaseNoticeCode)**:
+- 傷病名が以下の「疾病等マスター」に一つでも該当する場合、その疾病のコードを specifiedDiseaseCodes にリストで返し、specifiedDiseaseNoticeCode は "01" を返す。
+- 一つも該当しない場合、specifiedDiseaseCodes は空の配列([])を返し、specifiedDiseaseNoticeCode は "03" を返す。
+
+**傷病一覧 (diseaseNameList)**: 指示書に記載されている「主たる傷病名」を、記載されている順番を厳守してリスト化してください。番号や「(コード: ...」のような付随情報は含めず、傷病名そのものだけを抽出してください。
+
+**傷病名コード (diseaseMedicalCode1, 2, 3)**: diseaseNameList の各傷病名に対応するコードを、指示書テキスト内から抽出して返してください。テキスト内にコードの記載がない傷病名については、nullを返してください。3つに満たない場合も同様にnullを返してください。
+
+# 疾病等マスター
+- "001": 末期の悪性腫瘍 (胃癌末期、肺癌末期なども含む)
+- "002": 多発性硬化症
+- "003": 重症筋無力症
+- "004": スモン
+- "005": 筋萎縮性側索硬化症
+- "006": 脊髄小脳変性症
+- "007": ハンチントン病
+- "008": 進行性筋ジストロフィー症
+- "009": パーキンソン病関連疾患（進行性核上性麻痺、大脳皮質基底核変性症、パーキンソン病（ホーエン・ヤールの重症度分類がステージ３以上であって生活機能障害度が２度又は３度のものに限る。））
+- "010": 多系統萎縮症（線条体黒質変性症、オリーブ橋小脳萎縮症、シャイ・ドレーガー症候群）
+- "011": プリオン病
+- "012": 亜急性硬化性全脳炎
+- "013": ライソゾーム病
+- "014": 副腎白質ジストロフィー
+- "015": 脊髄性筋萎縮症
+- "016": 球脊髄性筋萎縮症
+- "017": 慢性炎症性脱髄性多発神経炎
+- "018": 後天性免疫不全症候群
+- "019": 頸髄損傷
 
 # 出力形式
 
@@ -432,12 +523,19 @@ ${clientBirthDate ? `**利用者生年月日**: ${clientBirthDate}（年齢計�
   "summary": "（200文字程度の要約）",
   "title": "（推奨ファイル名）",
   "structured_data": {
-    "instruction_period_start": "yyyy/mm/dd or null",
-    "instruction_period_end": "yyyy/mm/dd or null",
-    "medical_institution_name": "string or null",
-    "doctor_name": "string or null",
-    "disease_name": "string or null",
-    "instructions_summary": "string or null"
+    "instructionType": "string",
+    "instructionStartDate": "string (yyyy/mm/dd) or null",
+    "instructionEndDate": "string (yyyy/mm/dd) or null",
+    "dripInfusionStartDate": "string (yyyy/mm/dd) or null",
+    "dripInfusionEndDate": "string (yyyy/mm/dd) or null",
+    "issueDate": "string (yyyy/mm/dd) or null",
+    "clinicAddress": "指示書を発行した医療機関の【都道府県名から始まる完全な住所】",
+    "specifiedDiseaseNoticeCode": "string ('01' or '03')",
+    "specifiedDiseaseCodes": ["string"],
+    "diseaseNameList": ["string"],
+    "diseaseMedicalCode1": "string or null",
+    "diseaseMedicalCode2": "string or null",
+    "diseaseMedicalCode3": "string or null"
   }
 }
 `;
@@ -561,4 +659,125 @@ function getFileCategory(mimeType, fileName) {
   }
 
   throw new Error(`ファイル「${fileName}」はサポートされていない形式です (${mimeType})`);
+}
+
+// ============================================
+// 料金計算機能
+// ============================================
+
+/**
+ * 為替レート設定（USD → JPY）
+ * 2025年1月時点の想定レート
+ */
+const EXCHANGE_RATE_USD_TO_JPY_OCR = 150;
+
+/**
+ * Vertex AI APIレスポンスからusageMetadataを抽出（日本円計算付き）
+ * @param {Object} jsonResponse - APIレスポンス
+ * @param {string} modelName - 使用したモデル名
+ * @param {string} inputType - 入力タイプ ('audio' | 'text' | 'image')
+ * @return {Object|null} {inputTokens, outputTokens, inputCostJPY, outputCostJPY, totalCostJPY, model}
+ */
+function extractVertexAIUsageMetadata(jsonResponse, modelName, inputType = 'text') {
+  if (!jsonResponse.usageMetadata) {
+    return null;
+  }
+
+  const usage = jsonResponse.usageMetadata;
+  const inputTokens = usage.promptTokenCount || 0;
+  const outputTokens = usage.candidatesTokenCount || 0;
+
+  // モデル名と入力タイプに応じた価格を取得
+  const pricing = getVertexAIPricing(modelName, inputType);
+  const inputCostUSD = (inputTokens / 1000000) * pricing.inputPer1M;
+  const outputCostUSD = (outputTokens / 1000000) * pricing.outputPer1M;
+  const totalCostUSD = inputCostUSD + outputCostUSD;
+
+  // 日本円に換算
+  const inputCostJPY = inputCostUSD * EXCHANGE_RATE_USD_TO_JPY_OCR;
+  const outputCostJPY = outputCostUSD * EXCHANGE_RATE_USD_TO_JPY_OCR;
+  const totalCostJPY = totalCostUSD * EXCHANGE_RATE_USD_TO_JPY_OCR;
+
+  return {
+    model: modelName,
+    inputTokens: inputTokens,
+    outputTokens: outputTokens,
+    inputCostJPY: inputCostJPY,
+    outputCostJPY: outputCostJPY,
+    totalCostJPY: totalCostJPY
+  };
+}
+
+/**
+ * モデル名を正規化（バージョン番号やプレフィックスを削除）
+ * @param {string} modelName - モデル名
+ * @return {string} 正規化されたモデル名
+ */
+function normalizeModelNameOCR(modelName) {
+  // undefinedやnullの場合はデフォルト値を返す
+  if (!modelName) {
+    logStructured(LOG_LEVEL.WARN, '[正規化] モデル名が未定義です。デフォルト値を使用します。');
+    return 'gemini-2.5-flash';
+  }
+
+  // 'gemini-2.5-flash-001' → 'gemini-2.5-flash'
+  // 'publishers/google/models/gemini-2.5-flash' → 'gemini-2.5-flash'
+  const match = modelName.match(/(gemini-[\d.]+-(?:flash|pro|flash-lite))/i);
+  return match ? match[1].toLowerCase() : modelName.toLowerCase();
+}
+
+/**
+ * Vertex AIモデルの価格情報を取得（モデル名と入力タイプに応じて動的に決定）
+ * @param {string} modelName - モデル名
+ * @param {string} inputType - 入力タイプ ('audio' | 'text' | 'image')
+ * @return {Object} {inputPer1M, outputPer1M}
+ */
+function getVertexAIPricing(modelName, inputType = 'text') {
+  // 2025年1月時点のVertex AI価格（USD/100万トークン）
+  // 実際の価格はGCPドキュメントを参照: https://cloud.google.com/vertex-ai/generative-ai/pricing
+  const pricingTable = {
+    'gemini-2.5-flash': {
+      text: { inputPer1M: 0.075, outputPer1M: 0.30 },
+      image: { inputPer1M: 0.075, outputPer1M: 0.30 },  // 画像・PDF入力
+      audio: { inputPer1M: 1.00, outputPer1M: 2.50 }  // 音声入力（GA版）
+    },
+    'gemini-2.5-flash-lite': {
+      text: { inputPer1M: 0.0188, outputPer1M: 0.075 },
+      image: { inputPer1M: 0.0188, outputPer1M: 0.075 },
+      audio: { inputPer1M: 0.0188, outputPer1M: 0.075 }
+    },
+    'gemini-2.5-pro': {
+      text: { inputPer1M: 1.25, outputPer1M: 10.00 },
+      image: { inputPer1M: 1.25, outputPer1M: 10.00 },  // 画像・PDF入力
+      audio: { inputPer1M: 1.25, outputPer1M: 10.00 }  // 音声入力
+    },
+    'gemini-1.5-flash': {
+      text: { inputPer1M: 0.075, outputPer1M: 0.30 },
+      image: { inputPer1M: 0.075, outputPer1M: 0.30 },
+      audio: { inputPer1M: 0.075, outputPer1M: 0.30 }
+    },
+    'gemini-1.5-pro': {
+      text: { inputPer1M: 1.25, outputPer1M: 5.00 },
+      image: { inputPer1M: 1.25, outputPer1M: 5.00 },
+      audio: { inputPer1M: 1.25, outputPer1M: 5.00 }
+    }
+  };
+
+  // モデル名を正規化
+  const normalizedModelName = normalizeModelNameOCR(modelName);
+
+  // モデルが見つからない場合はデフォルト価格を使用
+  if (!pricingTable[normalizedModelName]) {
+    logStructured(LOG_LEVEL.WARN, `[価格取得] 未知のモデル: ${modelName}, デフォルト価格（gemini-2.5-flash）を使用`);
+    return pricingTable['gemini-2.5-flash'][inputType] || pricingTable['gemini-2.5-flash']['text'];
+  }
+
+  // 入力タイプが見つからない場合はテキスト価格を使用
+  if (!pricingTable[normalizedModelName][inputType]) {
+    logStructured(LOG_LEVEL.WARN, `[価格取得] 未知の入力タイプ: ${inputType}, テキスト価格を使用`);
+    return pricingTable[normalizedModelName]['text'];
+  }
+
+  logStructured(LOG_LEVEL.INFO, `[価格取得] モデル: ${normalizedModelName}, 入力タイプ: ${inputType}`);
+  return pricingTable[normalizedModelName][inputType];
 }

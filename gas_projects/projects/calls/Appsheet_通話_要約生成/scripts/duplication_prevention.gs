@@ -1,876 +1,344 @@
 /**
-
- * Webhook重複実行防止ライブラリ
-
- * 全てのAppsheet-GASプロジェクトで使用できる統一された重複防止機能を提供
-
- * 機能:
-
- * 1. レコードIDベースの重複チェック（処理中フラグ）
-
- * 2. Webhookフィンガープリントによる重複検知
-
- * 3. LockServiceを使用した排他制御
-
- * 4. エラー時の自動クリーンアップ
-
- * @author Fractal Group
-
- * @version 3.0.0
-
- * @date 2025-10-16
-
+ * 重複実行防止モジュール
+ * Webhook受信時の重複実行を防止するための共通モジュール
+ *
+ * @version 2.0.0
+ * @date 2025-10-20
  */
-
-
-// ========================================
-
-// 定数定義
-
-// ========================================
-
 
 /**
-
- * キャッシュキーのプレフィックス
-
+ * 重複防止設定
  */
+const DUPLICATION_PREVENTION_CONFIG = {
+  // タイムアウト時間（ミリ秒）
+  lockTimeout: 300000, // 5分
 
-const DEDUP_PREFIX = {
+  // リトライ設定
+  maxRetries: 3,
+  retryDelay: 1000, // 1秒
 
-  PROCESSING: 'dedup_processing_',
-
-  WEBHOOK: 'dedup_webhook_',
-
-  LOCK: 'dedup_lock_',
-
-  RETRY_COUNT: 'dedup_retry_'
-
+  // クリーンアップ設定
+  cleanupAfterHours: 24 // 24時間後に処理済みレコードを削除
 };
 
-
 /**
-
- * キャッシュの有効期限（秒）
-
+ * 重複回避機能が有効かを確認
+ * script_properties_manager.gs の関数を使用
+ * @return {boolean} 有効ならtrue、無効ならfalse
  */
-
-const DEDUP_DURATION = {
-
-  PROCESSING: 600,        // 10分（処理中フラグ - Apps Script最大実行時間6分 + バッファ）
-
-  COMPLETED: 21600,       // 6時間（処理完了フラグ - 重複webhook防止）
-
-  WEBHOOK_FINGERPRINT: 120, // 2分（Webhook重複排除期間）
-
-  LOCK: 30               // 30秒（ロック有効期限）
-
-};
-
-
-/**
-
- * リトライ設定
-
- */
-
-const DEDUP_RETRY = {
-
-  MAX_COUNT: 3,           // 最大リトライ回数
-
-  WAIT_MS: 2000          // リトライ待機時間（ミリ秒）
-
-};
-
-
-// ========================================
-
-// 主要機能
-
-// ========================================
-
-
-/**
-
- * Webhook重複実行チェック（統合版）
-
- * レコードIDベースとフィンガープリントの両方でチェック
-
- * @param {string} recordId - レコードID（必須）
-
- * @param {Object} webhookParams - Webhookパラメータ（オプション、より厳密なチェックに使用）
-
- * @return {Object} { isDuplicate: boolean, reason: string }
-
- */
-
-function checkDuplicateRequest(recordId, webhookParams = null) {
-
-  if (!recordId) {
-
-    Logger.log('⚠️ recordIdが未指定です');
-
-    return { isDuplicate: false, reason: 'no_record_id' };
-
-  }
-
-  // 1. 処理中/完了フラグチェック
-
-  if (isProcessingOrCompleted(recordId)) {
-
-    return { 
-
-      isDuplicate: true, 
-
-      reason: 'processing_or_completed',
-
-      recordId: recordId 
-
-    };
-
-  }
-
-  // 2. Webhookフィンガープリントチェック（パラメータが提供された場合）
-
-  if (webhookParams) {
-
-    if (isDuplicateWebhookFingerprint(recordId, webhookParams)) {
-
-      return { 
-
-        isDuplicate: true, 
-
-        reason: 'duplicate_fingerprint',
-
-        recordId: recordId 
-
-      };
-
-    }
-
-  }
-
-  return { isDuplicate: false, reason: 'new_request', recordId: recordId };
-
+function isDuplicationPreventionEnabled() {
+  const value = PropertiesService.getScriptProperties().getProperty('ENABLE_DUPLICATION_PREVENTION');
+  // デフォルトは有効（明示的にfalseが設定されている場合のみ無効）
+  return value !== 'false';
 }
 
-
 /**
-
- * 処理中フラグを設定（ロック取得付き）
-
- * @param {string} recordId - レコードID
-
- * @param {Object} metadata - 追加のメタデータ（オプション）
-
- * @return {boolean} 設定成功の場合true
-
+ * 重複実行防止クラス
  */
+class DuplicationPrevention {
 
-function markAsProcessingWithLock(recordId, metadata = {}) {
+  /**
+   * コンストラクタ
+   * @param {string} scriptName - スクリプト名（ユニークなキーとして使用）
+   */
+  constructor(scriptName) {
+    this.scriptName = scriptName;
+    this.lockService = LockService.getScriptLock();
+    this.cacheService = CacheService.getScriptCache();
+    this.propertyService = PropertiesService.getScriptProperties();
+    this.enabled = isDuplicationPreventionEnabled();
+  }
 
-  if (!recordId) {
+  /**
+   * 重複回避機能が有効かを確認
+   * @return {boolean} 有効ならtrue
+   */
+  isEnabled() {
+    return this.enabled;
+  }
 
-    Logger.log('⚠️ recordIdが未指定です');
+  /**
+   * 処理が既に実行済みかチェック
+   * @param {string} recordId - レコードID
+   * @return {boolean} true: 既に処理済み, false: 未処理
+   */
+  isAlreadyProcessed(recordId) {
+    // 重複回避が無効な場合は常にfalseを返す（重複チェックをスキップ）
+    if (!this.enabled) {
+      return false;
+    }
+
+    const cacheKey = this._getCacheKey(recordId);
+    const propertyKey = this._getPropertyKey(recordId);
+
+    // まずキャッシュをチェック（高速）
+    const cachedValue = this.cacheService.get(cacheKey);
+    if (cachedValue === 'processed') {
+      return true;
+    }
+
+    // 次にPropertiesをチェック（永続化）
+    const propertyValue = this.propertyService.getProperty(propertyKey);
+    if (propertyValue) {
+      // キャッシュにも保存
+      this.cacheService.put(cacheKey, 'processed', 21600); // 6時間
+      return true;
+    }
 
     return false;
-
   }
 
-  // LockServiceで排他制御
-
-  const lock = LockService.getScriptLock();
-
-  try {
-
-    // 30秒待機してロック取得
-
-    if (!lock.tryLock(30000)) {
-
-      Logger.log(`❌ ロック取得タイムアウト: ${recordId}`);
-
-      return false;
-
+  /**
+   * 処理開始を記録（ロック取得）
+   * @param {string} recordId - レコードID
+   * @param {number} timeout - タイムアウト時間（ミリ秒）
+   * @return {boolean} true: ロック取得成功, false: 失敗（他の処理が実行中）
+   */
+  markAsProcessing(recordId, timeout = DUPLICATION_PREVENTION_CONFIG.lockTimeout) {
+    // 重複回避が無効な場合は常にtrueを返す（処理を許可）
+    if (!this.enabled) {
+      return true;
     }
 
-    // 再度重複チェック（ロック取得後）
+    const cacheKey = this._getCacheKey(recordId);
+    const lockKey = `lock_${cacheKey}`;
 
-    if (isProcessingOrCompleted(recordId)) {
-
-      Logger.log(`🔒 ロック取得後の重複検知: ${recordId}`);
-
-      lock.releaseLock();
-
+    // 既に処理済みの場合は false を返す
+    if (this.isAlreadyProcessed(recordId)) {
       return false;
-
     }
-
-    // 処理中フラグ設定
-
-    const cache = CacheService.getScriptCache();
-
-    const key = DEDUP_PREFIX.PROCESSING + recordId;
-
-    const flagData = {
-
-      state: 'processing',
-
-      startTime: new Date().toISOString(),
-
-      scriptId: ScriptApp.getScriptId(),
-
-      ...metadata
-
-    };
-
-    cache.put(key, JSON.stringify(flagData), DEDUP_DURATION.PROCESSING);
-
-    Logger.log(`✅ 処理中フラグ設定: ${recordId}`);
-
-    lock.releaseLock();
-
-    return true;
-
-  } catch (error) {
-
-    Logger.log(`❌ 処理中フラグ設定エラー: ${error.toString()}`);
-
-    try { lock.releaseLock(); } catch (e) {}
-
-    return false;
-
-  }
-
-}
-
-
-/**
-
- * 処理完了フラグを設定
-
- * @param {string} recordId - レコードID
-
- * @param {Object} result - 処理結果（オプション）
-
- */
-
-function markAsCompleted(recordId, result = {}) {
-
-  if (!recordId) {
-
-    Logger.log('⚠️ recordIdが未指定です');
-
-    return;
-
-  }
-
-  const cache = CacheService.getScriptCache();
-
-  const key = DEDUP_PREFIX.PROCESSING + recordId;
-
-  const flagData = {
-
-    state: 'completed',
-
-    completedTime: new Date().toISOString(),
-
-    success: result.success !== false,
-
-    ...result
-
-  };
-
-  // 長期間保持して重複webhook防止
-
-  cache.put(key, JSON.stringify(flagData), DEDUP_DURATION.COMPLETED);
-
-  Logger.log(`✅ 処理完了フラグ設定: ${recordId} (${DEDUP_DURATION.COMPLETED}秒保持)`);
-
-}
-
-
-/**
-
- * 処理失敗フラグを設定
-
- * @param {string} recordId - レコードID
-
- * @param {Error} error - エラーオブジェクト
-
- */
-
-function markAsFailed(recordId, error) {
-
-  if (!recordId) return;
-
-  const cache = CacheService.getScriptCache();
-
-  const key = DEDUP_PREFIX.PROCESSING + recordId;
-
-  const flagData = {
-
-    state: 'failed',
-
-    failedTime: new Date().toISOString(),
-
-    error: error.toString(),
-
-    errorStack: error.stack || ''
-
-  };
-
-  // 失敗の場合は短い期間で保持（リトライ可能にする）
-
-  cache.put(key, JSON.stringify(flagData), 300); // 5分
-
-  Logger.log(`❌ 処理失敗フラグ設定: ${recordId}`);
-
-}
-
-
-/**
-
- * 処理フラグをクリア
-
- * @param {string} recordId - レコードID
-
- */
-
-function clearProcessingFlag(recordId) {
-
-  if (!recordId) return;
-
-  const cache = CacheService.getScriptCache();
-
-  const key = DEDUP_PREFIX.PROCESSING + recordId;
-
-  cache.remove(key);
-
-  Logger.log(`🗑️ 処理フラグクリア: ${recordId}`);
-
-}
-
-
-// ========================================
-
-// 内部ヘルパー関数
-
-// ========================================
-
-
-/**
-
- * 処理中または完了済みかチェック
-
- * @param {string} recordId - レコードID
-
- * @return {boolean}
-
- */
-
-function isProcessingOrCompleted(recordId) {
-
-  const cache = CacheService.getScriptCache();
-
-  const key = DEDUP_PREFIX.PROCESSING + recordId;
-
-  const cachedValue = cache.get(key);
-
-  if (cachedValue) {
 
     try {
+      // グローバルロックを取得（短時間）
+      if (!this.lockService.tryLock(5000)) {
+        console.warn(`ロック取得に失敗: ${recordId}`);
+        return false;
+      }
 
-      const status = JSON.parse(cachedValue);
+      try {
+        // ロック状態をチェック
+        const lockValue = this.cacheService.get(lockKey);
+        if (lockValue === 'locked') {
+          return false; // 他の処理が実行中
+        }
 
-      Logger.log(`🔒 重複検知: ${recordId} - 状態: ${status.state} (${status.startTime || status.completedTime || status.failedTime})`);
+        // ロックを設定
+        this.cacheService.put(lockKey, 'locked', timeout / 1000);
+        this.cacheService.put(cacheKey, 'processing', timeout / 1000);
 
-      return true;
+        return true;
+
+      } finally {
+        this.lockService.releaseLock();
+      }
 
     } catch (e) {
-
-      // JSON解析失敗の場合も重複とみなす
-
-      return true;
-
+      console.error(`処理開始記録エラー: ${e.toString()}`);
+      return false;
     }
-
   }
 
-  return false;
+  /**
+   * 処理完了を記録
+   * @param {string} recordId - レコードID
+   * @param {boolean} success - 成功したかどうか
+   */
+  markAsCompleted(recordId, success = true) {
+    // 重複回避が無効な場合は何もしない
+    if (!this.enabled) {
+      return;
+    }
 
-}
+    const cacheKey = this._getCacheKey(recordId);
+    const propertyKey = this._getPropertyKey(recordId);
+    const lockKey = `lock_${cacheKey}`;
 
-/**
+    try {
+      const timestamp = new Date().toISOString();
+      const status = success ? 'processed' : 'error';
 
- * Webhookフィンガープリントによる重複チェック
+      // キャッシュに記録（6時間）
+      this.cacheService.put(cacheKey, status, 21600);
 
- * @param {string} recordId - レコードID
+      // Propertiesに永続化（タイムスタンプ付き）
+      const propertyValue = JSON.stringify({
+        status: status,
+        timestamp: timestamp,
+        scriptName: this.scriptName
+      });
+      this.propertyService.setProperty(propertyKey, propertyValue);
 
- * @param {Object} params - Webhookパラメータ
+      // ロックを解除
+      this.cacheService.remove(lockKey);
 
- * @return {boolean}
-
- */
-
-function isDuplicateWebhookFingerprint(recordId, params) {
-
-  const fingerprint = generateFingerprint(recordId, params);
-
-  const cache = CacheService.getScriptCache();
-
-  const key = DEDUP_PREFIX.WEBHOOK + fingerprint;
-
-  const cachedValue = cache.get(key);
-
-  if (cachedValue) {
-
-    Logger.log(`🔒 Webhook重複検知: ${recordId} (フィンガープリント: ${fingerprint.substring(0, 16)}...)`);
-
-    return true;
-
+    } catch (e) {
+      console.error(`処理完了記録エラー: ${e.toString()}`);
+    }
   }
 
-  // 新規リクエストの場合、フィンガープリントを記録
-
-  cache.put(key, new Date().toISOString(), DEDUP_DURATION.WEBHOOK_FINGERPRINT);
-
-  Logger.log(`✅ 新規Webhook受付: ${recordId} (フィンガープリント: ${fingerprint.substring(0, 16)}...)`);
-
-  return false;
-
-}
-
-
-/**
-
- * フィンガープリント生成
-
- * @param {string} recordId - レコードID
-
- * @param {Object} params - パラメータ
-
- * @return {string} SHA-256ハッシュ
-
- */
-
-function generateFingerprint(recordId, params) {
-
-  // 重複判定に使用するキー（タイムスタンプは除外）
-
-  const fingerprintData = {
-
-    recordId: recordId,
-
-    staffId: params.staffId || '',
-
-    fileId: params.fileId || '',
-
-    filePath: params.filePath || '',
-
-    recordType: params.recordType || '',
-
-    callId: params.callId || '',
-
-    // タイムスタンプやランダム値は含めない
-
-  };
-
-  const dataString = JSON.stringify(fingerprintData, Object.keys(fingerprintData).sort());
-
-  const signature = Utilities.computeDigest(
-
-    Utilities.DigestAlgorithm.SHA_256,
-
-    dataString,
-
-    Utilities.Charset.UTF_8
-
-  );
-
-  return Utilities.base64Encode(signature);
-
-}
-
-// ========================================
-
-// レスポンス生成関数
-
-// ========================================
-
-/**
-
- * 成功レスポンス生成
-
- * @param {string} recordId - レコードID
-
- * @param {Object} data - 追加データ
-
- * @return {ContentService.TextOutput}
-
- */
-
-function createSuccessResponse(recordId, data = {}) {
-
-  return ContentService.createTextOutput(JSON.stringify({
-
-    status: 'success',
-
-    recordId: recordId,
-
-    timestamp: new Date().toISOString(),
-
-    ...data
-
-  })).setMimeType(ContentService.MimeType.JSON);
-
-}
-
-/**
-
- * 重複レスポンス生成
-
- * @param {string} recordId - レコードID
-
- * @param {string} reason - 重複理由
-
- * @return {ContentService.TextOutput}
-
- */
-
-function createDuplicateResponse(recordId, reason = '') {
-
-  return ContentService.createTextOutput(JSON.stringify({
-
-    status: 'duplicate',
-
-    recordId: recordId,
-
-    reason: reason,
-
-    message: '処理中または処理済みです',
-
-    timestamp: new Date().toISOString()
-
-  })).setMimeType(ContentService.MimeType.JSON);
-
-}
-
-/**
-
- * エラーレスポンス生成
-
- * @param {string} recordId - レコードID
-
- * @param {Error} error - エラーオブジェクト
-
- * @return {ContentService.TextOutput}
-
- */
-
-function createErrorResponse(recordId, error) {
-
-  return ContentService.createTextOutput(JSON.stringify({
-
-    status: 'error',
-
-    recordId: recordId,
-
-    error: error.toString(),
-
-    message: error.message || '',
-
-    timestamp: new Date().toISOString()
-
-  })).setMimeType(ContentService.MimeType.JSON);
-
-}
-
-// ========================================
-
-// 統合実行ラッパー関数
-
-// ========================================
-
-/**
-
- * Webhook処理の統合ラッパー
-
- * 重複チェック、ロック取得、エラーハンドリングを自動化
-
- * 使用例:
-
- * function doPost(e) {
-
- *   return executeWebhookWithDuplicationPrevention(e, processWebhook);
-
- * }
-
- * function processWebhook(params) {
-
- *   // 実際の処理
-
- *   return { success: true, data: {...} };
-
- * }
-
- * @param {Object} e - doPost/doGetイベントオブジェクト
-
- * @param {Function} processingFunction - 実際の処理を行う関数
-
- * @param {Object} options - オプション設定
-
- * @return {ContentService.TextOutput}
-
- */
-
-function executeWebhookWithDuplicationPrevention(e, processingFunction, options = {}) {
-
-  const defaultOptions = {
-
-    recordIdField: 'recordId',          // レコードIDフィールド名
-
-    parseRequest: true,                  // リクエストを自動パース
-
-    enableFingerprint: true,             // フィンガープリントチェック有効化
-
-    autoMarkCompleted: true,             // 自動で完了マーク
-
-    metadata: {}                         // 追加メタデータ
-
-  };
-
-  const config = { ...defaultOptions, ...options };
-
-  let recordId = 'unknown';
-
-  let params = {};
-
-  try {
-
-    // 1. リクエスト解析
-
-    if (config.parseRequest) {
-
-      params = JSON.parse(e.postData.contents);
-
-    } else {
-
-      params = e;
-
+  /**
+   * 処理をリトライ可能な形で実行
+   * @param {string} recordId - レコードID
+   * @param {Function} processFunction - 実行する処理（recordIdを引数に取る関数）
+   * @param {Object} logger - ロガーインスタンス（オプション）
+   * @return {Object} {success: boolean, result: any, error: any}
+   */
+  executeWithRetry(recordId, processFunction, logger = null) {
+    let lastError = null;
+    
+    for (let attempt = 1; attempt <= DUPLICATION_PREVENTION_CONFIG.maxRetries; attempt++) {
+      try {
+        if (logger) {
+          logger.info(`処理開始（試行 ${attempt}/${DUPLICATION_PREVENTION_CONFIG.maxRetries}）: ${recordId}`);
+        }
+        
+        // 重複チェック
+        if (this.isAlreadyProcessed(recordId)) {
+          if (logger) {
+            logger.warning(`既に処理済み: ${recordId}`);
+          }
+          return {
+            success: false,
+            result: null,
+            error: '既に処理済みです',
+            isDuplicate: true
+          };
+        }
+        
+        // 処理開始をマーク
+        if (!this.markAsProcessing(recordId)) {
+          if (logger) {
+            logger.warning(`他の処理が実行中または処理済み: ${recordId}`);
+          }
+          return {
+            success: false,
+            result: null,
+            error: '他の処理が実行中または処理済みです',
+            isDuplicate: true
+          };
+        }
+        
+        // 実際の処理を実行
+        const result = processFunction(recordId);
+        
+        // 処理完了をマーク
+        this.markAsCompleted(recordId, true);
+        
+        if (logger) {
+          logger.success(`処理完了: ${recordId}`);
+        }
+        
+        return {
+          success: true,
+          result: result,
+          error: null,
+          isDuplicate: false
+        };
+        
+      } catch (error) {
+        lastError = error;
+        
+        if (logger) {
+          logger.error(`処理エラー（試行 ${attempt}/${DUPLICATION_PREVENTION_CONFIG.maxRetries}）: ${error.toString()}`, {
+            recordId: recordId,
+            stack: error.stack
+          });
+        }
+        
+        // 最後の試行でない場合は待機してリトライ
+        if (attempt < DUPLICATION_PREVENTION_CONFIG.maxRetries) {
+          Utilities.sleep(DUPLICATION_PREVENTION_CONFIG.retryDelay * attempt);
+        } else {
+          // 全ての試行が失敗した場合はエラーとしてマーク
+          this.markAsCompleted(recordId, false);
+        }
+      }
     }
-
-    recordId = params[config.recordIdField];
-
-    if (!recordId) {
-
-      throw new Error(`${config.recordIdField}が見つかりません`);
-
-    }
-
-    Logger.log(`📥 Webhook受信: ${recordId}`);
-
-    // 2. 重複チェック
-
-    const dupCheck = checkDuplicateRequest(
-
-      recordId, 
-
-      config.enableFingerprint ? params : null
-
-    );
-
-    if (dupCheck.isDuplicate) {
-
-      Logger.log(`🔒 重複リクエストをスキップ: ${recordId} (理由: ${dupCheck.reason})`);
-
-      return createDuplicateResponse(recordId, dupCheck.reason);
-
-    }
-
-    // 3. 処理中フラグ設定（ロック取得）
-
-    if (!markAsProcessingWithLock(recordId, config.metadata)) {
-
-      Logger.log(`❌ 処理中フラグ設定失敗: ${recordId}`);
-
-      return createDuplicateResponse(recordId, 'lock_failed');
-
-    }
-
-    // 4. 実際の処理実行
-
-    Logger.log(`▶️ 処理開始: ${recordId}`);
-
-    const result = processingFunction(params);
-
-    // 5. 完了マーク
-
-    if (config.autoMarkCompleted) {
-
-      markAsCompleted(recordId, result);
-
-    }
-
-    Logger.log(`✅ 処理完了: ${recordId}`);
-
-    return createSuccessResponse(recordId, result);
-
-  } catch (error) {
-
-    Logger.log(`❌ エラー発生: ${recordId} - ${error.toString()}`);
-
-    // エラー時は失敗フラグ設定（リトライ可能にする）
-
-    markAsFailed(recordId, error);
-
-    return createErrorResponse(recordId, error);
-
-  }
-
-}
-
-// ========================================
-
-// メンテナンス・デバッグ関数
-
-// ========================================
-
-/**
-
- * 特定レコードの状態を確認
-
- * @param {string} recordId - レコードID
-
- * @return {Object} 状態情報
-
- */
-
-function checkRecordStatus(recordId) {
-
-  const cache = CacheService.getScriptCache();
-
-  const key = DEDUP_PREFIX.PROCESSING + recordId;
-
-  const cachedValue = cache.get(key);
-
-  if (!cachedValue) {
-
-    return { 
-
-      exists: false, 
-
-      recordId: recordId,
-
-      message: 'フラグが存在しません（新規または期限切れ）'
-
-    };
-
-  }
-
-  try {
-
-    const status = JSON.parse(cachedValue);
-
+    
     return {
-
-      exists: true,
-
-      recordId: recordId,
-
-      ...status
-
+      success: false,
+      result: null,
+      error: lastError ? lastError.toString() : '不明なエラー',
+      isDuplicate: false
     };
-
-  } catch (e) {
-
-    return {
-
-      exists: true,
-
-      recordId: recordId,
-
-      error: 'JSON解析失敗',
-
-      rawValue: cachedValue
-
-    };
-
   }
 
+  /**
+   * キャッシュキーを生成
+   * @private
+   */
+  _getCacheKey(recordId) {
+    return `${this.scriptName}_${recordId}`;
+  }
+
+  /**
+   * Propertyキーを生成
+   * @private
+   */
+  _getPropertyKey(recordId) {
+    return `processed_${this.scriptName}_${recordId}`;
+  }
+
+  /**
+   * 古い処理済みレコードをクリーンアップ
+   * 定期実行トリガーで実行を推奨
+   */
+  static cleanupOldRecords() {
+    try {
+      const props = PropertiesService.getScriptProperties();
+      const allProperties = props.getProperties();
+      const cutoffTime = new Date().getTime() - (DUPLICATION_PREVENTION_CONFIG.cleanupAfterHours * 3600000);
+      
+      let deletedCount = 0;
+      
+      for (const key in allProperties) {
+        if (key.startsWith('processed_')) {
+          try {
+            const value = JSON.parse(allProperties[key]);
+            const recordTime = new Date(value.timestamp).getTime();
+            
+            if (recordTime < cutoffTime) {
+              props.deleteProperty(key);
+              deletedCount++;
+            }
+          } catch (e) {
+            // JSONパースエラーの場合は古い形式なので削除
+            props.deleteProperty(key);
+            deletedCount++;
+          }
+        }
+      }
+      
+      console.log(`${deletedCount}件の古い処理済みレコードを削除しました`);
+      
+    } catch (e) {
+      console.error(`クリーンアップエラー: ${e.toString()}`);
+    }
+  }
+
+  /**
+   * 特定のレコードの処理状態をリセット
+   * デバッグ用
+   * @param {string} recordId - レコードID
+   */
+  resetProcessingState(recordId) {
+    const cacheKey = this._getCacheKey(recordId);
+    const propertyKey = this._getPropertyKey(recordId);
+    const lockKey = `lock_${cacheKey}`;
+    
+    this.cacheService.remove(cacheKey);
+    this.cacheService.remove(lockKey);
+    this.propertyService.deleteProperty(propertyKey);
+    
+    console.log(`処理状態をリセット: ${recordId}`);
+  }
 }
 
 /**
-
- * すべての処理フラグをクリア（緊急メンテナンス用）
-
- * 注意: この関数は慎重に使用してください
-
- * @return {Object} クリア結果
-
+ * ヘルパー関数: 重複防止インスタンス作成
+ * @param {string} scriptName - スクリプト名
+ * @return {DuplicationPrevention} インスタンス
  */
-
-function emergencyClearAllFlags() {
-
-  Logger.log('⚠️ 緊急フラグクリアを実行します');
-
-  // CacheServiceは全キー取得不可のため、個別にクリアする必要がある
-
-  // この関数は主にPropertiesServiceと併用する場合に有効
-
-  return {
-
-    timestamp: new Date().toISOString(),
-
-    message: 'CacheServiceは全キー取得非対応です。個別にclearProcessingFlag()を使用してください。',
-
-    note: 'キャッシュは有効期限で自動削除されます'
-
-  };
-
-}
-
-/**
-
- * 重複防止システムの統計情報取得
-
- * @return {Object} 統計情報
-
- */
-
-function getDuplicationPreventionStats() {
-
-  return {
-
-    version: '3.0.0',
-
-    timestamp: new Date().toISOString(),
-
-    config: {
-
-      processing_duration: DEDUP_DURATION.PROCESSING,
-
-      completed_duration: DEDUP_DURATION.COMPLETED,
-
-      webhook_fingerprint_duration: DEDUP_DURATION.WEBHOOK_FINGERPRINT,
-
-      lock_duration: DEDUP_DURATION.LOCK
-
-    },
-
-    features: [
-
-      'レコードID重複チェック',
-
-      'Webhookフィンガープリント',
-
-      'LockService排他制御',
-
-      '自動エラーハンドリング',
-
-      '処理状態管理（processing/completed/failed）'
-
-    ]
-
-  };
-
+function createDuplicationPrevention(scriptName) {
+  return new DuplicationPrevention(scriptName);
 }
