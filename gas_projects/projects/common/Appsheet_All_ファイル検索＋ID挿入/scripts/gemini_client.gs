@@ -145,7 +145,7 @@ class GeminiClient {
       if (logger) {
         logger.success(`テキスト生成成功（生成文字数: ${generatedText.length}）`);
         if (usageMetadata) {
-          logger.info(`使用量: Input ${usageMetadata.inputTokens} tokens, Output ${usageMetadata.outputTokens} tokens, 合計 $${usageMetadata.totalCost.toFixed(4)}`);
+          logger.info(`使用量: Input ${usageMetadata.inputTokens} tokens, Output ${usageMetadata.outputTokens} tokens, 合計 ¥${usageMetadata.totalCostJPY.toFixed(2)}`);
         }
       }
 
@@ -272,7 +272,7 @@ class GeminiClient {
       if (logger) {
         logger.success(`チャット応答生成成功`);
         if (usageMetadata) {
-          logger.info(`使用量: Input ${usageMetadata.inputTokens} tokens, Output ${usageMetadata.outputTokens} tokens, 合計 $${usageMetadata.totalCost.toFixed(4)}`);
+          logger.info(`使用量: Input ${usageMetadata.inputTokens} tokens, Output ${usageMetadata.outputTokens} tokens, 合計 ¥${usageMetadata.totalCostJPY.toFixed(2)}`);
         }
       }
 
