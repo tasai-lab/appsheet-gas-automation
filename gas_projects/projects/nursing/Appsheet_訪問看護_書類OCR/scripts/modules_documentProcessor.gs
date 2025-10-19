@@ -103,9 +103,9 @@ function createMedicalInsuranceRecord(context, data) {
   // 有効/無効判定
   let isCurrentlyActive = null;
   if (data.effective_start_date) {
-    const startDate = new Date(data.effective_start_date.replace(/\//g, '-'));
+    const startDate = new Date(data.effective_start_date);
     const endDateStr = data.effective_end_date;
-    const isEndDateValid = (!endDateStr || new Date(endDateStr.replace(/\//g, '-')) >= todayJST);
+    const isEndDateValid = (!endDateStr || new Date(endDateStr) >= todayJST);
 
     if (startDate <= todayJST && isEndDateValid) {
       isCurrentlyActive = true;
@@ -163,8 +163,8 @@ function createMedicalInsuranceRecord(context, data) {
     updated_at: nowJST,
     updated_by: context.staffId,
     is_currently_active: isCurrentlyActive,
-    effective_start_date: data.effective_start_date ? data.effective_start_date.replace(/\//g, '-') : null,
-    effective_end_date: effectiveEndDate ? effectiveEndDate.replace(/\//g, '-') : null,
+    effective_start_date: data.effective_start_date,
+    effective_end_date: effectiveEndDate,
     insurer_number: data.insurer_number,
     policy_symbol: data.policy_symbol,
     policy_number: data.policy_number,
@@ -180,7 +180,7 @@ function createMedicalInsuranceRecord(context, data) {
     reduction_category: data.reduction_category,
     reduction_rate_percent: safeParseInt(data.reduction_rate_percent),
     reduction_amount: safeParseInt(data.reduction_amount),
-    reduction_cert_expiration_date: data.reduction_cert_expiration_date ? data.reduction_cert_expiration_date.replace(/\//g, '-') : null,
+    reduction_cert_expiration_date: data.reduction_cert_expiration_date,
     remarks: null
   };
 
@@ -269,9 +269,9 @@ function createPublicSubsidyRecord(context, data) {
   // 有効性判定（元のスクリプトと同じロジック）
   let isCurrentlyActive = null;
   if (effectiveStartDate) {
-    const startDate = new Date(effectiveStartDate.replace(/\//g, '-'));
+    const startDate = new Date(effectiveStartDate);
     const endDateStr = effectiveEndDate;
-    const isEndDateValid = (!endDateStr || new Date(endDateStr.replace(/\//g, '-')) >= todayJST);
+    const isEndDateValid = (!endDateStr || new Date(endDateStr) >= todayJST);
 
     if (startDate <= todayJST && isEndDateValid) {
       isCurrentlyActive = true;
@@ -314,8 +314,8 @@ function createPublicSubsidyRecord(context, data) {
     monthly_limit_amount: parseIntStrict(monthlyLimitAmount),
     per_service_limit_amount: parseIntStrict(perServiceLimitAmount),
     monthly_visit_limit: parseIntStrict(monthlyVisitLimit),
-    effective_start_date: effectiveStartDate ? effectiveStartDate.replace(/\//g, '-') : null,
-    effective_end_date: effectiveEndDate ? effectiveEndDate.replace(/\//g, '-') : null,
+    effective_start_date: effectiveStartDate,
+    effective_end_date: effectiveEndDate,
 
     // --- 手動入力項目 (今回はnull) ---
     priority_rank: null,
