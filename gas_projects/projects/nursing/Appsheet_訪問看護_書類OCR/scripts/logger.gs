@@ -12,7 +12,7 @@
 const LOGGER_CONFIG = {
   // ログスプレッドシート格納先（共有ドライブ）
   logFolderId: '16swPUizvdlyPxUjbDpVl9-VBDJZO91kX', // 共有ドライブのGASフォルダー
-  logSpreadsheetName: 'GAS実行ログ_統合',
+  logSpreadsheetName: 'GAS実行ログ',
   
   // ログ保持期間（日数）
   retentionDays: 90,
