@@ -408,9 +408,15 @@ function extractAndValidateJSON(responseText, includeRequestDetails = false) {
 }
 
 /**
- * Vertex AI APIレスポンスからusageMetadataを抽出
+ * 為替レート設定（USD -> JPY）
+ * 2025年1月時点の想定レート
+ */
+const EXCHANGE_RATE_USD_TO_JPY_VERTEX = 150;
+
+/**
+ * Vertex AI APIレスポンスからusageMetadataを抽出（日本円計算）
  * @param {Object} jsonResponse - APIレスポンス
- * @return {Object|null} {inputTokens, outputTokens, inputCost, outputCost, totalCost, model}
+ * @return {Object|null} {inputTokens, outputTokens, inputCostJPY, outputCostJPY, totalCostJPY, model}
  */
 function extractVertexAIUsageMetadata(jsonResponse) {
   if (!jsonResponse.usageMetadata) {
@@ -421,33 +427,39 @@ function extractVertexAIUsageMetadata(jsonResponse) {
   const inputTokens = usage.promptTokenCount || 0;
   const outputTokens = usage.candidatesTokenCount || 0;
 
-  // Vertex AIモデルの価格を取得（gemini-2.5-flash-thinkingを想定）
+  // Vertex AIモデルの価格を取得（USD/100万トークン）
   const pricing = getVertexAIPricing();
-  const inputCost = (inputTokens / 1000000) * pricing.inputPer1M;
-  const outputCost = (outputTokens / 1000000) * pricing.outputPer1M;
-  const totalCost = inputCost + outputCost;
+  const inputCostUSD = (inputTokens / 1000000) * pricing.inputPer1M;
+  const outputCostUSD = (outputTokens / 1000000) * pricing.outputPer1M;
+  const totalCostUSD = inputCostUSD + outputCostUSD;
+
+  // 日本円に換算
+  const inputCostJPY = inputCostUSD * EXCHANGE_RATE_USD_TO_JPY_VERTEX;
+  const outputCostJPY = outputCostUSD * EXCHANGE_RATE_USD_TO_JPY_VERTEX;
+  const totalCostJPY = totalCostUSD * EXCHANGE_RATE_USD_TO_JPY_VERTEX;
 
   return {
-    model: 'vertex-ai-gemini-flash',
+    model: 'vertex-ai-gemini-2.5-flash',
     inputTokens: inputTokens,
     outputTokens: outputTokens,
-    inputCost: inputCost,
-    outputCost: outputCost,
-    totalCost: totalCost
+    inputCostJPY: inputCostJPY,
+    outputCostJPY: outputCostJPY,
+    totalCostJPY: totalCostJPY
   };
 }
 
 /**
- * Vertex AIモデルの価格情報を取得
+ * Vertex AIモデルの価格情報を取得（USD/100万トークン）
  * @return {Object} {inputPer1M, outputPer1M}
  */
 function getVertexAIPricing() {
-  // 2025年1月時点のVertex AI価格（USD）
-  // gemini-2.5-flash-thinking の価格
-  // 実際の価格はGCPドキュメントを参照: https://cloud.google.com/vertex-ai/pricing
+  // 2025年1月時点のVertex AI価格（USD/100万トークン）
+  // Gemini 2.5 Flash（音声入力）の価格
+  // 実際の価格はGCPドキュメントを参照: https://cloud.google.com/vertex-ai/generative-ai/pricing
+  // 音声入力の場合: $1.00/1M tokens, テキスト出力: $2.50/1M tokens
   return {
-    inputPer1M: 0.075,  // Flash入力価格
-    outputPer1M: 0.30   // Flash出力価格
+    inputPer1M: 1.00,   // 音声入力価格（Flash GA）
+    outputPer1M: 2.50   // テキスト出力価格（Flash GA）
   };
 }
 

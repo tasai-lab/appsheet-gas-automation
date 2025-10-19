@@ -54,7 +54,14 @@
       "WebFetch(domain:console.anthropic.com)",
       "Bash(while read dir)",
       "Bash(do echo \"Copying to: $dir\" cp common_modules/logger.gs \"$dir/logger.gs\")",
-      "Bash(echo \"  Skip logger.gs\" cp common_modules/gemini_client.gs \"$dir/gemini_client.gs\")"
+      "Bash(echo \"  Skip logger.gs\" cp common_modules/gemini_client.gs \"$dir/gemini_client.gs\")",
+      "Bash(do echo \"Copying to: $dir\" cp common_modules/logger.gs \"$dir/logger.gs\" cp common_modules/gemini_client.gs \"$dir/gemini_client.gs\" done)",
+      "Bash(for dir in gas_projects/projects/*/Appsheet_*/scripts gas_projects/projects/*/*/scripts)",
+      "Bash(do)",
+      "Bash(if [ -d \"$dir\" ])",
+      "Bash(then)",
+      "Bash(echo \"Copying to: $dir\")",
+      "Bash(fi)"
     ],
     "deny": [],
     "ask": []

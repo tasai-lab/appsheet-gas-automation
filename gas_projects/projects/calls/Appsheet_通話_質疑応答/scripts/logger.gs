@@ -96,7 +96,7 @@ class GASLogger {
 
   /**
    * API使用量情報を設定
-   * @param {Object} usageMetadata - 使用量情報 {model, inputTokens, outputTokens, inputCost, outputCost, totalCost}
+   * @param {Object} usageMetadata - 使用量情報 {model, inputTokens, outputTokens, inputCostJPY, outputCostJPY, totalCostJPY}
    */
   setUsageMetadata(usageMetadata) {
     if (!this.usageMetadata) {
@@ -104,17 +104,17 @@ class GASLogger {
         model: usageMetadata.model || '',
         inputTokens: usageMetadata.inputTokens || 0,
         outputTokens: usageMetadata.outputTokens || 0,
-        inputCost: usageMetadata.inputCost || 0,
-        outputCost: usageMetadata.outputCost || 0,
-        totalCost: usageMetadata.totalCost || 0
+        inputCostJPY: usageMetadata.inputCostJPY || 0,
+        outputCostJPY: usageMetadata.outputCostJPY || 0,
+        totalCostJPY: usageMetadata.totalCostJPY || 0
       };
     } else {
       // 既存のusageMetadataに加算（複数回API呼び出しがある場合）
       this.usageMetadata.inputTokens += usageMetadata.inputTokens || 0;
       this.usageMetadata.outputTokens += usageMetadata.outputTokens || 0;
-      this.usageMetadata.inputCost += usageMetadata.inputCost || 0;
-      this.usageMetadata.outputCost += usageMetadata.outputCost || 0;
-      this.usageMetadata.totalCost += usageMetadata.totalCost || 0;
+      this.usageMetadata.inputCostJPY += usageMetadata.inputCostJPY || 0;
+      this.usageMetadata.outputCostJPY += usageMetadata.outputCostJPY || 0;
+      this.usageMetadata.totalCostJPY += usageMetadata.totalCostJPY || 0;
     }
   }
 
@@ -133,9 +133,9 @@ class GASLogger {
       const model = this.usageMetadata ? this.usageMetadata.model : '';
       const inputTokens = this.usageMetadata ? this.usageMetadata.inputTokens : 0;
       const outputTokens = this.usageMetadata ? this.usageMetadata.outputTokens : 0;
-      const inputCost = this.usageMetadata ? this.usageMetadata.inputCost : 0;
-      const outputCost = this.usageMetadata ? this.usageMetadata.outputCost : 0;
-      const totalCost = this.usageMetadata ? this.usageMetadata.totalCost : 0;
+      const inputCostJPY = this.usageMetadata ? this.usageMetadata.inputCostJPY : 0;
+      const outputCostJPY = this.usageMetadata ? this.usageMetadata.outputCostJPY : 0;
+      const totalCostJPY = this.usageMetadata ? this.usageMetadata.totalCostJPY : 0;
 
       // メインログ行を追加
       const mainLogRow = [
@@ -151,9 +151,9 @@ class GASLogger {
         model,
         inputTokens,
         outputTokens,
-        inputCost,
-        outputCost,
-        totalCost
+        inputCostJPY,
+        outputCostJPY,
+        totalCostJPY
       ];
 
       sheet.appendRow(mainLogRow);
@@ -206,9 +206,9 @@ class GASLogger {
         'モデル',
         'Input Tokens',
         'Output Tokens',
-        'Input Cost ($)',
-        'Output Cost ($)',
-        'Total Cost ($)'
+        'Input料金(円)',
+        'Output料金(円)',
+        '合計料金(円)'
       ];
       sheet.appendRow(headers);
 

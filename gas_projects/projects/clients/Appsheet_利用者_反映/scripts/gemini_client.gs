@@ -301,10 +301,10 @@ class GeminiClient {
   }
 
   /**
-   * usageMetadataを抽出して金額計算
+   * usageMetadataを抽出して金額計算（USD・JPY両方）
    * @param {Object} jsonResponse - APIレスポンス
    * @param {string} model - モデル名
-   * @return {Object|null} {inputTokens, outputTokens, inputCost, outputCost, totalCost, model}
+   * @return {Object|null} {inputTokens, outputTokens, inputCostUSD, outputCostUSD, totalCostUSD, inputCostJPY, outputCostJPY, totalCostJPY, model}
    * @private
    */
   _extractUsageMetadata(jsonResponse, model) {
@@ -316,35 +316,59 @@ class GeminiClient {
     const inputTokens = usage.promptTokenCount || 0;
     const outputTokens = usage.candidatesTokenCount || 0;
 
-    // モデル別の価格を取得
+    // モデル別の価格を取得（USD）
     const pricing = getGeminiPricing(model);
-    const inputCost = (inputTokens / 1000000) * pricing.inputPer1M;
-    const outputCost = (outputTokens / 1000000) * pricing.outputPer1M;
-    const totalCost = inputCost + outputCost;
+    const inputCostUSD = (inputTokens / 1000000) * pricing.inputPer1M;
+    const outputCostUSD = (outputTokens / 1000000) * pricing.outputPer1M;
+    const totalCostUSD = inputCostUSD + outputCostUSD;
+
+    // 日本円に換算
+    const inputCostJPY = inputCostUSD * EXCHANGE_RATE_USD_TO_JPY;
+    const outputCostJPY = outputCostUSD * EXCHANGE_RATE_USD_TO_JPY;
+    const totalCostJPY = totalCostUSD * EXCHANGE_RATE_USD_TO_JPY;
 
     return {
       model: model,
       inputTokens: inputTokens,
       outputTokens: outputTokens,
-      inputCost: inputCost,
-      outputCost: outputCost,
-      totalCost: totalCost
+      inputCostUSD: inputCostUSD,
+      outputCostUSD: outputCostUSD,
+      totalCostUSD: totalCostUSD,
+      inputCostJPY: inputCostJPY,
+      outputCostJPY: outputCostJPY,
+      totalCostJPY: totalCostJPY
     };
   }
 }
 
 /**
- * Geminiモデルの価格情報を取得
+ * 為替レート設定（USD -> JPY）
+ * 2025年1月時点の想定レート
+ */
+const EXCHANGE_RATE_USD_TO_JPY = 150;
+
+/**
+ * Geminiモデルの価格情報を取得（USD/100万トークン）
  * @param {string} model - モデル名
  * @return {Object} {inputPer1M, outputPer1M}
  */
 function getGeminiPricing(model) {
-  // 2025年1月時点のGemini API価格（USD）
-  // 実際の価格はAPIドキュメントを参照: https://ai.google.dev/pricing
+  // 2025年1月時点のGemini 2.5 API価格（USD/100万トークン）
+  // 出典: https://ai.google.dev/pricing
+  // 注: ≤20万入力トークンの価格を使用（単一リクエストで20万トークン超えは稀）
   const pricingTable = {
-    'gemini-2.5-pro': { inputPer1M: 1.25, outputPer1M: 5.0 },
-    'gemini-2.5-flash-lite': { inputPer1M: 0.0125, outputPer1M: 0.05 }, // Flash-Liteモデル
-    'gemini-2.5-flash': { inputPer1M: 0.075, outputPer1M: 0.30 }
+    'gemini-2.5-pro': {
+      inputPer1M: 1.25,    // $1.25/1M tokens (≤200K)
+      outputPer1M: 10.0    // $10/1M tokens (テキスト出力: 回答と推論)
+    },
+    'gemini-2.5-flash-lite': {
+      inputPer1M: 0.10,    // $0.10/1M tokens
+      outputPer1M: 0.40    // $0.40/1M tokens (回答と推論)
+    },
+    'gemini-2.5-flash': {
+      inputPer1M: 0.30,    // $0.30/1M tokens (テキスト/画像/動画)
+      outputPer1M: 2.50    // $2.50/1M tokens (テキスト出力)
+    }
   };
 
   // モデル名をキーとして検索（部分一致、長い名前を優先）
@@ -356,7 +380,7 @@ function getGeminiPricing(model) {
   }
 
   // デフォルト（Flash価格）
-  return { inputPer1M: 0.075, outputPer1M: 0.30 };
+  return { inputPer1M: 0.30, outputPer1M: 2.50 };
 }
 
 /**

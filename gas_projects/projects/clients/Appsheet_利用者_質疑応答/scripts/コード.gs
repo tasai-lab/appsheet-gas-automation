@@ -592,7 +592,12 @@ function parseGeminiResponse(responseText) {
 }
 
 /**
- * APIレスポンスからusageMetadataを抽出
+ * 為替レート設定（USD -> JPY）
+ */
+const EXCHANGE_RATE_USD_TO_JPY = 150;
+
+/**
+ * APIレスポンスからusageMetadataを抽出（日本円計算）
  * @param {Object} jsonResponse - Vertex AIのAPIレスポンス
  * @return {Object|null} usageMetadata情報
  */
@@ -605,21 +610,27 @@ function extractUsageMetadata(jsonResponse) {
   const inputTokens = usage.promptTokenCount || 0;
   const outputTokens = usage.candidatesTokenCount || 0;
 
-  // Vertex AI価格（gemini-2.5-pro）
-  const inputPer1M = 1.25;
-  const outputPer1M = 5.0;
+  // Vertex AI Gemini 2.5 Pro価格（USD/100万トークン）
+  // 出典: https://cloud.google.com/vertex-ai/generative-ai/pricing
+  const inputPer1M = 1.25;    // $1.25/1M tokens (≤200K)
+  const outputPer1M = 10.0;   // $10/1M tokens (テキスト出力)
 
-  const inputCost = (inputTokens / 1000000) * inputPer1M;
-  const outputCost = (outputTokens / 1000000) * outputPer1M;
-  const totalCost = inputCost + outputCost;
+  const inputCostUSD = (inputTokens / 1000000) * inputPer1M;
+  const outputCostUSD = (outputTokens / 1000000) * outputPer1M;
+  const totalCostUSD = inputCostUSD + outputCostUSD;
+
+  // 日本円に換算
+  const inputCostJPY = inputCostUSD * EXCHANGE_RATE_USD_TO_JPY;
+  const outputCostJPY = outputCostUSD * EXCHANGE_RATE_USD_TO_JPY;
+  const totalCostJPY = totalCostUSD * EXCHANGE_RATE_USD_TO_JPY;
 
   return {
-    model: 'vertex-ai-gemini-pro',
+    model: 'vertex-ai-gemini-2.5-pro',
     inputTokens: inputTokens,
     outputTokens: outputTokens,
-    inputCost: inputCost,
-    outputCost: outputCost,
-    totalCost: totalCost
+    inputCostJPY: inputCostJPY,
+    outputCostJPY: outputCostJPY,
+    totalCostJPY: totalCostJPY
   };
 }
 

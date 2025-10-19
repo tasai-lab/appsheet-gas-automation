@@ -241,9 +241,9 @@ function processCallSummary(params) {
     requestCreated: requestCreationResult ? 'あり' : 'なし',
     inputTokens: usageMetadata ? usageMetadata.inputTokens : '',
     outputTokens: usageMetadata ? usageMetadata.outputTokens : '',
-    inputCost: usageMetadata ? usageMetadata.inputCost.toFixed(6) : '',
-    outputCost: usageMetadata ? usageMetadata.outputCost.toFixed(6) : '',
-    totalCost: usageMetadata ? usageMetadata.totalCost.toFixed(6) : ''
+    inputCost: usageMetadata ? usageMetadata.inputCostJPY.toFixed(2) : '',
+    outputCost: usageMetadata ? usageMetadata.outputCostJPY.toFixed(2) : '',
+    totalCost: usageMetadata ? usageMetadata.totalCostJPY.toFixed(2) : ''
   });
 
   // 処理結果を返す（自動的に完了マークされる）
