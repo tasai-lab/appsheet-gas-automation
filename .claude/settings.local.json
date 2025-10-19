@@ -49,7 +49,9 @@
       "Bash(\"Appsheet_名刺取り込み/scripts/コード.gs\")",
       "Bash(gcloud:*)",
       "Bash(awk:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(ccusage --version)",
+      "WebFetch(domain:console.anthropic.com)"
     ],
     "deny": [],
     "ask": []
