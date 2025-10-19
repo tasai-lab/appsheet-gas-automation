@@ -2,20 +2,32 @@
 
 **Script ID:** 1a5w4i6tO8CviYE2obxd0aCiU5BtwoNc2Ajrscedi5ceoQWa7DdlZGbP1
 **Created:** 2025-07-17T07:50:20.523Z
-**Last Modified:** 2025-10-18T18:00:00.000Z
-**Version:** v2.0.0
+**Last Modified:** 2025-10-20T12:00:00.000Z
+**Version:** v2.1.0
 
 ## 概要
 
-訪問看護書類（医療保険証、介護保険証、公費受給者証、口座情報、指示書、負担割合証等）を、Gemini 2.5-proを使用して**1回のAPI呼び出し**でOCR + 構造化データ抽出を行い、各種テーブルに自動登録するGoogle Apps Scriptプロジェクトです。
+訪問看護書類（医療保険証、介護保険証、公費受給者証、口座情報、指示書、負担割合証等）を、**Vertex AI Gemini 2.5-Flash**を使用して**1回のAPI呼び出し**でOCR + 構造化データ抽出を行い、各種テーブルに自動登録するGoogle Apps Scriptプロジェクトです。
+
+### ⚡ 最新の重要変更（2025-10-20）
+
+**Google AI Studio API完全廃止 → Vertex AI専用化**
+- 理由: Google AI Studio API無料枠超過により90%エラー発生
+- 変更: **Vertex AI APIのみ使用**（OAuth2認証）
+- モデル: **gemini-2.5-flash**（コスト最適化）
+- API呼び出し制限: **最大2回/処理**（厳格な制限）
 
 ### 主な機能
 
-- ✅ **1回のAPI呼び出しで完結** - OCR + 構造化データ抽出を同時実行（従来の2回→1回に削減）
-- ✅ **書類OCR** - Gemini 2.5-proによる高精度OCR、Markdown形式で構造化
+- ✅ **Vertex AI専用** - OAuth2認証、Google AI Studio API廃止
+- ✅ **1回のAPI呼び出しで完結** - OCR + 構造化データ抽出を同時実行
+- ✅ **コスト最適化** - Gemini 2.5-Flash使用（Pro比75%削減）
+- ✅ **API呼び出し制限** - 1処理あたり最大2回（過度な呼び出し防止）
+- ✅ **書類OCR** - Vertex AI Gemini 2.5-Flashによる高精度OCR
 - ✅ **書類仕分け** - documentType別に適切なテーブルへレコード作成
 - ✅ **自動ファイル名変更** - AIが推奨するタイトルに自動リネーム
 - ✅ **完了通知メール** - HTML形式で抽出データを通知
+- ✅ **Script Properties管理** - GCP設定を一元管理
 - ✅ **エラーハンドリング** - 重複実行防止、構造化ロギング
 
 ### 対応書類タイプ
@@ -67,39 +79,46 @@ Appsheet_訪問看護_書類OCR/
 
 - Google Apps Scriptプロジェクト
 - AppSheetアプリ
-- Gemini API キー
+- GCPプロジェクト（Vertex AI API有効化）
+- OAuth2スコープ: `https://www.googleapis.com/auth/cloud-platform`
 
-### 設定
+### 初期設定（必須）
 
-`config_settings.gs`を環境に合わせて編集してください:
+**⚠️ 重要**: 初回実行前に必ずScript Propertiesを設定してください。
+
+詳細は [`SETUP_SCRIPT_PROPERTIES.md`](./SETUP_SCRIPT_PROPERTIES.md) または [`🚨_READ_THIS_FIRST.md`](./🚨_READ_THIS_FIRST.md) を参照。
+
+#### 自動セットアップ（推奨）
+
+GASエディタで以下の関数を実行:
 
 ```javascript
-// Gemini API設定
-const GEMINI_CONFIG = {
-  apiKey: 'YOUR_GEMINI_API_KEY',
-  model: 'gemini-2.5-pro',
-  temperature: 0.3,
-  maxOutputTokens: 8192
-};
-
-// AppSheet設定
-const APPSHEET_CONFIG = {
-  appId: 'YOUR_APPSHEET_APP_ID',
-  accessKey: 'YOUR_APPSHEET_ACCESS_KEY',
-  appName: '訪問看護_利用者管理-XXXXXXXX'
-};
-
-// Google Drive設定
-const DRIVE_CONFIG = {
-  baseFolderId: 'YOUR_BASE_FOLDER_ID' // 書類ファイルの基準フォルダーID
-};
-
-// 通知設定
-const NOTIFICATION_CONFIG = {
-  errorEmail: 'error@example.com',
-  completionEmails: 'user1@example.com, user2@example.com'
-};
+setupScriptPropertiesForDocumentOCR()  // 自動設定
+checkScriptPropertiesSetup()            // 設定確認
 ```
+
+#### 設定される項目
+
+Script Propertiesに以下が設定されます:
+
+| キー | 値 | 説明 |
+|------|-----|------|
+| `GCP_PROJECT_ID` | `macro-shadow-458705-v8` | GCPプロジェクトID |
+| `GCP_LOCATION` | `us-central1` | Vertex AIリージョン |
+| `VERTEX_AI_MODEL` | `gemini-2.5-flash` | 使用モデル |
+| `VERTEX_AI_TEMPERATURE` | `0.1` | 生成温度（精度重視） |
+| `VERTEX_AI_MAX_OUTPUT_TOKENS` | `20000` | 最大出力トークン数 |
+| `USE_VERTEX_AI` | `true` | Vertex AI使用フラグ |
+| `ENABLE_DUPLICATION_PREVENTION` | `true` | 重複実行防止 |
+
+### その他の設定
+
+`config_settings.gs`で以下の設定が可能:
+
+- **AppSheet設定**: アプリID、アクセスキー
+- **Google Drive設定**: 基準フォルダーID
+- **通知設定**: エラー通知先、完了通知先
+- **API呼び出し制限**: 最大呼び出し回数（デフォルト: 2回）
 
 ## 使用方法
 
@@ -303,35 +322,113 @@ directProcessRequest(
 
 ### よくある問題
 
-**問題1: 「必須パラメータが不足しています」エラー**
+#### 問題1: Script Propertiesエラー
 
-- 原因: keyValue, fileIdが欠けています
-- 解決: 全ての必須パラメータを含めてリクエストを送信してください
+**エラー例**: `Cannot read properties of undefined (reading 'match')`
 
-**問題2: Gemini APIエラー**
+**原因**: Script Propertiesが未設定
 
-- 原因: APIキーが無効、または使用量制限に達しています
-- 解決: `config_settings.gs`のAPIキーを確認してください
+**解決方法**:
+1. `setupScriptPropertiesForDocumentOCR()` を実行
+2. `checkScriptPropertiesSetup()` で設定確認
 
-**問題3: 書類仕分けがスキップされる**
+#### 問題2: Vertex AI APIエラー
 
-- 原因: structured_dataがnull、またはclient_id/staff_idが不足
-- 解決: documentTypeが対応書類タイプか確認、必須パラメータを追加してください
+**エラー例**: `Vertex AI APIエラー（ステータス: 403）`
+
+**原因**:
+- Vertex AI APIが有効化されていない
+- OAuth2スコープ不足
+
+**解決方法**:
+1. GCPコンソールでVertex AI API有効化
+2. `appsscript.json`に`https://www.googleapis.com/auth/cloud-platform`追加
+3. GASエディタで再認証
+
+#### 問題3: API呼び出し制限超過
+
+**エラー例**: `API呼び出し制限超過: 3回 (上限: 2回)`
+
+**原因**: 1処理で2回を超えるAPI呼び出しが発生
+
+**解決方法**:
+- `config_settings.gs`の`maxApiCallsPerExecution`を確認
+- 提供票処理の場合は想定内（OCR + 専用抽出で2回）
+- それ以外の場合はログを確認して原因特定
+
+#### 問題4: 書類仕分けがスキップされる
+
+**原因**:
+- `structured_data`がnull
+- `client_id`または`staff_id`が不足
+
+**解決方法**:
+- `documentType`が対応書類タイプか確認
+- Webhookペイロードに`client_id`と`staff_id`を含める
+
+#### 問題5: ファイルが見つからない
+
+**エラー例**: `ファイルが見つかりません: テスト.pdf`
+
+**解決方法**:
+- ファイルが基準フォルダー（`DRIVE_CONFIG.baseFolderId`）配下に存在するか確認
+- ファイル名が正確か確認
+- ファイルIDで直接指定を試す
 
 ## デプロイメント履歴
 
 | バージョン | 日時 | 説明 | ステータス |
 |---------|------|------|------------|
-| v2.0 | 2025-10-18 18:00 | 書類OCR + 書類仕分け統合、1回のAPI呼び出しで完結 | ⏳ 準備中 |
+| v2.1 | 2025-10-20 12:00 | Vertex AI専用化、gemini-2.5-flash採用、API呼び出し制限追加 | ✓ 本番稼働中 |
+| v2.0 | 2025-10-18 18:00 | 書類OCR + 書類仕分け統合、1回のAPI呼び出しで完結 | ✓ 廃止 |
 | v1.0 | 2025-07-17 08:00 | 初期バージョン（OCRのみ） | ✓ 廃止 |
 
 ## 参照ドキュメント
 
-- [FLOW.md](./FLOW.md) - 処理フロー図
+- [`🚨_READ_THIS_FIRST.md`](./🚨_READ_THIS_FIRST.md) - **最初に読むべきドキュメント**（Script Properties設定手順）
+- [`SETUP_SCRIPT_PROPERTIES.md`](./SETUP_SCRIPT_PROPERTIES.md) - Script Properties詳細設定ガイド
+- [`FLOW.md`](./FLOW.md) - 処理フロー図
+- [`SPECIFICATIONS.md`](./SPECIFICATIONS.md) - 技術仕様書
+- [`CLAUDE.md`](./CLAUDE.md) - 開発ログ
+- [`MIGRATION_GUIDE.md`](./MIGRATION_GUIDE.md) - 移行ガイド
 
 ## Referenced Spreadsheets
 
-- **GAS実行ログ** (ID: 15Z_GT4-pDAnjDpd8vkX3B9FgYlQIQwdUF1QIEj7bVnE)
+- **GAS実行ログ** (ID: 16UHnMlSUlnUy-67gbwuvjeeU73AwDomqzJwGi6L4rVA)
+
+## バージョン履歴
+
+### v2.1.0 (2025-10-20)
+
+**重要な変更**:
+- ✅ **Google AI Studio API完全廃止** → Vertex AI専用化
+- ✅ **gemini-2.5-flash採用** → コスト75%削減
+- ✅ **API呼び出し制限追加** → 1処理最大2回
+- ✅ **Script Properties管理** → GCP設定の一元化
+
+**技術的変更**:
+- `analyzeDocumentWithGemini()`: Vertex AIのみ使用（フォールバック削除）
+- `config_settings.gs`: GEMINI_CONFIG廃止マーク追加
+- `script_properties_manager.gs`: GCP設定管理追加
+- `test_functions.gs`: Script Properties自動設定関数追加
+
+**破壊的変更**:
+- Google AI Studio API完全削除（APIキー不要）
+- `GEMINI_CONFIG.apiKey`は空文字列（互換性のため残存）
+- OAuth2認証必須（`https://www.googleapis.com/auth/cloud-platform`）
+
+### v2.0.0 (2025-10-18)
+
+**主な機能**:
+- 書類OCR + 書類仕分け統合
+- 1回のAPI呼び出しでOCR + 構造化データ抽出
+- 提供票対応（ハイブリッド処理）
+
+### v1.0.0 (2025-07-17)
+
+**初期リリース**:
+- 基本的なOCR機能
+- Google AI Studio API使用
 
 ## ライセンス
 

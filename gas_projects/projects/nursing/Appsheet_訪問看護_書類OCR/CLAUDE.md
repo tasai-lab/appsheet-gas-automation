@@ -1,7 +1,7 @@
 # 書類OCR + 書類仕分けシステム - 開発ログ
 
 **プロジェクト**: Appsheet_訪問看護_書類OCR
-**最終更新**: 2025-10-18
+**最終更新**: 2025-10-20
 **担当**: Claude Code
 
 ---
@@ -10,16 +10,128 @@
 
 訪問看護で使用される各種書類（医療保険証、介護保険証、公費受給者証、口座情報、指示書、提供票、負担割合証）をOCR処理し、構造化データとしてAppSheetテーブルに自動登録するシステム。
 
+**⚡ 現在の状態**: Vertex AI専用、Gemini 2.5-Flash使用、Google AI Studio API完全廃止
+
 ### 主な機能
 
-1. **書類OCR**: Vertex AI/Google AI APIによる画像・PDF・音声・動画のOCR処理
+1. **書類OCR**: **Vertex AI Gemini 2.5-Flash**による画像・PDF・音声・動画のOCR処理
 2. **構造化データ抽出**: 書類種別ごとに必要な項目を自動抽出
 3. **AppSheet連携**: 抽出データを適切なテーブルに自動登録
 4. **通知機能**: 処理完了時にメール通知（ディープリンク付き）
+5. **API呼び出し制限**: 1処理あたり最大2回（厳格な制限）
 
 ---
 
 ## 📋 プロジェクト履歴
+
+### 2025-10-20: Google AI Studio API完全廃止とVertex AI専用化 ✅
+
+#### 背景
+
+Google AI Studio API無料枠（1,500リクエスト/日）による429エラーが頻発し、サービス安定性に深刻な影響。コスト管理とクォータ管理の観点から、**すべてのプロジェクトでVertex AI APIのみ使用**する方針に統一。
+
+#### 実施した対策
+
+##### 1. **Google AI Studio API完全削除** ✅
+
+**目的**: 無料枠制限の完全回避
+
+**実装**:
+- `modules_geminiClient.gs:25`: フォールバック機能の削除
+- `modules_geminiClient.gs:146`: `analyzeDocumentWithGoogleAI()`関数を削除
+- `config_settings.gs:130`: `GEMINI_CONFIG.apiKey = ''`（空文字列化）
+- `config_settings.gs:134`: `useVertexAI()`を強制的にtrueに固定
+
+**結果**: Google AI Studio APIへのフォールバックが一切発生しない
+
+##### 2. **Vertex AI専用化** ✅
+
+**目的**: OAuth2認証による安全なAPI利用
+
+**実装**:
+- `analyzeDocumentWithGemini()`: Vertex AIのみを呼び出し（リトライなし）
+- `getVertexAIEndpoint()`: Script PropertiesからGCP設定取得
+- `getOAuth2Token()`: OAuth2トークン取得（APIキー不要）
+
+**OAuth Scope**: `https://www.googleapis.com/auth/cloud-platform`
+
+**設定管理**: Script Propertiesに移行
+- `GCP_PROJECT_ID`: macro-shadow-458705-v8
+- `GCP_LOCATION`: us-central1
+- `VERTEX_AI_MODEL`: gemini-2.5-flash
+- `VERTEX_AI_TEMPERATURE`: 0.1
+- `VERTEX_AI_MAX_OUTPUT_TOKENS`: 20000
+- `USE_VERTEX_AI`: true（強制）
+
+##### 3. **コスト最適化: Gemini 2.5-Flash採用** ✅
+
+**変更前**: `gemini-2.5-pro`
+**変更後**: `gemini-2.5-flash`
+
+**コスト比較**:
+- Flash: Input $0.075/1M, Output $0.30/1M
+- Pro: Input $1.25/1M, Output $5.00/1M
+- **削減率: 約75%**
+
+**品質**: 書類OCRには十分な精度、処理速度も向上
+
+##### 4. **API呼び出しカウンターシステム** ✅
+
+**ファイル**: `config_settings.gs` (lines 26-78)
+
+```javascript
+const SYSTEM_CONFIG = {
+  maxApiCallsPerExecution: 2,  // 厳格な制限
+  _apiCallCounter: 0
+};
+
+function incrementApiCallCounter(apiType) {
+  SYSTEM_CONFIG._apiCallCounter++;
+
+  if (SYSTEM_CONFIG._apiCallCounter > SYSTEM_CONFIG.maxApiCallsPerExecution) {
+    throw new Error(`API呼び出し制限超過: ${SYSTEM_CONFIG._apiCallCounter}回`);
+  }
+}
+```
+
+**実装箇所**:
+- `modules_geminiClient.gs:46` - Vertex AI呼び出し時
+- `modules_documentProcessor.gs:689` - 提供票データ抽出時
+
+**API呼び出しフロー**:
+```
+1回目: analyzeDocumentWithVertexAI() - メイン書類OCR
+  （成功）→ 完了
+  （失敗）→ エラーをスロー（リトライなし）
+
+提供票の場合:
+1回目: analyzeDocumentWithVertexAI() - OCR
+2回目: extractFormDataFromOCR() - 専用抽出
+```
+
+**保証**: 1回の処理で絶対に2回を超えるAPI呼び出しは発生しない ✅
+
+##### 5. **Script Properties管理システム** ✅
+
+**ファイル**: `script_properties_manager.gs`
+
+**主な機能**:
+- GCP設定の一元管理
+- 自動セットアップ関数
+- 設定確認関数
+- 全削除保護（確認付き）
+
+**テスト関数**:
+- `setupScriptPropertiesForDocumentOCR()`: 自動設定
+- `checkScriptPropertiesSetup()`: 設定確認
+- `listAllScriptProperties()`: 全プロパティ表示
+- `confirmClearAllScriptProperties()`: 全削除（確認付き）
+
+**ドキュメント**:
+- `🚨_READ_THIS_FIRST.md`: 初回セットアップガイド
+- `SETUP_SCRIPT_PROPERTIES.md`: 詳細設定手順
+
+---
 
 ### 2025-10-18: API呼び出し制限システムの実装 ✅
 
