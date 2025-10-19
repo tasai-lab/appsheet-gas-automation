@@ -51,7 +51,10 @@
       "Bash(awk:*)",
       "Bash(tree:*)",
       "Bash(ccusage --version)",
-      "WebFetch(domain:console.anthropic.com)"
+      "WebFetch(domain:console.anthropic.com)",
+      "Bash(while read dir)",
+      "Bash(do echo \"Copying to: $dir\" cp common_modules/logger.gs \"$dir/logger.gs\")",
+      "Bash(echo \"  Skip logger.gs\" cp common_modules/gemini_client.gs \"$dir/gemini_client.gs\")"
     ],
     "deny": [],
     "ask": []

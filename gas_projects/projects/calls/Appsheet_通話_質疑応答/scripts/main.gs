@@ -160,12 +160,18 @@ function processQuery(queryId, params, logger) {
   logger.info(`プロンプト構築完了（${prompt.length}文字）`);
   
   // Gemini APIで回答生成
-  const answer = gemini.generateText(prompt, logger);
-  
+  const response = gemini.generateText(prompt, logger);
+  const answer = response.text;
+
+  // API使用量情報をloggerに記録
+  if (response.usageMetadata) {
+    logger.setUsageMetadata(response.usageMetadata);
+  }
+
   if (!answer) {
     throw new Error('AIからの応答が空です');
   }
-  
+
   logger.info(`回答生成成功（${answer.length}文字）`);
   
   // AppSheetに書き戻し

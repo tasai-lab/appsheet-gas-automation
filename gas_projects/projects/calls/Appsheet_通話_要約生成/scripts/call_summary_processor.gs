@@ -225,6 +225,9 @@ function processCallSummary(params) {
     Logger.log(`[依頼情報] summary_onlyモード - 依頼詳細の抽出は実行されませんでした`);
   }
 
+  // API使用量情報を取得
+  const usageMetadata = analysisResult.usageMetadata || null;
+
   // 成功ログを記録
   logSuccess(callId, {
     filePath: filePath,
@@ -235,7 +238,12 @@ function processCallSummary(params) {
     processingTime: timer.getElapsedSeconds(),
     modelName: config.vertexAIModel,
     fileSize: analysisResult.fileSize,
-    requestCreated: requestCreationResult ? 'あり' : 'なし'
+    requestCreated: requestCreationResult ? 'あり' : 'なし',
+    inputTokens: usageMetadata ? usageMetadata.inputTokens : '',
+    outputTokens: usageMetadata ? usageMetadata.outputTokens : '',
+    inputCost: usageMetadata ? usageMetadata.inputCost.toFixed(6) : '',
+    outputCost: usageMetadata ? usageMetadata.outputCost.toFixed(6) : '',
+    totalCost: usageMetadata ? usageMetadata.totalCost.toFixed(6) : ''
   });
 
   // 処理結果を返す（自動的に完了マークされる）

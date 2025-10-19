@@ -352,7 +352,7 @@ function callVertexAIAPIWithInlineData(audioFile, prompt, config) {
  */
 function extractAndValidateJSON(responseText, includeRequestDetails = false) {
   let jsonResponse;
-  
+
   // JSONパース
   try {
     jsonResponse = JSON.parse(responseText);
@@ -395,9 +395,60 @@ function extractAndValidateJSON(responseText, includeRequestDetails = false) {
   // 構造検証と修復
   const validatedResult = validateAndFixJSONStructure(result, contentText, includeRequestDetails);
 
+  // usageMetadataを抽出
+  const usageMetadata = extractVertexAIUsageMetadata(jsonResponse);
+  validatedResult.usageMetadata = usageMetadata;
+
   Logger.log(`[Vertex AI] JSON抽出成功 (アクション数: ${validatedResult.actions.length})`);
-  
+  if (usageMetadata) {
+    Logger.log(`[Vertex AI] 使用量: Input ${usageMetadata.inputTokens} tokens, Output ${usageMetadata.outputTokens} tokens, 合計 $${usageMetadata.totalCost.toFixed(4)}`);
+  }
+
   return validatedResult;
+}
+
+/**
+ * Vertex AI APIレスポンスからusageMetadataを抽出
+ * @param {Object} jsonResponse - APIレスポンス
+ * @return {Object|null} {inputTokens, outputTokens, inputCost, outputCost, totalCost, model}
+ */
+function extractVertexAIUsageMetadata(jsonResponse) {
+  if (!jsonResponse.usageMetadata) {
+    return null;
+  }
+
+  const usage = jsonResponse.usageMetadata;
+  const inputTokens = usage.promptTokenCount || 0;
+  const outputTokens = usage.candidatesTokenCount || 0;
+
+  // Vertex AIモデルの価格を取得（gemini-2.5-flash-thinkingを想定）
+  const pricing = getVertexAIPricing();
+  const inputCost = (inputTokens / 1000000) * pricing.inputPer1M;
+  const outputCost = (outputTokens / 1000000) * pricing.outputPer1M;
+  const totalCost = inputCost + outputCost;
+
+  return {
+    model: 'vertex-ai-gemini-flash',
+    inputTokens: inputTokens,
+    outputTokens: outputTokens,
+    inputCost: inputCost,
+    outputCost: outputCost,
+    totalCost: totalCost
+  };
+}
+
+/**
+ * Vertex AIモデルの価格情報を取得
+ * @return {Object} {inputPer1M, outputPer1M}
+ */
+function getVertexAIPricing() {
+  // 2025年1月時点のVertex AI価格（USD）
+  // gemini-2.5-flash-thinking の価格
+  // 実際の価格はGCPドキュメントを参照: https://cloud.google.com/vertex-ai/pricing
+  return {
+    inputPer1M: 0.075,  // Flash入力価格
+    outputPer1M: 0.30   // Flash出力価格
+  };
 }
 
 /**

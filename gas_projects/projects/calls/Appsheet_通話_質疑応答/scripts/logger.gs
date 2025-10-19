@@ -35,6 +35,7 @@ class GASLogger {
     this.logs = [];
     this.startTime = new Date();
     this.requestId = Utilities.getUuid();
+    this.usageMetadata = null; // API使用量情報
   }
 
   /**
@@ -94,6 +95,30 @@ class GASLogger {
   }
 
   /**
+   * API使用量情報を設定
+   * @param {Object} usageMetadata - 使用量情報 {model, inputTokens, outputTokens, inputCost, outputCost, totalCost}
+   */
+  setUsageMetadata(usageMetadata) {
+    if (!this.usageMetadata) {
+      this.usageMetadata = {
+        model: usageMetadata.model || '',
+        inputTokens: usageMetadata.inputTokens || 0,
+        outputTokens: usageMetadata.outputTokens || 0,
+        inputCost: usageMetadata.inputCost || 0,
+        outputCost: usageMetadata.outputCost || 0,
+        totalCost: usageMetadata.totalCost || 0
+      };
+    } else {
+      // 既存のusageMetadataに加算（複数回API呼び出しがある場合）
+      this.usageMetadata.inputTokens += usageMetadata.inputTokens || 0;
+      this.usageMetadata.outputTokens += usageMetadata.outputTokens || 0;
+      this.usageMetadata.inputCost += usageMetadata.inputCost || 0;
+      this.usageMetadata.outputCost += usageMetadata.outputCost || 0;
+      this.usageMetadata.totalCost += usageMetadata.totalCost || 0;
+    }
+  }
+
+  /**
    * ログをスプレッドシートに保存
    * @param {string} status - 最終ステータス（成功/エラー）
    * @param {string} recordId - 処理対象レコードID（オプション）
@@ -103,7 +128,15 @@ class GASLogger {
       const sheet = this._getOrCreateLogSheet();
       const endTime = new Date();
       const executionTime = (endTime.getTime() - this.startTime.getTime()) / 1000;
-      
+
+      // API使用量情報
+      const model = this.usageMetadata ? this.usageMetadata.model : '';
+      const inputTokens = this.usageMetadata ? this.usageMetadata.inputTokens : 0;
+      const outputTokens = this.usageMetadata ? this.usageMetadata.outputTokens : 0;
+      const inputCost = this.usageMetadata ? this.usageMetadata.inputCost : 0;
+      const outputCost = this.usageMetadata ? this.usageMetadata.outputCost : 0;
+      const totalCost = this.usageMetadata ? this.usageMetadata.totalCost : 0;
+
       // メインログ行を追加
       const mainLogRow = [
         this.startTime,
@@ -114,14 +147,20 @@ class GASLogger {
         recordId || '',
         this.requestId,
         this._getLogSummary(),
-        this._getErrorSummary()
+        this._getErrorSummary(),
+        model,
+        inputTokens,
+        outputTokens,
+        inputCost,
+        outputCost,
+        totalCost
       ];
-      
+
       sheet.appendRow(mainLogRow);
-      
+
       // 詳細ログをJSON形式で別シートに保存（オプション）
       this._saveDetailedLogs();
-      
+
     } catch (e) {
       console.error(`ログのスプレッドシート保存に失敗: ${e.toString()}`);
       // スプレッドシート保存に失敗してもメイン処理は継続
@@ -163,26 +202,38 @@ class GASLogger {
         'レコードID',
         'リクエストID',
         'ログサマリー',
-        'エラー詳細'
+        'エラー詳細',
+        'モデル',
+        'Input Tokens',
+        'Output Tokens',
+        'Input Cost ($)',
+        'Output Cost ($)',
+        'Total Cost ($)'
       ];
       sheet.appendRow(headers);
-      
+
       // ヘッダー行のフォーマット
       const headerRange = sheet.getRange(1, 1, 1, headers.length);
       headerRange.setFontWeight('bold');
       headerRange.setBackground('#4285f4');
       headerRange.setFontColor('#ffffff');
-      
+
       // 列幅を調整
-      sheet.setColumnWidth(1, 150); // 開始時刻
-      sheet.setColumnWidth(2, 150); // 終了時刻
-      sheet.setColumnWidth(3, 100); // 実行時間
-      sheet.setColumnWidth(4, 250); // スクリプト名
-      sheet.setColumnWidth(5, 100); // ステータス
-      sheet.setColumnWidth(6, 150); // レコードID
-      sheet.setColumnWidth(7, 250); // リクエストID
-      sheet.setColumnWidth(8, 400); // ログサマリー
-      sheet.setColumnWidth(9, 400); // エラー詳細
+      sheet.setColumnWidth(1, 150);  // 開始時刻
+      sheet.setColumnWidth(2, 150);  // 終了時刻
+      sheet.setColumnWidth(3, 100);  // 実行時間
+      sheet.setColumnWidth(4, 250);  // スクリプト名
+      sheet.setColumnWidth(5, 100);  // ステータス
+      sheet.setColumnWidth(6, 150);  // レコードID
+      sheet.setColumnWidth(7, 250);  // リクエストID
+      sheet.setColumnWidth(8, 400);  // ログサマリー
+      sheet.setColumnWidth(9, 400);  // エラー詳細
+      sheet.setColumnWidth(10, 180); // モデル
+      sheet.setColumnWidth(11, 120); // Input Tokens
+      sheet.setColumnWidth(12, 120); // Output Tokens
+      sheet.setColumnWidth(13, 120); // Input Cost
+      sheet.setColumnWidth(14, 120); // Output Cost
+      sheet.setColumnWidth(15, 120); // Total Cost
       
       // 固定行
       sheet.setFrozenRows(1);

@@ -416,22 +416,33 @@ function processTaskQueueWorker() {
 function executeTask(analysisId, params) {
 
   const startTime = new Date();
+  const logger = createLogger('Appsheet_利用者_質疑応答');
+  let status = '成功';
 
   try {
 
     const { documentText, promptText } = params;
 
+    logger.info(`タスク開始: ${analysisId}`);
     const aiResult = generateAnswerAndSummaryWithGemini(documentText, promptText);
+
+    // API使用量情報をloggerに記録
+    if (aiResult.usageMetadata) {
+      logger.setUsageMetadata(aiResult.usageMetadata);
+    }
 
     updateOnSuccess(analysisId, aiResult.answer, aiResult.summary);
 
     const duration = (new Date() - startTime) / 1000;
 
     Logger.log(`[INFO][Worker] タスク正常完了: ${analysisId}, 処理時間 = ${duration}秒`);
+    logger.success(`タスク完了: 処理時間 ${duration}秒`);
 
   } catch (error) {
 
+    status = 'エラー';
     Logger.log(`[FATAL ERROR][Worker] タスク失敗: ${analysisId} - ${error.toString()}\nスタックトレース: ${error.stack}`);
+    logger.error(`タスク失敗: ${error.toString()}`, { stack: error.stack });
 
     try {
 
@@ -443,6 +454,9 @@ function executeTask(analysisId, params) {
 
     }
 
+  } finally {
+    // ログをスプレッドシートに保存
+    logger.saveToSpreadsheet(status, analysisId);
   }
 
 }
@@ -562,12 +576,51 @@ function parseGeminiResponse(responseText) {
 
     const result = JSON.parse(jsonString);
 
-    if (result && typeof result.answer === 'string' && typeof result.summary === 'string') { return result; }
+    if (result && typeof result.answer === 'string' && typeof result.summary === 'string') {
+      // usageMetadataを抽出して追加
+      const usageMetadata = extractUsageMetadata(jsonResponse);
+      return {
+        ...result,
+        usageMetadata: usageMetadata
+      };
+    }
 
     else { throw new Error("AIの応答に必要なキー（answer, summary）が含まれていません。"); }
 
   } catch (e) { throw new Error(`AIが生成したコンテンツの解析に失敗しました: ${e.message}`); }
 
+}
+
+/**
+ * APIレスポンスからusageMetadataを抽出
+ * @param {Object} jsonResponse - Vertex AIのAPIレスポンス
+ * @return {Object|null} usageMetadata情報
+ */
+function extractUsageMetadata(jsonResponse) {
+  if (!jsonResponse.usageMetadata) {
+    return null;
+  }
+
+  const usage = jsonResponse.usageMetadata;
+  const inputTokens = usage.promptTokenCount || 0;
+  const outputTokens = usage.candidatesTokenCount || 0;
+
+  // Vertex AI価格（gemini-2.5-pro）
+  const inputPer1M = 1.25;
+  const outputPer1M = 5.0;
+
+  const inputCost = (inputTokens / 1000000) * inputPer1M;
+  const outputCost = (outputTokens / 1000000) * outputPer1M;
+  const totalCost = inputCost + outputCost;
+
+  return {
+    model: 'vertex-ai-gemini-pro',
+    inputTokens: inputTokens,
+    outputTokens: outputTokens,
+    inputCost: inputCost,
+    outputCost: outputCost,
+    totalCost: totalCost
+  };
 }
 
 // ================================================================================================

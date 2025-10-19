@@ -57,7 +57,12 @@ function logExecution(status, callId, details = {}) {
       details.modelName || '',
       details.fileSize || '',
       userEmail,
-      details.notes || ''
+      details.notes || '',
+      details.inputTokens || '',
+      details.outputTokens || '',
+      details.inputCost || '',
+      details.outputCost || '',
+      details.totalCost || ''
     ];
     
     sheet.appendRow(row);
@@ -89,7 +94,12 @@ function initializeLogSheet(sheet) {
     'モデル名',
     'ファイルサイズ',
     '実行ユーザー',
-    '備考'
+    '備考',
+    'Input Tokens',
+    'Output Tokens',
+    'Input Cost ($)',
+    'Output Cost ($)',
+    'Total Cost ($)'
   ];
   
   sheet.appendRow(headers);
