@@ -63,12 +63,22 @@ function processRequest(queryId, promptText, callSummary, callTranscript, call_i
     });
     
     recordId = queryId;
-    
+
     // 必須パラメータチェック
     if (!recordId || !promptText) {
       throw new Error('必須パラメータ不足: queryId, promptText が必要です');
     }
-    
+
+    // paramsオブジェクトを再構築
+    const params = {
+      queryId: queryId,
+      promptText: promptText,
+      callSummary: callSummary,
+      callTranscript: callTranscript,
+      call_info: call_info,
+      modelKeyword: modelKeyword
+    };
+
     // 重複実行防止
     const dupPrevention = createDuplicationPrevention(CONFIG.SCRIPT_NAME);
     const result = dupPrevention.executeWithRetry(recordId, (id) => {
