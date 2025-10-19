@@ -366,23 +366,35 @@ function getStructuredDataSchema(documentType, clientBirthDate) {
 
 - 日付はすべて西暦の「yyyy/mm/dd」形式に変換してください。和暦は正しく西暦に変換してください。
 
+- **被保険者番号 (insured_person_number)**: 10桁の数字。書類から正確に読み取ってください。
+
+- **保険者番号 (insurer_number)**: 6桁の数字。書類から正確に読み取ってください。
+
+- **保険者名称 (insurer_name)**: 市区町村名（例: 八千代市）。書類から正確に読み取ってください。
+
 - **要介護状態区分 (care_level)**: テキストから要介護度を読み取り、以下の対応表に基づいて**2桁のコード**を返してください。
 
   - "非該当" → "01"
 
-  - "要支援１" → "12"
+  - "要支援１" または "要支援1" → "12"
 
-  - "要支援２" → "13"
+  - "要支援２" または "要支援2" → "13"
 
-  - "要介護１" → "21"
+  - "要介護１" または "要介護1" → "21"
 
-  - "要介護２" → "22"
+  - "要介護２" または "要介護2" → "22"
 
-  - "要介護３" → "23"
+  - "要介護３" または "要介護3" → "23"
 
-  - "要介護４" → "24"
+  - "要介護４" または "要介護4" → "24"
 
-  - "要介護５" → "25"
+  - "要介護５" または "要介護5" → "25"
+
+  **重要**: 必ず2桁のコード（"01", "12", "21"など）を返してください。文字列（"要介護3"など）は絶対に返さないでください。
+
+- **認定有効期間（開始）(cert_start_date)**: 「yyyy/mm/dd」形式。書類の「認定有効期間」欄から開始日を読み取ってください。
+
+- **認定有効期間（終了）(cert_end_date)**: 「yyyy/mm/dd」形式。書類の「認定有効期間」欄から終了日を読み取ってください。
 
 - **給付率 (benefit_rate)**: 書類から給付率または負担割合を読み取り、以下のように**整数**で返してください。
   - 書類に「9割」「九割」「給付率90%」などの記載がある場合 → 90
@@ -409,13 +421,19 @@ function getStructuredDataSchema(documentType, clientBirthDate) {
     "insured_person_number": "string or null",
     "insurer_number": "string or null",
     "insurer_name": "string or null",
-    "care_level": "string ('12', '21'など) or null",
+    "care_level": "string ('01', '12', '21', '22', '23', '24', '25'のいずれか) or null",
     "cert_start_date": "string (yyyy/mm/dd) or null",
     "cert_end_date": "string (yyyy/mm/dd) or null",
     "benefit_rate": "number (90, 80, 70など) or null",
     "next_renewal_check_date": "string (yyyy/mm/dd) or null"
   }
 }
+
+# 重要な注意事項
+
+- **すべてのフィールドを必ず出力してください**。書類に記載がない場合は null を設定してください。
+- フィールドを省略しないでください。8つすべてのフィールドが必要です。
+- care_levelは必ず2桁のコード形式（"23"など）で返してください。
 `,
 
     '公費': `

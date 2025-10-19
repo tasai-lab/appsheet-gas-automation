@@ -40,6 +40,11 @@ function processStructuredData(documentType, structuredData, context) {
       return null;
     }
 
+    // Geminiから返された生データをログ出力
+    logStructured(LOG_LEVEL.INFO, `Gemini抽出データ（生データ）: ${documentType}`, {
+      structuredData: JSON.stringify(structuredData, null, 2)
+    });
+
     switch (documentType) {
       case '医療保険証':
         recordId = createMedicalInsuranceRecord(context, structuredData);
@@ -195,6 +200,30 @@ function createMedicalInsuranceRecord(context, data) {
 function createLtciInsuranceRecord(context, data) {
   const newId = `LTCI-${Utilities.getUuid().substring(0, 8)}`;
 
+  // care_levelのデータ正規化（Geminiが文字列を返した場合の対策）
+  let careLevel = data.care_level;
+  if (careLevel && typeof careLevel === 'string') {
+    // 文字列の場合、コードに変換
+    const careLevelMap = {
+      '非該当': '01',
+      '要支援１': '12', '要支援1': '12',
+      '要支援２': '13', '要支援2': '13',
+      '要介護１': '21', '要介護1': '21',
+      '要介護２': '22', '要介護2': '22',
+      '要介護３': '23', '要介護3': '23',
+      '要介護４': '24', '要介護4': '24',
+      '要介護５': '25', '要介護5': '25'
+    };
+
+    if (careLevelMap[careLevel]) {
+      careLevel = careLevelMap[careLevel];
+      logStructured(LOG_LEVEL.INFO, `care_levelを変換: ${data.care_level} → ${careLevel}`);
+    } else if (!/^\d{2}$/.test(careLevel)) {
+      // 2桁の数字でもマップにもない場合は警告
+      logStructured(LOG_LEVEL.WARN, `未知のcare_level形式: ${careLevel}`);
+    }
+  }
+
   // 終了日が設定されていない場合のデフォルト値
   let finalCertEndDate = data.cert_end_date;
   if (data.cert_start_date && !finalCertEndDate) {
@@ -211,7 +240,7 @@ function createLtciInsuranceRecord(context, data) {
     insured_person_number: data.insured_person_number,
     insurer_number: data.insurer_number,
     insurer_name: data.insurer_name,
-    care_level: data.care_level,
+    care_level: careLevel,
     cert_start_date: data.cert_start_date,
     cert_end_date: finalCertEndDate,
     benefit_rate: data.benefit_rate,
