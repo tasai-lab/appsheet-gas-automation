@@ -256,41 +256,101 @@ function generateDocumentPrompt(documentType, clientBirthDate) {
 function getStructuredDataSchema(documentType, clientBirthDate) {
   const schemas = {
     '医療保険証': `
-# 医療保険証の構造化データ抽出ルール
+# あなたの役割
 
-**重要**: 後期高齢者医療（保険者番号が39で始まる）の場合：
-- relationship_to_insured は必ず「本人」
-- 給付割合が80（2割負担）なら income_category は「41」
-- 給付割合が90（1割負担）なら income_category は「42」
+あなたは医療保険証、高齢受給者証、限度額適用認定証、減額認定証などを統合的に解析し、指定されたコード体系に従って情報を変換するエキスパートです。
 
-${clientBirthDate ? `**利用者生年月日**: ${clientBirthDate}（年齢計算に使用）` : ''}
+以下のOCRテキストから、指定された項目を抽出し、厳密なJSON形式で出力してください。
 
-**有効期限終了日がない場合**: effective_end_date は「9999/12/31」
+# 前提情報
 
-# 出力形式
+- 利用者の年齢: ${clientBirthDate ? new Date(new Date() - new Date(clientBirthDate)).getFullYear() - 1970 : '不明'} 歳
+
+# 抽出・変換ルール
+
+- **日付**: 全て西暦の「yyyy/mm/dd」形式に変換してください。
+
+- **保険分類 (insurance_category)**: 社会保険なら "1"、国民健康保険なら "2" を返してください。
+
+- **給付割合 (benefit_rate)**: 自己負担割合（一部負担金割合）が「3割」であれば給付割合は「7割」となり 70、「9割」であれば 90 のように、**整数**で返してください。
+
+- **所得区分 (income_category)**: 記載の区分を読み取り、以下の対応表に基づいて**2桁のコード**を返してください。
+
+  - "区ア" / "ア" / "現役並Ⅲ" → "26"
+
+  - "区イ" / "イ" / "現役並Ⅱ" → "27"
+
+  - "区ウ" / "ウ" / "現役並Ⅰ" → "28"
+
+  - "区エ" / "エ" / "一般" / "一般所得者" → "29"
+
+  - "区オ" / "オ" / "低所得者Ⅱ" / "区Ⅱ" → "30"
+
+  - "低所得者Ⅰ" / "区Ⅰ" → "30"
+
+  - "一般Ⅱ" → "41"
+
+  - "一般Ⅰ" → "42"
+
+- **一部負担金区分 (copayment_category) - 別表７**:
+
+  - **利用者の年齢が70歳以上の場合にのみ**、認定証の記載から以下のルールでコードを返してください。
+
+  - 「低所得者Ⅱ」または「区Ⅱ」の記載がある場合 → "1"
+
+  - 「低所得者Ⅰ」または「区Ⅰ」の記載がある場合 → "3"
+
+  - 上記以外で70歳未満の場合はnullを返してください。
+
+- **職務上の事由 (is_work_related_reason) - 別表８**:
+
+  - 職務上の事由に関する記載を読み取り、以下の対応表に基づいて**コード**を返してください。
+
+  - 「職上」または「職務上」と読める記載がある場合 → "1"
+
+  - 「下３」または「下船後３月以内」と読める記載がある場合 → "2"
+
+  - 「通災」または「通勤災害」と読める記載がある場合 → "3"
+
+- **減免区分 (reduction_category) - 別表９**:
+
+  - 減免に関する記載を読み取り、以下の対応表に基づいて**コード**を返してください。
+
+  - 「減額」と読める記載がある場合 → "1"
+
+  - 「免除」と読める記載がある場合 → "2"
+
+  - 「支払猶予」と読める記載がある場合 → "3"
+
+- 該当する情報が見つからない項目の値は null にしてください。
+
+- **禁止事項**: JSON以外の説明文や\`\`\`jsonマーカーは絶対に含めないでください。
+
+# 出力形式 (このJSONフォーマットを厳守してください)
 
 {
   "ocr_text": "（Markdown形式の構造化OCRテキスト）",
   "summary": "（200文字程度の要約）",
   "title": "（推奨ファイル名）",
   "structured_data": {
-    "effective_start_date": "yyyy/mm/dd or null",
-    "effective_end_date": "yyyy/mm/dd or null (なければ9999/12/31)",
+    "effective_start_date": "string (yyyy/mm/dd) or null",
+    "effective_end_date": "string (yyyy/mm/dd) or null",
     "insurer_number": "string or null",
     "policy_symbol": "string or null",
     "policy_number": "string or null",
     "branch_number": "string or null",
-    "relationship_to_insured": "本人 or 家族 or null",
-    "insurance_category": "string or null",
-    "is_work_related_reason": "string or null",
-    "benefit_rate": 70,
+    "relationship_to_insured": "string ('本人', '家族'など) or null",
+    "insurance_category": "string ('1' or '2') or null",
+    "is_work_related_reason": "string ('1', '2', '3') or null",
+    "benefit_rate": "number or null",
     "income_category": "string or null",
+    "copayment_category": "string ('1', '3') or null",
     "certificate_number": "string or null",
-    "fixed_copayment_amount": "string or null",
-    "reduction_category": "string or null",
-    "reduction_rate_percent": "string or null",
-    "reduction_amount": "string or null",
-    "reduction_cert_expiration_date": "yyyy/mm/dd or null"
+    "fixed_copayment_amount": "number or null",
+    "reduction_category": "string ('1', '2', '3') or null",
+    "reduction_rate_percent": "number or null",
+    "reduction_amount": "number or null",
+    "reduction_cert_expiration_date": "string (yyyy/mm/dd) or null"
   }
 }
 `,
@@ -359,71 +419,146 @@ ${clientBirthDate ? `**利用者生年月日**: ${clientBirthDate}（年齢計�
 `,
 
     '公費': `
-# 公費受給者証の構造化データ抽出ルール
+# あなたの役割
 
-${clientBirthDate ? `**利用者生年月日**: ${clientBirthDate}（年齢計算・公費名称判定に使用）` : ''}
+あなたは公費負担医療受給者証および限度額適用認定証を解析するエキスパートです。
 
-**公費番号から公費名称を判定**:
-- "12" → "生活保護"
-- "25" → "中国残留邦人等"
-- "51" → "特定疾患（指定難病）"
-- "54" → "小児慢性特定疾患"
+以下のOCRテキストから、指定された項目を抽出し、厳密なJSON形式で出力してください。
 
-**有効期限終了日がない場合**: effective_end_date は「9999/12/31」
+# 前提情報
 
-# 出力形式
+- 利用者の年齢: ${clientBirthDate ? new Date(new Date() - new Date(clientBirthDate)).getFullYear() - 1970 : '不明'} 歳
+
+# 抽出ルール
+
+- **公費制度名 (subsidy_name)**: OCRテキストの内容と以下の公費マスターを照合し、最も一致する制度の**法別番号（2桁コード）**を返してください。
+
+- **所得区分 (income_category)**: 記載の区分を読み取り、以下の対応表に基づいて**2桁のコード**を返してください。
+
+  - "区ア" / "ア" / "現役並Ⅲ" → "26"
+
+  - "区イ" / "イ" / "現役並Ⅱ" → "27"
+
+  - "区ウ" / "ウ" / "現役並Ⅰ" → "28"
+
+  - "区エ" / "エ" / "一般" / "一般所得者" → "29"
+
+  - "区オ" / "オ" / "低所得者Ⅱ" / "区Ⅱ" → "30"
+
+  - "低所得者Ⅰ" / "区Ⅰ" → "30"
+
+  - "一般Ⅱ" → "41"
+
+  - "一般Ⅰ" → "42"
+
+- **一部負担金区分 (copayment_category)**: **70歳以上の場合にのみ**、記載からルールに従いコードを返してください。
+
+  - "低所得者Ⅱ" or "区Ⅱ" → "1"
+
+  - "低所得者Ⅰ" or "区Ⅰ" → "3"
+
+- **数値項目**: 給付率、各種上限額、上限回数は必ず**整数**で返してください。「%」「円」「回」などの記号は含めないでください。
+
+- **日付**: 全て「yyyy/mm/dd」形式にしてください。
+
+- 該当情報がない場合は null を返してください。
+
+- **「無料」の特別ルール**:
+
+  - 自己負担金に関する記載で、主に「通院」の項目が「無料」と書かれている場合、それは自己負担が0円であることを意味します。
+
+  - その場合は、benefit_rate_percent（公費給付率）を 100 に、monthly_limit_amount（月額上限額）を 0 に設定してください。
+
+  - 他の上限額の記載（例: 5,000円）よりも、この「無料」という記載を優先して判断してください。
+
+- **禁止事項**: JSON以外の説明文や\`\`\`jsonマーカーは絶対に含めないでください。
+
+# 公費マスター（主要な制度）
+
+- "12": 生活保護
+- "21": 戦傷病者特別援護法
+- "25": 中国残留邦人等
+- "51": 特定疾患（指定難病）
+- "52": スモン
+- "54": 小児慢性特定疾患
+- "80": 原子爆弾被爆者援護法
+
+# 出力形式 (このJSONフォーマットを厳守してください)
 
 {
   "ocr_text": "（Markdown形式の構造化OCRテキスト）",
   "summary": "（200文字程度の要約）",
   "title": "（推奨ファイル名）",
   "structured_data": {
-    "subsidy_name": "string or null",
-    "payer_number": "string or null",
-    "recipient_number": "string or null",
+    "subsidy_name": "string (マスターの法別番号) or null",
+    "payer_number": "string (負担者番号8桁) or null",
+    "recipient_number": "string (受給者番号) or null",
     "subsidy_category_number": "string or null",
-    "copayment_category": "string or null",
-    "income_category": "string or null",
+    "copayment_category": "string ('1', '3'など) or null",
+    "income_category": "string ('26', '27'...) or null",
     "benefit_rate_percent": "number or null",
-    "limit_unit_type": "string or null",
+    "limit_unit_type": "string ('月', '日', '回') or null",
     "monthly_limit_amount": "number or null",
     "per_service_limit_amount": "number or null",
     "monthly_visit_limit": "number or null",
-    "effective_start_date": "yyyy/mm/dd or null",
-    "effective_end_date": "yyyy/mm/dd or null (なければ9999/12/31)"
+    "effective_start_date": "string (yyyy/mm/dd) or null",
+    "effective_end_date": "string (yyyy/mm/dd) or null"
   }
 }
 `,
 
     '口座情報': `
-# 口座振替依頼書の構造化データ抽出ルール
+# あなたの役割
 
-## 思考プロセス
+あなたは、金融機関の帳票を読み取る専門のOCR AIです。提供された「預金口座振替依頼書」のOCRテキストから、データベース登録に必要な情報を極めて正確に抽出してください。
 
-1. まず、OCRテキスト全体を注意深く読み、どの金融機関が指定されているか（ゆうちょ銀行か、それ以外の銀行か）を特定します。取消線が引かれている金融機関は無視します。
+# 思考プロセス
 
-2. **ゆうちょ銀行の場合:**
-   * bank_name_kana には「ﾕｳﾁﾖｷﾞﾝｺｳ」と設定します。
-   * bank_code には「9900」と設定します。
-   * OCRテキスト内の「記号」（通常5桁の数字）を探します。
-   * **【重要】記号から支店コードを生成します。記号の真ん中の3桁（左から2桁目, 3桁目, 4桁目）をそのまま抜き出し、3桁の支店コードとしてbranch_codeに設定します。（例：記号が「12345」なら、真ん中の3桁「234」を支店コードとします）**
-   * account_number にはOCRテキスト内の「番号」（通常8桁）を抽出します。
-   * account_type は「普通」と設定します。
+1.  まず、OCRテキスト全体を注意深く読み、どの金融機関が指定されているか（ゆうちょ銀行か、それ以外の銀行か）を特定します。取消線が引かれている金融機関は無視します。
 
-3. **ゆうちょ銀行以外の場合:**
-   * OCRテキスト内の「金融機関番号」をbank_codeとして抽出します。
-   * 「店舗番号」をbranch_codeとして抽出します。
-   * 「口座番号」をaccount_numberとして抽出します。
-   * 「預金種目」から「普通」または「当座」を判断し、account_typeに設定します。
+2.  **ゆうちょ銀行の場合:**
 
-4. 上記で特定した金融機関情報に加え、以下の共通項目を抽出します。
-   * account_holder_name_kana: 「カナ預金者名」を抽出します。
-   * biller_number: 「委託者番号」を抽出します。
-   * その他、対応する項目があれば抽出します。
+    * bank_name_kana には「ﾕｳﾁﾖｷﾞﾝｺｳ」と設定します。
 
-**重要**: カナ名称は、必ず**半角カタカナ**で記述してください。
+    * bank_code には「9900」と設定します。
 
-# 出力形式
+    * OCRテキスト内の「記号」（通常5桁の数字）を探します。
+
+    * **【重要】記号から支店コードを生成します。記号の真ん中の3桁（左から2桁目, 3桁目, 4桁目）をそのまま抜き出し、3桁の支店コードとしてbranch_codeに設定します。（例：記号が「12345」なら、真ん中の3桁「234」を支店コードとします）**
+
+    * account_number にはOCRテキスト内の「番号」（通常8桁）を抽出します。
+
+    * account_type は「普通」と設定します。
+
+3.  **ゆうちょ銀行以外の場合:**
+
+    * OCRテキスト内の「金融機関番号」をbank_codeとして抽出します。
+
+    * 「店舗番号」をbranch_codeとして抽出します。
+
+    * 「口座番号」をaccount_numberとして抽出します。
+
+    * 「預金種目」から「普通」または「当座」を判断し、account_typeに設定します。
+
+4.  上記で特定した金融機関情報に加え、以下の共通項目を抽出します。
+
+    * account_holder_name_kana: 「カナ預金者名」を抽出します。
+
+    * biller_number: 「委託者番号」を抽出します。
+
+    * その他、対応する項目があれば抽出します。
+
+5.  全ての抽出が完了したら、最終的な結果を指示されたJSON形式で出力します。
+
+# 抽出ルールと出力形式
+
+- 上記の思考プロセスに従って、参照情報から以下のJSONオブジェクトのキーに対応する値を抽出してください。
+
+- **重要**: カナ名称は、必ず**半角カタカナ**で記述してください。
+
+- 該当する情報がない場合や、読み取れない場合は、値に null を設定してください。
+
+- JSON以外の説明文は一切含めないでください。
 
 {
   "ocr_text": "（Markdown形式の構造化OCRテキスト）",
@@ -448,37 +583,25 @@ ${clientBirthDate ? `**利用者生年月日**: ${clientBirthDate}（年齢計�
 `,
 
     '負担割合証': `
-# 負担割合証の構造化データ抽出ルール
+# あなたの役割
 
-**負担割合 (copayment_rate)** - ★最重要項目★:
-- 「1割」「2割」「3割」のいずれかの文字列で返してください。
-- 「利用者負担の割合」「負担割合」などのラベルの近くに記載されています
+あなたは介護保険負担割合証を解析するエキスパートです。
 
-**給付率 (benefit_rate)** - ★最重要項目★:
-- 負担割合に応じて、90, 80, 70 のいずれかの**整数**で返してください。
-- 1割負担 → 90（9割給付）
-- 2割負担 → 80（8割給付）
-- 3割負担 → 70（7割給付）
+以下のOCRテキストから、指定された項目を抽出し、厳密なJSON形式で出力してください。
 
-**適用期間 (effective_start_date, effective_end_date)**:
-- 「適用期間」「有効期間」「認定有効期間」などのラベルで記載されています
-- 通常「令和○年○月○日から令和○年○月○日まで」のような形式です
-- 和暦（令和・平成等）は必ず西暦に変換してください
-  - 令和1年 = 2019年
-  - 令和2年 = 2020年
-  - 令和3年 = 2021年
-  - 令和4年 = 2022年
-  - 令和5年 = 2023年
-  - 令和6年 = 2024年
-  - 令和7年 = 2025年
-- 出力形式は「yyyy/mm/dd」で統一してください（例: 2025/04/01）
+# 抽出ルール
 
-**発行日 (issue_date)**:
-- 「交付年月日」「発行日」などのラベルで記載されています
-- 和暦を西暦に変換してください
-- 出力形式は「yyyy/mm/dd」で統一してください
+- 日付はすべて西暦の「yyyy/mm/dd」形式に変換してください。和暦は正しく西暦に変換してください。
 
-# 出力形式
+- **負担割合 (copayment_rate)**: 「1割」「2割」「3割」のいずれかの文字列で返してください。
+
+- **給付率 (benefit_rate)**: 負担割合に応じて、90, 80, 70 のいずれかの**整数**で返してください。
+
+- 該当する情報が見つからない項目の値は null にしてください。
+
+- JSON以外の説明文や\`\`\`jsonマーカーは不要です。
+
+# 出力形式 (このJSONフォーマットを厳守してください)
 
 {
   "ocr_text": "（Markdown形式の構造化OCRテキスト）",
@@ -498,50 +621,83 @@ ${clientBirthDate ? `**利用者生年月日**: ${clientBirthDate}（年齢計�
   // 指示書系（包含マッチ）
   if (documentType.includes('指示書')) {
     return `
-# 訪問看護指示書の構造化データ抽出ルール
+あなたは医療文書を解析するエキスパートです。
 
-**指示区分 (instructionType)**: テキストの内容から最も適切なものを以下のマスターから選び、コードを返す。
+以下の訪問看護指示書のテキストから、指定された項目を抽出し、厳密なJSON形式で出力してください。
+
+# 指示ルール
+
+- 指示区分 (instructionType): テキストの内容から最も適切なものを以下のマスターから選び、コードを返す。
+
 - 在宅患者訪問点滴注射指示書については、instructionStartDateの値が存在しない場合のみ適用とする。
+
   - 01: 訪問看護指示
+
   - 02: 特別訪問看護指示
+
   - 03: 精神科訪問看護指示
+
   - 04: 精神科特別訪問看護指示
+
   - 05: 医療観察精神科訪問看護指示
+
   - 06: 医療観察精神科特別訪問看護指示
+
   - 00: 在宅患者訪問点滴注射指示書
 
-**日付 (instructionStartDate, instructionEndDate, dripInfusionStartDate, dripInfusionEndDate, issueDate)**: 日付はすべて西暦の「yyyy/mm/dd」形式に変換する。和暦（令和、昭和など）は正しく西暦に変換する。該当がない場合は null を返す。
+- 日付 (instructionStartDate, instructionEndDate, dripInfusionStartDate, dripInfusionEndDate, issueDate): 日付はすべて西暦の「yyyy/mm/dd」形式に変換する。和暦（令和、昭和など）は正しく西暦に変換する。該当がない場合は null を返す。
 
-**基準告示第２の１に規定する疾病 (specifiedDiseaseNoticeCode)**:
-- 傷病名が以下の「疾病等マスター」に一つでも該当する場合、その疾病のコードを specifiedDiseaseCodes にリストで返し、specifiedDiseaseNoticeCode は "01" を返す。
-- 一つも該当しない場合、specifiedDiseaseCodes は空の配列([])を返し、specifiedDiseaseNoticeCode は "03" を返す。
+- 基準告示第２の１に規定する疾病 (specifiedDiseaseNoticeCode):
 
-**傷病一覧 (diseaseNameList)**: 指示書に記載されている「主たる傷病名」を、記載されている順番を厳守してリスト化してください。番号や「(コード: ...」のような付随情報は含めず、傷病名そのものだけを抽出してください。
+  - 傷病名が以下の「疾病等マスター」に一つでも該当する場合、その疾病のコードを specifiedDiseaseCodes にリストで返し、specifiedDiseaseNoticeCode は "01" を返す。
 
-**傷病名コード (diseaseMedicalCode1, 2, 3)**: diseaseNameList の各傷病名に対応するコードを、指示書テキスト内から抽出して返してください。テキスト内にコードの記載がない傷病名については、nullを返してください。3つに満たない場合も同様にnullを返してください。
+  - 一つも該当しない場合、specifiedDiseaseCodes は空の配列([])を返し、specifiedDiseaseNoticeCode は "03" を返す。
+
+- 傷病一覧 (diseaseNameList): 指示書に記載されている「主たる傷病名」を、記載されている順番を厳守してリスト化してください。番号や「(コード: ...」のような付随情報は含めず、傷病名そのものだけを抽出してください。
+
+- 傷病名コード (diseaseMedicalCode1, 2, 3): diseaseNameList の各傷病名に対応するコードを、指示書テキスト内から抽出して返してください。テキスト内にコードの記載がない傷病名については、nullを返してください。3つに満たない場合も同様にnullを返してください。
 
 # 疾病等マスター
+
 - "001": 末期の悪性腫瘍 (胃癌末期、肺癌末期なども含む)
+
 - "002": 多発性硬化症
+
 - "003": 重症筋無力症
+
 - "004": スモン
+
 - "005": 筋萎縮性側索硬化症
+
 - "006": 脊髄小脳変性症
+
 - "007": ハンチントン病
+
 - "008": 進行性筋ジストロフィー症
+
 - "009": パーキンソン病関連疾患（進行性核上性麻痺、大脳皮質基底核変性症、パーキンソン病（ホーエン・ヤールの重症度分類がステージ３以上であって生活機能障害度が２度又は３度のものに限る。））
+
 - "010": 多系統萎縮症（線条体黒質変性症、オリーブ橋小脳萎縮症、シャイ・ドレーガー症候群）
+
 - "011": プリオン病
+
 - "012": 亜急性硬化性全脳炎
+
 - "013": ライソゾーム病
+
 - "014": 副腎白質ジストロフィー
+
 - "015": 脊髄性筋萎縮症
+
 - "016": 球脊髄性筋萎縮症
+
 - "017": 慢性炎症性脱髄性多発神経炎
+
 - "018": 後天性免疫不全症候群
+
 - "019": 頸髄損傷
 
-# 出力形式
+# 出力形式 (このJSONフォーマットを厳守してください)
 
 {
   "ocr_text": "（Markdown形式の構造化OCRテキスト）",
