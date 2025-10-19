@@ -268,59 +268,66 @@ function getStructuredDataSchema(documentType, clientBirthDate) {
 
 # 抽出・変換ルール
 
-- **日付**: 全て西暦の「yyyy/mm/dd」形式に変換してください。
+- **日付**: 全て西暦の「yyyy/mm/dd」形式に変換してください。和暦は正しく西暦に変換してください。
+
+- **有効期間開始日 (effective_start_date)**: 「yyyy/mm/dd」形式。保険証の有効期間開始日を読み取ってください。
+
+- **有効期間終了日 (effective_end_date)**: 「yyyy/mm/dd」形式。保険証の有効期間終了日を読み取ってください。
+
+- **保険者番号 (insurer_number)**: 保険者番号を文字列として読み取ってください。
+
+- **証記号 (policy_symbol)**: 保険証の記号を文字列として読み取ってください。
+
+- **証番号 (policy_number)**: 保険証の番号を文字列として読み取ってください。
+
+- **枝番 (branch_number)**: 枝番がある場合は読み取ってください。
+
+- **本人・家族区分 (relationship_to_insured)**: 「本人」または「家族」を判別してください。
 
 - **保険分類 (insurance_category)**: 社会保険なら "1"、国民健康保険なら "2" を返してください。
 
-- **給付割合 (benefit_rate)**: 自己負担割合（一部負担金割合）が「3割」であれば給付割合は「7割」となり 70、「9割」であれば 90 のように、**整数**で返してください。
+- **給付割合 (benefit_rate)**: 自己負担割合（一部負担金割合）が「3割」であれば給付割合は「7割」となり 70、「2割」であれば 80、「1割」であれば 90 のように、**整数**で返してください。
 
 - **所得区分 (income_category)**: 記載の区分を読み取り、以下の対応表に基づいて**2桁のコード**を返してください。
 
   - "区ア" / "ア" / "現役並Ⅲ" → "26"
-
   - "区イ" / "イ" / "現役並Ⅱ" → "27"
-
   - "区ウ" / "ウ" / "現役並Ⅰ" → "28"
-
   - "区エ" / "エ" / "一般" / "一般所得者" → "29"
-
   - "区オ" / "オ" / "低所得者Ⅱ" / "区Ⅱ" → "30"
-
   - "低所得者Ⅰ" / "区Ⅰ" → "30"
-
   - "一般Ⅱ" → "41"
-
   - "一般Ⅰ" → "42"
 
 - **一部負担金区分 (copayment_category) - 別表７**:
-
   - **利用者の年齢が70歳以上の場合にのみ**、認定証の記載から以下のルールでコードを返してください。
-
   - 「低所得者Ⅱ」または「区Ⅱ」の記載がある場合 → "1"
-
   - 「低所得者Ⅰ」または「区Ⅰ」の記載がある場合 → "3"
-
   - 上記以外で70歳未満の場合はnullを返してください。
 
 - **職務上の事由 (is_work_related_reason) - 別表８**:
-
   - 職務上の事由に関する記載を読み取り、以下の対応表に基づいて**コード**を返してください。
-
   - 「職上」または「職務上」と読める記載がある場合 → "1"
-
   - 「下３」または「下船後３月以内」と読める記載がある場合 → "2"
-
   - 「通災」または「通勤災害」と読める記載がある場合 → "3"
+  - 該当しない場合は null
+
+- **認定証番号 (certificate_number)**: 限度額適用認定証の認定証番号を読み取ってください。
+
+- **固定自己負担額 (fixed_copayment_amount)**: 限度額適用認定証に記載の固定自己負担額を整数で返してください。
 
 - **減免区分 (reduction_category) - 別表９**:
-
   - 減免に関する記載を読み取り、以下の対応表に基づいて**コード**を返してください。
-
   - 「減額」と読める記載がある場合 → "1"
-
   - 「免除」と読める記載がある場合 → "2"
-
   - 「支払猶予」と読める記載がある場合 → "3"
+  - 該当しない場合は null
+
+- **減免率 (reduction_rate_percent)**: 減免率がある場合、整数（%）で返してください。
+
+- **減免額 (reduction_amount)**: 減免額がある場合、整数（円）で返してください。
+
+- **減額認定証有効期限 (reduction_cert_expiration_date)**: 「yyyy/mm/dd」形式。減額認定証の有効期限を読み取ってください。
 
 - 該当する情報が見つからない項目の値は null にしてください。
 
@@ -342,8 +349,8 @@ function getStructuredDataSchema(documentType, clientBirthDate) {
     "relationship_to_insured": "string ('本人', '家族'など) or null",
     "insurance_category": "string ('1' or '2') or null",
     "is_work_related_reason": "string ('1', '2', '3') or null",
-    "benefit_rate": "number or null",
-    "income_category": "string or null",
+    "benefit_rate": "number (70, 80, 90など) or null",
+    "income_category": "string ('26', '27', '28', '29', '30', '41', '42'のいずれか) or null",
     "copayment_category": "string ('1', '3') or null",
     "certificate_number": "string or null",
     "fixed_copayment_amount": "number or null",
@@ -353,6 +360,12 @@ function getStructuredDataSchema(documentType, clientBirthDate) {
     "reduction_cert_expiration_date": "string (yyyy/mm/dd) or null"
   }
 }
+
+# 重要な注意事項
+
+- **すべてのフィールドを必ず出力してください**。書類に記載がない場合は null を設定してください。
+- フィールドを省略しないでください。18個すべてのフィールドが必要です。
+- コード値は必ず指定された形式（"1", "2", "26"など）で返してください。
 `,
 
     '介護保険証': `
@@ -449,44 +462,52 @@ function getStructuredDataSchema(documentType, clientBirthDate) {
 
 # 抽出ルール
 
+- **日付**: 全て西暦の「yyyy/mm/dd」形式に変換してください。和暦は正しく西暦に変換してください。
+
 - **公費制度名 (subsidy_name)**: OCRテキストの内容と以下の公費マスターを照合し、最も一致する制度の**法別番号（2桁コード）**を返してください。
 
-- **所得区分 (income_category)**: 記載の区分を読み取り、以下の対応表に基づいて**2桁のコード**を返してください。
+- **負担者番号 (payer_number)**: 8桁の負担者番号を文字列として読み取ってください。
 
-  - "区ア" / "ア" / "現役並Ⅲ" → "26"
+- **受給者番号 (recipient_number)**: 受給者番号を文字列として読み取ってください。
 
-  - "区イ" / "イ" / "現役並Ⅱ" → "27"
-
-  - "区ウ" / "ウ" / "現役並Ⅰ" → "28"
-
-  - "区エ" / "エ" / "一般" / "一般所得者" → "29"
-
-  - "区オ" / "オ" / "低所得者Ⅱ" / "区Ⅱ" → "30"
-
-  - "低所得者Ⅰ" / "区Ⅰ" → "30"
-
-  - "一般Ⅱ" → "41"
-
-  - "一般Ⅰ" → "42"
+- **公費負担者番号種別 (subsidy_category_number)**: 種別番号がある場合は読み取ってください。
 
 - **一部負担金区分 (copayment_category)**: **70歳以上の場合にのみ**、記載からルールに従いコードを返してください。
-
   - "低所得者Ⅱ" or "区Ⅱ" → "1"
-
   - "低所得者Ⅰ" or "区Ⅰ" → "3"
+  - 該当しない場合は null
+
+- **所得区分 (income_category)**: 記載の区分を読み取り、以下の対応表に基づいて**2桁のコード**を返してください。
+  - "区ア" / "ア" / "現役並Ⅲ" → "26"
+  - "区イ" / "イ" / "現役並Ⅱ" → "27"
+  - "区ウ" / "ウ" / "現役並Ⅰ" → "28"
+  - "区エ" / "エ" / "一般" / "一般所得者" → "29"
+  - "区オ" / "オ" / "低所得者Ⅱ" / "区Ⅱ" → "30"
+  - "低所得者Ⅰ" / "区Ⅰ" → "30"
+  - "一般Ⅱ" → "41"
+  - "一般Ⅰ" → "42"
+
+- **公費給付率 (benefit_rate_percent)**: 給付率を**整数**で返してください（例: 100, 90, 80）。
+
+- **上限単位区分 (limit_unit_type)**: 上限が「月」「日」「回」のいずれか該当する場合、その文字列を返してください。
+
+- **月額上限額 (monthly_limit_amount)**: 月額の上限額を**整数**（円）で返してください。
+
+- **1回あたり上限額 (per_service_limit_amount)**: 1回あたりの上限額を**整数**（円）で返してください。
+
+- **月上限回数 (monthly_visit_limit)**: 月の上限回数を**整数**で返してください。
+
+- **有効期間開始日 (effective_start_date)**: 「yyyy/mm/dd」形式。公費の有効期間開始日を読み取ってください。
+
+- **有効期間終了日 (effective_end_date)**: 「yyyy/mm/dd」形式。公費の有効期間終了日を読み取ってください。
 
 - **数値項目**: 給付率、各種上限額、上限回数は必ず**整数**で返してください。「%」「円」「回」などの記号は含めないでください。
-
-- **日付**: 全て「yyyy/mm/dd」形式にしてください。
 
 - 該当情報がない場合は null を返してください。
 
 - **「無料」の特別ルール**:
-
   - 自己負担金に関する記載で、主に「通院」の項目が「無料」と書かれている場合、それは自己負担が0円であることを意味します。
-
   - その場合は、benefit_rate_percent（公費給付率）を 100 に、monthly_limit_amount（月額上限額）を 0 に設定してください。
-
   - 他の上限額の記載（例: 5,000円）よりも、この「無料」という記載を優先して判断してください。
 
 - **禁止事項**: JSON以外の説明文や\`\`\`jsonマーカーは絶対に含めないでください。
@@ -508,13 +529,13 @@ function getStructuredDataSchema(documentType, clientBirthDate) {
   "summary": "（200文字程度の要約）",
   "title": "（推奨ファイル名）",
   "structured_data": {
-    "subsidy_name": "string (マスターの法別番号) or null",
+    "subsidy_name": "string (マスターの法別番号2桁) or null",
     "payer_number": "string (負担者番号8桁) or null",
     "recipient_number": "string (受給者番号) or null",
     "subsidy_category_number": "string or null",
-    "copayment_category": "string ('1', '3'など) or null",
-    "income_category": "string ('26', '27'...) or null",
-    "benefit_rate_percent": "number or null",
+    "copayment_category": "string ('1', '3') or null",
+    "income_category": "string ('26', '27', '28', '29', '30', '41', '42'のいずれか) or null",
+    "benefit_rate_percent": "number (100, 90, 80など) or null",
     "limit_unit_type": "string ('月', '日', '回') or null",
     "monthly_limit_amount": "number or null",
     "per_service_limit_amount": "number or null",
@@ -523,6 +544,13 @@ function getStructuredDataSchema(documentType, clientBirthDate) {
     "effective_end_date": "string (yyyy/mm/dd) or null"
   }
 }
+
+# 重要な注意事項
+
+- **すべてのフィールドを必ず出力してください**。書類に記載がない場合は null を設定してください。
+- フィールドを省略しないでください。13個すべてのフィールドが必要です。
+- コード値は必ず指定された形式（"12", "26"など）で返してください。
+- 数値項目には記号（%、円、回）を含めないでください。
 `,
 
     '口座情報': `
@@ -572,7 +600,33 @@ function getStructuredDataSchema(documentType, clientBirthDate) {
 
 - 上記の思考プロセスに従って、参照情報から以下のJSONオブジェクトのキーに対応する値を抽出してください。
 
-- **重要**: カナ名称は、必ず**半角カタカナ**で記述してください。
+- **金融機関コード (bank_code)**: 4桁の金融機関コード。ゆうちょ銀行の場合は「9900」。
+
+- **金融機関名カナ (bank_name_kana)**: 金融機関名を**半角カタカナ**で返してください。
+
+- **支店コード (branch_code)**: 3桁の支店コード。ゆうちょ銀行の場合は記号の真ん中3桁。
+
+- **預金種目 (account_type)**: 「普通」または「当座」などの文字列。
+
+- **口座番号 (account_number)**: 口座番号を文字列として返してください。
+
+- **口座名義人カナ (account_holder_name_kana)**: 口座名義人を**半角カタカナ**で返してください。
+
+- **取扱日 (handling_date)**: 取扱日を「yyyy/mm/dd」形式で抽出してください（YYYY-MM-DD形式ではなく、yyyy/mm/dd形式）。
+
+- **端末番号 (terminal_number)**: 端末番号を抽出してください。
+
+- **伝票番号 (voucher_number)**: 伝票番号を抽出してください。
+
+- **お客様番号 (biller_client_number)**: お客様番号を抽出してください。
+
+- **委託者カナ氏名 (biller_name_kana)**: 委託者名を**半角カタカナ**で返してください。
+
+- **委託者番号 (biller_number)**: 委託者番号を抽出してください。
+
+- **委託者特定コード (biller_specific_code)**: 委託者特定コードを抽出してください。
+
+- **重要**: カナ名称は、必ず**半角カタカナ**で記述してください。全角カタカナは使用しないでください。
 
 - 該当する情報がない場合や、読み取れない場合は、値に null を設定してください。
 
@@ -583,21 +637,28 @@ function getStructuredDataSchema(documentType, clientBirthDate) {
   "summary": "（200文字程度の要約）",
   "title": "（推奨ファイル名）",
   "structured_data": {
-    "bank_code": "金融機関コード（4桁）",
-    "bank_name_kana": "金融機関名（半角カナ）",
-    "branch_code": "支店コード（3桁）",
-    "account_type": "預金種目（「普通」「当座」など）",
-    "account_number": "口座番号",
-    "account_holder_name_kana": "口座名義人（半角カナ）",
-    "handling_date": "取扱日をYYYY-MM-DD形式で抽出",
-    "terminal_number": "端末番号",
-    "voucher_number": "伝票番号",
-    "biller_client_number": "お客様番号",
-    "biller_name_kana": "委託者カナ氏名（半角カナ）",
-    "biller_number": "委託者番号",
-    "biller_specific_code": "委託者特定コード"
+    "bank_code": "string (4桁) or null",
+    "bank_name_kana": "string (半角カナ) or null",
+    "branch_code": "string (3桁) or null",
+    "account_type": "string (「普通」「当座」など) or null",
+    "account_number": "string or null",
+    "account_holder_name_kana": "string (半角カナ) or null",
+    "handling_date": "string (yyyy/mm/dd) or null",
+    "terminal_number": "string or null",
+    "voucher_number": "string or null",
+    "biller_client_number": "string or null",
+    "biller_name_kana": "string (半角カナ) or null",
+    "biller_number": "string or null",
+    "biller_specific_code": "string or null"
   }
 }
+
+# 重要な注意事項
+
+- **すべてのフィールドを必ず出力してください**。書類に記載がない場合は null を設定してください。
+- フィールドを省略しないでください。13個すべてのフィールドが必要です。
+- カナ名称は必ず半角カタカナで返してください（例: ﾕｳﾁﾖｷﾞﾝｺｳ）。
+- 日付は「yyyy/mm/dd」形式で返してください（YYYY-MM-DDではありません）。
 `,
 
     '負担割合証': `
@@ -609,11 +670,20 @@ function getStructuredDataSchema(documentType, clientBirthDate) {
 
 # 抽出ルール
 
-- 日付はすべて西暦の「yyyy/mm/dd」形式に変換してください。和暦は正しく西暦に変換してください。
+- **日付**: 全て西暦の「yyyy/mm/dd」形式に変換してください。和暦は正しく西暦に変換してください。
 
-- **負担割合 (copayment_rate)**: 「1割」「2割」「3割」のいずれかの文字列で返してください。
+- **負担割合 (copayment_rate)**: 書類から負担割合を読み取り、「1割」「2割」「3割」のいずれかの文字列で返してください。
 
-- **給付率 (benefit_rate)**: 負担割合に応じて、90, 80, 70 のいずれかの**整数**で返してください。
+- **給付率 (benefit_rate)**: 負担割合に応じて、以下のように**整数**で返してください。
+  - 「1割」の場合 → 90
+  - 「2割」の場合 → 80
+  - 「3割」の場合 → 70
+
+- **有効期間開始日 (effective_start_date)**: 「yyyy/mm/dd」形式。負担割合証の有効期間開始日を読み取ってください。
+
+- **有効期間終了日 (effective_end_date)**: 「yyyy/mm/dd」形式。負担割合証の有効期間終了日を読み取ってください。
+
+- **交付年月日 (issue_date)**: 「yyyy/mm/dd」形式。負担割合証の交付年月日を読み取ってください。
 
 - 該当する情報が見つからない項目の値は null にしてください。
 
@@ -626,54 +696,68 @@ function getStructuredDataSchema(documentType, clientBirthDate) {
   "summary": "（200文字程度の要約）",
   "title": "（推奨ファイル名）",
   "structured_data": {
-    "copayment_rate": "string ('1割', '2割', '3割') or null",
-    "benefit_rate": "number (90, 80, 70) or null",
+    "copayment_rate": "string ('1割', '2割', '3割'のいずれか) or null",
+    "benefit_rate": "number (90, 80, 70のいずれか) or null",
     "effective_start_date": "string (yyyy/mm/dd) or null",
     "effective_end_date": "string (yyyy/mm/dd) or null",
     "issue_date": "string (yyyy/mm/dd) or null"
   }
 }
+
+# 重要な注意事項
+
+- **すべてのフィールドを必ず出力してください**。書類に記載がない場合は null を設定してください。
+- フィールドを省略しないでください。5個すべてのフィールドが必要です。
+- copayment_rateは必ず「1割」「2割」「3割」のいずれかの形式で返してください。
+- benefit_rateは必ず整数（90, 80, 70）で返してください。
 `
   };
 
   // 指示書系（包含マッチ）
   if (documentType.includes('指示書')) {
     return `
+# あなたの役割
+
 あなたは医療文書を解析するエキスパートです。
 
 以下の訪問看護指示書のテキストから、指定された項目を抽出し、厳密なJSON形式で出力してください。
 
-# 指示ルール
+# 抽出ルール
 
-- 指示区分 (instructionType): テキストの内容から最も適切なものを以下のマスターから選び、コードを返す。
+- **日付**: 全て西暦の「yyyy/mm/dd」形式に変換してください。和暦（令和、昭和など）は正しく西暦に変換してください。
 
-- 在宅患者訪問点滴注射指示書については、instructionStartDateの値が存在しない場合のみ適用とする。
+- **指示区分 (instructionType)**: テキストの内容から最も適切なものを以下のマスターから選び、2桁のコードを返してください。
+  - 在宅患者訪問点滴注射指示書については、instructionStartDateの値が存在しない場合のみ適用とする。
 
-  - 01: 訪問看護指示
+  - "01": 訪問看護指示
+  - "02": 特別訪問看護指示
+  - "03": 精神科訪問看護指示
+  - "04": 精神科特別訪問看護指示
+  - "05": 医療観察精神科訪問看護指示
+  - "06": 医療観察精神科特別訪問看護指示
+  - "00": 在宅患者訪問点滴注射指示書
 
-  - 02: 特別訪問看護指示
+- **指示期間開始日 (instructionStartDate)**: 「yyyy/mm/dd」形式。指示期間の開始日を読み取ってください。
 
-  - 03: 精神科訪問看護指示
+- **指示期間終了日 (instructionEndDate)**: 「yyyy/mm/dd」形式。指示期間の終了日を読み取ってください。
 
-  - 04: 精神科特別訪問看護指示
+- **点滴注射開始日 (dripInfusionStartDate)**: 「yyyy/mm/dd」形式。点滴注射の開始日を読み取ってください。
 
-  - 05: 医療観察精神科訪問看護指示
+- **点滴注射終了日 (dripInfusionEndDate)**: 「yyyy/mm/dd」形式。点滴注射の終了日を読み取ってください。
 
-  - 06: 医療観察精神科特別訪問看護指示
+- **交付年月日 (issueDate)**: 「yyyy/mm/dd」形式。指示書の交付年月日を読み取ってください。
 
-  - 00: 在宅患者訪問点滴注射指示書
+- **医療機関住所 (clinicAddress)**: 指示書を発行した医療機関の**都道府県名から始まる完全な住所**を抽出してください。
 
-- 日付 (instructionStartDate, instructionEndDate, dripInfusionStartDate, dripInfusionEndDate, issueDate): 日付はすべて西暦の「yyyy/mm/dd」形式に変換する。和暦（令和、昭和など）は正しく西暦に変換する。該当がない場合は null を返す。
-
-- 基準告示第２の１に規定する疾病 (specifiedDiseaseNoticeCode):
-
+- **基準告示第２の１に規定する疾病 (specifiedDiseaseNoticeCode)**:
   - 傷病名が以下の「疾病等マスター」に一つでも該当する場合、その疾病のコードを specifiedDiseaseCodes にリストで返し、specifiedDiseaseNoticeCode は "01" を返す。
-
   - 一つも該当しない場合、specifiedDiseaseCodes は空の配列([])を返し、specifiedDiseaseNoticeCode は "03" を返す。
 
-- 傷病一覧 (diseaseNameList): 指示書に記載されている「主たる傷病名」を、記載されている順番を厳守してリスト化してください。番号や「(コード: ...」のような付随情報は含めず、傷病名そのものだけを抽出してください。
+- **傷病一覧 (diseaseNameList)**: 指示書に記載されている「主たる傷病名」を、記載されている順番を厳守してリスト化してください。番号や「(コード: ...」のような付随情報は含めず、傷病名そのものだけを抽出してください。
 
-- 傷病名コード (diseaseMedicalCode1, 2, 3): diseaseNameList の各傷病名に対応するコードを、指示書テキスト内から抽出して返してください。テキスト内にコードの記載がない傷病名については、nullを返してください。3つに満たない場合も同様にnullを返してください。
+- **傷病名コード (diseaseMedicalCode1, diseaseMedicalCode2, diseaseMedicalCode3)**: diseaseNameList の各傷病名に対応するコードを、指示書テキスト内から抽出して返してください。テキスト内にコードの記載がない傷病名については、nullを返してください。3つに満たない場合も同様にnullを返してください。
+
+- 該当する情報がない場合は null を返してください。
 
 # 疾病等マスター
 
@@ -722,21 +806,30 @@ function getStructuredDataSchema(documentType, clientBirthDate) {
   "summary": "（200文字程度の要約）",
   "title": "（推奨ファイル名）",
   "structured_data": {
-    "instructionType": "string",
+    "instructionType": "string ('01', '02', '03', '04', '05', '06', '00'のいずれか)",
     "instructionStartDate": "string (yyyy/mm/dd) or null",
     "instructionEndDate": "string (yyyy/mm/dd) or null",
     "dripInfusionStartDate": "string (yyyy/mm/dd) or null",
     "dripInfusionEndDate": "string (yyyy/mm/dd) or null",
     "issueDate": "string (yyyy/mm/dd) or null",
-    "clinicAddress": "指示書を発行した医療機関の【都道府県名から始まる完全な住所】",
+    "clinicAddress": "string (都道府県名から始まる完全な住所) or null",
     "specifiedDiseaseNoticeCode": "string ('01' or '03')",
-    "specifiedDiseaseCodes": ["string"],
-    "diseaseNameList": ["string"],
+    "specifiedDiseaseCodes": ["string (疾病コードのリスト)"] or [],
+    "diseaseNameList": ["string (傷病名のリスト)"],
     "diseaseMedicalCode1": "string or null",
     "diseaseMedicalCode2": "string or null",
     "diseaseMedicalCode3": "string or null"
   }
 }
+
+# 重要な注意事項
+
+- **すべてのフィールドを必ず出力してください**。書類に記載がない場合は null を設定してください（配列の場合は空配列[]）。
+- フィールドを省略しないでください。13個すべてのフィールドが必要です。
+- instructionTypeは必ず2桁のコード（"01", "02"など）で返してください。
+- specifiedDiseaseNoticeCodeは必ず "01" または "03" のいずれかを返してください。
+- specifiedDiseaseCodesとdiseaseNameListは配列形式で返してください。
+- JSON以外の説明文や\`\`\`jsonマーカーは絶対に含めないでください。
 `;
   }
 
