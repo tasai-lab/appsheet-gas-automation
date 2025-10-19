@@ -106,6 +106,18 @@ const DEDUP_RETRY = {
 
 function checkDuplicateRequest(recordId, webhookParams = null) {
 
+  // 重複防止機能が無効化されている場合はスキップ
+  try {
+    const config = getConfig();
+    if (!config.enableDuplicationPrevention) {
+      Logger.log('⚠️ 重複防止機能が無効化されています（config.enableDuplicationPrevention = false）');
+      return { isDuplicate: false, reason: 'duplication_prevention_disabled' };
+    }
+  } catch (e) {
+    // getConfig()が存在しない場合は通常通り処理
+    Logger.log('⚠️ getConfig()が利用できません。重複防止機能は有効です。');
+  }
+
   if (!recordId) {
 
     Logger.log('⚠️ recordIdが未指定です');
@@ -118,13 +130,13 @@ function checkDuplicateRequest(recordId, webhookParams = null) {
 
   if (isProcessingOrCompleted(recordId)) {
 
-    return { 
+    return {
 
-      isDuplicate: true, 
+      isDuplicate: true,
 
       reason: 'processing_or_completed',
 
-      recordId: recordId 
+      recordId: recordId
 
     };
 
@@ -136,13 +148,13 @@ function checkDuplicateRequest(recordId, webhookParams = null) {
 
     if (isDuplicateWebhookFingerprint(recordId, webhookParams)) {
 
-      return { 
+      return {
 
-        isDuplicate: true, 
+        isDuplicate: true,
 
         reason: 'duplicate_fingerprint',
 
-        recordId: recordId 
+        recordId: recordId
 
       };
 
@@ -839,11 +851,21 @@ function emergencyClearAllFlags() {
 
 function getDuplicationPreventionStats() {
 
+  let enabled = true;
+  try {
+    const config = getConfig();
+    enabled = config.enableDuplicationPrevention;
+  } catch (e) {
+    // getConfig()が存在しない場合はデフォルトで有効
+  }
+
   return {
 
     version: '3.0.0',
 
     timestamp: new Date().toISOString(),
+
+    enabled: enabled,
 
     config: {
 
@@ -873,4 +895,85 @@ function getDuplicationPreventionStats() {
 
   };
 
+}
+
+// ========================================
+
+// 重複防止機能のOn/Off制御（テスト・デバッグ用）
+
+// ========================================
+
+/**
+ * 重複防止機能を無効化する
+ * テスト時や緊急時に使用
+ *
+ * @return {Object} 設定結果
+ */
+function disableDuplicationPrevention() {
+  const props = PropertiesService.getScriptProperties();
+  props.setProperty('ENABLE_DUPLICATION_PREVENTION', 'false');
+
+  Logger.log('⚠️ 重複防止機能を無効化しました');
+  Logger.log('有効化するには enableDuplicationPrevention() を実行してください');
+
+  return {
+    success: true,
+    enabled: false,
+    timestamp: new Date().toISOString(),
+    message: '重複防止機能が無効化されました'
+  };
+}
+
+/**
+ * 重複防止機能を有効化する（デフォルト状態に戻す）
+ *
+ * @return {Object} 設定結果
+ */
+function enableDuplicationPrevention() {
+  const props = PropertiesService.getScriptProperties();
+  props.deleteProperty('ENABLE_DUPLICATION_PREVENTION');
+
+  Logger.log('✅ 重複防止機能を有効化しました（デフォルト状態）');
+
+  return {
+    success: true,
+    enabled: true,
+    timestamp: new Date().toISOString(),
+    message: '重複防止機能が有効化されました'
+  };
+}
+
+/**
+ * 重複防止機能の現在の状態を確認
+ *
+ * @return {Object} 現在の状態
+ */
+function checkDuplicationPreventionStatus() {
+  let enabled = true;
+  try {
+    const config = getConfig();
+    enabled = config.enableDuplicationPrevention;
+  } catch (e) {
+    Logger.log('⚠️ getConfig()が利用できません');
+  }
+
+  const props = PropertiesService.getScriptProperties();
+  const propertyValue = props.getProperty('ENABLE_DUPLICATION_PREVENTION');
+
+  Logger.log('='.repeat(60));
+  Logger.log('🔍 重複防止機能の状態');
+  Logger.log('='.repeat(60));
+  Logger.log(`現在の状態: ${enabled ? '✅ 有効' : '❌ 無効'}`);
+  Logger.log(`Script Property値: ${propertyValue || '(未設定 = デフォルトで有効)'}`);
+  Logger.log('');
+  Logger.log('📝 変更方法:');
+  Logger.log('  無効化: disableDuplicationPrevention()');
+  Logger.log('  有効化: enableDuplicationPrevention()');
+  Logger.log('='.repeat(60));
+
+  return {
+    enabled: enabled,
+    propertyValue: propertyValue,
+    timestamp: new Date().toISOString()
+  };
 }

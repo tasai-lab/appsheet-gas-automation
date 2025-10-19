@@ -1,7 +1,7 @@
 /**
  * Vertex AI Gemini テキスト生成モジュール
  * 通話プロジェクト全体でVertex AIに統一
- * 
+ *
  * @author Fractal Group
  * @version 3.0.0
  * @date 2025-10-17
@@ -13,10 +13,10 @@
 const VERTEX_GEMINI_MODELS = {
   // Flash: 高速・コスト効率重視（通常タスク向け）
   FLASH: 'gemini-2.5-flash',
-  
+
   // Pro: 高度な推論が必要なタスク向け
   PRO: 'gemini-2.5-pro',
-  
+
   // Flash Lite: 最軽量・最速（シンプルなタスク向け）
   FLASH_LITE: 'gemini-2.5-flash-lite'
 };
@@ -30,6 +30,12 @@ const VERTEX_DEFAULTS = {
   topK: 40,
   maxOutputTokens: 8192
 };
+
+/**
+ * 為替レート設定（USD -> JPY）
+ * 2025年1月時点の想定レート
+ */
+const EXCHANGE_RATE_USD_TO_JPY_VERTEX_TEXT = 150;
 
 /**
  * タスクタイプ別の推奨モデル
@@ -137,9 +143,20 @@ function generateTextWithVertex(prompt, config, options = {}) {
   }
   
   const generatedText = candidate.content.parts[0].text;
+
+  // usageMetadataを抽出（料金計算）
+  const usageMetadata = extractVertexAIUsageMetadata(jsonResponse, modelName, 'text');
+
   Logger.log(`[Vertex AI Text] 生成成功（${generatedText.length}文字）`);
-  
-  return generatedText;
+  if (usageMetadata) {
+    Logger.log(`[Vertex AI Text] 使用量: Input ${usageMetadata.inputTokens} tokens, Output ${usageMetadata.outputTokens} tokens, 合計 ¥${usageMetadata.totalCostJPY.toFixed(2)}`);
+  }
+
+  // 結果とusageMetadataを返す
+  return {
+    text: generatedText,
+    usageMetadata: usageMetadata
+  };
 }
 
 /**
@@ -220,15 +237,126 @@ function generateJSONWithVertex(prompt, config, options = {}) {
   }
   
   const contentText = candidate.content.parts[0].text;
-  
+
+  // usageMetadataを抽出（料金計算）
+  const usageMetadata = extractVertexAIUsageMetadata(jsonResponse, modelName, 'text');
+
   try {
     const jsonObject = JSON.parse(contentText);
     Logger.log('[Vertex AI JSON] JSON生成・パース成功');
-    return jsonObject;
+    if (usageMetadata) {
+      Logger.log(`[Vertex AI JSON] 使用量: Input ${usageMetadata.inputTokens} tokens, Output ${usageMetadata.outputTokens} tokens, 合計 ¥${usageMetadata.totalCostJPY.toFixed(2)}`);
+    }
+
+    // 結果とusageMetadataを返す
+    return {
+      data: jsonObject,
+      usageMetadata: usageMetadata
+    };
   } catch (error) {
     Logger.log(`[Vertex AI JSON] JSON解析エラー: ${contentText.substring(0, 500)}`);
     throw new Error(`JSON解析エラー: ${error.message}`);
   }
+}
+
+/**
+ * Vertex AI APIレスポンスからusageMetadataを抽出（日本円計算付き）
+ * @param {Object} jsonResponse - APIレスポンス
+ * @param {string} modelName - 使用したモデル名
+ * @param {string} inputType - 入力タイプ ('audio' | 'text')
+ * @return {Object|null} {inputTokens, outputTokens, inputCostJPY, outputCostJPY, totalCostJPY, model}
+ */
+function extractVertexAIUsageMetadata(jsonResponse, modelName, inputType = 'text') {
+  if (!jsonResponse.usageMetadata) {
+    return null;
+  }
+
+  const usage = jsonResponse.usageMetadata;
+  const inputTokens = usage.promptTokenCount || 0;
+  const outputTokens = usage.candidatesTokenCount || 0;
+
+  // モデル名と入力タイプに応じた価格を取得
+  const pricing = getVertexAIPricing(modelName, inputType);
+  const inputCostUSD = (inputTokens / 1000000) * pricing.inputPer1M;
+  const outputCostUSD = (outputTokens / 1000000) * pricing.outputPer1M;
+  const totalCostUSD = inputCostUSD + outputCostUSD;
+
+  // 日本円に換算
+  const inputCostJPY = inputCostUSD * EXCHANGE_RATE_USD_TO_JPY_VERTEX_TEXT;
+  const outputCostJPY = outputCostUSD * EXCHANGE_RATE_USD_TO_JPY_VERTEX_TEXT;
+  const totalCostJPY = totalCostUSD * EXCHANGE_RATE_USD_TO_JPY_VERTEX_TEXT;
+
+  return {
+    model: modelName,
+    inputTokens: inputTokens,
+    outputTokens: outputTokens,
+    inputCostJPY: inputCostJPY,
+    outputCostJPY: outputCostJPY,
+    totalCostJPY: totalCostJPY
+  };
+}
+
+/**
+ * モデル名を正規化（バージョン番号やプレフィックスを削除）
+ * @param {string} modelName - モデル名
+ * @return {string} 正規化されたモデル名
+ */
+function normalizeModelName(modelName) {
+  // 'gemini-2.5-flash-001' → 'gemini-2.5-flash'
+  // 'publishers/google/models/gemini-2.5-flash' → 'gemini-2.5-flash'
+  const match = modelName.match(/(gemini-[\d.]+-(?:flash|pro|flash-lite))/i);
+  return match ? match[1].toLowerCase() : modelName.toLowerCase();
+}
+
+/**
+ * Vertex AIモデルの価格情報を取得（モデル名と入力タイプに応じて動的に決定）
+ * @param {string} modelName - モデル名
+ * @param {string} inputType - 入力タイプ ('audio' | 'text')
+ * @return {Object} {inputPer1M, outputPer1M}
+ */
+function getVertexAIPricing(modelName, inputType = 'text') {
+  // 2025年1月時点のVertex AI価格（USD/100万トークン）
+  // 実際の価格はGCPドキュメントを参照: https://cloud.google.com/vertex-ai/generative-ai/pricing
+  const pricingTable = {
+    'gemini-2.5-flash': {
+      text: { inputPer1M: 0.075, outputPer1M: 0.30 },
+      audio: { inputPer1M: 1.00, outputPer1M: 2.50 }  // 音声入力（GA版）
+    },
+    'gemini-2.5-flash-lite': {
+      text: { inputPer1M: 0.0188, outputPer1M: 0.075 },  // Flash Lite
+      audio: { inputPer1M: 0.0188, outputPer1M: 0.075 }
+    },
+    'gemini-2.5-pro': {
+      text: { inputPer1M: 1.25, outputPer1M: 10.00 },
+      audio: { inputPer1M: 1.25, outputPer1M: 10.00 }  // 音声入力
+    },
+    'gemini-1.5-flash': {
+      text: { inputPer1M: 0.075, outputPer1M: 0.30 },
+      audio: { inputPer1M: 0.075, outputPer1M: 0.30 }  // 音声入力
+    },
+    'gemini-1.5-pro': {
+      text: { inputPer1M: 1.25, outputPer1M: 5.00 },
+      audio: { inputPer1M: 1.25, outputPer1M: 5.00 }  // 音声入力
+    }
+  };
+
+  // モデル名を正規化
+  const normalizedModelName = normalizeModelName(modelName);
+
+  // モデルが見つからない場合はデフォルト価格を使用
+  if (!pricingTable[normalizedModelName]) {
+    Logger.log(`[価格取得] ⚠️ 未知のモデル: ${modelName}, デフォルト価格（gemini-2.5-flash）を使用`);
+    return pricingTable['gemini-2.5-flash'][inputType] || pricingTable['gemini-2.5-flash']['text'];
+  }
+
+  // 入力タイプが見つからない場合はテキスト価格を使用
+  if (!pricingTable[normalizedModelName][inputType]) {
+    Logger.log(`[価格取得] ⚠️ 未知の入力タイプ: ${inputType}, テキスト価格を使用`);
+    return pricingTable[normalizedModelName]['text'];
+  }
+
+  Logger.log(`[価格取得] モデル: ${normalizedModelName}, 入力タイプ: ${inputType}, Input: $${pricingTable[normalizedModelName][inputType].inputPer1M}/1M, Output: $${pricingTable[normalizedModelName][inputType].outputPer1M}/1M`);
+  return pricingTable[normalizedModelName][inputType];
 }
 
 /**
@@ -237,26 +365,29 @@ function generateJSONWithVertex(prompt, config, options = {}) {
 function callGeminiAPI(prompt, apiKey, modelName, options = {}) {
   Logger.log('[警告] callGeminiAPI は非推奨です。generateTextWithVertex を使用してください。');
   const config = getConfig(); // core_config.gs の設定を取得
-  return generateTextWithVertex(prompt, config, {
+  const result = generateTextWithVertex(prompt, config, {
     modelName: modelName,
     ...options
   });
+  return result.text; // 後方互換性のためtextのみ返す
 }
 
 function generateText(prompt, apiKey, modelName, options = {}) {
   Logger.log('[警告] generateText は非推奨です。generateTextWithVertex を使用してください。');
   const config = getConfig();
-  return generateTextWithVertex(prompt, config, {
+  const result = generateTextWithVertex(prompt, config, {
     modelName: modelName,
     ...options
   });
+  return result.text; // 後方互換性のためtextのみ返す
 }
 
 function generateJSON(prompt, apiKey, modelName, options = {}) {
   Logger.log('[警告] generateJSON は非推奨です。generateJSONWithVertex を使用してください。');
   const config = getConfig();
-  return generateJSONWithVertex(prompt, config, {
+  const result = generateJSONWithVertex(prompt, config, {
     modelName: modelName,
     ...options
   });
+  return result.data; // 後方互換性のためdataのみ返す
 }

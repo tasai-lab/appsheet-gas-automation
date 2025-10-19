@@ -85,6 +85,10 @@ function getConfig() {
 
     enableRequestCreation: props.getProperty('ENABLE_REQUEST_CREATION') === 'true',
 
+    // 音声解析設定
+
+    enableTranscript: props.getProperty('ENABLE_TRANSCRIPT') !== 'false',  // falseでコスト削減（全文抽出なし）
+
     // 通知設定
 
     errorNotificationEmail: props.getProperty('ERROR_NOTIFICATION_EMAIL') || '',
@@ -177,6 +181,10 @@ function setupScriptProperties() {
     // 統合機能設定
 
     'ENABLE_REQUEST_CREATION': 'true',  // 新規依頼作成機能を有効化
+
+    // 音声解析設定
+
+    'ENABLE_TRANSCRIPT': 'false',  // 全文文字起こしを無効化してコスト削減（有効にする場合は'true'）
 
     // 通知設定
 
@@ -283,6 +291,12 @@ function showCurrentConfig() {
   Logger.log(`  Requestsテーブル: ${config.requestsTableName}`);
 
   // ★Gemini API Keyは削除済み（Vertex AI専用プロジェクト）
+
+  Logger.log('');
+
+  Logger.log('[音声解析設定]');
+
+  Logger.log(`  全文文字起こし: ${config.enableTranscript ? '有効' : '無効（コスト削減）'}`);
 
   Logger.log('');
 

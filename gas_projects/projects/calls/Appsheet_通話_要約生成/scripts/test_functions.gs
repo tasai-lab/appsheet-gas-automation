@@ -18,7 +18,7 @@ function testProcessRequest() {
   const testParams = {
     callId: "test_" + new Date().getTime(),
     callDatetime: new Date().toISOString(),
-    filePath: "test/audio.m4a",
+    filePath: "通話ファイル保管/2025-05-09/202505091630_担当者_新規-問い合わせ.通話ファイル.074638.mp3",
     callContextText: "テスト通話",
     userInfoText: "テストユーザー",
     clientId: "test_client"
@@ -45,7 +45,7 @@ function testProcessRequestCreate() {
   const testParams = {
     callId: "test_" + new Date().getTime(),
     callDatetime: new Date().toISOString(),
-    filePath: "test/audio.m4a",
+    filePath: "通話ファイル保管/2025-05-09/202505091630_担当者_新規-問い合わせ.通話ファイル.074638.mp3",
     callContextText: "新規依頼のテスト通話\n顧客: テスト株式会社",
     userInfoText: "営業担当: テスト太郎",
     clientId: "test_client",
@@ -75,7 +75,7 @@ function testProcessRequestUpdate() {
   const testParams = {
     callId: "test_" + new Date().getTime(),
     callDatetime: new Date().toISOString(),
-    filePath: "test/audio.m4a",
+    filePath: "通話ファイル保管/2025-05-09/202505091630_担当者_新規-問い合わせ.通話ファイル.074638.mp3",
     callContextText: "既存依頼の更新通話\n追加情報あり",
     userInfoText: "営業担当: テスト太郎",
     clientId: "test_client",

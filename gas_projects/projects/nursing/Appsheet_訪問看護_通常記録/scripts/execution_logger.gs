@@ -3,33 +3,33 @@
  * GAS実行ログスプレッドシートに実行履歴を記録
  * @author Fractal Group
  * @version 1.0.0
- * @date 2025-10-17
+ * @date 2025-10-20
  */
 
 // 設定（統合GAS実行ログを使用、専用シート）
 const EXECUTION_LOG_SPREADSHEET_ID = '16UHnMlSUlnUy-67gbwuvjeeU73AwDomqzJwGi6L4rVA';
-const EXECUTION_LOG_SHEET_NAME = '実行履歴_通話要約';
-const SCRIPT_NAME = 'Appsheet_通話_要約生成';
+const EXECUTION_LOG_SHEET_NAME = '実行履歴_訪問看護通常記録';
+const SCRIPT_NAME_EXEC_LOG = 'Appsheet_訪問看護_通常記録';
 
 /**
  * 実行ログを記録
  * @param {string} status - ステータス ('成功' | '失敗' | 'スキップ' | '処理中')
- * @param {string} callId - 通話ID（リクエストID）
+ * @param {string} recordNoteId - 記録ID（リクエストID）
  * @param {Object} details - 処理詳細
  */
-function logExecution(status, callId, details = {}) {
+function logExecution(status, recordNoteId, details = {}) {
   try {
     const spreadsheet = SpreadsheetApp.openById(EXECUTION_LOG_SPREADSHEET_ID);
     let sheet = spreadsheet.getSheetByName(EXECUTION_LOG_SHEET_NAME);
-    
+
     // シートが存在しない場合は作成
     if (!sheet) {
       sheet = spreadsheet.insertSheet(EXECUTION_LOG_SHEET_NAME);
       initializeLogSheet(sheet);
     }
-    
+
     const timestamp = new Date();
-    
+
     // ユーザー情報を安全に取得
     let userEmail = 'システム';
     try {
@@ -41,21 +41,19 @@ function logExecution(status, callId, details = {}) {
       // ユーザー情報取得失敗時はデフォルト値を使用
       userEmail = 'システム';
     }
-    
+
     const row = [
       Utilities.formatDate(timestamp, 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss'),
-      SCRIPT_NAME,
+      SCRIPT_NAME_EXEC_LOG,
       status,
-      callId || '',
-      details.filePath || '',
-      details.fileId || '',
-      details.summary || '',
-      details.transcriptLength || '',
-      details.actionsCount || '',
+      recordNoteId || '',
+      details.staffId || '',
+      details.recordType || '',
+      details.hasAudioFile ? 'あり' : 'なし',
+      details.recordTextLength || '',
       details.processingTime || '',
       details.errorMessage || '',
       details.modelName || '',
-      details.fileSize || '',
       userEmail,
       details.notes || '',
       details.inputTokens || '',
@@ -64,10 +62,10 @@ function logExecution(status, callId, details = {}) {
       details.outputCost || '',
       details.totalCost || ''
     ];
-    
+
     sheet.appendRow(row);
-    Logger.log(`[実行ログ] ${status}: ${callId}`);
-    
+    Logger.log(`[実行ログ] ${status}: ${recordNoteId}`);
+
   } catch (e) {
     Logger.log(`[実行ログ] ⚠️ ログ記録失敗: ${e.message}`);
     // ログ記録失敗はメイン処理に影響させない
@@ -83,16 +81,14 @@ function initializeLogSheet(sheet) {
     'タイムスタンプ',
     'スクリプト名',
     'ステータス',
-    '通話ID',
-    'ファイルパス',
-    'ファイルID',
-    '要約（抜粋）',
-    '文字起こし長',
-    'アクション数',
+    '記録ID',
+    'スタッフID',
+    '記録タイプ',
+    '音声ファイル',
+    '記録テキスト長',
     '処理時間（秒）',
     'エラーメッセージ',
     'モデル名',
-    'ファイルサイズ',
     '実行ユーザー',
     '備考',
     'Input Tokens',
@@ -101,23 +97,23 @@ function initializeLogSheet(sheet) {
     'Output料金(円)',
     '合計料金(円)'
   ];
-  
+
   sheet.appendRow(headers);
   sheet.getRange(1, 1, 1, headers.length)
     .setFontWeight('bold')
     .setBackground('#f3f3f3');
   sheet.setFrozenRows(1);
-  
+
   Logger.log('[実行ログ] シートを初期化しました');
 }
 
 /**
  * 処理開始ログを記録
- * @param {string} callId - 通話ID
+ * @param {string} recordNoteId - 記録ID
  * @param {Object} details - 処理詳細
  */
-function logStart(callId, details = {}) {
-  logExecution('処理中', callId, {
+function logStartExec(recordNoteId, details = {}) {
+  logExecution('処理中', recordNoteId, {
     ...details,
     notes: '処理開始'
   });
@@ -125,21 +121,21 @@ function logStart(callId, details = {}) {
 
 /**
  * 処理成功ログを記録
- * @param {string} callId - 通話ID
+ * @param {string} recordNoteId - 記録ID
  * @param {Object} details - 処理詳細
  */
-function logSuccess(callId, details = {}) {
-  logExecution('成功', callId, details);
+function logSuccessExec(recordNoteId, details = {}) {
+  logExecution('成功', recordNoteId, details);
 }
 
 /**
  * 処理失敗ログを記録
- * @param {string} callId - 通話ID
+ * @param {string} recordNoteId - 記録ID
  * @param {Error} error - エラーオブジェクト
  * @param {Object} details - 処理詳細
  */
-function logFailure(callId, error, details = {}) {
-  logExecution('失敗', callId, {
+function logFailureExec(recordNoteId, error, details = {}) {
+  logExecution('失敗', recordNoteId, {
     ...details,
     errorMessage: error.message || String(error)
   });
@@ -147,12 +143,12 @@ function logFailure(callId, error, details = {}) {
 
 /**
  * 処理スキップログを記録（重複時など）
- * @param {string} callId - 通話ID
+ * @param {string} recordNoteId - 記録ID
  * @param {string} reason - スキップ理由
  * @param {Object} details - 処理詳細
  */
-function logSkip(callId, reason, details = {}) {
-  logExecution('スキップ', callId, {
+function logSkipExec(recordNoteId, reason, details = {}) {
+  logExecution('スキップ', recordNoteId, {
     ...details,
     notes: reason
   });
@@ -165,7 +161,7 @@ class ExecutionTimer {
   constructor() {
     this.startTime = new Date();
   }
-  
+
   /**
    * 経過時間を秒単位で取得
    * @return {string} 経過時間（秒）
@@ -174,7 +170,7 @@ class ExecutionTimer {
     const endTime = new Date();
     return ((endTime - this.startTime) / 1000).toFixed(2);
   }
-  
+
   /**
    * 経過時間を分秒形式で取得
    * @return {string} 経過時間（分:秒）

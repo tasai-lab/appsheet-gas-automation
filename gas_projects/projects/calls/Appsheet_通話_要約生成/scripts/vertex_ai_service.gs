@@ -37,20 +37,22 @@ function analyzeAudioWithVertexAI(fileId, callDatetime, callContextText, userInf
   const existingRequest = requestOptions.existingRequest || null;
 
   // プロンプト生成（統合版）
+  const enableTranscript = config.enableTranscript !== false;  // configから取得、デフォルトtrue
   const prompt = generateUnifiedPrompt(
-    callDatetime, 
-    callContextText, 
-    userInfoText, 
-    includeRequestDetails, 
-    existingRequest
+    callDatetime,
+    callContextText,
+    userInfoText,
+    includeRequestDetails,
+    existingRequest,
+    enableTranscript
   );
 
   // Vertex AI APIリクエスト（inlineData使用）
   Logger.log('[Vertex AI] base64 inlineData で処理開始');
   const apiResponse = callVertexAIAPIWithInlineData(audioFile, prompt, config);
 
-  // JSON抽出と検証
-  const result = extractAndValidateJSON(apiResponse, includeRequestDetails);
+  // JSON抽出と検証（モデル名を渡す）
+  const result = extractAndValidateJSON(apiResponse, includeRequestDetails, enableTranscript, config.vertexAIModel);
 
   // ファイルサイズ情報を追加
   result.fileSize = `${fileSizeMB}MB`;
@@ -121,8 +123,9 @@ function determineMimeType(fileName, blob) {
 
 /**
  * 統合プロンプトを生成（要約+全文+アクション+依頼情報）
+ * @param {boolean} enableTranscript - 全文文字起こしを含めるか（デフォルト: true）
  */
-function generateUnifiedPrompt(callDatetime, callContextText, userInfoText, includeRequestDetails = true, existingRequest = null) {
+function generateUnifiedPrompt(callDatetime, callContextText, userInfoText, includeRequestDetails = true, existingRequest = null, enableTranscript = true) {
   const date = new Date(callDatetime);
   const formattedDate = Utilities.formatDate(date, "Asia/Tokyo", "yyyy/MM/dd(E) HH:mm");
 
@@ -154,8 +157,7 @@ function generateUnifiedPrompt(callDatetime, callContextText, userInfoText, incl
 `;
       jsonSchema = `
 {
-  "summary": "Markdown形式の要約（文字列型、必須）",
-  "transcript": "話者別の全文文字起こし（文字列型、必須）",
+  "summary": "Markdown形式の要約（文字列型、必須）",${enableTranscript ? '\n  "transcript": "話者別の全文文字起こし（文字列型、必須）",' : ''}
   "actions": [アクション配列（配列型、必須、空配列可）],
   "request_details": {
     "priority": "最新の状況を反映した緊急度を「高」「中」「低」で再判断",
@@ -180,8 +182,7 @@ function generateUnifiedPrompt(callDatetime, callContextText, userInfoText, incl
 `;
       jsonSchema = `
 {
-  "summary": "Markdown形式の要約（文字列型、必須）",
-  "transcript": "話者別の全文文字起こし（文字列型、必須）",
+  "summary": "Markdown形式の要約（文字列型、必須）",${enableTranscript ? '\n  "transcript": "話者別の全文文字起こし（文字列型、必須）",' : ''}
   "actions": [アクション配列（配列型、必須、空配列可）],
   "request_details": {
     "priority": "依頼の緊急度を「高」「中」「低」で判断",
@@ -196,11 +197,10 @@ function generateUnifiedPrompt(callDatetime, callContextText, userInfoText, incl
 }`;
     }
   } else {
-    // 依頼情報なし（従来の3項目のみ）
+    // 依頼情報なし（従来の3項目のみ、またはtranscriptなしの2項目のみ）
     jsonSchema = `
 {
-  "summary": "Markdown形式の要約（文字列型、必須）",
-  "transcript": "話者別の全文文字起こし（文字列型、必須）",
+  "summary": "Markdown形式の要約（文字列型、必須）",${enableTranscript ? '\n  "transcript": "話者別の全文文字起こし（文字列型、必須）",' : ''}
   "actions": [アクション配列（配列型、必須、空配列可）]
 }`;
   }
@@ -249,13 +249,13 @@ Markdown形式で以下のグループごとに整理:
 
 重要な部分は\`バッククオート\`で囲んでマーカー表示。
 該当情報がないグループは省略。
-
+${enableTranscript ? `
 # 全文文字起こしルール (transcriptキー)
 
 - 話者を明確に区別
 - 話者ラベル: 「スタッフ：」「通話相手：」
 - 発言ごとに改行
-
+` : ''}
 # アクション抽出ルール (actionsキー)
 
 株式会社フラクタル、フラクタル訪問看護が主体のタスク・イベントのみ抽出:
@@ -275,7 +275,7 @@ Markdown形式で以下のグループごとに整理:
 
 出力前に必ず確認してください:
 ✓ "summary" キーが存在し、文字列型である
-✓ "transcript" キーが存在し、文字列型である  
+${enableTranscript ? '✓ "transcript" キーが存在し、文字列型である' : ''}
 ✓ "actions" キーが存在し、配列型である（空配列可）
 ${includeRequestDetails ? '✓ "request_details" キーが存在し、オブジェクト型である' : ''}
 ✓ 全ての必須キーが含まれている
@@ -349,8 +349,12 @@ function callVertexAIAPIWithInlineData(audioFile, prompt, config) {
 
 /**
  * APIレスポンスからJSONを抽出して検証
+ * @param {string} responseText - APIレスポンステキスト
+ * @param {boolean} includeRequestDetails - 依頼情報を含むか
+ * @param {boolean} enableTranscript - 全文文字起こしを含むか（デフォルト: true）
+ * @param {string} modelName - 使用したモデル名
  */
-function extractAndValidateJSON(responseText, includeRequestDetails = false) {
+function extractAndValidateJSON(responseText, includeRequestDetails = false, enableTranscript = true, modelName = 'gemini-2.5-flash') {
   let jsonResponse;
 
   // JSONパース
@@ -393,15 +397,15 @@ function extractAndValidateJSON(responseText, includeRequestDetails = false) {
   const result = extractJSONFromText(contentText);
 
   // 構造検証と修復
-  const validatedResult = validateAndFixJSONStructure(result, contentText, includeRequestDetails);
+  const validatedResult = validateAndFixJSONStructure(result, contentText, includeRequestDetails, enableTranscript);
 
-  // usageMetadataを抽出
-  const usageMetadata = extractVertexAIUsageMetadata(jsonResponse);
+  // usageMetadataを抽出（モデル名と入力タイプ='audio'を渡す）
+  const usageMetadata = extractVertexAIUsageMetadata(jsonResponse, modelName, 'audio');
   validatedResult.usageMetadata = usageMetadata;
 
   Logger.log(`[Vertex AI] JSON抽出成功 (アクション数: ${validatedResult.actions.length})`);
   if (usageMetadata) {
-    Logger.log(`[Vertex AI] 使用量: Input ${usageMetadata.inputTokens} tokens, Output ${usageMetadata.outputTokens} tokens, 合計 $${usageMetadata.totalCost.toFixed(4)}`);
+    Logger.log(`[Vertex AI] 使用量: Input ${usageMetadata.inputTokens} tokens, Output ${usageMetadata.outputTokens} tokens, 合計 ¥${usageMetadata.totalCostJPY.toFixed(2)}`);
   }
 
   return validatedResult;
@@ -416,9 +420,11 @@ const EXCHANGE_RATE_USD_TO_JPY_VERTEX = 150;
 /**
  * Vertex AI APIレスポンスからusageMetadataを抽出（日本円計算）
  * @param {Object} jsonResponse - APIレスポンス
+ * @param {string} modelName - 使用したモデル名
+ * @param {string} inputType - 入力タイプ ('audio' | 'text')
  * @return {Object|null} {inputTokens, outputTokens, inputCostJPY, outputCostJPY, totalCostJPY, model}
  */
-function extractVertexAIUsageMetadata(jsonResponse) {
+function extractVertexAIUsageMetadata(jsonResponse, modelName, inputType = 'audio') {
   if (!jsonResponse.usageMetadata) {
     return null;
   }
@@ -427,8 +433,8 @@ function extractVertexAIUsageMetadata(jsonResponse) {
   const inputTokens = usage.promptTokenCount || 0;
   const outputTokens = usage.candidatesTokenCount || 0;
 
-  // Vertex AIモデルの価格を取得（USD/100万トークン）
-  const pricing = getVertexAIPricing();
+  // モデル名と入力タイプに応じた価格を取得
+  const pricing = getVertexAIPricing(modelName, inputType);
   const inputCostUSD = (inputTokens / 1000000) * pricing.inputPer1M;
   const outputCostUSD = (outputTokens / 1000000) * pricing.outputPer1M;
   const totalCostUSD = inputCostUSD + outputCostUSD;
@@ -439,7 +445,7 @@ function extractVertexAIUsageMetadata(jsonResponse) {
   const totalCostJPY = totalCostUSD * EXCHANGE_RATE_USD_TO_JPY_VERTEX;
 
   return {
-    model: 'vertex-ai-gemini-2.5-flash',
+    model: modelName,
     inputTokens: inputTokens,
     outputTokens: outputTokens,
     inputCostJPY: inputCostJPY,
@@ -449,18 +455,62 @@ function extractVertexAIUsageMetadata(jsonResponse) {
 }
 
 /**
- * Vertex AIモデルの価格情報を取得（USD/100万トークン）
+ * モデル名を正規化（バージョン番号やプレフィックスを削除）
+ * @param {string} modelName - モデル名
+ * @return {string} 正規化されたモデル名
+ */
+function normalizeModelName(modelName) {
+  // 'gemini-2.5-flash-001' → 'gemini-2.5-flash'
+  // 'publishers/google/models/gemini-2.5-flash' → 'gemini-2.5-flash'
+  const match = modelName.match(/(gemini-[\d.]+-(?:flash|pro))/i);
+  return match ? match[1].toLowerCase() : modelName.toLowerCase();
+}
+
+/**
+ * Vertex AIモデルの価格情報を取得（モデル名と入力タイプに応じて動的に決定）
+ * @param {string} modelName - モデル名
+ * @param {string} inputType - 入力タイプ ('audio' | 'text')
  * @return {Object} {inputPer1M, outputPer1M}
  */
-function getVertexAIPricing() {
+function getVertexAIPricing(modelName, inputType = 'text') {
   // 2025年1月時点のVertex AI価格（USD/100万トークン）
-  // Gemini 2.5 Flash（音声入力）の価格
   // 実際の価格はGCPドキュメントを参照: https://cloud.google.com/vertex-ai/generative-ai/pricing
-  // 音声入力の場合: $1.00/1M tokens, テキスト出力: $2.50/1M tokens
-  return {
-    inputPer1M: 1.00,   // 音声入力価格（Flash GA）
-    outputPer1M: 2.50   // テキスト出力価格（Flash GA）
+  const pricingTable = {
+    'gemini-2.5-flash': {
+      text: { inputPer1M: 0.075, outputPer1M: 0.30 },
+      audio: { inputPer1M: 1.00, outputPer1M: 2.50 }  // 音声入力（GA版）
+    },
+    'gemini-2.5-pro': {
+      text: { inputPer1M: 1.25, outputPer1M: 10.00 },
+      audio: { inputPer1M: 1.25, outputPer1M: 10.00 }  // 音声入力
+    },
+    'gemini-1.5-flash': {
+      text: { inputPer1M: 0.075, outputPer1M: 0.30 },
+      audio: { inputPer1M: 0.075, outputPer1M: 0.30 }  // 音声入力
+    },
+    'gemini-1.5-pro': {
+      text: { inputPer1M: 1.25, outputPer1M: 5.00 },
+      audio: { inputPer1M: 1.25, outputPer1M: 5.00 }  // 音声入力
+    }
   };
+
+  // モデル名を正規化
+  const normalizedModelName = normalizeModelName(modelName);
+
+  // モデルが見つからない場合はデフォルト価格を使用
+  if (!pricingTable[normalizedModelName]) {
+    Logger.log(`[価格取得] ⚠️ 未知のモデル: ${modelName}, デフォルト価格（gemini-2.5-flash）を使用`);
+    return pricingTable['gemini-2.5-flash'][inputType] || pricingTable['gemini-2.5-flash']['text'];
+  }
+
+  // 入力タイプが見つからない場合はテキスト価格を使用
+  if (!pricingTable[normalizedModelName][inputType]) {
+    Logger.log(`[価格取得] ⚠️ 未知の入力タイプ: ${inputType}, テキスト価格を使用`);
+    return pricingTable[normalizedModelName]['text'];
+  }
+
+  Logger.log(`[価格取得] モデル: ${normalizedModelName}, 入力タイプ: ${inputType}, Input: $${pricingTable[normalizedModelName][inputType].inputPer1M}/1M, Output: $${pricingTable[normalizedModelName][inputType].outputPer1M}/1M`);
+  return pricingTable[normalizedModelName][inputType];
 }
 
 /**
@@ -514,9 +564,10 @@ function extractJSONFromText(text) {
  * @param {Object} result - 抽出されたJSONオブジェクト
  * @param {string} originalText - 元のテキスト（デバッグ用）
  * @param {boolean} includeRequestDetails - 依頼情報を含むか
+ * @param {boolean} enableTranscript - 全文文字起こしを含むか（デフォルト: true）
  * @return {Object} 検証・修復済みのJSONオブジェクト
  */
-function validateAndFixJSONStructure(result, originalText, includeRequestDetails = false) {
+function validateAndFixJSONStructure(result, originalText, includeRequestDetails = false, enableTranscript = true) {
   Logger.log('[JSON検証] 構造チェック開始');
   
   // 結果オブジェクトが存在しない場合
@@ -531,9 +582,11 @@ function validateAndFixJSONStructure(result, originalText, includeRequestDetails
   const hasTranscript = result.hasOwnProperty('transcript');
   const hasActions = result.hasOwnProperty('actions');
   const hasRequestDetails = result.hasOwnProperty('request_details');
-  
+
   Logger.log(`[JSON検証] summary: ${hasSummary ? '✓' : '✗'} (型: ${typeof result.summary})`);
-  Logger.log(`[JSON検証] transcript: ${hasTranscript ? '✓' : '✗'} (型: ${typeof result.transcript})`);
+  if (enableTranscript) {
+    Logger.log(`[JSON検証] transcript: ${hasTranscript ? '✓' : '✗'} (型: ${typeof result.transcript})`);
+  }
   Logger.log(`[JSON検証] actions: ${hasActions ? '✓' : '✗'} (型: ${typeof result.actions}, 配列: ${Array.isArray(result.actions)})`);
   if (includeRequestDetails) {
     Logger.log(`[JSON検証] request_details: ${hasRequestDetails ? '✓' : '✗'} (型: ${typeof result.request_details})`);
@@ -553,14 +606,23 @@ function validateAndFixJSONStructure(result, originalText, includeRequestDetails
     repairedResult.summary = '要約情報が取得できませんでした。';
     fixed = true;
   }
-  
-  // transcriptの修復
-  if (!hasTranscript || typeof result.transcript !== 'string') {
-    Logger.log('[JSON修復] transcript を補完');
-    repairedResult.transcript = '文字起こし情報が取得できませんでした。';
-    fixed = true;
+
+  // transcriptの修復（enableTranscript が true の場合のみ）
+  if (enableTranscript) {
+    if (!hasTranscript || typeof result.transcript !== 'string') {
+      Logger.log('[JSON修復] transcript を補完');
+      repairedResult.transcript = '文字起こし情報が取得できませんでした。';
+      fixed = true;
+    }
+  } else {
+    // enableTranscript が false の場合、transcriptが存在していたら削除
+    if (hasTranscript) {
+      Logger.log('[JSON修復] transcript を削除（enableTranscript=false）');
+      delete repairedResult.transcript;
+      fixed = true;
+    }
   }
-  
+
   // actionsの修復
   if (!hasActions || !Array.isArray(result.actions)) {
     Logger.log('[JSON修復] actions を補完');

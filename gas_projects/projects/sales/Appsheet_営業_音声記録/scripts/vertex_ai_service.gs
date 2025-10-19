@@ -401,18 +401,20 @@ function extractAndValidateJSON(responseText, includeRequestDetails = false) {
 
   Logger.log(`[Vertex AI] JSON抽出成功 (アクション数: ${validatedResult.actions.length})`);
   if (usageMetadata) {
-    Logger.log(`[Vertex AI] 使用量: Input ${usageMetadata.inputTokens} tokens, Output ${usageMetadata.outputTokens} tokens, 合計 $${usageMetadata.totalCost.toFixed(4)}`);
+    Logger.log(`[Vertex AI] 使用量: Input ${usageMetadata.inputTokens} tokens, Output ${usageMetadata.outputTokens} tokens, 合計 ¥${usageMetadata.totalCostJPY.toFixed(2)}`);
   }
 
   return validatedResult;
 }
 
 /**
- * Vertex AI APIレスポンスからusageMetadataを抽出
+ * Vertex AI APIレスポンスからusageMetadataを抽出（日本円計算付き）
  * @param {Object} jsonResponse - APIレスポンス
- * @return {Object|null} {inputTokens, outputTokens, inputCost, outputCost, totalCost, model}
+ * @param {string} modelName - 使用したモデル名
+ * @param {string} inputType - 入力タイプ ('audio' | 'text')
+ * @return {Object|null} {inputTokens, outputTokens, inputCostJPY, outputCostJPY, totalCostJPY, model}
  */
-function extractVertexAIUsageMetadata(jsonResponse) {
+function extractVertexAIUsageMetadata(jsonResponse, modelName, inputType = 'audio') {
   if (!jsonResponse.usageMetadata) {
     return null;
   }
@@ -421,34 +423,310 @@ function extractVertexAIUsageMetadata(jsonResponse) {
   const inputTokens = usage.promptTokenCount || 0;
   const outputTokens = usage.candidatesTokenCount || 0;
 
-  // Vertex AIモデルの価格を取得（gemini-2.5-flash-thinkingを想定）
-  const pricing = getVertexAIPricing();
-  const inputCost = (inputTokens / 1000000) * pricing.inputPer1M;
-  const outputCost = (outputTokens / 1000000) * pricing.outputPer1M;
-  const totalCost = inputCost + outputCost;
+  // モデル名と入力タイプに応じた価格を取得
+  const pricing = getVertexAIPricing(modelName, inputType);
+  const inputCostUSD = (inputTokens / 1000000) * pricing.inputPer1M;
+  const outputCostUSD = (outputTokens / 1000000) * pricing.outputPer1M;
+  const totalCostUSD = inputCostUSD + outputCostUSD;
+
+  // 日本円に換算
+  const inputCostJPY = inputCostUSD * EXCHANGE_RATE_USD_TO_JPY;
+  const outputCostJPY = outputCostUSD * EXCHANGE_RATE_USD_TO_JPY;
+  const totalCostJPY = totalCostUSD * EXCHANGE_RATE_USD_TO_JPY;
 
   return {
-    model: 'vertex-ai-gemini-flash',
+    model: modelName,
     inputTokens: inputTokens,
     outputTokens: outputTokens,
-    inputCost: inputCost,
-    outputCost: outputCost,
-    totalCost: totalCost
+    inputCostJPY: inputCostJPY,
+    outputCostJPY: outputCostJPY,
+    totalCostJPY: totalCostJPY
   };
 }
 
 /**
- * Vertex AIモデルの価格情報を取得
+ * モデル名を正規化（バージョン番号やプレフィックスを削除）
+ * @param {string} modelName - モデル名
+ * @return {string} 正規化されたモデル名
+ */
+function normalizeModelName(modelName) {
+  // 'gemini-2.5-flash-001' → 'gemini-2.5-flash'
+  // 'publishers/google/models/gemini-2.5-flash' → 'gemini-2.5-flash'
+  const match = modelName.match(/(gemini-[\d.]+-(?:flash|pro))/i);
+  return match ? match[1].toLowerCase() : modelName.toLowerCase();
+}
+
+/**
+ * Vertex AIモデルの価格情報を取得（モデル名と入力タイプに応じて動的に決定）
+ * @param {string} modelName - モデル名
+ * @param {string} inputType - 入力タイプ ('audio' | 'text')
  * @return {Object} {inputPer1M, outputPer1M}
  */
-function getVertexAIPricing() {
-  // 2025年1月時点のVertex AI価格（USD）
-  // gemini-2.5-flash-thinking の価格
-  // 実際の価格はGCPドキュメントを参照: https://cloud.google.com/vertex-ai/pricing
-  return {
-    inputPer1M: 0.075,  // Flash入力価格
-    outputPer1M: 0.30   // Flash出力価格
+function getVertexAIPricing(modelName, inputType = 'text') {
+  // 2025年1月時点のVertex AI価格（USD/100万トークン）
+  // 実際の価格はGCPドキュメントを参照: https://cloud.google.com/vertex-ai/generative-ai/pricing
+  const pricingTable = {
+    'gemini-2.5-flash': {
+      text: { inputPer1M: 0.075, outputPer1M: 0.30 },
+      audio: { inputPer1M: 1.00, outputPer1M: 2.50 }  // 音声入力（GA版）
+    },
+    'gemini-2.5-pro': {
+      text: { inputPer1M: 1.25, outputPer1M: 10.00 },
+      audio: { inputPer1M: 1.25, outputPer1M: 10.00 }  // 音声入力
+    },
+    'gemini-1.5-flash': {
+      text: { inputPer1M: 0.075, outputPer1M: 0.30 },
+      audio: { inputPer1M: 0.075, outputPer1M: 0.30 }  // 音声入力
+    },
+    'gemini-1.5-pro': {
+      text: { inputPer1M: 1.25, outputPer1M: 5.00 },
+      audio: { inputPer1M: 1.25, outputPer1M: 5.00 }  // 音声入力
+    }
   };
+
+  // モデル名を正規化
+  const normalizedModelName = normalizeModelName(modelName);
+
+  // モデルが見つからない場合はデフォルト価格を使用
+  if (!pricingTable[normalizedModelName]) {
+    Logger.log(`[価格取得] ⚠️ 未知のモデル: ${modelName}, デフォルト価格（gemini-2.5-flash）を使用`);
+    return pricingTable['gemini-2.5-flash'][inputType] || pricingTable['gemini-2.5-flash']['text'];
+  }
+
+  // 入力タイプが見つからない場合はテキスト価格を使用
+  if (!pricingTable[normalizedModelName][inputType]) {
+    Logger.log(`[価格取得] ⚠️ 未知の入力タイプ: ${inputType}, テキスト価格を使用`);
+    return pricingTable[normalizedModelName]['text'];
+  }
+
+  Logger.log(`[価格取得] モデル: ${normalizedModelName}, 入力タイプ: ${inputType}, Input: $${pricingTable[normalizedModelName][inputType].inputPer1M}/1M, Output: $${pricingTable[normalizedModelName][inputType].outputPer1M}/1M`);
+  return pricingTable[normalizedModelName][inputType];
+}
+
+/**
+ * 営業音声記録を分析（営業活動専用）
+ * @param {Object} context - コンテキスト情報
+ * @param {string} context.filePath - ファイルパス
+ * @param {string} context.fileId - ファイルID
+ * @param {string} context.salespersonName - 営業担当者名
+ * @param {string} context.contactName - 面会相手名
+ * @param {string} context.orgName - 訪問先機関名
+ * @return {Object} {summary, key_points, next_actions, customer_feedback, fileSize, usageMetadata}
+ */
+function analyzeSalesCallWithVertexAI(context) {
+  const config = getConfig();
+
+  // ファイルID解決
+  let fileId = context.fileId;
+  if (!fileId && context.filePath) {
+    Logger.log(`[営業音声分析] ファイルパス から解決: ${context.filePath}`);
+
+    // ベースフォルダーIDを取得
+    const baseFolderId = config.sharedDriveFolderId;
+    if (!baseFolderId) {
+      throw new Error('SHARED_DRIVE_FOLDER_ID が設定されていません。Script Properties で設定してください。');
+    }
+
+    // drive_utils.gs の getFileIdFromPath を使用
+    const fileInfo = getFileIdFromPath(context.filePath, baseFolderId);
+    fileId = fileInfo.fileId;
+    Logger.log(`[営業音声分析] ファイルID解決成功: ${fileId}`);
+  }
+
+  if (!fileId) {
+    throw new Error('fileId または filePath が必要です');
+  }
+
+  Logger.log(`[営業音声分析] ファイルID: ${fileId}`);
+
+  // ファイル取得
+  const audioFile = getAudioFile(fileId);  // fileIdのみ渡す
+  const fileSizeMB = (audioFile.blob.getBytes().length / 1024 / 1024).toFixed(2);
+  Logger.log(`[営業音声分析] ファイルサイズ: ${fileSizeMB}MB`);
+
+  // ファイルサイズチェック（20MB制限）
+  if (fileSizeMB > 20) {
+    throw new Error(`ファイルサイズが大きすぎます: ${fileSizeMB}MB（上限20MB）`);
+  }
+
+  // 営業活動専用プロンプト生成
+  const prompt = generateSalesAnalysisPrompt(
+    context.salespersonName,
+    context.contactName,
+    context.orgName
+  );
+
+  // Vertex AI API呼び出し
+  Logger.log('[営業音声分析] Vertex AI API呼び出し開始');
+  const apiResponse = callVertexAIAPIWithInlineData(audioFile, prompt, config);
+
+  // JSON抽出と検証（モデル名を渡す）
+  const result = extractSalesAnalysisJSON(apiResponse, config.vertexAIModel);
+
+  // ファイルサイズ情報を追加
+  result.fileSize = `${fileSizeMB}MB`;
+
+  Logger.log(`[営業音声分析] 分析完了 - 重要ポイント: ${result.key_points ? result.key_points.length : 0}件`);
+
+  return result;
+}
+
+/**
+ * 営業活動専用のプロンプトを生成
+ * @param {string} salespersonName - 営業担当者名
+ * @param {string} contactName - 面会相手名
+ * @param {string} orgName - 訪問先機関名
+ * @return {string} プロンプト
+ */
+function generateSalesAnalysisPrompt(salespersonName, contactName, orgName) {
+  return `
+# 指示
+
+営業活動の音声記録を分析し、以下の情報を抽出してJSON形式で出力してください。
+
+## コンテキスト情報
+
+- **営業担当者**: ${salespersonName}
+- **面会相手**: ${contactName}
+- **訪問先機関**: ${orgName}
+
+## JSON出力仕様（厳守）
+
+以下のキーを全て含むJSONを返してください：
+
+{
+  "summary": "訪問の目的、話し合った内容、結果の要約（文字列、必須）",
+  "key_points": [
+    "重要なポイント1",
+    "重要なポイント2"
+  ],
+  "next_actions": "次に取るべきアクション（文字列、必須）",
+  "customer_feedback": "顧客からのフィードバックや反応（文字列、必須）"
+}
+
+## 出力ルール
+
+1. **summary**: 訪問の目的、話し合った主要な内容、結果を3〜5文で要約
+2. **key_points**: 重要な発言や決定事項を箇条書きで抽出（配列形式）
+3. **next_actions**: 次に営業担当者が取るべきアクション（文字列形式）
+4. **customer_feedback**: 顧客の反応、関心度、懸念点など（文字列形式）
+
+## 最終確認
+
+出力前に必ず確認してください：
+✓ "summary" キーが存在し、文字列型である
+✓ "key_points" キーが存在し、配列型である
+✓ "next_actions" キーが存在し、文字列型である
+✓ "customer_feedback" キーが存在し、文字列型である
+✓ 全ての必須キーが含まれている
+✓ 有効なJSON形式である
+
+`;
+}
+
+/**
+ * 営業分析のJSONレスポンスを抽出・検証
+ * @param {string} responseText - API レスポンステキスト
+ * @param {string} modelName - 使用したモデル名
+ * @return {Object} 抽出・検証済みのJSON
+ */
+function extractSalesAnalysisJSON(responseText, modelName) {
+  let jsonResponse;
+
+  // JSONパース
+  try {
+    jsonResponse = JSON.parse(responseText);
+  } catch (error) {
+    throw new Error(`APIレスポンスのJSON解析失敗: ${error.message}`);
+  }
+
+  // 候補(candidates)チェック
+  if (!jsonResponse.candidates || jsonResponse.candidates.length === 0) {
+    let errorMsg = 'AIからの有効な応答がありません';
+    if (jsonResponse.promptFeedback && jsonResponse.promptFeedback.blockReason) {
+      errorMsg += ` [ブロック理由: ${jsonResponse.promptFeedback.blockReason}]`;
+    }
+    if (jsonResponse.error) {
+      errorMsg += ` [APIエラー: ${jsonResponse.error.message}]`;
+    }
+    throw new Error(errorMsg);
+  }
+
+  // コンテンツチェック
+  const candidate = jsonResponse.candidates[0];
+  if (!candidate.content || !candidate.content.parts || candidate.content.parts.length === 0) {
+    throw new Error('AIの応答にコンテンツがありません');
+  }
+
+  const contentText = candidate.content.parts[0].text;
+
+  // JSON抽出
+  const result = extractJSONFromText(contentText);
+
+  // 営業分析用の構造検証
+  const validatedResult = validateSalesAnalysisStructure(result);
+
+  // usageMetadataを抽出（モデル名と入力タイプ='audio'を渡す）
+  const usageMetadata = extractVertexAIUsageMetadata(jsonResponse, modelName, 'audio');
+  validatedResult.usageMetadata = usageMetadata;
+
+  Logger.log(`[営業音声分析] JSON抽出成功`);
+  if (usageMetadata) {
+    Logger.log(`[営業音声分析] 使用量: Input ${usageMetadata.inputTokens} tokens, Output ${usageMetadata.outputTokens} tokens, 合計 ¥${usageMetadata.totalCostJPY.toFixed(2)}`);
+  }
+
+  return validatedResult;
+}
+
+/**
+ * 営業分析JSONの構造を検証・修復
+ * @param {Object} result - 抽出されたJSONオブジェクト
+ * @return {Object} 検証・修復済みのJSONオブジェクト
+ */
+function validateSalesAnalysisStructure(result) {
+  Logger.log('[営業JSON検証] 構造チェック開始');
+
+  if (!result || typeof result !== 'object') {
+    throw new Error('JSONの構造が不正です');
+  }
+
+  // 必須キーの存在確認
+  const hasSummary = result.hasOwnProperty('summary');
+  const hasKeyPoints = result.hasOwnProperty('key_points');
+  const hasNextActions = result.hasOwnProperty('next_actions');
+  const hasCustomerFeedback = result.hasOwnProperty('customer_feedback');
+
+  Logger.log(`[営業JSON検証] summary: ${hasSummary ? '✓' : '✗'}`);
+  Logger.log(`[営業JSON検証] key_points: ${hasKeyPoints ? '✓' : '✗'}`);
+  Logger.log(`[営業JSON検証] next_actions: ${hasNextActions ? '✓' : '✗'}`);
+  Logger.log(`[営業JSON検証] customer_feedback: ${hasCustomerFeedback ? '✓' : '✗'}`);
+
+  // 修復処理
+  const repairedResult = { ...result };
+
+  if (!hasSummary || typeof result.summary !== 'string') {
+    Logger.log('[営業JSON修復] summary を補完');
+    repairedResult.summary = '要約情報が取得できませんでした。';
+  }
+
+  if (!hasKeyPoints || !Array.isArray(result.key_points)) {
+    Logger.log('[営業JSON修復] key_points を補完');
+    repairedResult.key_points = [];
+  }
+
+  if (!hasNextActions || typeof result.next_actions !== 'string') {
+    Logger.log('[営業JSON修復] next_actions を補完');
+    repairedResult.next_actions = '次のアクションが特定できませんでした。';
+  }
+
+  if (!hasCustomerFeedback || typeof result.customer_feedback !== 'string') {
+    Logger.log('[営業JSON修復] customer_feedback を補完');
+    repairedResult.customer_feedback = '顧客フィードバックが特定できませんでした。';
+  }
+
+  Logger.log('[営業JSON検証] ✓ 検証完了');
+
+  return repairedResult;
 }
 
 /**

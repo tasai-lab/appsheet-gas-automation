@@ -29,7 +29,7 @@ function doPost(e) {
  * @returns {Object} - 処理結果
  */
 function processRequest(recordNoteId, staffId, recordText, recordType, filePath, fileId) {
-  const startTime = Date.now();
+  const timer = new ExecutionTimer();
 
   // パラメータをログ用に保存
   const params = {
@@ -54,6 +54,14 @@ function processRequest(recordNoteId, staffId, recordText, recordType, filePath,
       throw new Error("必須パラメータ（recordNoteId, staffId, recordText）が不足しています。");
 
     }
+
+    // 処理開始ログを記録
+    logStartExec(recordNoteId, {
+      staffId: staffId,
+      recordType: recordType || '通常',
+      hasAudioFile: !!(filePath || fileId),
+      recordTextLength: recordText ? recordText.length : 0
+    });
 
     logProcessingStart(recordNoteId, params);
 
@@ -98,16 +106,36 @@ function processRequest(recordNoteId, staffId, recordText, recordType, filePath,
 
     if (!analysisResult) throw new Error("AIからの応答が不正でした。");
 
+    // API使用量メタデータを取得
+    const usageMetadata = analysisResult.usageMetadata || null;
+
+    if (usageMetadata) {
+      Logger.log(`💰 API使用量: モデル=${usageMetadata.model}, Input=${usageMetadata.inputTokens}tokens, Output=${usageMetadata.outputTokens}tokens, 合計=¥${usageMetadata.totalCostJPY.toFixed(2)}`);
+    }
+
     // --- 5. AppSheetに結果を書き込み（記録タイプに応じたフィールドマッピング） ---
 
     updateRecordOnSuccess(recordNoteId, analysisResult, staffId, normalizedRecordType);
 
-    const duration = Date.now() - startTime;
-
-    logProcessingComplete(recordNoteId, duration);
+    logProcessingComplete(recordNoteId, timer.getElapsedSeconds() * 1000);
 
     // API呼び出し統計を出力
     logApiCallSummary();
+
+    // 成功ログを実行ログスプレッドシートに記録
+    logSuccessExec(recordNoteId, {
+      staffId: staffId,
+      recordType: normalizedRecordType,
+      hasAudioFile: !!(filePath || fileId),
+      recordTextLength: recordText ? recordText.length : 0,
+      processingTime: timer.getElapsedSeconds(),
+      modelName: usageMetadata ? usageMetadata.model : '',
+      inputTokens: usageMetadata ? usageMetadata.inputTokens : '',
+      outputTokens: usageMetadata ? usageMetadata.outputTokens : '',
+      inputCost: usageMetadata ? usageMetadata.inputCostJPY.toFixed(2) : '',
+      outputCost: usageMetadata ? usageMetadata.outputCostJPY.toFixed(2) : '',
+      totalCost: usageMetadata ? usageMetadata.totalCostJPY.toFixed(2) : ''
+    });
 
   } catch (error) {
 
@@ -115,6 +143,15 @@ function processRequest(recordNoteId, staffId, recordText, recordType, filePath,
     logApiCallSummary();
 
     logError(recordNoteId || 'UNKNOWN', error, { params: params });
+
+    // エラーログを実行ログスプレッドシートに記録
+    logFailureExec(recordNoteId, error, {
+      staffId: staffId,
+      recordType: recordType || '通常',
+      hasAudioFile: !!(filePath || fileId),
+      recordTextLength: recordText ? recordText.length : 0,
+      processingTime: timer.getElapsedSeconds()
+    });
 
     if (recordNoteId) {
 
@@ -124,6 +161,7 @@ function processRequest(recordNoteId, staffId, recordText, recordType, filePath,
 
     }
 
+    throw error;
   }
 }
 

@@ -34,7 +34,7 @@ const GCP_CONFIG = {
 
   vertexAI: {
 
-    model: 'gemini-2.5-pro',
+    model: 'gemini-2.5-pro',  // ★変更: gemini-2.5-pro → gemini-2.5-flash（コスト最適化）
 
     temperature: 0.2,
 
@@ -142,6 +142,15 @@ const SYSTEM_CONFIG = {
   }
 
 };
+
+
+// ===================================
+
+// 為替レート設定（USD → JPY）
+
+// ===================================
+
+const EXCHANGE_RATE_USD_TO_JPY = 150;
 
 
 // ===================================

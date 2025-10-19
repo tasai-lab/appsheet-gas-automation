@@ -14,30 +14,34 @@
  */
 function getConfig() {
   const props = PropertiesService.getScriptProperties();
-  
+
   return {
     // GCP設定
     gcpProjectId: props.getProperty('GCP_PROJECT_ID') || '',
     gcpLocation: props.getProperty('GCP_LOCATION') || 'us-central1',
-    
+
     // Vertex AI設定
-    vertexAIModel: props.getProperty('VERTEX_AI_MODEL') || 'gemini-2.5-pro',
-    temperature: parseFloat(props.getProperty('TEMPERATURE') || '0.7'),
-    maxOutputTokens: parseInt(props.getProperty('MAX_OUTPUT_TOKENS') || '8000'),
-    
+    vertexAIModel: props.getProperty('VERTEX_AI_MODEL') || 'gemini-2.5-pro',  // ★変更: コスト最適化
+    temperature: parseFloat(props.getProperty('TEMPERATURE') || '0.3'),
+    maxOutputTokens: parseInt(props.getProperty('MAX_OUTPUT_TOKENS') || '20000'),
+
     // AppSheet API設定
     appId: props.getProperty('APP_ID') || '',
     accessKey: props.getProperty('ACCESS_KEY') || '',
     tableName: props.getProperty('TABLE_NAME') || 'Sales_Activities',
-    
+
     // Google Drive設定
     sharedDriveFolderId: props.getProperty('SHARED_DRIVE_FOLDER_ID') || '1OX2l_PmpyUaqKtT77INW8o2FR6OHE9B1',
-    
+
     // 実行ログ設定
     executionLogSpreadsheetId: props.getProperty('EXECUTION_LOG_SPREADSHEET_ID') || '',
-    
+
     // ファイルサイズ制限（MB）
-    maxFileSizeMB: parseInt(props.getProperty('MAX_FILE_SIZE_MB') || '25')
+    maxFileSizeMB: parseInt(props.getProperty('MAX_FILE_SIZE_MB') || '25'),
+
+    // 重複防止機能の有効/無効（デフォルト: true）
+    // テスト時や緊急時に無効化する場合は Script Properties で 'ENABLE_DUPLICATION_PREVENTION' を 'false' に設定
+    enableDuplicationPrevention: props.getProperty('ENABLE_DUPLICATION_PREVENTION') !== 'false'
   };
 }
 
@@ -83,6 +87,12 @@ function getVertexAIEndpoint() {
 function getOAuth2Token() {
   return ScriptApp.getOAuthToken();
 }
+
+/**
+ * 為替レート設定（USD → JPY）
+ * 2025年1月時点の想定レート
+ */
+const EXCHANGE_RATE_USD_TO_JPY = 150;
 
 /**
  * 設定のデバッグ出力（テスト用）

@@ -130,33 +130,44 @@ function processCallSummary(params) {
   );
 
   // 結果の検証（基本項目）
-  if (!analysisResult || !analysisResult.summary || !analysisResult.transcript || !Array.isArray(analysisResult.actions)) {
-    throw new Error('解析結果に必須キー (summary, transcript, actions) が不足しています');
+  // transcript は enableTranscript が false の場合は存在しないことがある
+  if (!analysisResult || !analysisResult.summary || !Array.isArray(analysisResult.actions)) {
+    throw new Error('解析結果に必須キー (summary, actions) が不足しています');
+  }
+
+  // enableTranscript が true の場合のみ transcript をチェック
+  if (config.enableTranscript && !analysisResult.transcript) {
+    throw new Error('解析結果に transcript が不足しています（enableTranscript=true）');
   }
 
   // ファイル情報を結果に追加
   analysisResult.recording_file_id = resolvedFileId;
   analysisResult.recording_file_url = fileUrl;
 
-  // AppSheet更新（Call_Logs）
-  updateCallLog(
-    callId, 
-    analysisResult.transcript, 
-    analysisResult.summary,
-    analysisResult.recording_file_id,
-    analysisResult.recording_file_url,
-    config
-  );
+  // AppSheet更新（summary_onlyモードではスキップ）
+  if (processingMode !== 'summary_only') {
+    // AppSheet更新（Call_Logs）
+    updateCallLog(
+      callId,
+      analysisResult.transcript || '',  // enableTranscript=false の場合は空文字列
+      analysisResult.summary,
+      analysisResult.recording_file_id,
+      analysisResult.recording_file_url,
+      config
+    );
 
-  // アクション追加（Call_Actions）
-  if (analysisResult.actions.length > 0) {
-    addCallActions(callId, clientId, analysisResult.actions, config);
+    // アクション追加（Call_Actions）
+    if (analysisResult.actions.length > 0) {
+      addCallActions(callId, clientId, analysisResult.actions, config);
+    }
+
+    Logger.log(`[処理完了] 通話ID: ${callId}`);
+
+    // 成功通知
+    sendSuccessNotification(callId, analysisResult.summary, config);
+  } else {
+    Logger.log(`[処理完了] 通話ID: ${callId} (summary_onlyモード - AppSheet更新スキップ)`);
   }
-
-  Logger.log(`[処理完了] 通話ID: ${callId}`);
-
-  // 成功通知
-  sendSuccessNotification(callId, analysisResult.summary, config);
 
   // 【統合機能】依頼作成/更新（AIレスポンスから直接取得）
   let requestCreationResult = null;
@@ -259,7 +270,8 @@ function processCallSummary(params) {
       request_id: requestCreationResult.requestId,
       is_new: requestCreationResult.isNew,
       mode: requestCreationResult.mode
-    } : null
+    } : null,
+    usageMetadata: usageMetadata
   };
 }
 

@@ -342,15 +342,11 @@ class GeminiClient {
 }
 
 /**
- * 為替レート設定（USD -> JPY）
- * 2025年1月時点の想定レート
- */
-const EXCHANGE_RATE_USD_TO_JPY = 150;
-
-/**
  * Geminiモデルの価格情報を取得（USD/100万トークン）
  * @param {string} model - モデル名
  * @return {Object} {inputPer1M, outputPer1M}
+ *
+ * 注: EXCHANGE_RATE_USD_TO_JPY は config_settings.gs で定義されています
  */
 function getGeminiPricing(model) {
   // 2025年1月時点のGemini 2.5 API価格（USD/100万トークン）

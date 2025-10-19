@@ -41,9 +41,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 自動クリーンアップ: 90日以上前のログは削除
 
 **モデル選択戦略:**
-- **Vertex AI (gemini-2.5-flash + 思考モード)**: 通話_要約生成、通話_質疑応答（GCP統合でセキュア）
-- **Gemini API gemini-2.5-pro**: 複雑な思考が必要なタスク（看護記録、質疑応答、レポート）
-- **Gemini API gemini-2.5-flash**: 標準処理（OCR、データ抽出、分類）
+
+| プロジェクト | モデル | 思考モード | 用途 | 特徴 |
+|------------|--------|-----------|------|------|
+| **通話_要約生成** | Vertex AI Gemini 2.5 Flash | なし | 音声解析・要約・アクション抽出・依頼情報抽出 | base64 inlineData使用、非ストリーミング、OAuth2認証 |
+| **通話_質疑応答** | Vertex AI Gemini 2.5 Flash/Pro | あり（Budget: -1） | 通話記録への質疑応答 | キーワード「しっかり」でPro切替、深い推論 |
+| **利用者_質疑応答** | Vertex AI Gemini 2.5 Flash | なし | 利用者情報への質疑応答 | 非同期タスクキュー、回答+要約同時生成 |
+| **看護記録系** | Vertex AI Gemini 2.5 Pro | あり | 看護記録生成・分析 | 高精度な医療文書処理 |
+| **その他標準処理** | Vertex AI Gemini 2.5 Flash | なし | OCR、データ抽出、分類 | 高速・低コスト |
+
+**重要な方針:**
+- ✅ **全プロジェクトVertex AI使用**: Google AI Studio API（Gemini API）は完全廃止
+- ✅ **OAuth2認証**: `ScriptApp.getOAuthToken()`で安全な認証
+- ✅ **思考モード活用**: 複雑な推論が必要な質疑応答系でThinking Budgetを設定
+- ✅ **モデル切替機能**: ユーザーが「しっかり」キーワードで高精度モード選択可能
+- ✅ **コスト最適化**: デフォルトFlash、必要時のみPro使用
 
 ## 開発コマンド
 
@@ -168,17 +180,45 @@ function processRequest(params) {
 }
 ```
 
-### Vertex AI vs Gemini API
-- **Vertex AIプロジェクト**（通話_要約生成、通話_質疑応答）:
-  - `vertex_ai_service.gs` と `vertex_ai_utils.gs` を使用
-  - `config.gs` でGCPプロジェクト設定が必要
-  - レスポンス切断を避けるため非ストリーミングAPI使用
-  - 移行ノートは `GEMINI_VS_VERTEX_COMPARISON.md` を参照
+### Vertex AI統合（全プロジェクト共通）
 
-- **Gemini APIプロジェクト**（その他全て）:
-  - `common_modules` の `gemini_client.gs` を使用
-  - APIキー: `AIzaSyDUKFlE6_NYGehDYOxiRQcHpjG2l7GZmTY` (configで設定)
-  - 複雑度に応じたモデル選択（上記「モデル選択戦略」参照）
+**重要:** 2025年10月以降、全プロジェクトでVertex AIを使用。Google AI Studio API（Gemini API）は完全廃止。
+
+**実装パターン:**
+
+1. **通話_要約生成プロジェクト**（音声解析専用）:
+   - `vertex_ai_service.gs`: 音声ファイル専用API（base64 inlineData使用）
+   - `config.gs`: GCPプロジェクト設定（PROJECT_ID, LOCATION, MODEL）
+   - 非ストリーミングAPI: レスポンス切断回避
+   - 統合プロンプト: 1回のAPI呼び出しで要約+アクション+依頼情報抽出
+
+2. **通話_質疑応答プロジェクト**（テキスト処理）:
+   - `gemini_client.gs`: 共通モジュールのVertex AIクライアント
+   - 思考モード有効: `thinkingBudget: -1`（無制限推論）
+   - モデル選択: Flash（デフォルト）/ Pro（キーワード「しっかり」）
+
+3. **利用者_質疑応答プロジェクト**（非同期処理）:
+   - `vertex_ai_client.gs`: Vertex AI専用クライアント
+   - 非同期タスクキュー: 長時間実行対応
+   - JSON構造化レスポンス: `{answer, summary}`
+
+4. **その他プロジェクト**:
+   - `common_modules/gemini_client.gs`: Vertex AIエンドポイント使用
+   - OAuth2認証: `ScriptApp.getOAuthToken()`
+
+**認証設定:**
+```javascript
+// OAuth2認証（全プロジェクト共通）
+headers: { 'Authorization': `Bearer ${ScriptApp.getOAuthToken()}` }
+
+// エンドポイント形式
+`https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/publishers/google/models/${model}:generateContent`
+```
+
+**必須スコープ（appsscript.json）:**
+```json
+"https://www.googleapis.com/auth/cloud-platform"
+```
 
 ### デプロイのベストプラクティス
 1. **常に `deploy_unified.py` を使用** - バージョン番号の乱立を防止

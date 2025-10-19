@@ -1,0 +1,19 @@
+# Backup files
+*_backup*.gs
+*_backup*.json
+
+# Archive directories
+_backup/
+_archived/
+
+# Version files
+*_v[0-9]*.gs
+
+# Development files
+*.md
+.git
+.gitignore
+
+# Test files (uncomment if you don't want to push tests)
+# test_*.gs
+# *_test.gs
