@@ -188,9 +188,9 @@ class GASLogger {
       DriveApp.getRootFolder().removeFile(file);
     }
     
-    let sheet = spreadsheet.getSheetByName('実行ログ');
+    let sheet = spreadsheet.getSheetByName('実行履歴');
     if (!sheet) {
-      sheet = spreadsheet.insertSheet('実行ログ');
+      sheet = spreadsheet.insertSheet('実行履歴');
       
       // ヘッダー行を追加
       const headers = [
@@ -328,7 +328,7 @@ class GASLogger {
       if (!files.hasNext()) return;
       
       const spreadsheet = SpreadsheetApp.openById(files.next().getId());
-      const sheet = spreadsheet.getSheetByName('実行ログ');
+      const sheet = spreadsheet.getSheetByName('実行履歴');
       
       if (!sheet) return;
       
