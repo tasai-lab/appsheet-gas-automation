@@ -57,6 +57,10 @@ function analyzeDocumentWithVertexAI(fileId, documentType, customInstructions, c
   // プロンプト生成
   const prompt = generatePrompt(documentType, fileCategory, customInstructions, clientContextInfo, clientBirthDate);
 
+  // デバッグ: プロンプトをログ出力
+  logStructured(LOG_LEVEL.INFO, `生成されたプロンプト（先頭500文字）: ${prompt.substring(0, 500)}`);
+  logStructured(LOG_LEVEL.INFO, `生成されたプロンプト（末尾500文字）: ${prompt.substring(prompt.length - 500)}`);
+
   // GCP設定取得
   const gcpConfig = getGCPConfig();
   const endpoint = getVertexAIEndpoint();
@@ -221,33 +225,28 @@ function generatePrompt(documentType, fileCategory, customInstructions, clientCo
  * 画像/PDF用プロンプト（OCR + 構造化データ抽出）
  */
 function generateDocumentPrompt(documentType, clientBirthDate) {
-  const basePrompt = `
-# あなたの役割
-
-あなたは、日本の医療・介護分野で使われる書類「${documentType}」を分析し、OCRテキストと構造化データを1回で生成する高度なAIエキスパートです。
-
-# 実行タスク
-
-提供された書類の画像/PDFから、以下の情報を正確に抽出してください：
-
-1. **構造化OCRテキスト (ocr_text)**: Markdown形式で全文を構造化
-2. **要約 (summary)**: 200文字程度の要約
-3. **推奨タイトル (title)**: ファイル名（形式: YYYY-MM-DD_書類種類_主要名）
-4. **構造化データ (structured_data)**: ${documentType}から抽出すべき項目の構造化データ
-
-# 共通ルール
-
-- **日付**: すべて「yyyy/mm/dd」形式に統一（和暦→西暦変換）
-- **判読不能**: 読めない文字は [判読不能] と記述（推測禁止）
-- **null値**: 該当情報がない項目は null
-- **整数**: 給付割合等は整数（例: 70, 80, 90）
-
-`;
-
-  // documentType別のスキーマ定義
+  // documentType別の完全なプロンプトを取得（basePromptは使用しない）
   const schema = getStructuredDataSchema(documentType, clientBirthDate);
 
-  return basePrompt + schema;
+  // schemasがnull/undefinedの場合は汎用プロンプト
+  if (!schema) {
+    return `
+# 汎用ドキュメントの処理
+
+構造化データ抽出は不要です。ocr_text, summary, titleのみを生成してください。
+
+# 出力形式
+
+{
+  "ocr_text": "（Markdown形式の構造化OCRテキスト）",
+  "summary": "（200文字程度の要約）",
+  "title": "（推奨ファイル名）",
+  "structured_data": null
+}
+`;
+  }
+
+  return schema;
 }
 
 /**
@@ -371,9 +370,16 @@ function getStructuredDataSchema(documentType, clientBirthDate) {
     '介護保険証': `
 # あなたの役割
 
-あなたは介護保険被保険者証を解析するエキスパートです。
+あなたは、日本の介護保険被保険者証の画像/PDFを分析し、OCRテキストと構造化データを1回で生成する高度なAIエキスパートです。
 
-以下のOCRテキストから、指定された項目を抽出し、厳密なJSON形式で出力してください。
+# 実行タスク
+
+提供された介護保険被保険者証の画像/PDFから、以下の情報を正確に抽出してください：
+
+1. **構造化OCRテキスト (ocr_text)**: Markdown形式で全文を構造化
+2. **要約 (summary)**: 200文字程度の要約
+3. **推奨タイトル (title)**: ファイル名（形式: YYYY-MM-DD_介護保険被保険者証_氏名）
+4. **構造化データ (structured_data)**: 以下の8項目を抽出
 
 # 抽出ルール
 
