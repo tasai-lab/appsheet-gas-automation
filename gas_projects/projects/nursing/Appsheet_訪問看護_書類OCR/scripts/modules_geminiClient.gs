@@ -58,6 +58,12 @@ function analyzeDocumentWithVertexAI(fileId, documentType, customInstructions, c
   logStructured(LOG_LEVEL.INFO, `生成されたプロンプト（先頭500文字）: ${prompt.substring(0, 500)}`);
   logStructured(LOG_LEVEL.INFO, `生成されたプロンプト（末尾500文字）: ${prompt.substring(prompt.length - 500)}`);
 
+  // コスト累積用変数
+  let totalInputTokens = 0;
+  let totalOutputTokens = 0;
+  let totalCostJPY = 0;
+  let executionCount = 0;
+
   // 1回目: Primaryモデルで実行
   try {
     logStructured(LOG_LEVEL.INFO, `[1回目] Primaryモデル実行: ${gcpConfig.model} (max_tokens=${gcpConfig.maxOutputTokens})`);
@@ -72,10 +78,33 @@ function analyzeDocumentWithVertexAI(fileId, documentType, customInstructions, c
       documentType
     );
 
+    // コスト集計
+    executionCount++;
+    if (result.usageMetadata) {
+      totalInputTokens += result.usageMetadata.inputTokens;
+      totalOutputTokens += result.usageMetadata.outputTokens;
+      totalCostJPY += result.usageMetadata.totalCostJPY;
+    }
+
     logStructured(LOG_LEVEL.INFO, '✅ Primaryモデルで正常完了');
     return result;
 
   } catch (error) {
+    // Primary失敗時でもコストを記録（errorオブジェクトにusageMetadataが含まれている場合）
+    executionCount++;
+    if (error.usageMetadata) {
+      totalInputTokens += error.usageMetadata.inputTokens;
+      totalOutputTokens += error.usageMetadata.outputTokens;
+      totalCostJPY += error.usageMetadata.totalCostJPY;
+
+      logStructured(LOG_LEVEL.WARN, `Primaryモデル失敗時のコスト`, {
+        model: gcpConfig.model,
+        inputTokens: error.usageMetadata.inputTokens,
+        outputTokens: error.usageMetadata.outputTokens,
+        totalCostJPY: `¥${error.usageMetadata.totalCostJPY.toFixed(2)}`
+      });
+    }
+
     // MAX_TOKENSエラーの場合のみFallbackモデルでリトライ
     if (error.message && error.message.includes('MAX_TOKENS')) {
       logStructured(LOG_LEVEL.WARN, `⚠️ MAX_TOKENS検出 - Fallbackモデルでリトライします`, {
@@ -98,11 +127,32 @@ function analyzeDocumentWithVertexAI(fileId, documentType, customInstructions, c
         documentType
       );
 
-      logStructured(LOG_LEVEL.INFO, '✅ Fallbackモデルで正常完了');
+      // Fallbackのコスト集計
+      executionCount++;
+      if (result.usageMetadata) {
+        totalInputTokens += result.usageMetadata.inputTokens;
+        totalOutputTokens += result.usageMetadata.outputTokens;
+        totalCostJPY += result.usageMetadata.totalCostJPY;
+      }
+
+      // 合計コストをログ出力
+      logStructured(LOG_LEVEL.INFO, `✅ Fallbackモデルで正常完了 - 合計コスト`, {
+        executions: executionCount,
+        totalInputTokens: totalInputTokens,
+        totalOutputTokens: totalOutputTokens,
+        totalCostJPY: `¥${totalCostJPY.toFixed(2)}`
+      });
+
+      // 合計usageMetadataを上書き
+      result.usageMetadata.totalInputTokens = totalInputTokens;
+      result.usageMetadata.totalOutputTokens = totalOutputTokens;
+      result.usageMetadata.totalCostJPY = totalCostJPY;
+      result.usageMetadata.executionCount = executionCount;
+
       return result;
     }
 
-    // MAX_TOKENS以外のエラーはそのままスロー
+    // MAX_TOKENS以外のエラーはそのままスロー（コストは既に記録済み）
     throw error;
   }
 }
@@ -167,6 +217,17 @@ function callVertexAIInternal(modelName, maxOutputTokens, temperature, prompt, f
 
   const candidate = jsonResponse.candidates[0];
 
+  // usageMetadataを先に抽出（失敗時でもコスト記録のため）
+  const usageMetadata = extractVertexAIUsageMetadata(jsonResponse, modelName, 'text');
+  if (usageMetadata) {
+    logStructured(LOG_LEVEL.INFO, 'API使用量', {
+      model: modelName,
+      inputTokens: usageMetadata.inputTokens,
+      outputTokens: usageMetadata.outputTokens,
+      totalCostJPY: `¥${usageMetadata.totalCostJPY.toFixed(2)}`
+    });
+  }
+
   // finishReasonを確認
   const finishReason = candidate.finishReason;
   logStructured(LOG_LEVEL.INFO, `Vertex AI finishReason: ${finishReason}`, {
@@ -175,24 +236,19 @@ function callVertexAIInternal(modelName, maxOutputTokens, temperature, prompt, f
   });
 
   if (finishReason === 'MAX_TOKENS') {
-    // MAX_TOKENSエラーを特別なメッセージでスロー（上位でキャッチしてリトライ）
-    throw new Error(`MAX_TOKENS: 出力がトークン制限（${maxOutputTokens}）に達しました。`);
+    // MAX_TOKENSエラー時もusageMetadataを付加してスロー
+    const error = new Error(`MAX_TOKENS: 出力がトークン制限（${maxOutputTokens}）に達しました。`);
+    error.usageMetadata = usageMetadata;
+    throw error;
   }
 
   // JSON抽出
   let content = candidate.content.parts[0].text;
   const resultData = extractJSONFromText(content);
 
-  // usageMetadataを抽出して追加（料金計算）
-  const usageMetadata = extractVertexAIUsageMetadata(jsonResponse, modelName, 'text');
+  // usageMetadataを結果に追加
   if (usageMetadata) {
     resultData.usageMetadata = usageMetadata;
-    logStructured(LOG_LEVEL.INFO, 'API使用量', {
-      model: modelName,
-      inputTokens: usageMetadata.inputTokens,
-      outputTokens: usageMetadata.outputTokens,
-      totalCostJPY: `¥${usageMetadata.totalCostJPY.toFixed(2)}`
-    });
   }
 
   logStructured(LOG_LEVEL.INFO, '解析完了 (Vertex AI)', {

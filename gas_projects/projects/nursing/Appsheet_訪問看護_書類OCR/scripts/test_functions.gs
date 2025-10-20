@@ -60,6 +60,52 @@ function setupScriptPropertiesForDocumentOCR() {
   Logger.log('\n次のステップ:');
   Logger.log('1. checkScriptPropertiesSetup() を実行して設定を確認');
   Logger.log('2. testMedicalInsurance() などのテスト関数を実行');
+
+  // デバッグ: 設定値を確認
+  Logger.log('\n【デバッグ】設定直後の確認:');
+  Logger.log('VERTEX_AI_FALLBACK_MODEL: ' + getScriptProperty('VERTEX_AI_FALLBACK_MODEL'));
+  Logger.log('VERTEX_AI_FALLBACK_MAX_OUTPUT_TOKENS: ' + getScriptProperty('VERTEX_AI_FALLBACK_MAX_OUTPUT_TOKENS'));
+}
+
+/**
+ * Fallback Model設定のみを追加（既存設定に影響なし）
+ * setupScriptPropertiesForDocumentOCR() で反映されない場合に使用
+ */
+function addFallbackModelSettings() {
+  Logger.log('='.repeat(60));
+  Logger.log('Fallback Model 設定追加');
+  Logger.log('='.repeat(60));
+
+  setScriptProperty('VERTEX_AI_FALLBACK_MODEL', 'gemini-2.5-pro');
+  setScriptProperty('VERTEX_AI_FALLBACK_MAX_OUTPUT_TOKENS', '20000');
+
+  Logger.log('\n✅ Fallback Model設定を追加しました');
+  Logger.log('\n確認:');
+  Logger.log('VERTEX_AI_FALLBACK_MODEL: ' + getScriptProperty('VERTEX_AI_FALLBACK_MODEL'));
+  Logger.log('VERTEX_AI_FALLBACK_MAX_OUTPUT_TOKENS: ' + getScriptProperty('VERTEX_AI_FALLBACK_MAX_OUTPUT_TOKENS'));
+
+  Logger.log('\n次のステップ:');
+  Logger.log('checkScriptPropertiesSetup() を実行して全設定を確認してください');
+}
+
+/**
+ * Script Propertiesの生の値を全て表示（デバッグ用）
+ */
+function listAllScriptProperties() {
+  Logger.log('='.repeat(60));
+  Logger.log('Script Properties 全一覧（生データ）');
+  Logger.log('='.repeat(60));
+
+  const props = PropertiesService.getScriptProperties().getProperties();
+  const keys = Object.keys(props).sort();
+
+  Logger.log(`\n総数: ${keys.length}件\n`);
+
+  keys.forEach(key => {
+    Logger.log(`${key}: ${props[key]}`);
+  });
+
+  Logger.log('\n' + '='.repeat(60));
 }
 
 /**

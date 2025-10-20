@@ -792,13 +792,8 @@ function createNewServiceFormAndDetails(context, extractedData, serviceMasterMap
       "creation_date": formattedCreationDate
     };
 
-    const formPayload = {
-      Action: "Add",
-      Properties: { "Locale": "ja-JP", "Timezone": "Asia/Tokyo" },
-      Rows: [formRow]
-    };
-
-    callAppSheetApi(TABLE_NAMES.provisionForm, formPayload);
+    // 提供票Formレコードを作成
+    callAppSheetApi(TABLE_NAMES.provisionForm, 'Add', [formRow]);
   }
 
   // Detailsレコードを作成
@@ -996,22 +991,34 @@ function callAppSheetApi(tableName, action, rows) {
 
   const apiUrl = `https://api.appsheet.com/api/v2/apps/${APPSHEET_CONFIG.appId}/tables/${encodeURIComponent(tableName)}/Action`;
 
-  const payload = {
-    Action: action,
-    Properties: {
-      Locale: 'ja-JP',
-      Timezone: 'Asia/Tokyo'
-    },
-    Rows: rows
-  };
+  // 引数チェック: rowsがundefinedの場合、actionが実はpayloadオブジェクトの可能性
+  let payload;
+  if (rows === undefined && typeof action === 'object') {
+    // 後方互換性: callAppSheetApi(tableName, payloadObject) の形式
+    payload = action;
+    logStructured(LOG_LEVEL.INFO, 'AppSheet APIリクエスト送信（完全ペイロード）', {
+      tableName: tableName,
+      action: payload.Action,
+      payload: JSON.stringify(payload)
+    });
+  } else {
+    // 標準形式: callAppSheetApi(tableName, action, rows)
+    payload = {
+      Action: action,
+      Properties: {
+        Locale: 'ja-JP',
+        Timezone: 'Asia/Tokyo'
+      },
+      Rows: rows
+    };
 
-  // デバッグ: ペイロードをログ出力
-  logStructured(LOG_LEVEL.INFO, 'AppSheet APIリクエスト送信', {
-    tableName: tableName,
-    action: action,
-    rowCount: rows.length,
-    payload: JSON.stringify(payload)
-  });
+    logStructured(LOG_LEVEL.INFO, 'AppSheet APIリクエスト送信', {
+      tableName: tableName,
+      action: action,
+      rowCount: rows ? rows.length : 0,
+      payload: JSON.stringify(payload)
+    });
+  }
 
   const options = {
     method: 'post',
