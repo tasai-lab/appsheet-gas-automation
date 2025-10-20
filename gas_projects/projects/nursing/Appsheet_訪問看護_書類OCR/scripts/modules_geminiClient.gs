@@ -253,6 +253,9 @@ function generateDocumentPrompt(documentType, clientBirthDate) {
  * documentType別の構造化データスキーマを取得
  */
 function getStructuredDataSchema(documentType, clientBirthDate) {
+  // デバッグ: documentTypeの値を確認
+  logStructured(LOG_LEVEL.INFO, `getStructuredDataSchema() called with documentType: "${documentType}"`);
+
   const schemas = {
     '医療保険証': `
 # あなたの役割
@@ -751,6 +754,7 @@ function getStructuredDataSchema(documentType, clientBirthDate) {
 
   // 指示書系（包含マッチ）
   if (documentType.includes('指示書')) {
+    logStructured(LOG_LEVEL.INFO, `プロンプト選択: 指示書用プロンプト（包含マッチ）`);
     return `
 # あなたの役割
 
@@ -876,7 +880,14 @@ function getStructuredDataSchema(documentType, clientBirthDate) {
 `;
   }
 
+  // schemas から該当するプロンプトを返す
+  if (schemas[documentType]) {
+    logStructured(LOG_LEVEL.INFO, `プロンプト選択: "${documentType}"用の専用プロンプト`);
+    return schemas[documentType];
+  }
+
   // デフォルト（汎用ドキュメント）
+  logStructured(LOG_LEVEL.WARN, `プロンプト選択: 汎用プロンプト（マッチなし）。documentType="${documentType}", 利用可能なキー=[${Object.keys(schemas).join(', ')}]`);
   return `
 # 汎用ドキュメントの処理
 
