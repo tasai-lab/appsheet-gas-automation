@@ -176,11 +176,24 @@ function processRequest(params) {
 function updateDocumentOnSuccess(config, keyValue, resultData, fileId) {
   const fileUrl = 'https://drive.google.com/file/d/' + fileId + '/view';
 
+  // ENABLE_FULL_TEXT_OUTPUT 設定に従ってOCRテキストを処理
+  const ocrTextToSave = truncateOcrText(resultData.ocr_text, 100, 100);
+
+  // ログ出力: OCRテキストの長さ情報
+  const fullLength = resultData.ocr_text ? resultData.ocr_text.length : 0;
+  const savedLength = ocrTextToSave ? ocrTextToSave.length : 0;
+  logStructured(LOG_LEVEL.INFO, 'OCRテキスト保存', {
+    fullTextEnabled: isFullTextOutputEnabled(),
+    originalLength: fullLength,
+    savedLength: savedLength,
+    truncated: fullLength !== savedLength
+  });
+
   var rowData = {};
   rowData[config.keyColumn] = keyValue;
   rowData[config.titleColumn] = resultData.title;
   rowData[config.summaryColumn] = resultData.summary;
-  rowData[config.ocrColumn] = resultData.ocr_text;
+  rowData[config.ocrColumn] = ocrTextToSave;
   rowData[config.statusColumn] = "完了";
   rowData["file_id"] = fileId;
   rowData["file_url"] = fileUrl;
