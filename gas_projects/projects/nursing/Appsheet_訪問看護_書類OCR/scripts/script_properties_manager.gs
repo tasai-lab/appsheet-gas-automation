@@ -406,9 +406,16 @@ function getGCPConfig() {
   return {
     projectId: getScriptProperty('GCP_PROJECT_ID'),
     location: getScriptProperty('GCP_LOCATION', 'us-central1'),
+
+    // Primary Model (1回目の実行)
     model: getScriptProperty('VERTEX_AI_MODEL', 'gemini-2.5-flash'),
+    maxOutputTokens: parseInt(getScriptProperty('VERTEX_AI_MAX_OUTPUT_TOKENS', '8192')),
+
+    // Fallback Model (MAX_TOKENS超過時の2回目実行)
+    fallbackModel: getScriptProperty('VERTEX_AI_FALLBACK_MODEL', 'gemini-2.5-pro'),
+    fallbackMaxOutputTokens: parseInt(getScriptProperty('VERTEX_AI_FALLBACK_MAX_OUTPUT_TOKENS', '20000')),
+
     temperature: parseFloat(getScriptProperty('VERTEX_AI_TEMPERATURE', '0.1')),
-    maxOutputTokens: parseInt(getScriptProperty('VERTEX_AI_MAX_OUTPUT_TOKENS', '20000')),
     useVertexAI: getScriptProperty('USE_VERTEX_AI', 'false') === 'true'
   };
 }

@@ -27,7 +27,8 @@ const SYSTEM_CONFIG = {
   debugMode: false,  // デバッグモード（詳細ログ出力）
 
   // API呼び出し制限（1処理あたりの最大呼び出し回数）
-  maxApiCallsPerExecution: 2,  // Gemini/Vertex AI APIの最大呼び出し回数
+  // 3回: Primary Model + Fallback Model (MAX_TOKENS時) + 提供票データ抽出
+  maxApiCallsPerExecution: 3,  // Gemini/Vertex AI APIの最大呼び出し回数
 
   // フォールバック設定
   enableApiFallback: true,  // Vertex AI失敗時にGoogle AIにフォールバック
@@ -93,15 +94,19 @@ function getApiCallCount() {
 
 /**
  * Vertex AI APIエンドポイントURLを取得
+ * @param {string} [modelName] - モデル名（指定しない場合はPrimaryモデル）
  * @returns {string} Vertex AI APIエンドポイント
  */
-function getVertexAIEndpoint() {
+function getVertexAIEndpoint(modelName) {
   const config = getGCPConfig();
   if (!config.projectId) {
     throw new Error('GCP_PROJECT_IDが設定されていません。Script Propertiesで設定してください。');
   }
-  // config.model を使用（script_properties_manager.gs のプロパティ名に統一）
-  return `https://${config.location}-aiplatform.googleapis.com/v1/projects/${config.projectId}/locations/${config.location}/publishers/google/models/${config.model}:generateContent`;
+
+  // モデル名が指定されていない場合はPrimaryモデルを使用
+  const model = modelName || config.model;
+
+  return `https://${config.location}-aiplatform.googleapis.com/v1/projects/${config.projectId}/locations/${config.location}/publishers/google/models/${model}:generateContent`;
 }
 
 /**

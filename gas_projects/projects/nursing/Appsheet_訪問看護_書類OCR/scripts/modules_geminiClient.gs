@@ -31,16 +31,13 @@ function analyzeDocumentWithGemini(fileId, documentType, customInstructions, cli
 }
 
 /**
- * Vertex AI APIでファイルを解析
+ * Vertex AI APIでファイルを解析（MAX_TOKENS時に自動Proモデルリトライ）
  * @private
  */
 function analyzeDocumentWithVertexAI(fileId, documentType, customInstructions, clientContextInfo, clientBirthDate) {
-  // API呼び出し制限チェック
-  incrementApiCallCounter('Vertex_AI');
+  const gcpConfig = getGCPConfig();
 
-  const perfStop = perfStart('Vertex_AI_API');
-
-  // ファイル取得とMIMEタイプ判定
+  // ファイル情報を取得（共通処理）
   const file = DriveApp.getFileById(fileId);
   const fileBlob = file.getBlob();
   const fileName = file.getName();
@@ -48,22 +45,79 @@ function analyzeDocumentWithVertexAI(fileId, documentType, customInstructions, c
   const mimeType = determineMimeType(fileName, driveMimeType);
   const fileCategory = getFileCategory(mimeType, fileName);
 
+  // プロンプト生成（共通処理）
+  const prompt = generatePrompt(documentType, fileCategory, customInstructions, clientContextInfo, clientBirthDate);
+
   logStructured(LOG_LEVEL.INFO, `解析開始 (Vertex AI): ${fileName}`, {
     documentType: documentType,
     fileCategory: fileCategory,
     mimeType: mimeType
   });
 
-  // プロンプト生成
-  const prompt = generatePrompt(documentType, fileCategory, customInstructions, clientContextInfo, clientBirthDate);
-
   // デバッグ: プロンプトをログ出力
   logStructured(LOG_LEVEL.INFO, `生成されたプロンプト（先頭500文字）: ${prompt.substring(0, 500)}`);
   logStructured(LOG_LEVEL.INFO, `生成されたプロンプト（末尾500文字）: ${prompt.substring(prompt.length - 500)}`);
 
-  // GCP設定取得
-  const gcpConfig = getGCPConfig();
-  const endpoint = getVertexAIEndpoint();
+  // 1回目: Primaryモデルで実行
+  try {
+    logStructured(LOG_LEVEL.INFO, `[1回目] Primaryモデル実行: ${gcpConfig.model} (max_tokens=${gcpConfig.maxOutputTokens})`);
+
+    const result = callVertexAIInternal(
+      gcpConfig.model,
+      gcpConfig.maxOutputTokens,
+      gcpConfig.temperature,
+      prompt,
+      fileBlob,
+      mimeType,
+      documentType
+    );
+
+    logStructured(LOG_LEVEL.INFO, '✅ Primaryモデルで正常完了');
+    return result;
+
+  } catch (error) {
+    // MAX_TOKENSエラーの場合のみFallbackモデルでリトライ
+    if (error.message && error.message.includes('MAX_TOKENS')) {
+      logStructured(LOG_LEVEL.WARN, `⚠️ MAX_TOKENS検出 - Fallbackモデルでリトライします`, {
+        primaryModel: gcpConfig.model,
+        primaryMaxTokens: gcpConfig.maxOutputTokens,
+        fallbackModel: gcpConfig.fallbackModel,
+        fallbackMaxTokens: gcpConfig.fallbackMaxOutputTokens
+      });
+
+      // 2回目: Fallbackモデル（Pro）で実行
+      logStructured(LOG_LEVEL.INFO, `[2回目] Fallbackモデル実行: ${gcpConfig.fallbackModel} (max_tokens=${gcpConfig.fallbackMaxOutputTokens})`);
+
+      const result = callVertexAIInternal(
+        gcpConfig.fallbackModel,
+        gcpConfig.fallbackMaxOutputTokens,
+        gcpConfig.temperature,
+        prompt,
+        fileBlob,
+        mimeType,
+        documentType
+      );
+
+      logStructured(LOG_LEVEL.INFO, '✅ Fallbackモデルで正常完了');
+      return result;
+    }
+
+    // MAX_TOKENS以外のエラーはそのままスロー
+    throw error;
+  }
+}
+
+/**
+ * Vertex AI API内部呼び出し（共通処理）
+ * @private
+ */
+function callVertexAIInternal(modelName, maxOutputTokens, temperature, prompt, fileBlob, mimeType, documentType) {
+  // API呼び出し制限チェック
+  incrementApiCallCounter('Vertex_AI');
+
+  const perfStop = perfStart('Vertex_AI_API');
+
+  const endpoint = getVertexAIEndpoint(modelName);
   const token = getOAuth2Token();
 
   // リクエストボディ構築
@@ -79,8 +133,8 @@ function analyzeDocumentWithVertexAI(fileId, documentType, customInstructions, c
     contents: [{ role: 'user', parts: [textPart, filePart] }],
     generation_config: {
       response_mime_type: 'application/json',
-      temperature: gcpConfig.temperature,
-      max_output_tokens: gcpConfig.maxOutputTokens
+      temperature: temperature,
+      max_output_tokens: maxOutputTokens
     }
   };
 
@@ -115,12 +169,14 @@ function analyzeDocumentWithVertexAI(fileId, documentType, customInstructions, c
 
   // finishReasonを確認
   const finishReason = candidate.finishReason;
+  logStructured(LOG_LEVEL.INFO, `Vertex AI finishReason: ${finishReason}`, {
+    model: modelName,
+    maxOutputTokens: maxOutputTokens
+  });
+
   if (finishReason === 'MAX_TOKENS') {
-    logStructured(LOG_LEVEL.ERROR, 'Vertex AIの出力がトークン制限に達しました', {
-      finishReason: finishReason,
-      maxOutputTokens: gcpConfig.maxOutputTokens
-    });
-    throw new Error(`Vertex AIの出力がトークン制限（${gcpConfig.maxOutputTokens}）に達しました。書類が長すぎる可能性があります。`);
+    // MAX_TOKENSエラーを特別なメッセージでスロー（上位でキャッチしてリトライ）
+    throw new Error(`MAX_TOKENS: 出力がトークン制限（${maxOutputTokens}）に達しました。`);
   }
 
   // JSON抽出
@@ -128,10 +184,11 @@ function analyzeDocumentWithVertexAI(fileId, documentType, customInstructions, c
   const resultData = extractJSONFromText(content);
 
   // usageMetadataを抽出して追加（料金計算）
-  const usageMetadata = extractVertexAIUsageMetadata(jsonResponse, gcpConfig.model, 'text');
+  const usageMetadata = extractVertexAIUsageMetadata(jsonResponse, modelName, 'text');
   if (usageMetadata) {
     resultData.usageMetadata = usageMetadata;
     logStructured(LOG_LEVEL.INFO, 'API使用量', {
+      model: modelName,
       inputTokens: usageMetadata.inputTokens,
       outputTokens: usageMetadata.outputTokens,
       totalCostJPY: `¥${usageMetadata.totalCostJPY.toFixed(2)}`
@@ -139,6 +196,7 @@ function analyzeDocumentWithVertexAI(fileId, documentType, customInstructions, c
   }
 
   logStructured(LOG_LEVEL.INFO, '解析完了 (Vertex AI)', {
+    model: modelName,
     documentType: documentType,
     hasStructuredData: !!resultData.structured_data
   });

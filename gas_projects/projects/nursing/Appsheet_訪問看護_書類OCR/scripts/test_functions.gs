@@ -35,9 +35,16 @@ function setupScriptPropertiesForDocumentOCR() {
     // GCP設定（必須）
     GCP_PROJECT_ID: 'macro-shadow-458705-v8',
     GCP_LOCATION: 'us-central1',
+
+    // Primary Model (1回目 - デフォルト実行)
     VERTEX_AI_MODEL: 'gemini-2.5-flash',
+    VERTEX_AI_MAX_OUTPUT_TOKENS: '8192',  // Flashの推奨上限
     VERTEX_AI_TEMPERATURE: '0.1',
-    VERTEX_AI_MAX_OUTPUT_TOKENS: '20000',
+
+    // Fallback Model (2回目 - MAX_TOKENS超過時の自動リトライ)
+    VERTEX_AI_FALLBACK_MODEL: 'gemini-2.5-pro',
+    VERTEX_AI_FALLBACK_MAX_OUTPUT_TOKENS: '20000',
+
     USE_VERTEX_AI: 'true',
 
     // 機能ON/OFF
@@ -70,8 +77,10 @@ function checkScriptPropertiesSetup() {
     'GCP_PROJECT_ID',
     'GCP_LOCATION',
     'VERTEX_AI_MODEL',
-    'VERTEX_AI_TEMPERATURE',
     'VERTEX_AI_MAX_OUTPUT_TOKENS',
+    'VERTEX_AI_TEMPERATURE',
+    'VERTEX_AI_FALLBACK_MODEL',
+    'VERTEX_AI_FALLBACK_MAX_OUTPUT_TOKENS',
     'USE_VERTEX_AI',
     'ENABLE_DUPLICATION_PREVENTION'
   ];
@@ -92,10 +101,16 @@ function checkScriptPropertiesSetup() {
     const config = getGCPConfig();
     Logger.log(`Project ID: ${config.projectId || '❌ 未設定'}`);
     Logger.log(`Location: ${config.location}`);
-    Logger.log(`Model: ${config.model || '❌ 未設定'}`);
-    Logger.log(`Temperature: ${config.temperature}`);
-    Logger.log(`Max Tokens: ${config.maxOutputTokens}`);
     Logger.log(`Use Vertex AI: ${config.useVertexAI}`);
+    Logger.log(`Temperature: ${config.temperature}`);
+
+    Logger.log('\n【Primary Model (1回目)】');
+    Logger.log(`Model: ${config.model || '❌ 未設定'}`);
+    Logger.log(`Max Output Tokens: ${config.maxOutputTokens}`);
+
+    Logger.log('\n【Fallback Model (MAX_TOKENS超過時の2回目)】');
+    Logger.log(`Model: ${config.fallbackModel || '❌ 未設定'}`);
+    Logger.log(`Max Output Tokens: ${config.fallbackMaxOutputTokens}`);
   } catch (error) {
     Logger.log(`❌ GCP設定の取得エラー: ${error.message}`);
     allSet = false;
