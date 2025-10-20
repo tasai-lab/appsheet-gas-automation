@@ -27,8 +27,10 @@ const SYSTEM_CONFIG = {
   debugMode: false,  // デバッグモード（詳細ログ出力）
 
   // API呼び出し制限（1処理あたりの最大呼び出し回数）
-  // 3回: Primary Model + Fallback Model (MAX_TOKENS時) + 提供票データ抽出
-  maxApiCallsPerExecution: 3,  // Gemini/Vertex AI APIの最大呼び出し回数
+  // 通常書類: 1回（OCR + 構造化データ抽出）
+  // 提供票: 2回（OCR + 専用抽出）
+  // MAX_TOKENS時: Primary → Fallback自動切り替え（合計2回としてカウント）
+  maxApiCallsPerExecution: 2,  // Gemini/Vertex AI APIの最大呼び出し回数（厳格な制限）
 
   // フォールバック設定
   enableApiFallback: true,  // Vertex AI失敗時にGoogle AIにフォールバック
