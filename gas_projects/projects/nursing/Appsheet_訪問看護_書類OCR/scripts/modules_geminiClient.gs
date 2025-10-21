@@ -303,7 +303,7 @@ function callVertexAIInternal(modelName, maxOutputTokens, temperature, prompt, f
  */
 
 /**
- * テキストからJSONを抽出（2段階戦略）
+ * テキストからJSONを抽出（2段階戦略 + 制御文字サニタイズ）
  * @param {string} text - AIの応答テキスト
  * @returns {Object} - 抽出されたJSONオブジェクト
  */
@@ -319,7 +319,8 @@ function extractJSONFromText(text) {
   if (match && match[1]) {
     try {
       logStructured(LOG_LEVEL.INFO, 'JSON抽出: Strategy 1 (Markdown) 使用');
-      return JSON.parse(match[1].trim());
+      const sanitizedJson = sanitizeJsonString(match[1].trim());
+      return JSON.parse(sanitizedJson);
     } catch (error) {
       logStructured(LOG_LEVEL.INFO, `JSON抽出: Strategy 1 失敗: ${error.message}`);
     }
@@ -333,11 +334,13 @@ function extractJSONFromText(text) {
   if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
     const jsonString = text.substring(startIndex, endIndex + 1);
     try {
-      return JSON.parse(jsonString);
+      const sanitizedJson = sanitizeJsonString(jsonString);
+      return JSON.parse(sanitizedJson);
     } catch (error) {
       logStructured(LOG_LEVEL.ERROR, 'JSON解析エラー', {
         error: error.message,
-        jsonPreview: jsonString.substring(0, 500)
+        jsonPreview: jsonString.substring(0, 500),
+        position: error.message.match(/position (\d+)/) ? error.message.match(/position (\d+)/)[1] : 'unknown'
       });
       if (error.message.includes('Unexpected end')) {
         throw new Error('AIの応答が途中で終了 (トークン不足の可能性)');
@@ -351,6 +354,26 @@ function extractJSONFromText(text) {
     textPreview: text.substring(0, 500)
   });
   throw new Error('有効なJSONが見つかりませんでした');
+}
+
+/**
+ * JSON文字列をサニタイズ（不正な制御文字を削除）
+ * @private
+ * @param {string} jsonString - サニタイズ対象のJSON文字列
+ * @returns {string} サニタイズ済みのJSON文字列
+ */
+function sanitizeJsonString(jsonString) {
+  // 不正な制御文字（\x00-\x1F）を削除
+  // ただし、以下の文字は許可する：
+  // - \t (0x09): タブ（JSON内で許可）
+  // - \n (0x0A): 改行（JSON内で許可）
+  // - \r (0x0D): キャリッジリターン（JSON内で許可）
+
+  // 文字列リテラル内の不正な制御文字を削除
+  // JSON仕様では、文字列内の制御文字（\x00-\x1F）はエスケープが必要
+  let sanitized = jsonString.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
+
+  return sanitized;
 }
 
 /**
