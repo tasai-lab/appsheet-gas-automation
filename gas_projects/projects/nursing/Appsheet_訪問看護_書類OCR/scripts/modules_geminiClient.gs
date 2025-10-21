@@ -64,7 +64,38 @@ function analyzeDocumentWithVertexAI(fileId, documentType, customInstructions, c
   let totalCostJPY = 0;
   let executionCount = 0;
 
-  // 1回目: Primaryモデルで実行
+  // 音声ファイルの場合は最初からFallbackモデル（Pro）を使用
+  // 理由: 音声の文字起こしは通常大量のトークンを消費するため、MAX_TOKENS回避
+  if (fileCategory === 'AUDIO_VISUAL') {
+    logStructured(LOG_LEVEL.INFO, `[音声ファイル検出] 最初からFallbackモデルを使用: ${gcpConfig.fallbackModel} (max_tokens=${gcpConfig.fallbackMaxOutputTokens})`);
+
+    // API呼び出し制限チェックは callVertexAIInternal 内で実行される
+    const result = callVertexAIInternal(
+      gcpConfig.fallbackModel,
+      gcpConfig.fallbackMaxOutputTokens,
+      gcpConfig.temperature,
+      prompt,
+      fileBlob,
+      mimeType,
+      documentType
+    );
+
+    // コスト集計
+    executionCount++;
+    if (result.usageMetadata) {
+      totalInputTokens += result.usageMetadata.inputTokens;
+      totalOutputTokens += result.usageMetadata.outputTokens;
+      totalCostJPY += result.usageMetadata.totalCostJPY;
+
+      // usageMetadataに実行回数を追加
+      result.usageMetadata.executionCount = executionCount;
+    }
+
+    logStructured(LOG_LEVEL.INFO, '✅ 音声ファイル: Fallbackモデルで正常完了');
+    return result;
+  }
+
+  // 通常のファイル（画像・PDF）: 1回目はPrimaryモデルで実行
   try {
     logStructured(LOG_LEVEL.INFO, `[1回目] Primaryモデル実行: ${gcpConfig.model} (max_tokens=${gcpConfig.maxOutputTokens})`);
 
