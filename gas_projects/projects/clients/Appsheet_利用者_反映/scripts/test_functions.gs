@@ -26,7 +26,6 @@ function testProcessRequest() {
     requestId: 'CR-TEST001',
     clientInfoTemp: '山田太郎様、昭和30年5月10日生まれ、男性、要介護3、電話: 090-1234-5678（本人）、生活保護受給中',
     requestReason: '新規利用者の登録依頼',
-    documentFileId: null, // 添付資料なし
     staffId: 'STF-001',
     providerOffice: 'フラクタル訪問看護ステーション'
   };
@@ -51,10 +50,79 @@ function testProcessRequestDirect() {
     'CR-TEST002',
     '佐藤花子様、昭和25年3月15日生まれ、女性、要介護2、電話: 03-1234-5678（自宅）、090-9876-5432（長女）',
     '新規契約者の情報登録',
-    null, // documentFileId
     'STF-002',
     'フラクタル訪問看護ステーション'
   );
+}
+
+/**
+ * ファイルパス変換機能のテスト
+ */
+function testGetFileIdFromPath() {
+  Logger.log('='.repeat(60));
+  Logger.log('🧪 ファイルパス→ファイルID変換テスト');
+  Logger.log('='.repeat(60));
+  Logger.log('');
+
+  const testCases = [
+    {
+      name: 'URL形式（/d/パターン）',
+      input: 'https://drive.google.com/file/d/1ABC123XYZ/view',
+      expected: '1ABC123XYZ'
+    },
+    {
+      name: 'URL形式（?id=パターン）',
+      input: 'https://drive.google.com/open?id=1ABC123XYZ',
+      expected: '1ABC123XYZ'
+    },
+    {
+      name: 'ファイルID形式',
+      input: '1ABC123XYZ-_1234567890',
+      expected: '1ABC123XYZ-_1234567890'
+    }
+    // ファイル名検索のテストは実際のファイルが必要なのでコメントアウト
+    // {
+    //   name: 'ファイル名のみ',
+    //   input: 'テスト契約書.pdf',
+    //   expected: null // 実際のファイルIDが返る
+    // }
+  ];
+
+  let passCount = 0;
+  let failCount = 0;
+
+  testCases.forEach((testCase, index) => {
+    Logger.log(`【テスト${index + 1}】${testCase.name}`);
+    Logger.log(`  入力: ${testCase.input}`);
+
+    try {
+      const result = getFileIdFromPath(testCase.input);
+      Logger.log(`  結果: ${result}`);
+
+      if (result === testCase.expected) {
+        Logger.log('  ✅ 成功');
+        passCount++;
+      } else {
+        Logger.log(`  ❌ 失敗（期待値: ${testCase.expected}）`);
+        failCount++;
+      }
+    } catch (error) {
+      Logger.log(`  ❌ エラー: ${error.message}`);
+      failCount++;
+    }
+
+    Logger.log('');
+  });
+
+  Logger.log('='.repeat(60));
+  Logger.log(`📊 テスト結果: 成功 ${passCount}件, 失敗 ${failCount}件`);
+  Logger.log('='.repeat(60));
+
+  return {
+    success: failCount === 0,
+    passCount: passCount,
+    failCount: failCount
+  };
 }
 
 // ========================================
@@ -119,8 +187,7 @@ ADL：車椅子使用、食事は一部介助が必要
     Logger.log('🤖 Vertex AI API呼び出し開始...');
     const extractedInfo = extractClientInfoWithGemini(
       testClientInfoTemp,
-      testRequestReason,
-      null // 添付資料なし
+      testRequestReason
     );
 
     Logger.log('='.repeat(60));

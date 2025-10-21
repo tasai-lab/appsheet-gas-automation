@@ -121,7 +121,7 @@ function buildVertexAIRequest(parts) {
   };
 
   return {
-    contents: [{ role: 'user', parts: parts }],
+    contents: [{ parts: parts }],
     generationConfig: generationConfig
   };
 }

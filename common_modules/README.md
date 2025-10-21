@@ -127,6 +127,38 @@ appsheet.updateSuccessStatus(
 );
 ```
 
+### 5. FileIdUtilities.gs - ファイルID・URL取得
+共有ドライブ対応のファイル検索機能
+
+**主な機能:**
+- ファイルパスからファイルID・URLを取得
+- 共有ドライブ完全対応
+- エラーハンドリング
+- 複数ファイルの一括取得
+
+**使用例:**
+```javascript
+// 単一ファイルのID・URLを取得
+const result = getFileIdAndUrl(
+  "1ABC123...",  // 起点フォルダーID
+  "2025年/請求書/invoice.pdf"  // 相対パス
+);
+console.log(result.id);   // "1XYZ789..."
+console.log(result.url);  // "https://drive.google.com/file/d/..."
+
+// 複数ファイルを一括取得
+const results = getMultipleFileIdsAndUrls("1ABC123...", [
+  "2025年/請求書/invoice1.pdf",
+  "2025年/領収書/receipt1.pdf"
+]);
+// [{path: "...", id: "...", url: "..."}, ...]
+```
+
+**注意事項:**
+- 共有ドライブのフォルダーを起点とする場合、Drive API v3を有効化してください
+- ファイルパスは起点フォルダーからの相対パスで指定します
+- フォルダー区切り文字は `/` を使用してください
+
 ## 統合使用例
 
 全てのモジュールを組み合わせた完全な例:

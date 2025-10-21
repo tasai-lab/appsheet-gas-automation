@@ -176,35 +176,14 @@ function processRequest(params) {
 function updateDocumentOnSuccess(config, keyValue, resultData, fileId) {
   const fileUrl = 'https://drive.google.com/file/d/' + fileId + '/view';
 
-  // ファイルタイプを判定（音声ファイルかどうか）
-  const file = DriveApp.getFileById(fileId);
-  const fileName = file.getName();
-  const mimeType = file.getMimeType();
-  const isAudioFile = mimeType.startsWith('audio/') || mimeType.startsWith('video/');
+  // OCRテキストをそのまま保存（全文出力機能は廃止）
+  const ocrTextToSave = resultData.ocr_text;
 
-  // 音声ファイルの場合は全文出力を強制ON、それ以外は設定に従う
-  let ocrTextToSave;
-  if (isAudioFile) {
-    ocrTextToSave = resultData.ocr_text; // 音声ファイルは全文保存
-    logStructured(LOG_LEVEL.INFO, '音声ファイル検出: 全文出力を強制ON', {
-      fileName: fileName,
-      mimeType: mimeType,
-      originalLength: resultData.ocr_text ? resultData.ocr_text.length : 0
-    });
-  } else {
-    // 通常のファイル（画像・PDF）: 設定に従って処理
-    ocrTextToSave = truncateOcrText(resultData.ocr_text, 100, 100);
-
-    // ログ出力: OCRテキストの長さ情報
-    const fullLength = resultData.ocr_text ? resultData.ocr_text.length : 0;
-    const savedLength = ocrTextToSave ? ocrTextToSave.length : 0;
-    logStructured(LOG_LEVEL.INFO, 'OCRテキスト保存', {
-      fullTextEnabled: isFullTextOutputEnabled(),
-      originalLength: fullLength,
-      savedLength: savedLength,
-      truncated: fullLength !== savedLength
-    });
-  }
+  // ログ出力: OCRテキストの長さ情報
+  const textLength = ocrTextToSave ? ocrTextToSave.length : 0;
+  logStructured(LOG_LEVEL.INFO, 'OCRテキスト保存', {
+    textLength: textLength
+  });
 
   var rowData = {};
   rowData[config.keyColumn] = keyValue;

@@ -1,0 +1,11 @@
+**/*.md
+**/node_modules/**
+**/.git/**
+scripts/_backup/**
+scripts/*_backup.gs
+scripts/*_v[0-9]*.gs
+scripts/*_OLD.gs
+*.md
+README.md
+FLOW.md
+SPECIFICATIONS.md

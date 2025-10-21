@@ -28,21 +28,28 @@ function doPost(e) {
  * 個別の引数で受け取り、利用者反映処理を実行
  *
  * @param {string} requestId - 依頼ID（例: "CR-00123"）
- * @param {string} clientInfoTemp - 利用者に関するメモ
+ * @param {string} clientInfoTemp - 利用者に関するメモ（テキスト情報）
  * @param {string} requestReason - 依頼理由
- * @param {string} documentFileId - 添付資料のGoogle Drive ファイルID（オプション）
  * @param {string} staffId - 担当スタッフID（例: "STF-001"）
  * @param {string} providerOffice - 担当事業所名（オプション）
  * @return {Object} - 処理結果
+ *
+ * @example
+ * processRequestDirect(
+ *   "CR-001",
+ *   "山田太郎様、昭和25年5月10日生まれ、男性、要介護3...",
+ *   "新規利用者の登録依頼",
+ *   "STF-001",
+ *   "フラクタル訪問看護ステーション"
+ * )
  */
-function processRequestDirect(requestId, clientInfoTemp, requestReason, documentFileId, staffId, providerOffice) {
+function processRequestDirect(requestId, clientInfoTemp, requestReason, staffId, providerOffice) {
   Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   Logger.log('📋 利用者反映処理 - 直接実行');
   Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   Logger.log(`Request ID: ${requestId || '未指定'}`);
   Logger.log(`Client Info: ${clientInfoTemp ? clientInfoTemp.substring(0, 100) + '...' : '未指定'}`);
   Logger.log(`Request Reason: ${requestReason || '未指定'}`);
-  Logger.log(`Document File ID: ${documentFileId || '未指定'}`);
   Logger.log(`Staff ID: ${staffId || '未指定'}`);
   Logger.log(`Provider Office: ${providerOffice || '未指定'}`);
   Logger.log('');
@@ -51,7 +58,6 @@ function processRequestDirect(requestId, clientInfoTemp, requestReason, document
     requestId: requestId,
     clientInfoTemp: clientInfoTemp,
     requestReason: requestReason,
-    documentFileId: documentFileId,
     staffId: staffId,
     providerOffice: providerOffice,
     scriptName: SCRIPT_NAME
@@ -82,9 +88,13 @@ function processRequest(params) {
   const requestId = params.requestId;
   const clientInfoTemp = params.clientInfoTemp;
   const requestReason = params.requestReason;
-  const documentFileId = params.documentFileId;
   const staffId = params.staffId;
   const providerOffice = params.providerOffice;
+
+  const timer = new ExecutionTimer();
+  let usageMetadata = null;
+  let newClientId = null;
+  let clientName = '';
 
   try {
     // 必須パラメータチェック
@@ -93,12 +103,18 @@ function processRequest(params) {
     Logger.log(`処理開始: Request ID = ${requestId}`);
 
     // 1. 新しいClientIDをAppSheetから取得して採番
-    const newClientId = getNewClientId();
+    newClientId = getNewClientId();
     Logger.log(`新しいClientIDを採番しました: ${newClientId}`);
 
-    // 2. AIで依頼情報から利用者情報を抽出
-    const extractedInfo = extractClientInfoWithGemini(clientInfoTemp, requestReason, documentFileId);
+    // 2. AIでテキスト情報から利用者情報を抽出
+    const result = extractClientInfoWithGemini(clientInfoTemp, requestReason);
+    const extractedInfo = result.extractedInfo;
+    usageMetadata = result.usageMetadata;
+
     if (!extractedInfo) throw new Error("AIからの応答が不正でした。");
+
+    // 利用者名を取得（ログ用）
+    clientName = `${extractedInfo.last_name || ''} ${extractedInfo.first_name || ''}`.trim();
 
     // 3. Clientsテーブルに新しい利用者を作成
     createClientInAppSheet(newClientId, extractedInfo, params);
@@ -108,19 +124,56 @@ function processRequest(params) {
 
     Logger.log(`処理完了。新しい利用者ID ${newClientId} を作成しました。`);
 
+    // 成功ログを記録
+    logSuccess(requestId, {
+      clientId: newClientId,
+      clientName: clientName,
+      requestReason: requestReason,
+      staffId: staffId,
+      processingTime: timer.getElapsedSeconds(),
+      modelName: usageMetadata ? usageMetadata.model : '',
+      inputTokens: usageMetadata ? usageMetadata.inputTokens : '',
+      outputTokens: usageMetadata ? usageMetadata.outputTokens : '',
+      inputCost: usageMetadata ? usageMetadata.inputCostJPY.toFixed(4) : '',
+      outputCost: usageMetadata ? usageMetadata.outputCostJPY.toFixed(4) : '',
+      totalCost: usageMetadata ? usageMetadata.totalCostJPY.toFixed(4) : ''
+    });
+
     return {
       success: true,
       clientId: newClientId,
       requestId: requestId,
-      message: `新しい利用者 ${newClientId} を作成しました`
+      message: `新しい利用者 ${newClientId} を作成しました`,
+      extractedInfo: extractedInfo,
+      timestamp: new Date().toISOString()
     };
 
   } catch (error) {
     Logger.log(`エラーが発生しました: ${error.toString()}`);
 
+    // エラーにもusageMetadataが存在すればそれを使用
+    if (error.usageMetadata) {
+      usageMetadata = error.usageMetadata;
+    }
+
     if (requestId) {
       updateRequestStatus(requestId, PROCESS_STATUS.ERROR, error.toString());
     }
+
+    // 失敗ログを記録（コスト情報も含む）
+    logFailure(requestId, error, {
+      clientId: newClientId,
+      clientName: clientName,
+      requestReason: requestReason,
+      staffId: staffId,
+      processingTime: timer.getElapsedSeconds(),
+      modelName: usageMetadata ? usageMetadata.model : '',
+      inputTokens: usageMetadata ? usageMetadata.inputTokens : '',
+      outputTokens: usageMetadata ? usageMetadata.outputTokens : '',
+      inputCost: usageMetadata ? usageMetadata.inputCostJPY.toFixed(4) : '',
+      outputCost: usageMetadata ? usageMetadata.outputCostJPY.toFixed(4) : '',
+      totalCost: usageMetadata ? usageMetadata.totalCostJPY.toFixed(4) : ''
+    });
 
     throw error;
   }

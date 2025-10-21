@@ -61,7 +61,20 @@
       "Bash(if [ -d \"$dir\" ])",
       "Bash(then)",
       "Bash(echo \"Copying to: $dir\")",
-      "Bash(fi)"
+      "Bash(fi)",
+      "Bash(move \"コード.gs\" \"コード_backup.gs\")",
+      "Read(//c/Users/i7 11700/**)",
+      "Bash(timeout 5 clasp push:*)",
+      "WebFetch(domain:qiita.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(node --version:*)",
+      "Bash(copy /b main.gs +,,)",
+      "Bash(copy gemini_client.gs \"..\\..\\Appsheet_利用者_情報統合\\scripts\\gemini_client.gs\")",
+      "Bash(copy logger.gs \"..\\..\\Appsheet_利用者_情報統合\\scripts\\logger.gs\")",
+      "Bash(copy duplication_prevention.gs \"..\\..\\Appsheet_利用者_情報統合\\scripts\\duplication_prevention.gs\")",
+      "Bash(copy script_properties_manager.gs \"..\\..\\Appsheet_利用者_情報統合\\scripts\\script_properties_manager.gs\")",
+      "WebFetch(domain:help.appsheet.com)",
+      "WebFetch(domain:support.google.com)"
     ],
     "deny": [],
     "ask": []

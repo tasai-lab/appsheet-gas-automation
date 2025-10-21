@@ -6,48 +6,51 @@
 
 **Modified:** 2025-10-21
 
-**Owners:**
+**Owners:** Fractal Group
 
 ## 概要
 
-依頼情報から利用者（クライアント）の基本情報をVertex AI（Gemini 2.5 Pro）で抽出し、AppSheetの利用者テーブルに新規登録するGASプロジェクトです。
-依頼メモや添付資料を解析して、利用者の氏名、生年月日、性別、電話番号、要介護度などを自動的に抽出します。
+依頼情報から利用者（クライアント）の基本情報をVertex AI（Gemini 2.5 Flash）でテキストから抽出し、AppSheetの利用者テーブルに新規登録するGASプロジェクトです。
+依頼メモのテキスト情報を解析して、利用者の氏名、生年月日、性別、電話番号、要介護度などを自動的に抽出します。
 
 ## 主な機能
 
 ### コア機能
 
 - ✅ **利用者ID自動採番**: AppSheetから既存利用者数を取得し、連番で新しいIDを生成（CL-00001形式）
-- ✅ **AI情報抽出**: Vertex AI Gemini 2.5 Proで依頼メモ・添付資料から利用者情報を抽出
+- ✅ **AI情報抽出**: Vertex AI Gemini 2.5 Flashで依頼メモから利用者情報を抽出
 - ✅ **年号変換**: 和暦から西暦への自動変換（昭和6年 → 1931年）
 - ✅ **年齢自動計算**: 生年月日から現在の年齢を自動算出
 - ✅ **依頼ステータス更新**: 処理完了後、元の依頼を「反映済み」に自動更新
 - ✅ **エラー記録**: 処理失敗時は依頼テーブルにエラー詳細を記録
+- ✅ **コスト追跡**: API使用量（トークン数・料金）を自動記録
 
 ### Vertex AI統合
 
-- **モデル**: Gemini 2.5 Pro
+- **モデル**: Gemini 2.5 Flash
 - **認証**: OAuth2（`ScriptApp.getOAuthToken()`）
 - **プロンプト**: 医療事務スタッフロールで高精度抽出
 - **JSON構造化レスポンス**: 利用者情報を定義されたスキーマで取得
-- **添付資料対応**: Drive上のファイル（画像・PDF）をbase64エンコードして解析
+- **入力**: テキストのみ（ファイル読み込みは非対応）
+- **コスト追跡**: トークン数と料金を日本円で記録
 
 ## Structure
 
 ### スクリプトファイル構成
 
 #### メイン処理
-- [コード.gs](./scripts/コード.gs): メインロジック（Webhook受信・AI抽出・AppSheet更新）
+- [main.gs](./scripts/main.gs): メインロジック（Webhook受信・AI抽出・AppSheet更新）
 - [config.gs](./scripts/config.gs): 設定管理（AppSheet認証情報・Vertex AI設定）
+- [ai_operations.gs](./scripts/ai_operations.gs): Vertex AI統合とコスト計算
+- [appsheet_operations.gs](./scripts/appsheet_operations.gs): AppSheet API操作
+- [utils.gs](./scripts/utils.gs): ユーティリティ関数
 
-#### 共通モジュール
-- [logger.gs](./scripts/logger.gs): 一元化された実行ログ記録
-- [duplication_prevention.gs](./scripts/duplication_prevention.gs): 重複防止機能
-- [gemini_client.gs](./scripts/gemini_client.gs): Vertex AIクライアント（共通モジュール）
-- [script_properties_manager.gs](./scripts/script_properties_manager.gs): ScriptPropertiesのクリーンアップ
+#### ログ・追跡
+- [execution_logger.gs](./scripts/execution_logger.gs): 実行ログ記録（コスト情報含む）
+- [logger.gs](./scripts/logger.gs): デバッグログ記録
 
-#### レガシー
-- [utils_duplicationPrevention.gs](./scripts/utils_duplicationPrevention.gs): 旧重複防止実装（非推奨）
+#### テスト
+- [test_functions.gs](./scripts/test_functions.gs): テスト関数群
 
 ### その他
 - `appsscript.json`: プロジェクトマニフェスト
@@ -58,23 +61,33 @@
 
 ## Referenced Spreadsheets
 
-- **GAS実行ログ** (ID: 15Z_GT4-pDAnjDpd8vkX3B9FgYlQIQwdUF1QIEj7bVnE)
+- **GAS実行ログ** (ID: 16UHnMlSUlnUy-67gbwuvjeeU73AwDomqzJwGi6L4rVA)
+  - シート名: `実行履歴_利用者反映`
+  - 記録内容: 実行ステータス、処理時間、トークン数、コスト（日本円）
 
 ## 処理フロー
 
 ### Webhook処理
 
 1. **Webhook受信**: AppSheetからPOSTリクエスト受信
-2. **重複チェック**: リクエストIDでの重複防止
-3. **ID採番**: 既存利用者数 + 1で新しいClientIDを生成
-4. **AI抽出**: Vertex AIで依頼メモ・添付資料から利用者情報を抽出
-5. **利用者作成**: AppSheetのClientsテーブルに新規レコード追加
-6. **ステータス更新**: 元の依頼レコードを「反映済み」に更新
-7. **ログ記録**: 実行結果を集中ログスプレッドシートに記録
+2. **パラメータ検証**: 必須パラメータのチェック
+3. **ID採番**: 既存利用者数 + 1で新しいClientIDを生成（CL-00001形式）
+4. **AI抽出**: Vertex AI Gemini 2.5 Flashで依頼メモテキストから利用者情報を抽出
+5. **コスト記録**: API使用量（トークン数・料金）を記録
+6. **利用者作成**: AppSheetのClientsテーブルに新規レコード追加
+7. **ステータス更新**: 元の依頼レコードを「反映済み」に更新
+8. **ログ記録**: 実行結果（成功/失敗）とコスト情報をスプレッドシートに記録
 
 ### 直接実行（テスト用）
 
 GASエディタから `processRequestDirect()` 関数を実行することで、Webhookを使わずにテストが可能です。
+
+**引数:**
+- `requestId` - 依頼ID（例: "CR-00123"）
+- `clientInfoTemp` - 利用者に関するテキスト情報
+- `requestReason` - 依頼理由
+- `staffId` - 担当スタッフID（例: "STF-001"）
+- `providerOffice` - 担当事業所名（オプション）
 
 ## 抽出する情報
 
@@ -114,13 +127,33 @@ const CLIENTS_TABLE_NAME = 'Clients';
 const DOCUMENTS_TABLE_NAME = 'Client_Documents';
 ```
 
-### Vertex AI設定（[config.gs](./scripts/config.gs:29-32)）
+### Vertex AI設定（[config.gs](./scripts/config.gs)）
 
 ```javascript
 const GCP_PROJECT_ID = 'macro-shadow-458705-v8';
 const GCP_LOCATION = 'us-central1';
-const VERTEX_AI_MODEL = 'gemini-2.5-pro';
+const VERTEX_AI_MODEL = 'gemini-2.5-flash';
+
+const VERTEX_AI_CONFIG = {
+  temperature: 0.1,
+  maxOutputTokens: 8192
+};
 ```
+
+### 実行ログ設定（[execution_logger.gs](./scripts/execution_logger.gs)）
+
+```javascript
+const EXECUTION_LOG_SPREADSHEET_ID = '16UHnMlSUlnUy-67gbwuvjeeU73AwDomqzJwGi6L4rVA';
+const EXECUTION_LOG_SHEET_NAME = '実行履歴_利用者反映';
+```
+
+**記録項目:**
+- タイムスタンプ、スクリプト名、ステータス
+- リクエストID、利用者ID、利用者名
+- 依頼理由、担当者ID、処理時間（秒）
+- エラーメッセージ、モデル名、実行ユーザー
+- Input Tokens、Output Tokens
+- Input料金(円)、Output料金(円)、合計料金(円)
 
 ## テスト
 
@@ -143,11 +176,12 @@ testProcessRequestDirect(
   'CR-TEST001',  // requestId
   '山田太郎様、昭和30年5月10日生まれ、男性、要介護3、電話: 090-1234-5678（本人）、生活保護受給中',  // clientInfoTemp
   '新規利用者の登録依頼',  // requestReason
-  null,  // documentFileId
   'STF-001',  // staffId
   'フラクタル訪問看護ステーション'  // providerOffice
 );
 ```
+
+**注意:** ファイル読み込み機能は廃止されました。テキスト情報のみで処理します。
 
 ## エラーハンドリング
 
@@ -159,7 +193,9 @@ testProcessRequestDirect(
 
 ### エラーログ記録先
 
-- 実行ログスプレッドシート（15Z_GT4-pDAnjDpd8vkX3B9FgYlQIQwdUF1QIEj7bVnE）
+- 実行ログスプレッドシート（16UHnMlSUlnUy-67gbwuvjeeU73AwDomqzJwGi6L4rVA）
+  - シート: `実行履歴_利用者反映`
+  - エラー時もトークン数・コストを記録
 - 依頼テーブルの `error_details` カラム
 
 ## デプロイ

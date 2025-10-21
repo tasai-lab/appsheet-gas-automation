@@ -211,81 +211,6 @@ function showDuplicationPreventionStatus() {
 }
 
 // ========================================
-// 書類全文出力機能のon/off管理
-// ========================================
-
-const FULL_TEXT_OUTPUT_KEY = 'ENABLE_FULL_TEXT_OUTPUT';
-
-/**
- * 書類全文出力を有効化
- */
-function enableFullTextOutput() {
-  setScriptProperty(FULL_TEXT_OUTPUT_KEY, 'true');
-  Logger.log('[全文出力] 機能を有効化しました');
-}
-
-/**
- * 書類全文出力を無効化
- */
-function disableFullTextOutput() {
-  setScriptProperty(FULL_TEXT_OUTPUT_KEY, 'false');
-  Logger.log('[全文出力] 機能を無効化しました');
-}
-
-/**
- * 書類全文出力が有効かを確認
- * @return {boolean} 有効ならtrue、無効ならfalse
- */
-function isFullTextOutputEnabled() {
-  const value = getScriptProperty(FULL_TEXT_OUTPUT_KEY, 'false');
-  return value === 'true';
-}
-
-/**
- * 書類全文出力の状態を表示
- */
-function showFullTextOutputStatus() {
-  const enabled = isFullTextOutputEnabled();
-  Logger.log('[全文出力] 現在の状態: ' + (enabled ? '有効' : '無効'));
-  return enabled;
-}
-
-/**
- * OCR全文テキストを省略版に変換
- * ENABLE_FULL_TEXT_OUTPUT が false の場合、先頭と末尾のみ表示
- * @param {string} fullText - 全文テキスト
- * @param {number} headLength - 先頭文字数（デフォルト: 100）
- * @param {number} tailLength - 末尾文字数（デフォルト: 100）
- * @return {string} 省略版または全文
- */
-function truncateOcrText(fullText, headLength, tailLength) {
-  if (!fullText) {
-    return '';
-  }
-
-  // デフォルト値
-  if (headLength === undefined) headLength = 100;
-  if (tailLength === undefined) tailLength = 100;
-
-  // 全文出力が有効な場合はそのまま返す
-  if (isFullTextOutputEnabled()) {
-    return fullText;
-  }
-
-  // 短いテキストはそのまま返す
-  if (fullText.length <= headLength + tailLength + 10) {
-    return fullText;
-  }
-
-  // 省略版を作成
-  const head = fullText.substring(0, headLength);
-  const tail = fullText.substring(fullText.length - tailLength);
-  const omittedLength = fullText.length - headLength - tailLength;
-
-  return head + '\n\n... (' + omittedLength + '文字省略) ...\n\n' + tail;
-}
-
-// ========================================
 // 初期化とセットアップ
 // ========================================
 
@@ -313,7 +238,6 @@ function initializeScriptPropertiesForProject(config) {
   // デフォルト設定
   var defaultConfig = {
     ENABLE_DUPLICATION_PREVENTION: 'true',
-    ENABLE_FULL_TEXT_OUTPUT: 'false',  // 書類全文のログ出力（デフォルト: OFF）
     LOG_LEVEL: 'INFO',
     TIMEZONE: 'Asia/Tokyo'
   };
