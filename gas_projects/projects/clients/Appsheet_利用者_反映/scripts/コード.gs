@@ -26,10 +26,13 @@ const CLIENTS_TABLE_NAME = 'Clients';
 
 const DOCUMENTS_TABLE_NAME = 'Client_Documents';
 
+// --- Vertex AI設定 ---
+const GCP_PROJECT_ID = 'macro-shadow-458705-v8';
+const GCP_LOCATION = 'us-central1';
+const VERTEX_AI_MODEL = 'gemini-2.5-pro';
+
 /**
-
  * AppSheetのWebhookからPOSTリクエストを受け取るメイン関数
-
  */
 
 /**
@@ -39,62 +42,108 @@ const DOCUMENTS_TABLE_NAME = 'Client_Documents';
 function doPost(e) {
   return CommonWebhook.handleDoPost(e, function(params) {
     params.scriptName = 'Appsheet_利用者_反映';
-    return processRequest(params.userId || params.data?.userId, params.sourceData || params.data?.sourceData, params.targetTable || params.data?.targetTable);
+    return processRequest(params);
   });
 }
 
 /**
- * メイン処理関数（引数ベース）
+ * 直接実行用関数（GASエディタから実行可能）
+ * 個別の引数で受け取り、利用者反映処理を実行
+ * 
+ * @param {string} requestId - 依頼ID（例: "CR-00123"）
+ * @param {string} clientInfoTemp - 利用者に関するメモ
+ * @param {string} requestReason - 依頼理由
+ * @param {string} documentFileId - 添付資料のGoogle Drive ファイルID（オプション）
+ * @param {string} staffId - 担当スタッフID（例: "STF-001"）
+ * @param {string} providerOffice - 担当事業所名（オプション）
+ * @returns {Object} - 処理結果
+ */
+function processRequestDirect(requestId, clientInfoTemp, requestReason, documentFileId, staffId, providerOffice) {
+  Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  Logger.log('📋 利用者反映処理 - 直接実行');
+  Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  Logger.log(`Request ID: ${requestId || '未指定'}`);
+  Logger.log(`Client Info: ${clientInfoTemp ? clientInfoTemp.substring(0, 100) + '...' : '未指定'}`);
+  Logger.log(`Request Reason: ${requestReason || '未指定'}`);
+  Logger.log(`Document File ID: ${documentFileId || '未指定'}`);
+  Logger.log(`Staff ID: ${staffId || '未指定'}`);
+  Logger.log(`Provider Office: ${providerOffice || '未指定'}`);
+  Logger.log('');
+
+  const params = {
+    requestId: requestId,
+    clientInfoTemp: clientInfoTemp,
+    requestReason: requestReason,
+    documentFileId: documentFileId,
+    staffId: staffId,
+    providerOffice: providerOffice,
+    scriptName: 'Appsheet_利用者_反映'
+  };
+
+  try {
+    const result = processRequest(params);
+    Logger.log('✅ 処理成功');
+    Logger.log(JSON.stringify(result, null, 2));
+    return result;
+  } catch (error) {
+    Logger.log('❌ 処理エラー: ' + error.message);
+    Logger.log(error.stack);
+    throw error;
+  }
+}
+
+/**
+ * メイン処理関数
  * @param {Object} params - リクエストパラメータ
  * @returns {Object} - 処理結果
  */
-function processRequest(userId, sourceData, targetTable) {
+function processRequest(params) {
   const requestId = params.requestId;
+  const clientInfoTemp = params.clientInfoTemp;
+  const requestReason = params.requestReason;
+  const documentFileId = params.documentFileId;
+  const staffId = params.staffId;
+  const providerOffice = params.providerOffice;
 
   try {
-
-    const { clientInfoTemp, requestReason, documentFileId, staffId } = params;
-
+    // 必須パラメータチェック
     if (!requestId || !clientInfoTemp || !staffId) {
-
       throw new Error("必須パラメータ（requestId, clientInfoTemp, staffId）が不足しています。");
-
     }
 
-    console.log(`処理開始: Request ID = ${requestId}`);
+    Logger.log(`処理開始: Request ID = ${requestId}`);
 
     // 1. 新しいClientIDをAppSheetから取得して採番
-
     const newClientId = getNewClientId();
-
-    console.log(`新しいClientIDを採番しました: ${newClientId}`);
+    Logger.log(`新しいClientIDを採番しました: ${newClientId}`);
 
     // 2. AIで依頼情報から利用者情報を抽出
-
     const extractedInfo = extractClientInfoWithGemini(clientInfoTemp, requestReason, documentFileId);
-
     if (!extractedInfo) throw new Error("AIからの応答が不正でした。");
 
     // 3. Clientsテーブルに新しい利用者を作成
-
-    createClientInAppSheet(newClientId, extractedInfo, params); // ★ paramsを丸ごと渡すように修正
+    createClientInAppSheet(newClientId, extractedInfo, params);
 
     // 4. 元の依頼ステータスを「反映済み」に更新
-
     updateRequestStatus(requestId, "反映済み", null);
 
-    console.log(`処理完了。新しい利用者ID ${newClientId} を作成しました。`);
+    Logger.log(`処理完了。新しい利用者ID ${newClientId} を作成しました。`);
+    
+    return {
+      success: true,
+      clientId: newClientId,
+      requestId: requestId,
+      message: `新しい利用者 ${newClientId} を作成しました`
+    };
 
   } catch (error) {
-
-    console.log(`エラーが発生しました: ${error.toString()}`);
+    Logger.log(`エラーが発生しました: ${error.toString()}`);
 
     if (requestId) {
-
       updateRequestStatus(requestId, "エラー", error.toString());
-
     }
 
+    throw error;
   }
 }
 
@@ -103,13 +152,31 @@ function processRequest(userId, sourceData, targetTable) {
  * GASエディタから直接実行してテスト可能
  */
 function testProcessRequest() {
-  // TODO: テストデータを設定してください
+  // テストデータを設定
   const testParams = {
-    // 例: action: "test",
-    // 例: data: "sample"
+    requestId: 'CR-TEST001',
+    clientInfoTemp: '山田太郎様、昭和30年5月10日生まれ、男性、要介護3、電話: 090-1234-5678（本人）、生活保護受給中',
+    requestReason: '新規利用者の登録依頼',
+    documentFileId: null, // 添付資料なし
+    staffId: 'STF-001',
+    providerOffice: 'フラクタル訪問看護ステーション'
   };
 
-  return CommonTest.runTest((params) => processRequest(params.userId, params.sourceData, params.targetTable), testParams, 'Appsheet_利用者_反映');
+  return CommonTest.runTest(processRequest, testParams, 'Appsheet_利用者_反映');
+}
+
+/**
+ * Direct関数のテスト
+ */
+function testProcessRequestDirect() {
+  return processRequestDirect(
+    'CR-TEST002',
+    '佐藤花子様、昭和25年3月15日生まれ、女性、要介護2、電話: 03-1234-5678（自宅）、090-9876-5432（長女）',
+    '新規契約者の情報登録',
+    null, // documentFileId
+    'STF-002',
+    'フラクタル訪問看護ステーション'
+  );
 }
 
 /**
@@ -224,19 +291,19 @@ ${clientInfoTemp}
 
   }
 
-  const model = 'gemini-2.5-pro';
+  const generationConfig = { 
+    responseMimeType: "application/json", 
+    temperature: 0.1,
+    maxOutputTokens: 8192
+  };
 
-  const generationConfig = { "responseMimeType": "application/json", "temperature": 0.1 };
-
-  const requestBody = { contents: [{ parts: parts }], generationConfig: generationConfig };
-
-  // ★★★ Google AI Studio API → Vertex AIに変更 ★★★
-  // 修正日: 2025-10-18
-  const GCP_PROJECT_ID = 'macro-shadow-458705-v8';
-  const GCP_LOCATION = 'us-central1';
+  const requestBody = { 
+    contents: [{ parts: parts }], 
+    generationConfig: generationConfig 
+  };
 
   // Vertex AI APIエンドポイント（OAuth2認証）
-  const url = `https://${GCP_LOCATION}-aiplatform.googleapis.com/v1/projects/${GCP_PROJECT_ID}/locations/${GCP_LOCATION}/publishers/google/models/${model}:generateContent`;
+  const url = `https://${GCP_LOCATION}-aiplatform.googleapis.com/v1/projects/${GCP_PROJECT_ID}/locations/${GCP_LOCATION}/publishers/google/models/${VERTEX_AI_MODEL}:generateContent`;
 
   const options = {
     method: 'post',
@@ -246,21 +313,48 @@ ${clientInfoTemp}
     muteHttpExceptions: true
   };
 
+  Logger.log('[Vertex AI] API呼び出し開始');
+  const startTime = new Date().getTime();
+  
   const response = UrlFetchApp.fetch(url, options);
-
+  const responseCode = response.getResponseCode();
   const responseText = response.getContentText();
+  
+  const endTime = new Date().getTime();
+  const responseTime = endTime - startTime;
 
-  Logger.log('Gemini API Response: ' + responseText);
+  Logger.log(`[Vertex AI] API応答: ${responseCode}, 処理時間: ${responseTime}ms`);
+
+  if (responseCode !== 200) {
+    Logger.log(`[Vertex AI] エラーレスポンス: ${responseText}`);
+    throw new Error(`Vertex AI API Error: ${responseCode} - ${responseText.substring(0, 200)}`);
+  }
 
   const jsonResponse = JSON.parse(responseText);
 
+  // 非ストリーミングAPIの構造: { candidates: [...] }
   if (!jsonResponse.candidates || jsonResponse.candidates.length === 0) {
-
-    throw new Error("AIからの応答に有効な候補が含まれていません: " + responseText);
-
+    throw new Error("AIからの応答に有効な候補が含まれていません: " + responseText.substring(0, 200));
   }
 
-  return JSON.parse(jsonResponse.candidates[0].content.parts[0].text);
+  const candidate = jsonResponse.candidates[0];
+  
+  // finishReasonチェック
+  if (candidate.finishReason) {
+    Logger.log(`[Vertex AI] finishReason: ${candidate.finishReason}`);
+    if (candidate.finishReason === 'MAX_TOKENS') {
+      throw new Error('Vertex AIの応答がトークン制限により途中で終了しました。');
+    }
+  }
+
+  if (!candidate.content || !candidate.content.parts || candidate.content.parts.length === 0) {
+    throw new Error('Vertex AIからの応答に有効なコンテンツが含まれていません');
+  }
+
+  const extractedText = candidate.content.parts[0].text;
+  Logger.log(`[Vertex AI] 応答テキスト長: ${extractedText.length}文字`);
+
+  return JSON.parse(extractedText);
 
 }
 
@@ -349,39 +443,30 @@ function updateRequestStatus(requestId, status, errorMessage) {
 }
 
 /**
-
  * AppSheet APIを呼び出す共通関数
-
+ * 非推奨: AppSheetConnectorモジュールの使用を推奨
  */
-
 function callAppSheetApi(appId, accessKey, tableName, payload) {
-
   const apiUrl = `https://api.appsheet.com/api/v2/apps/${appId}/tables/${tableName}/Action`;
 
   const options = {
-
-    method: 'post', contentType: 'application/json',
-
+    method: 'post',
+    contentType: 'application/json',
     headers: { 'ApplicationAccessKey': accessKey },
-
-    payload: JSON.stringify(payload), muteHttpExceptions: true
-
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
   };
 
   const response = UrlFetchApp.fetch(apiUrl, options);
-
   const responseText = response.getContentText();
 
   Logger.log(`AppSheet API (${tableName}) 応答: ${response.getResponseCode()} - ${responseText}`);
 
   if (response.getResponseCode() >= 400) {
-
     throw new Error(`AppSheet API Error (${tableName}): ${response.getResponseCode()} - ${responseText}`);
-
   }
 
-  return responseText; // FindアクションのためにresponseTextを返す
-
+  return responseText;
 }
 
 /**
