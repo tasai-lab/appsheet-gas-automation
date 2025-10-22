@@ -74,7 +74,8 @@
       "Bash(copy duplication_prevention.gs \"..\\..\\Appsheet_利用者_情報統合\\scripts\\duplication_prevention.gs\")",
       "Bash(copy script_properties_manager.gs \"..\\..\\Appsheet_利用者_情報統合\\scripts\\script_properties_manager.gs\")",
       "WebFetch(domain:help.appsheet.com)",
-      "WebFetch(domain:support.google.com)"
+      "WebFetch(domain:support.google.com)",
+      "WebFetch(domain:community.appsheet.com)"
     ],
     "deny": [],
     "ask": []

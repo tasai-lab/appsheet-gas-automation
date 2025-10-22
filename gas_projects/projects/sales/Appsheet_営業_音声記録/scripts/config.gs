@@ -21,9 +21,9 @@ function getConfig() {
     gcpLocation: props.getProperty('GCP_LOCATION') || 'us-central1',
 
     // Vertex AI設定
-    vertexAIModel: props.getProperty('VERTEX_AI_MODEL') || 'gemini-2.5-pro',  // ★変更: コスト最適化
-    temperature: parseFloat(props.getProperty('TEMPERATURE') || '0.3'),
-    maxOutputTokens: parseInt(props.getProperty('MAX_OUTPUT_TOKENS') || '20000'),
+    vertexAIModel: props.getProperty('VERTEX_AI_MODEL') || 'gemini-2.5-flash',  // ★変更: コスト最適化
+    temperature: parseFloat(props.getProperty('TEMPERATURE') || '0.4'),
+    maxOutputTokens: parseInt(props.getProperty('MAX_OUTPUT_TOKENS') || '8000'),
 
     // AppSheet API設定
     appId: props.getProperty('APP_ID') || '',
