@@ -900,10 +900,9 @@ function buildBatchAssignmentPrompt(visitGroups, lastMonthStats) {
 - 業務負担の公平化
 
 【割り当て基準（優先順位順）】
-1. **曜日×ルートのパターンで均等配置**: 各スタッフが様々な曜日とルートを担当できるようにする
-2. **規定の目標比率に概ね従う**: 全体の割り当て件数が目標比率に近づくようにする（多少のズレはOK）
+1. **規定の目標比率を厳守**: 全体の割り当て件数が目標比率に正確に従うこと（最優先）
+2. **曜日×ルートのパターンで均等配置**: 各スタッフが様々な曜日とルートを担当できるようにする
 3. **同じ日の同じルートは同じスタッフ**: 1日の中では同じルートは同じスタッフが担当
-4. **先月からの極端な変更は避ける**: 可能であれば先月と似たパターンも考慮（ただし均等性を優先）
 
 【規定の目標比率】
 `;
@@ -919,8 +918,9 @@ function buildBatchAssignmentPrompt(visitGroups, lastMonthStats) {
     prompt += `（設定なし - 完全均等を目指す）\n`;
   }
 
-  // 先月の実績
-  prompt += `\n【先月の訪問実績】\n`;
+  // 先月の実績（参考情報のみ、比率には影響させない）
+  prompt += `\n【先月の訪問実績（参考情報）】\n`;
+  prompt += `※注意: 以下は参考情報であり、今月の割り当て比率には一切影響させないこと\n`;
   const staffIds = Object.keys(lastMonthStats.staffVisits).sort();
   const lastMonthTotal = lastMonthStats.totalVisits;
   staffIds.forEach(staffId => {
@@ -951,11 +951,7 @@ function buildBatchAssignmentPrompt(visitGroups, lastMonthStats) {
       prompt += `\n### ${dayName}曜日（${schedulesByDayOfWeek[dayName].length}件）\n`;
 
       schedulesByDayOfWeek[dayName].forEach((group, index) => {
-        prompt += `${index + 1}. ${group.key} - ルート:${group.routeTag}, 利用可能:${group.availableStaff.map(s => s.staffId).join(',')}`;
-        if (group.preferredStaffId) {
-          prompt += `, 先月:${group.preferredStaffId}`;
-        }
-        prompt += `\n`;
+        prompt += `${index + 1}. ${group.key} - ルート:${group.routeTag}, 利用可能:${group.availableStaff.map(s => s.staffId).join(',')}\n`;
       });
     }
   });
@@ -987,12 +983,20 @@ function buildBatchAssignmentPrompt(visitGroups, lastMonthStats) {
 
 【最優先事項（必ず守ること）】
 1. **目標比率を厳守**: 全130件中、STF-001≈13件(10%), STF-003≈52件(40%), STF-004≈65件(50%)
+   - これは最優先の制約であり、他の全ての条件より優先されます
+   - 先月の実績や過去のパターンは一切無視してください
 2. **曜日×ルートで均等配置**: 各スタッフが様々な曜日・ルートを担当
 3. **特定パターンへの偏り禁止**: 特定のスタッフが特定の曜日・ルートに集中しない
 
-【禁止事項】
-- STF-001が50%以上（65件以上）担当すること
-- STF-004が20%以下（26件以下）しか担当しないこと
+【厳守すべき件数制限】
+- STF-001: 最大20件まで（目標13件+余裕7件）
+- STF-003: 40～60件の範囲内（目標52件±8件）
+- STF-004: 最低50件以上（目標65件）
+
+【禁止事項（これらに該当する割り当ては絶対に不可）】
+- STF-001が21件以上担当すること
+- STF-003が40件未満または60件超を担当すること
+- STF-004が49件以下しか担当しないこと
 - 特定のスタッフが特定の曜日に集中すること`;
 
   return prompt;
