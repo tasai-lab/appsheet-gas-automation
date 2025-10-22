@@ -87,7 +87,7 @@ function getConfig() {
 
     // 音声解析設定
 
-    enableTranscript: props.getProperty('ENABLE_TRANSCRIPT') !== 'false',  // falseでコスト削減（全文抽出なし）
+    enableTranscript: true,  // 常に有効（summary_onlyモードは廃止）
 
     // 通知設定
 
@@ -296,7 +296,7 @@ function showCurrentConfig() {
 
   Logger.log('[音声解析設定]');
 
-  Logger.log(`  全文文字起こし: ${config.enableTranscript ? '有効' : '無効（コスト削減）'}`);
+  Logger.log(`  全文文字起こし: 常に有効`);
 
   Logger.log('');
 

@@ -68,7 +68,7 @@ function testVertexAIWithFile() {
       callId: testCallId,
       summary_length: analysisResult.summary.length,
       actions_count: analysisResult.actions.length,
-      transcript_length: analysisResult.transcript.length
+      transcript_length: analysisResult.transcript ? analysisResult.transcript.length : 0
     });
 
     // API使用量情報をloggerに記録
@@ -149,7 +149,7 @@ function testVertexAIWithCustomPath(filePath) {
       callId: testCallId,
       summary_length: analysisResult.summary.length,
       actions_count: analysisResult.actions.length,
-      transcript_length: analysisResult.transcript.length
+      transcript_length: analysisResult.transcript ? analysisResult.transcript.length : 0
     });
 
     // API使用量情報をloggerに記録

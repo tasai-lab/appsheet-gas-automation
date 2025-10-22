@@ -244,7 +244,7 @@ function processCallSummary(params) {
     filePath: filePath,
     fileId: resolvedFileId,
     summary: analysisResult.summary.substring(0, 200) + '...',
-    transcriptLength: analysisResult.transcript.length,
+    transcriptLength: analysisResult.transcript ? analysisResult.transcript.length : 0,
     actionsCount: analysisResult.actions.length,
     processingTime: timer.getElapsedSeconds(),
     modelName: config.vertexAIModel,
