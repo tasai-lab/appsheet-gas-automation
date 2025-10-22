@@ -889,12 +889,19 @@ function buildBatchAssignmentPrompt(visitGroups, lastMonthStats) {
 【目的】
 ${visitGroups.length}件の訪問スケジュールに対して、最適なスタッフを一括で割り当ててください。
 
-【割り当て基準】
-1. 先月と今月の合計訪問件数が概ね均等になること
-2. 今月内でもある程度均等な配置になること
-3. 規定の目標比率に概ね近づくこと（厳密でなくてOK）
-4. 利用者との継続性（可能であれば同じスタッフ）
-5. 同じ日の同じルートは同じスタッフに割り当てること
+【重要】均等配置の定義
+「均等」とは、**曜日とルートのパターン**で各スタッフが偏りなく担当することを意味します。
+
+例：
+- 月曜日のRoute-A → STF-001, STF-003, STF-004が週ごとに交代
+- 火曜日のRoute-B → STF-001, STF-003, STF-004が週ごとに交代
+- 各スタッフが特定の曜日・ルートに偏らないようにバランス配置
+
+【割り当て基準（優先順位順）】
+1. **曜日×ルートのパターンで均等配置**: 各スタッフが様々な曜日とルートを担当できるようにする
+2. **規定の目標比率に概ね近づける**: 全体の割り当て件数が目標比率に近づくようにする（厳密でなくてOK）
+3. **同じ日の同じルートは同じスタッフ**: 1日の中では同じルートは同じスタッフが担当
+4. **利用者との継続性**: 可能であれば先月と同じスタッフを優先（ただし均等性を優先）
 
 【規定の目標比率】
 `;
@@ -920,21 +927,44 @@ ${visitGroups.length}件の訪問スケジュールに対して、最適なス�
     prompt += `- ${staffId}: ${count}件 (${percentage}%)\n`;
   });
 
-  // 各スケジュールの情報
-  prompt += `\n【割り当て対象スケジュール】\n`;
-  visitGroups.forEach((group, index) => {
-    prompt += `\n## スケジュール${index + 1} (ID: ${group.key})\n`;
-    prompt += `- 日付: ${group.visitDate}\n`;
-    prompt += `- ルート: ${group.routeTag}\n`;
-    prompt += `- 利用者ID: ${group.clientId}\n`;
-    if (group.preferredStaffId) {
-      prompt += `- 先月の担当: ${group.preferredStaffId}\n`;
+  // 各スケジュールの情報（曜日別にグループ化）
+  prompt += `\n【割り当て対象スケジュール（曜日別）】\n`;
+
+  // 曜日別にグループ化
+  const dayOfWeekNames = ['日', '月', '火', '水', '木', '金', '土'];
+  const schedulesByDayOfWeek = {};
+
+  visitGroups.forEach((group) => {
+    const date = new Date(group.visitDate);
+    const dayOfWeek = dayOfWeekNames[date.getDay()];
+    if (!schedulesByDayOfWeek[dayOfWeek]) {
+      schedulesByDayOfWeek[dayOfWeek] = [];
     }
-    prompt += `- 訪問件数: ${group.visitsInGroup.length}件\n`;
-    prompt += `- 利用可能なスタッフ: ${group.availableStaff.map(s => s.staffId).join(', ')}\n`;
+    schedulesByDayOfWeek[dayOfWeek].push(group);
   });
 
-  prompt += `\n【出力形式】
+  // 曜日ごとに表示
+  dayOfWeekNames.forEach(dayName => {
+    if (schedulesByDayOfWeek[dayName] && schedulesByDayOfWeek[dayName].length > 0) {
+      prompt += `\n### ${dayName}曜日（${schedulesByDayOfWeek[dayName].length}件）\n`;
+
+      schedulesByDayOfWeek[dayName].forEach((group, index) => {
+        prompt += `${index + 1}. ${group.key} - ルート:${group.routeTag}, 利用可能:${group.availableStaff.map(s => s.staffId).join(',')}`;
+        if (group.preferredStaffId) {
+          prompt += `, 先月:${group.preferredStaffId}`;
+        }
+        prompt += `\n`;
+      });
+    }
+  });
+
+  prompt += `\n【配置のポイント】
+- 各曜日で、各スタッフがなるべく均等にルートを担当すること
+- 例: 月曜日に4つのルートがある場合、STF-001, STF-003, STF-004が偏りなく担当
+- 火曜日、水曜日なども同様に各スタッフが様々なルートを担当
+- 特定のスタッフが特定の曜日・ルートに集中しないようにバランス配置
+
+【出力形式】
 以下のJSON形式で出力してください。説明は不要です。
 
 \`\`\`json
@@ -949,11 +979,15 @@ ${visitGroups.length}件の訪問スケジュールに対して、最適なス�
 }
 \`\`\`
 
-【重要】
+【重要な制約】
 - 全${visitGroups.length}件のスケジュールに対して割り当てを行ってください
 - 利用可能なスタッフの中から必ず選択してください
 - 同じ日の同じルートは同じスタッフに割り当ててください
-- 全体のバランスを考慮して最適化してください`;
+
+【最優先事項】
+1. 曜日×ルートのパターンで各スタッフが均等に配置されること
+2. 全体の割り当て件数が目標比率（STF-001:10%, STF-003:40%, STF-004:50%）に概ね近いこと
+3. 特定のスタッフが特定の曜日やルートに偏らないこと`;
 
   return prompt;
 }
@@ -1255,7 +1289,7 @@ function callVertexAIForJSONGeneration(prompt, model, logger) {
     generationConfig: {
       responseMimeType: "application/json",
       temperature: 0.3,
-      maxOutputTokens: 8192,  // バッチ処理用に大きめ
+      maxOutputTokens: 16384,  // バッチ処理用に十分大きく
       topP: 0.95,
       topK: 40
     }
