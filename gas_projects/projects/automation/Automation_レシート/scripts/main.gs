@@ -2,17 +2,25 @@
 * 設定・定数
 *******************************************************************************/
 // ★★★ Google AI Studio API → Vertex AIに変更 ★★★
-// 修正日: 2025-10-18
+// 修正日: 2025-10-22
 // Vertex AI設定
 // const GEMINI_API_KEY = '';  // ★削除済み - Vertex AIはOAuth2認証を使用
-const GEMINI_MODEL_PRO = 'gemini-2.5-flash';  // ★ gemini-2.0→2.5に変更
+const GEMINI_MODEL = 'gemini-2.5-flash-lite';  // ★ コスト最適化のためFlash-Liteを使用
 const GCP_PROJECT_ID = 'macro-shadow-458705-v8';
 const GCP_LOCATION = 'us-central1';
-const GEMINI_API_ENDPOINT = `https://${GCP_LOCATION}-aiplatform.googleapis.com/v1/projects/${GCP_PROJECT_ID}/locations/${GCP_LOCATION}/publishers/google/models/${GEMINI_MODEL_PRO}:generateContent`;
+const GEMINI_API_ENDPOINT = `https://${GCP_LOCATION}-aiplatform.googleapis.com/v1/projects/${GCP_PROJECT_ID}/locations/${GCP_LOCATION}/publishers/google/models/${GEMINI_MODEL}:generateContent`;
+
+// 為替レート（USD -> JPY）
+const EXCHANGE_RATE_USD_TO_JPY = 150;
 
 // 実行ログスプレッドシート
 const EXECUTION_LOG_SPREADSHEET_ID = '16UHnMlSUlnUy-67gbwuvjeeU73AwDomqzJwGi6L4rVA';
 const EXECUTION_LOG_SHEET_NAME = '実行履歴';
+
+// 処理制御の定数
+const LOCK_TIMEOUT_MS = 300000; // 5分 = 300,000ミリ秒
+const ID_LENGTH = 8; // 生成するユニークIDの長さ
+const MAX_ID_GENERATION_ATTEMPTS = 10; // ID生成の最大試行回数
 
 // スクリプトプロパティキー
 const PROP_KEYS = {
@@ -65,7 +73,7 @@ function mainProcessPersonalReceipts() {
   if (existingLock) {
     const lockTime = new Date(existingLock);
     const now = new Date();
-    if ((now - lockTime) < 300000) { // 5分以内
+    if ((now - lockTime) < LOCK_TIMEOUT_MS) {
       Logger.log(`警告 [${FN}]: 処理実行中のためスキップします`);
       logToExecutionSheet('Automation_レシート(個人)', 'スキップ', requestId, {
         summary: '他の処理が実行中のためスキップ',
@@ -149,7 +157,7 @@ function mainProcessCorporateReceipts() {
   if (existingLock) {
     const lockTime = new Date(existingLock);
     const now = new Date();
-    if ((now - lockTime) < 300000) { // 5分以内
+    if ((now - lockTime) < LOCK_TIMEOUT_MS) {
       Logger.log(`警告 [${FN}]: 処理実行中のためスキップします`);
       logToExecutionSheet('Automation_レシート(法人)', 'スキップ', requestId, {
         summary: '他の処理が実行中のためスキップ',
@@ -246,6 +254,10 @@ function processReceiptsByType_(config, processingType, requestId, timer) {
   Logger.log(`情報 [${FN}]: フォルダ [${config.sourceFolderId}] 内に ${files.length} 件のファイルが見つかりました。`);
 
   const processedResultsByUser = {};
+  let totalInputTokens = 0;
+  let totalOutputTokens = 0;
+  let totalCostJPY = 0;
+  let apiCallCount = 0;
 
   for (const file of files) {
     const result = processSingleFile_(
@@ -265,23 +277,44 @@ function processReceiptsByType_(config, processingType, requestId, timer) {
       } else if (result.status === 'skipped') {
         processedResultsByUser[result.payerEmail].skipped.push(result.data);
       }
+
+      // API使用量を集計
+      if (result.usageMetadata) {
+        totalInputTokens += result.usageMetadata.inputTokens || 0;
+        totalOutputTokens += result.usageMetadata.outputTokens || 0;
+        totalCostJPY += result.usageMetadata.totalCostJPY || 0;
+        apiCallCount++;
+      }
     }
   }
 
-  // メール送信をログ出力に置き換え
+  // ユーザー別にメール送信とログ記録
   for (const email in processedResultsByUser) {
     const results = processedResultsByUser[email];
     if (results.processed.length > 0 || results.skipped.length > 0) {
+      // ユーザーごとのレシート総額を計算
+      const userTotalAmount = results.processed.reduce((sum, receipt) => sum + (receipt.amount || 0), 0);
+
+      // HTMLメール送信
+      sendReceiptSummaryEmail_(email, results, userTotalAmount, processingType);
+
+      // 実行ログに記録
       logToExecutionSheet(`Automation_レシート(${processingType})`, '成功', requestId, {
         summary: `処理完了: 成功${results.processed.length}件, スキップ${results.skipped.length}件`,
         user: email,
         processingTime: timer.getElapsedSeconds(),
-        outputSummary: `成功: ${results.processed.map(r => r.fileName).join(', ')}`
+        outputSummary: `成功: ${results.processed.map(r => r.fileName).join(', ')}`,
+        modelName: GEMINI_MODEL,
+        inputTokens: totalInputTokens,
+        outputTokens: totalOutputTokens,
+        totalCost: totalCostJPY.toFixed(2),
+        apiCallCount: apiCallCount
       });
     }
   }
 
   Logger.log(`情報 [${FN}]: タイプ '${processingType}' の全てのファイルの処理が完了しました。`);
+  Logger.log(`💰 合計API使用量: Input=${totalInputTokens}tokens, Output=${totalOutputTokens}tokens, 合計=¥${totalCostJPY.toFixed(2)} (${apiCallCount}回呼び出し)`);
 }
 
 
@@ -322,12 +355,21 @@ function processSingleFile_(fileObject, config, processingType, existingIds, exi
     }
     Logger.log(`情報 [${FN}]: ファイル [${fileObject.id}] 内容取得成功。`);
 
-    const extractedInfo = extractInfoWithGemini_(fileContentBase64, mimeType, originalFileNameForCatch);
-    if (!extractedInfo) {
+    const apiResult = extractInfoWithGemini_(fileContentBase64, mimeType, originalFileNameForCatch);
+    if (!apiResult || !apiResult.data) {
       Logger.log(`警告 [${FN}]: ファイル [${fileObject.id}] 情報抽出失敗。スキップ。`);
       return null;
     }
+
+    const extractedInfo = apiResult.data;
+    const usageMetadata = apiResult.usageMetadata;
+
     Logger.log(`情報 [${FN}]: ファイル [${fileObject.id}] 情報抽出成功。デバッグ: ${JSON.stringify(extractedInfo)}`);
+
+    // API使用量をログ出力
+    if (usageMetadata) {
+      Logger.log(`💰 API使用量: Input=${usageMetadata.inputTokens}tokens, Output=${usageMetadata.outputTokens}tokens, 合計=¥${usageMetadata.totalCostJPY.toFixed(2)}`);
+    }
 
     // データ整形
     const paymentDate = extractedInfo.date || '';
@@ -434,6 +476,7 @@ function processSingleFile_(fileObject, config, processingType, existingIds, exi
       return {
         status: 'processed',
         payerEmail: payerEmail,
+        usageMetadata: usageMetadata,  // API使用量情報を追加
         data: {
           fileName: newFileName,
           date: paymentDate,
@@ -443,7 +486,7 @@ function processSingleFile_(fileObject, config, processingType, existingIds, exi
       };
     } else {
       Logger.log(`エラー [${FN}]: ファイル [${originalFileNameForCatch}] 情報記録失敗。`);
-      return { status: 'error', payerEmail: payerEmail };
+      return { status: 'error', payerEmail: payerEmail, usageMetadata: usageMetadata };
     }
 
   } catch (error) {
@@ -595,12 +638,12 @@ function logToExecutionSheet(scriptName, status, requestId, details = {}) {
   try {
     const sheet = SpreadsheetApp.openById(EXECUTION_LOG_SPREADSHEET_ID)
       .getSheetByName(EXECUTION_LOG_SHEET_NAME);
-    
+
     if (!sheet) {
       Logger.log(`警告: 実行ログシート "${EXECUTION_LOG_SHEET_NAME}" が見つかりません`);
       return;
     }
-    
+
     const timestamp = new Date();
     const row = [
       Utilities.formatDate(timestamp, Session.getScriptTimeZone(), 'yyyy/MM/dd HH:mm:ss'),
@@ -611,17 +654,17 @@ function logToExecutionSheet(scriptName, status, requestId, details = {}) {
       details.errorMessage || '',
       details.user || Session.getActiveUser().getEmail(),
       details.processingTime || '',
-      details.apiUsed || 'Gemini API',
-      details.modelName || GEMINI_MODEL_PRO,
-      details.tokens || '',
+      'Vertex AI',  // APIタイプ
+      details.modelName || GEMINI_MODEL,
+      `Input: ${details.inputTokens || 0}, Output: ${details.outputTokens || 0}`,  // トークン数
       details.responseSize || '',
       details.inputSummary || '',
       details.outputSummary || '',
-      details.notes || ''
+      `API呼び出し: ${details.apiCallCount || 0}回, 合計コスト: ¥${details.totalCost || '0.00'}`  // コスト情報
     ];
-    
+
     sheet.appendRow(row);
-    
+
   } catch (e) {
     Logger.log(`エラー: ログ記録失敗 - ${e.message}`);
   }
@@ -789,7 +832,7 @@ function extractInfoWithGemini_(fileContentBase64, mimeType, originalFileName) {
     muteHttpExceptions: true
   };
   try {
-    Logger.log(`情報 [${FN}]: Gemini API 呼び出し: ${GEMINI_API_ENDPOINT}`);
+    Logger.log(`情報 [${FN}]: Vertex AI 呼び出し: ${GEMINI_API_ENDPOINT}`);
     const response = UrlFetchApp.fetch(url, options);
     const responseCode = response.getResponseCode();
     const responseBody = response.getContentText();
@@ -798,18 +841,29 @@ function extractInfoWithGemini_(fileContentBase64, mimeType, originalFileName) {
         const result = JSON.parse(responseBody);
         if (result.candidates && result.candidates[0] && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts[0] && result.candidates[0].content.parts[0].text) {
           let jsonText = result.candidates[0].content.parts[0].text;
-          Logger.log(`デバッグ [${FN}]: Gemini Raw Text: [\n${jsonText}\n]`);
+          Logger.log(`デバッグ [${FN}]: Vertex AI Raw Text: [\n${jsonText}\n]`);
           const jsonMatch = jsonText.match(/```(json)?\s*([\s\S]*?)\s*```/);
           if (jsonMatch && jsonMatch[2]) jsonText = jsonMatch[2];
-          else Logger.log(`警告 [${FN}]: GeminiレスポンスからMarkdownコードブロックマーカーが見つかりませんでした。`);
+          else Logger.log(`警告 [${FN}]: Vertex AIレスポンスからMarkdownコードブロックマーカーが見つかりませんでした。`);
           jsonText = jsonText.trim();
           Logger.log(`デバッグ [${FN}]: Processed JSON Text for parsing (length: ${jsonText.length}): [\n${jsonText}\n]`);
+
           try {
-            return JSON.parse(jsonText);
+            const parsedData = JSON.parse(jsonText);
+
+            // usageMetadataを抽出してコスト計算
+            const usageMetadata = extractVertexAIUsageMetadata_(result, GEMINI_MODEL, 'image');
+
+            // パース済みデータにusageMetadataを追加して返す
+            return {
+              data: parsedData,
+              usageMetadata: usageMetadata
+            };
+
           } catch (parseError) {
-            const errorMsg = `Gemini APIレスポンスJSONパース失敗。Error: ${parseError.message}`;
+            const errorMsg = `Vertex AIレスポンスJSONパース失敗。Error: ${parseError.message}`;
             Logger.log(`エラー [${FN}]: ${errorMsg}`);
-            
+
             // ログに記録
             logToExecutionSheet('Automation_レシート', '警告', '', {
               summary: `JSONパース失敗: ${originalFileName}`,
@@ -817,29 +871,130 @@ function extractInfoWithGemini_(fileContentBase64, mimeType, originalFileName) {
               inputSummary: `ファイル: ${originalFileName}`,
               notes: `レスポンステキスト: ${jsonText.substring(0, 200)}...`
             });
-            
-            if(result.candidates[0].finishReason) Logger.log(`警告 [${FN}]: Gemini Finish Reason: ${result.candidates[0].finishReason}`);
-            if(result.candidates[0].safetyRatings) Logger.log(`警告 [${FN}]: Gemini Safety Ratings: ${JSON.stringify(result.candidates[0].safetyRatings)}`);
+
+            if(result.candidates[0].finishReason) Logger.log(`警告 [${FN}]: Vertex AI Finish Reason: ${result.candidates[0].finishReason}`);
+            if(result.candidates[0].safetyRatings) Logger.log(`警告 [${FN}]: Vertex AI Safety Ratings: ${JSON.stringify(result.candidates[0].safetyRatings)}`);
             return null;
           }
         } else {
-          Logger.log(`エラー [${FN}]: Gemini APIレスポンス構造不正。Resp: ${responseBody}`);
-          if(result.candidates && result.candidates[0] && result.candidates[0].finishReason) Logger.log(`警告 [${FN}]: Gemini Finish Reason: ${result.candidates[0].finishReason}`);
-          if(result.candidates && result.candidates[0].safetyRatings) Logger.log(`警告 [${FN}]: Gemini Safety Ratings: ${JSON.stringify(result.candidates[0].safetyRatings)}`);
+          Logger.log(`エラー [${FN}]: Vertex AIレスポンス構造不正。Resp: ${responseBody}`);
+          if(result.candidates && result.candidates[0] && result.candidates[0].finishReason) Logger.log(`警告 [${FN}]: Vertex AI Finish Reason: ${result.candidates[0].finishReason}`);
+          if(result.candidates && result.candidates[0].safetyRatings) Logger.log(`警告 [${FN}]: Vertex AI Safety Ratings: ${JSON.stringify(result.candidates[0].safetyRatings)}`);
           return null;
         }
       } catch (outerParseError) {
-        Logger.log(`エラー [${FN}]: Gemini APIレスポンス全体JSONパース失敗。Resp Body: ${responseBody}, Error: ${outerParseError}`);
+        Logger.log(`エラー [${FN}]: Vertex AIレスポンス全体JSONパース失敗。Resp Body: ${responseBody}, Error: ${outerParseError}`);
         return null;
       }
     } else {
-      Logger.log(`エラー [${FN}]: Gemini API呼び出し失敗。Status: ${responseCode}, Resp: ${responseBody}, Payload size: ${payload.length} bytes`);
+      Logger.log(`エラー [${FN}]: Vertex AI呼び出し失敗。Status: ${responseCode}, Resp: ${responseBody}, Payload size: ${payload.length} bytes`);
       return null;
     }
   } catch (e) {
-    Logger.log(`エラー [${FN}]: Gemini API呼び出し中例外: ${e}\n${e.stack}`);
+    Logger.log(`エラー [${FN}]: Vertex AI呼び出し中例外: ${e}\n${e.stack}`);
     return null;
   }
+}
+
+/**
+ * Vertex AI APIレスポンスからusageMetadataを抽出（日本円計算付き）
+ * @param {Object} jsonResponse - APIレスポンス
+ * @param {string} modelName - 使用したモデル名
+ * @param {string} inputType - 入力タイプ ('image' | 'text')
+ * @return {Object|null} {inputTokens, outputTokens, inputCostJPY, outputCostJPY, totalCostJPY, model}
+ */
+function extractVertexAIUsageMetadata_(jsonResponse, modelName, inputType = 'image') {
+  if (!jsonResponse.usageMetadata) {
+    return null;
+  }
+
+  const usage = jsonResponse.usageMetadata;
+  const inputTokens = usage.promptTokenCount || 0;
+  const outputTokens = usage.candidatesTokenCount || 0;
+
+  // モデル名と入力タイプに応じた価格を取得
+  const pricing = getVertexAIPricing_(modelName, inputType);
+  const inputCostUSD = (inputTokens / 1000000) * pricing.inputPer1M;
+  const outputCostUSD = (outputTokens / 1000000) * pricing.outputPer1M;
+  const totalCostUSD = inputCostUSD + outputCostUSD;
+
+  // 日本円に換算
+  const inputCostJPY = inputCostUSD * EXCHANGE_RATE_USD_TO_JPY;
+  const outputCostJPY = outputCostUSD * EXCHANGE_RATE_USD_TO_JPY;
+  const totalCostJPY = totalCostUSD * EXCHANGE_RATE_USD_TO_JPY;
+
+  Logger.log(`[API使用量] モデル: ${modelName}, Input: ${inputTokens}tokens, Output: ${outputTokens}tokens, 合計: ¥${totalCostJPY.toFixed(2)}`);
+
+  return {
+    model: modelName,
+    inputTokens: inputTokens,
+    outputTokens: outputTokens,
+    inputCostJPY: inputCostJPY,
+    outputCostJPY: outputCostJPY,
+    totalCostJPY: totalCostJPY
+  };
+}
+
+/**
+ * Vertex AIモデルの価格情報を取得（モデル名と入力タイプに応じて動的に決定）
+ * @param {string} modelName - モデル名
+ * @param {string} inputType - 入力タイプ ('image' | 'text')
+ * @return {Object} {inputPer1M, outputPer1M}
+ */
+function getVertexAIPricing_(modelName, inputType = 'text') {
+  // 2025年1月時点のVertex AI価格（USD/100万トークン）
+  const pricingTable = {
+    'gemini-2.5-flash': {
+      text: { inputPer1M: 0.075, outputPer1M: 0.30 },
+      image: { inputPer1M: 1.00, outputPer1M: 2.50 }  // 画像・PDF入力
+    },
+    'gemini-2.5-flash-lite': {
+      text: { inputPer1M: 0.01, outputPer1M: 0.04 },
+      image: { inputPer1M: 0.10, outputPer1M: 0.40 }  // 画像・PDF入力
+    },
+    'gemini-2.5-pro': {
+      text: { inputPer1M: 1.25, outputPer1M: 10.00 },
+      image: { inputPer1M: 1.25, outputPer1M: 10.00 }
+    },
+    'gemini-1.5-flash': {
+      text: { inputPer1M: 0.075, outputPer1M: 0.30 },
+      image: { inputPer1M: 0.075, outputPer1M: 0.30 }
+    },
+    'gemini-1.5-pro': {
+      text: { inputPer1M: 1.25, outputPer1M: 5.00 },
+      image: { inputPer1M: 1.25, outputPer1M: 5.00 }
+    }
+  };
+
+  // モデル名を正規化
+  const normalizedModelName = normalizeModelName_(modelName);
+
+  // モデルが見つからない場合はデフォルト価格を使用
+  if (!pricingTable[normalizedModelName]) {
+    Logger.log(`[価格取得] ⚠️ 未知のモデル: ${modelName}, デフォルト価格（gemini-2.5-flash-lite）を使用`);
+    return pricingTable['gemini-2.5-flash-lite'][inputType] || pricingTable['gemini-2.5-flash-lite']['text'];
+  }
+
+  // 入力タイプが見つからない場合はテキスト価格を使用
+  if (!pricingTable[normalizedModelName][inputType]) {
+    Logger.log(`[価格取得] ⚠️ 未知の入力タイプ: ${inputType}, テキスト価格を使用`);
+    return pricingTable[normalizedModelName]['text'];
+  }
+
+  Logger.log(`[価格取得] モデル: ${normalizedModelName}, 入力タイプ: ${inputType}, Input: $${pricingTable[normalizedModelName][inputType].inputPer1M}/1M, Output: $${pricingTable[normalizedModelName][inputType].outputPer1M}/1M`);
+  return pricingTable[normalizedModelName][inputType];
+}
+
+/**
+ * モデル名を正規化（バージョン番号やプレフィックスを削除）
+ * @param {string} modelName - モデル名
+ * @return {string} 正規化されたモデル名
+ */
+function normalizeModelName_(modelName) {
+  // 'gemini-2.5-flash-001' → 'gemini-2.5-flash'
+  // 'gemini-2.5-flash-lite-001' → 'gemini-2.5-flash-lite'
+  const match = modelName.match(/(gemini-[\d.]+-(?:flash-lite|flash|pro))/i);
+  return match ? match[1].toLowerCase() : modelName.toLowerCase();
 }
 
 /*******************************************************************************
@@ -848,13 +1003,12 @@ function extractInfoWithGemini_(fileContentBase64, mimeType, originalFileName) {
 function generateUniqueId_(existingIds) {
   const FN = 'generateUniqueId_';
   let newId, attempts = 0;
-  const maxAttempts = 10;
   do {
-    newId = Utilities.getUuid().substring(0, 8);
+    newId = Utilities.getUuid().substring(0, ID_LENGTH);
     attempts++;
-    if (attempts > maxAttempts) {
-      Logger.log(`エラー [${FN}]: ユニークID生成失敗(${maxAttempts}回)。既存ID数: ${existingIds.size}`);
-      throw new Error(`Failed to generate unique ID after ${maxAttempts} attempts.`);
+    if (attempts > MAX_ID_GENERATION_ATTEMPTS) {
+      Logger.log(`エラー [${FN}]: ユニークID生成失敗(${MAX_ID_GENERATION_ATTEMPTS}回)。既存ID数: ${existingIds.size}`);
+      throw new Error(`Failed to generate unique ID after ${MAX_ID_GENERATION_ATTEMPTS} attempts.`);
     }
   } while (existingIds.has(newId));
   Logger.log(`情報 [${FN}]: 新ユニークID生成: ${newId} (${attempts}回試行)`);
@@ -871,4 +1025,252 @@ function determineTimeOfDay_(timeString) {
     Logger.log(`エラー [determineTimeOfDay_]: 時間判定中エラー。timeString=${timeString}, Error=${e}`);
     return '不明';
   }
+}
+
+/**
+ * レシート処理結果をHTMLメールで送信
+ * @param {string} email - 送信先メールアドレス
+ * @param {Object} results - 処理結果 {processed: [], skipped: []}
+ * @param {number} totalAmount - レシート総額
+ * @param {string} processingType - 処理タイプ（'personal' or 'corporate'）
+ */
+function sendReceiptSummaryEmail_(email, results, totalAmount, processingType) {
+  const FN = 'sendReceiptSummaryEmail_';
+
+  try {
+    const processedCount = results.processed.length;
+    const skippedCount = results.skipped.length;
+    const processingTypeJP = processingType === 'corporate' ? '法人' : '個人';
+
+    // 支払先別の集計
+    const storeBreakdown = {};
+    results.processed.forEach(receipt => {
+      const storeName = receipt.storeName || '不明';
+      if (!storeBreakdown[storeName]) {
+        storeBreakdown[storeName] = { count: 0, amount: 0 };
+      }
+      storeBreakdown[storeName].count++;
+      storeBreakdown[storeName].amount += receipt.amount || 0;
+    });
+
+    // 当月の合計金額をスプレッドシートから取得
+    const monthlyTotal = getMonthlyTotalForUser_(email, processingType);
+
+    // HTML本文を生成
+    const htmlBody = generateReceiptEmailHTML_(
+      processingTypeJP,
+      processedCount,
+      skippedCount,
+      totalAmount,
+      monthlyTotal,
+      storeBreakdown,
+      results.processed
+    );
+
+    // メール送信
+    const subject = `【F経費】レシート処理完了通知 (${processingTypeJP}・${processedCount}件)`;
+
+    GmailApp.sendEmail(email, subject, '', {
+      htmlBody: htmlBody,
+      name: 'F経費'
+    });
+
+    Logger.log(`情報 [${FN}]: メール送信成功 - 宛先: ${email}`);
+
+  } catch (e) {
+    Logger.log(`エラー [${FN}]: メール送信失敗 - ${e.message}\n${e.stack}`);
+  }
+}
+
+/**
+ * スプレッドシートから当該月のユーザーの合計金額を取得
+ * @param {string} userEmail - ユーザーのメールアドレス
+ * @param {string} processingType - 処理タイプ（'personal' or 'corporate'）
+ * @return {number} 当月の合計金額
+ */
+function getMonthlyTotalForUser_(userEmail, processingType) {
+  const FN = 'getMonthlyTotalForUser_';
+
+  try {
+    const props = getScriptProperties_();
+    if (!props) {
+      Logger.log(`警告 [${FN}]: スクリプトプロパティ取得失敗`);
+      return 0;
+    }
+
+    const sheet = SpreadsheetApp.openById(props.spreadsheetId).getSheetByName(props.sheetName);
+    if (!sheet) {
+      Logger.log(`警告 [${FN}]: シート取得失敗`);
+      return 0;
+    }
+
+    // 当月の年月を取得（YYYY-MM形式）
+    const now = new Date();
+    const currentMonth = Utilities.formatDate(now, Session.getScriptTimeZone(), 'yyyy-MM');
+
+    const values = sheet.getDataRange().getValues();
+    const headers = values.shift();
+
+    // 必要な列のインデックスを取得
+    const payerIndex = headers.indexOf('支払者');
+    const amountIndex = headers.indexOf('支払金額');
+    const dateIndex = headers.indexOf('年月日');
+    const divisionIndex = headers.indexOf('区分');
+
+    if (payerIndex === -1 || amountIndex === -1 || dateIndex === -1) {
+      Logger.log(`警告 [${FN}]: 必要な列が見つかりません`);
+      return 0;
+    }
+
+    const targetDivision = processingType === 'corporate' ? '法人' : '個人';
+    let monthlyTotal = 0;
+
+    values.forEach(row => {
+      const rowDate = row[dateIndex];
+      const rowPayer = row[payerIndex];
+      const rowDivision = row[divisionIndex];
+      const rowAmount = parseFloat(row[amountIndex]) || 0;
+
+      // 日付を YYYY-MM 形式に変換
+      if (rowDate && rowPayer === userEmail && rowDivision === targetDivision) {
+        const rowMonth = Utilities.formatDate(new Date(rowDate), Session.getScriptTimeZone(), 'yyyy-MM');
+        if (rowMonth === currentMonth) {
+          monthlyTotal += rowAmount;
+        }
+      }
+    });
+
+    Logger.log(`情報 [${FN}]: ユーザー ${userEmail} の当月合計: ¥${monthlyTotal.toLocaleString()}`);
+    return monthlyTotal;
+
+  } catch (e) {
+    Logger.log(`エラー [${FN}]: ${e.message}\n${e.stack}`);
+    return 0;
+  }
+}
+
+/**
+ * レシート処理結果のHTMLメール本文を生成
+ */
+function generateReceiptEmailHTML_(processingType, processedCount, skippedCount, totalAmount, monthlyTotal, storeBreakdown, receipts) {
+  // 支払先別の内訳HTML
+  let storeBreakdownHTML = '';
+  const sortedStores = Object.entries(storeBreakdown).sort((a, b) => b[1].amount - a[1].amount);
+
+  sortedStores.forEach(([storeName, data]) => {
+    storeBreakdownHTML += `
+      <tr>
+        <td style="padding: 12px; border-bottom: 1px solid #e0e0e0;">${storeName}</td>
+        <td style="padding: 12px; border-bottom: 1px solid #e0e0e0; text-align: center;">${data.count}件</td>
+        <td style="padding: 12px; border-bottom: 1px solid #e0e0e0; text-align: right; font-weight: 600;">¥${data.amount.toLocaleString()}</td>
+      </tr>`;
+  });
+
+  // 処理済みレシート一覧HTML
+  let receiptListHTML = '';
+  receipts.forEach((receipt, index) => {
+    receiptListHTML += `
+      <tr style="background-color: ${index % 2 === 0 ? '#f8f9fa' : '#ffffff'};">
+        <td style="padding: 10px; border-bottom: 1px solid #e0e0e0;">${receipt.date || '不明'}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e0e0e0;">${receipt.storeName || '不明'}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e0e0e0; text-align: right; font-weight: 500;">¥${(receipt.amount || 0).toLocaleString()}</td>
+      </tr>`;
+  });
+
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>レシート処理完了通知</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+  <div style="max-width: 650px; margin: 40px auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); overflow: hidden;">
+
+    <!-- ヘッダー -->
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; padding: 30px; text-align: center;">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 700; letter-spacing: 0.5px;">F経費</h1>
+      <p style="margin: 8px 0 0 0; font-size: 16px; opacity: 0.95;">レシート処理完了通知</p>
+    </div>
+
+    <!-- サマリーセクション -->
+    <div style="padding: 30px;">
+      <div style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); border-radius: 8px; padding: 24px; margin-bottom: 24px;">
+        <h2 style="margin: 0 0 20px 0; font-size: 20px; color: #2d3748; font-weight: 600;">処理サマリー（${processingType}）</h2>
+
+        <div style="display: flex; justify-content: space-around; text-align: center; margin-bottom: 20px;">
+          <div style="flex: 1;">
+            <div style="font-size: 32px; font-weight: 700; color: #667eea; margin-bottom: 6px;">${processedCount}</div>
+            <div style="font-size: 13px; color: #718096; font-weight: 500;">処理完了</div>
+          </div>
+          <div style="flex: 1; border-left: 2px solid rgba(0,0,0,0.1); border-right: 2px solid rgba(0,0,0,0.1);">
+            <div style="font-size: 32px; font-weight: 700; color: #48bb78; margin-bottom: 6px;">¥${totalAmount.toLocaleString()}</div>
+            <div style="font-size: 13px; color: #718096; font-weight: 500;">レシート総額</div>
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 32px; font-weight: 700; color: #f56565; margin-bottom: 6px;">${skippedCount}</div>
+            <div style="font-size: 13px; color: #718096; font-weight: 500;">重複スキップ</div>
+          </div>
+        </div>
+
+        <!-- 当月合計 -->
+        <div style="background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%); border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <div style="font-size: 14px; color: #2d3748; font-weight: 600; margin-bottom: 8px;">📊 当月合計（${processingType}）</div>
+          <div style="font-size: 40px; font-weight: 700; color: #d63031; margin-bottom: 4px;">¥${monthlyTotal.toLocaleString()}</div>
+          <div style="font-size: 12px; color: #636e72; font-weight: 500;">スプレッドシート集計値</div>
+        </div>
+      </div>
+
+      <!-- 支払先別内訳 -->
+      ${sortedStores.length > 0 ? `
+      <div style="margin-bottom: 24px;">
+        <h3 style="margin: 0 0 16px 0; font-size: 18px; color: #2d3748; font-weight: 600; border-bottom: 2px solid #667eea; padding-bottom: 8px;">支払先別内訳</h3>
+        <table style="width: 100%; border-collapse: collapse; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+          <thead>
+            <tr style="background-color: #667eea; color: #ffffff;">
+              <th style="padding: 12px; text-align: left; font-weight: 600; font-size: 14px;">支払先</th>
+              <th style="padding: 12px; text-align: center; font-weight: 600; font-size: 14px;">件数</th>
+              <th style="padding: 12px; text-align: right; font-weight: 600; font-size: 14px;">金額</th>
+            </tr>
+          </thead>
+          <tbody style="background-color: #ffffff;">
+            ${storeBreakdownHTML}
+          </tbody>
+        </table>
+      </div>
+      ` : ''}
+
+      <!-- レシート一覧 -->
+      ${receipts.length > 0 ? `
+      <div>
+        <h3 style="margin: 0 0 16px 0; font-size: 18px; color: #2d3748; font-weight: 600; border-bottom: 2px solid #667eea; padding-bottom: 8px;">処理済みレシート一覧</h3>
+        <table style="width: 100%; border-collapse: collapse; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+          <thead>
+            <tr style="background-color: #667eea; color: #ffffff;">
+              <th style="padding: 12px; text-align: left; font-weight: 600; font-size: 14px;">日付</th>
+              <th style="padding: 12px; text-align: left; font-weight: 600; font-size: 14px;">支払先</th>
+              <th style="padding: 12px; text-align: right; font-weight: 600; font-size: 14px;">金額</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${receiptListHTML}
+          </tbody>
+        </table>
+      </div>
+      ` : ''}
+    </div>
+
+    <!-- フッター -->
+    <div style="background-color: #f7fafc; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
+      <p style="margin: 0; font-size: 13px; color: #718096;">
+        このメールは自動送信されています。<br>
+        <span style="font-weight: 600; color: #667eea;">F経費</span> powered by Vertex AI
+      </p>
+    </div>
+
+  </div>
+</body>
+</html>
+  `;
 }
