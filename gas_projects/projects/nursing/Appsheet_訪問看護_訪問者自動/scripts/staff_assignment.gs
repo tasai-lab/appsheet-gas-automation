@@ -56,7 +56,7 @@ const CONFIG = {
 
   GCP_LOCATION: 'us-central1',
 
-  VERTEX_AI_MODEL: 'gemini-2.5-flash',
+  VERTEX_AI_MODEL: 'gemini-2.5-pro',  // 複雑な最適化問題のためPro使用
 
 
   // シート名
@@ -967,15 +967,14 @@ function buildBatchAssignmentPrompt(visitGroups, lastMonthStats) {
 - 特定のスタッフが特定の曜日・ルートに集中しないようにバランス配置
 
 【出力形式】
-以下のJSON形式で出力してください。説明は不要です。
+以下のJSON形式で出力してください。reasonフィールドは不要です。
 
 \`\`\`json
 {
   "assignments": [
     {
-      "scheduleId": "スケジュールID（例: 2025-11-01|Route-A）",
-      "staffId": "割り当てるスタッフID（例: STF-001）",
-      "reason": "選択理由（簡潔に）"
+      "scheduleId": "2025-11-01|Route-A",
+      "staffId": "STF-001"
     }
   ]
 }
@@ -986,10 +985,15 @@ function buildBatchAssignmentPrompt(visitGroups, lastMonthStats) {
 - 利用可能なスタッフの中から必ず選択してください
 - 同じ日の同じルートは同じスタッフに割り当ててください
 
-【最優先事項】
-1. 曜日×ルートのパターンで各スタッフが均等に配置されること
-2. 全体の割り当て件数が目標比率（STF-001:10%, STF-003:40%, STF-004:50%）に概ね近いこと
-3. 特定のスタッフが特定の曜日やルートに偏らないこと`;
+【最優先事項（必ず守ること）】
+1. **目標比率を厳守**: 全130件中、STF-001≈13件(10%), STF-003≈52件(40%), STF-004≈65件(50%)
+2. **曜日×ルートで均等配置**: 各スタッフが様々な曜日・ルートを担当
+3. **特定パターンへの偏り禁止**: 特定のスタッフが特定の曜日・ルートに集中しない
+
+【禁止事項】
+- STF-001が50%以上（65件以上）担当すること
+- STF-004が20%以下（26件以下）しか担当しないこと
+- 特定のスタッフが特定の曜日に集中すること`;
 
   return prompt;
 }
