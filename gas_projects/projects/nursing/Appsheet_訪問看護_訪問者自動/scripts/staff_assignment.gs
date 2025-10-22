@@ -916,7 +916,7 @@ function buildBatchAssignmentPrompt(visitGroups, lastMonthStats) {
 
 このように、各スタッフが特定の曜日・ルートに偏らず、様々なパターンを担当することで：
 - スタッフのスキル均等化
-- 利用者との関係性の分散
+- チーム制による複数スタッフでの利用者対応
 - 業務負担の公平化
 
 【割り当て基準（優先順位順）】
@@ -1135,7 +1135,7 @@ function buildStaffSelectionPrompt(availableStaff, preferredStaffId, lastMonthSt
 1. 先月と今月の合計訪問件数が概ね均等になること
 2. 今月内でもある程度均等な配置になること
 3. 規定の目標比率に概ね近づくこと（厳密でなくてOK）
-4. 利用者との継続性（可能であれば同じスタッフ）
+4. チーム制の観点から、様々なスタッフが様々な利用者を訪問できること
 
 【規定の目標比率】
 `;
@@ -1180,7 +1180,7 @@ function buildStaffSelectionPrompt(availableStaff, preferredStaffId, lastMonthSt
   prompt += `- 利用者ID: ${clientId}\n`;
   prompt += `- ルートカテゴリ: ${routeTag}\n`;
   if (preferredStaffId) {
-    prompt += `- 先月の主担当: ${preferredStaffId}\n`;
+    prompt += `- 先月担当したスタッフ（参考情報のみ）: ${preferredStaffId}\n`;
   }
 
   prompt += `\n【利用可能なスタッフ（今回割り当て可能）】\n`;
@@ -1197,7 +1197,7 @@ function buildStaffSelectionPrompt(availableStaff, preferredStaffId, lastMonthSt
 最も適切なスタッフを選択する際は：
 - 先月と今月の合計が最も少ないスタッフを優先
 - ただし、目標比率から大きく外れないように配慮
-- 利用者との継続性も考慮（同じスタッフなら+5%の優先度）
+- チーム制として、様々なスタッフが様々な利用者を訪問できるように配置
 
 【出力形式】
 スタッフIDのみを出力してください。理由の説明は不要です。
