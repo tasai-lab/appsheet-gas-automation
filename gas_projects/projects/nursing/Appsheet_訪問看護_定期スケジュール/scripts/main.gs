@@ -279,75 +279,51 @@ function filterDuplicateDates(potentialDates, masterData, masterId, existingKeys
 // =============================================================================
 
 /**
- * 翌月の日付範囲を計算
+ * 有効なマスターを翌月（1日〜末日）で更新（AppSheet Automation連携用）
  *
- * @returns {{startDate: Date, endDate: Date, startDateStr: string, endDateStr: string}} 翌月の1日と末日
- *
- * @example
- * const range = calculateNextMonthRange();
- * // 現在が2025年10月の場合
- * // => {
- * //   startDate: Date(2025-11-01),
- * //   endDate: Date(2025-11-30),
- * //   startDateStr: '2025-11-01',
- * //   endDateStr: '2025-11-30'
- * // }
- */
-function calculateNextMonthRange() {
-  const today = new Date();
-  const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
-
-  // 翌月の1日
-  const startDate = new Date(nextMonth.getFullYear(), nextMonth.getMonth(), 1);
-
-  // 翌月の末日（翌々月の0日 = 翌月の末日）
-  const endDate = new Date(nextMonth.getFullYear(), nextMonth.getMonth() + 1, 0);
-
-  const startDateStr = Utilities.formatDate(startDate, TIMEZONE, 'yyyy-MM-dd');
-  const endDateStr = Utilities.formatDate(endDate, TIMEZONE, 'yyyy-MM-dd');
-
-  return { startDate, endDate, startDateStr, endDateStr };
-}
-
-/**
- * 有効なマスターを翌月モードに更新（AppSheet Automation連携用）
- *
- * この関数は有効なマスターのステータスと日付範囲を更新するのみで、
+ * この関数は有効なマスターのステータスと日付範囲をAppSheet API経由で更新するのみで、
  * 実際の予定作成はAppSheetのAutomationがWebhookを呼び出して行います。
  *
- * 処理フロー:
- * 1. is_active = TRUE のマスターを取得
- * 2. 各マスターに対してAppSheet APIで更新:
+ * 処理内容:
+ * 1. 翌月の1日と末日を計算
+ * 2. is_active = TRUE のマスターを取得
+ * 3. 各マスターに対してAppSheet APIで更新:
  *    - status = '処理中'
  *    - apply_start_date = 翌月1日
  *    - apply_end_date = 翌月末日
- * 3. AppSheetのAutomationが更新を検知してWebhookを実行
- * 4. WebhookがこのスクリプトのcreateScheduleFromMaster()を呼び出し
+ * 4. AppSheetのAutomationが更新を検知してWebhookを実行
+ * 5. WebhookがこのスクリプトのcreateScheduleFromMaster()を呼び出し
  *
  * @returns {Object} 実行結果
  *   - totalMasters: 更新対象マスター数
  *   - updatedMasters: 更新されたマスターのIDリスト
- *   - nextMonthRange: 翌月の日付範囲
+ *   - dateRange: 適用日付範囲（翌月1日〜末日）
  *
  * @example
- * // GASトリガーから毎月25日に実行
+ * // 翌月分のスケジュール生成
  * const result = updateMastersForNextMonth();
- * console.log(`${result.totalMasters}件のマスターを翌月モードに更新しました`);
+ * console.log(`${result.totalMasters}件のマスターを更新しました`);
  */
 function updateMastersForNextMonth() {
   const logger = createDebugLogger('BatchProcess.updateMastersForNextMonth');
   logger.checkpoint('バッチ処理開始');
 
   Logger.log('='.repeat(80));
-  Logger.log('📅 翌月スケジュール生成バッチ開始（マスター更新モード）');
+  Logger.log('📅 翌月スケジュール生成バッチ開始');
   Logger.log('='.repeat(80));
 
   try {
-    // 翌月の日付範囲を計算
-    const { startDate, endDate, startDateStr, endDateStr } = calculateNextMonthRange();
+    // 翌月の1日と末日を計算
+    const today = new Date();
+    const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+    const startDate = new Date(nextMonth.getFullYear(), nextMonth.getMonth(), 1);
+    const endDate = new Date(nextMonth.getFullYear(), nextMonth.getMonth() + 1, 0);
+
+    const startDateStr = Utilities.formatDate(startDate, TIMEZONE, 'yyyy-MM-dd');
+    const endDateStr = Utilities.formatDate(endDate, TIMEZONE, 'yyyy-MM-dd');
 
     Logger.log(`翌月範囲: ${startDateStr} 〜 ${endDateStr}`);
-    logger.checkpoint('日付範囲計算完了');
+    logger.checkpoint('日付計算完了');
 
     // 有効なマスターを取得
     const activeMasters = getActiveScheduleMasters();
@@ -359,7 +335,7 @@ function updateMastersForNextMonth() {
       return {
         totalMasters: 0,
         updatedMasters: [],
-        nextMonthRange: { startDateStr, endDateStr }
+        dateRange: { startDateStr, endDateStr }
       };
     }
 
@@ -445,7 +421,7 @@ function updateMastersForNextMonth() {
     return {
       totalMasters: activeMasters.length,
       updatedMasters: updatedMasterIds,
-      nextMonthRange: { startDateStr, endDateStr }
+      dateRange: { startDateStr, endDateStr }
     };
 
   } catch (error) {
@@ -516,26 +492,6 @@ function listAllMasterIds() {
 
   Logger.log('='.repeat(60));
   Logger.log(`合計: ${data.filter(r => r[masterIdIndex]).length}件`);
-}
-
-/**
- * 翌月日付範囲計算のテスト
- */
-function testCalculateNextMonthRange() {
-  Logger.log('='.repeat(60));
-  Logger.log('翌月日付範囲計算のテスト');
-  Logger.log('='.repeat(60));
-
-  const range = calculateNextMonthRange();
-
-  Logger.log(`翌月開始日: ${range.startDateStr}`);
-  Logger.log(`翌月終了日: ${range.endDateStr}`);
-
-  // 日数を計算
-  const days = Math.floor((range.endDate - range.startDate) / (1000 * 60 * 60 * 24)) + 1;
-  Logger.log(`日数: ${days}日`);
-
-  Logger.log('='.repeat(60));
 }
 
 /**

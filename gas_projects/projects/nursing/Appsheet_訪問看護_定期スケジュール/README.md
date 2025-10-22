@@ -124,16 +124,17 @@ console.log(result.message); // "5件の予定を作成しました。"
 
 #### `updateMastersForNextMonth()`
 
-翌月の定期スケジュールを一括生成するバッチ処理関数
+翌月（1日〜末日）の定期スケジュールを一括生成するバッチ処理関数
 
 **動作:**
-1. 有効なスケジュールマスター（`is_active = TRUE`）を取得
-2. AppSheet APIで全マスターを一括更新:
+1. 翌月の1日と末日を自動計算
+2. 有効なスケジュールマスター（`is_active = TRUE`）を取得
+3. AppSheet APIで全マスターを一括更新:
    - `status` = '処理中'
    - `apply_start_date` = 翌月1日
    - `apply_end_date` = 翌月末日
-3. AppSheet Automationが更新を検知してWebhookを起動
-4. 各マスターごとに既存の`createScheduleFromMaster()`が実行される
+4. AppSheet Automationが更新を検知してWebhookを起動
+5. 各マスターごとに既存の`createScheduleFromMaster()`が実行される
 
 **パラメータ:** なし
 
@@ -142,7 +143,7 @@ console.log(result.message); // "5件の予定を作成しました。"
 {
   totalMasters: number,      // 更新したマスター数
   updatedMasters: string[],  // 更新したマスターIDの配列
-  nextMonthRange: {
+  dateRange: {
     startDateStr: string,    // '2025-11-01'
     endDateStr: string       // '2025-11-30'
   }
@@ -154,7 +155,7 @@ console.log(result.message); // "5件の予定を作成しました。"
 // GASエディタまたはトリガーで実行
 const result = updateMastersForNextMonth();
 console.log(`${result.totalMasters}件のマスターを更新しました。`);
-console.log(`対象期間: ${result.nextMonthRange.startDateStr} 〜 ${result.nextMonthRange.endDateStr}`);
+console.log(`対象期間: ${result.dateRange.startDateStr} 〜 ${result.dateRange.endDateStr}`);
 ```
 
 **推奨設定:**
@@ -170,10 +171,6 @@ Schedule_Masterシートから全マスターIDを一覧表示
 #### `testCreateSchedule()`
 
 テスト用関数（master_idを事前に編集して実行）
-
-#### `testCalculateNextMonthRange()`
-
-翌月の日付範囲計算をテスト
 
 #### `testGetActiveScheduleMasters()`
 
@@ -227,12 +224,11 @@ POST https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec
 ## バージョン履歴
 
 ### v2.2.0 (2025-10-22)
-- ✅ **バッチ処理機能追加**: 翌月分の定期スケジュール一括生成
-  - `updateMastersForNextMonth()`: AppSheet API経由でマスター一括更新
-  - `calculateNextMonthRange()`: 翌月の日付範囲計算
+- ✅ **バッチ処理機能追加**: 翌月分（1日〜末日）の定期スケジュール一括生成
+  - `updateMastersForNextMonth()`: 翌月の日付を自動計算し、AppSheet API経由でマスター一括更新
   - `getActiveScheduleMasters()`: 有効なマスター取得
-- ✅ **AppSheet Automation連携**: マスター更新をトリガーに既存ワークフローを活用
-- ✅ **テスト関数追加**: `testCalculateNextMonthRange()`, `testGetActiveScheduleMasters()`
+- ✅ **AppSheet Automation連携**: マスター更新（status='処理中'）をトリガーに既存ワークフローを活用
+- ✅ **テスト関数追加**: `testGetActiveScheduleMasters()`
 - ✅ **ドキュメント更新**: バッチ処理の使用方法とトリガー設定例を追加
 
 ### v2.1.0 (2025-10-22)
