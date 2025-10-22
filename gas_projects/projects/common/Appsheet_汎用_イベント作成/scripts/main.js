@@ -125,6 +125,27 @@ function createGenericEvent(
  *   "ownerEmail": "owner@example.com",
  *   "eventId": "event_id_here"
  * }
+ *
+ * @example
+ * // 不在イベント作成のWebhookペイロード例
+ * {
+ *   "action": "CREATE_OOO",
+ *   "title": "夏季休暇",
+ *   "reason": "VACATION",
+ *   "ownerEmail": "user@example.com",
+ *   "startDate": "2025-08-01",
+ *   "endDate": "2025-08-05",
+ *   "declineMessage": "この期間は休暇中です",
+ *   "allDay": true
+ * }
+ *
+ * @example
+ * // 不在イベント削除のWebhookペイロード例
+ * {
+ *   "action": "DELETE_OOO",
+ *   "ownerEmail": "user@example.com",
+ *   "eventId": "event_id_here"
+ * }
  */
 function doPost(e) {
   const logger = createLogger('Appsheet_汎用_イベント作成');
@@ -146,6 +167,34 @@ function doPost(e) {
       if (action === 'DELETE') {
         // イベント削除
         return deleteGenericEvent(
+          params.ownerEmail,
+          params.eventId,
+          params.sendUpdates
+        );
+      } else if (action === 'CREATE_OOO') {
+        // 不在イベント作成
+        // 日付の文字列をDateオブジェクトに変換
+        const startDate = params.startDate && typeof params.startDate === 'string'
+          ? new Date(params.startDate)
+          : params.startDate;
+        const endDate = params.endDate && typeof params.endDate === 'string'
+          ? new Date(params.endDate)
+          : params.endDate;
+
+        return createOutOfOfficeEvent(
+          params.title,
+          params.reason,
+          params.ownerEmail,
+          startDate,
+          endDate,
+          params.declineMessage,
+          params.sendUpdates,
+          params.timeZone,
+          params.allDay
+        );
+      } else if (action === 'DELETE_OOO') {
+        // 不在イベント削除
+        return deleteOutOfOfficeEvent(
           params.ownerEmail,
           params.eventId,
           params.sendUpdates
@@ -413,6 +462,195 @@ function deleteCalendarEvent(eventId, ownerEmail, sendUpdates) {
 
 
 /**
+ * 不在イベント作成関数（個別引数で直接実行可能）
+ * Google Calendar API の Out of Office イベントを作成
+ *
+ * @param {string} title - 不在イベントタイトル（必須）
+ * @param {string} reason - 不在理由（デフォルト: 'OTHER'）
+ *                          利用可能な値: 'VACATION', 'SICK_LEAVE', 'MATERNITY_LEAVE', 'PATERNITY_LEAVE', 'OTHER'
+ * @param {string} ownerEmail - イベント保有者のメールアドレス（デフォルト: Session.getActiveUser().getEmail()）
+ * @param {Date|string} startDate - 開始日（必須）
+ * @param {Date|string} endDate - 終了日（必須）
+ * @param {string} declineMessage - 自動辞退時のメッセージ（デフォルト: ''）
+ * @param {boolean} sendUpdates - 参加者への通知（デフォルト: true）
+ * @param {string} timeZone - タイムゾーン（デフォルト: 'Asia/Tokyo'）
+ * @param {boolean} allDay - 終日イベントとして設定（デフォルト: true）
+ *
+ * @returns {{id: string, url: string}} イベントIDとURL
+ *
+ * @example
+ * // 基本的な使用例（終日休暇）
+ * const result = createOutOfOfficeEvent(
+ *   '夏季休暇',
+ *   'VACATION',
+ *   'user@example.com',
+ *   new Date('2025-08-01'),
+ *   new Date('2025-08-05'),
+ *   'この期間は休暇中です。緊急の場合は〇〇までご連絡ください。'
+ * );
+ * console.log(result); // {id: 'event_id', url: 'https://...'}
+ *
+ * @example
+ * // 病欠の例
+ * const result = createOutOfOfficeEvent(
+ *   '病気休暇',
+ *   'SICK_LEAVE',
+ *   'user@example.com',
+ *   new Date('2025-10-23'),
+ *   new Date('2025-10-24')
+ * );
+ */
+function createOutOfOfficeEvent(
+  title,
+  reason = 'OTHER',
+  ownerEmail = null,
+  startDate = null,
+  endDate = null,
+  declineMessage = '',
+  sendUpdates = true,
+  timeZone = 'Asia/Tokyo',
+  allDay = true
+) {
+  const logger = createLogger('Appsheet_汎用_イベント作成');
+  let status = '成功';
+
+  try {
+    // 必須パラメータのチェック
+    if (!title || title.trim() === '') {
+      throw new Error('タイトルは必須です');
+    }
+    if (!startDate) {
+      throw new Error('開始日は必須です');
+    }
+    if (!endDate) {
+      throw new Error('終了日は必須です');
+    }
+
+    // デフォルト値の設定
+    const config = {
+      reason: reason || 'OTHER',
+      ownerEmail: ownerEmail || Session.getActiveUser().getEmail(),
+      startDate: startDate,
+      endDate: endDate,
+      declineMessage: declineMessage || '',
+      sendUpdates: sendUpdates !== undefined ? sendUpdates : true,
+      timeZone: timeZone || 'Asia/Tokyo',
+      allDay: allDay !== undefined ? allDay : true
+    };
+
+    logger.info('不在イベント作成開始', { title, config });
+
+    // 不在イベントリソースの構築
+    const eventResource = buildOutOfOfficeEventResource(title, config);
+
+    // Calendar APIで不在イベント作成
+    const result = createCalendarEvent(eventResource, config.ownerEmail, config.sendUpdates);
+
+    logger.success('不在イベント作成成功', { eventId: result.id, eventUrl: result.url });
+    status = '成功';
+
+    return result;
+
+  } catch (error) {
+    status = 'エラー';
+    logger.error(`不在イベント作成エラー: ${error.toString()}`, {
+      stack: error.stack,
+      title,
+      reason,
+      ownerEmail,
+      startDate,
+      endDate
+    });
+    throw error;
+  }
+}
+
+
+/**
+ * 不在イベント削除関数（個別引数で直接実行可能）
+ * 既存のdeleteGenericEventを使用（不在イベントも通常のイベントと同じ方法で削除）
+ *
+ * @param {string} ownerEmail - イベント保有者のメールアドレス（必須）
+ * @param {string} eventId - 削除する不在イベントID（必須）
+ * @param {boolean} sendUpdates - 参加者への通知（デフォルト: true）
+ *
+ * @returns {{success: boolean, message: string}} 削除結果
+ *
+ * @example
+ * const result = deleteOutOfOfficeEvent(
+ *   'user@example.com',
+ *   'event_id_here'
+ * );
+ */
+function deleteOutOfOfficeEvent(ownerEmail, eventId, sendUpdates = true) {
+  // 不在イベントも通常イベントと同じ削除メソッドを使用
+  return deleteGenericEvent(ownerEmail, eventId, sendUpdates);
+}
+
+
+/**
+ * Google Calendar API 不在イベントリソースオブジェクトを構築
+ * @private
+ */
+function buildOutOfOfficeEventResource(title, config) {
+  const resource = {
+    summary: title,
+    eventType: 'outOfOffice'
+  };
+
+  // 終日イベントまたは時間指定イベント
+  if (config.allDay) {
+    // 終日イベント（dateフィールドを使用）
+    const startDate = new Date(config.startDate);
+    const endDate = new Date(config.endDate);
+
+    // 終了日は翌日を指定（Googleカレンダーの仕様）
+    endDate.setDate(endDate.getDate() + 1);
+
+    resource.start = {
+      date: formatDateOnly(startDate),
+      timeZone: config.timeZone
+    };
+    resource.end = {
+      date: formatDateOnly(endDate),
+      timeZone: config.timeZone
+    };
+  } else {
+    // 時間指定イベント（dateTimeフィールドを使用）
+    resource.start = {
+      dateTime: new Date(config.startDate).toISOString(),
+      timeZone: config.timeZone
+    };
+    resource.end = {
+      dateTime: new Date(config.endDate).toISOString(),
+      timeZone: config.timeZone
+    };
+  }
+
+  // 不在理由の設定
+  resource.outOfOfficeProperties = {
+    autoDeclineMode: 'declineAllConflictingInvitations',
+    declineMessage: config.declineMessage || `${title}のため不在です。`
+  };
+
+  return resource;
+}
+
+
+/**
+ * 日付を YYYY-MM-DD 形式にフォーマット
+ * @private
+ */
+function formatDateOnly(date) {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+
+/**
  * テスト関数 - 基本的なイベント作成
  */
 function testCreateBasicEvent() {
@@ -549,6 +787,130 @@ function testCreateAndDeleteEvent() {
   // 作成したイベントを削除
   Logger.log('\n=== イベント削除 ===');
   const deleteResult = deleteGenericEvent(
+    Session.getActiveUser().getEmail(),
+    createResult.id
+  );
+
+  Logger.log('削除結果:');
+  Logger.log('Success: ' + deleteResult.success);
+  Logger.log('Message: ' + deleteResult.message);
+
+  return {
+    created: createResult,
+    deleted: deleteResult
+  };
+}
+
+
+/**
+ * テスト関数 - 不在イベント作成（終日休暇）
+ */
+function testCreateOutOfOfficeEvent() {
+  // 明日から3日間の休暇
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() + 1);
+
+  const endDate = new Date(startDate);
+  endDate.setDate(endDate.getDate() + 2); // 3日間
+
+  const result = createOutOfOfficeEvent(
+    'テスト休暇',
+    'VACATION',
+    null, // ownerEmail - デフォルト使用
+    startDate,
+    endDate,
+    'テスト期間中は不在です。緊急の場合は〇〇までご連絡ください。',
+    false // テストなので通知なし
+  );
+
+  Logger.log('作成された不在イベント:');
+  Logger.log('ID: ' + result.id);
+  Logger.log('URL: ' + result.url);
+
+  return result;
+}
+
+
+/**
+ * テスト関数 - 不在イベント作成（病欠）
+ */
+function testCreateSickLeaveEvent() {
+  // 今日1日の病欠
+  const today = new Date();
+
+  const result = createOutOfOfficeEvent(
+    'テスト病欠',
+    'SICK_LEAVE',
+    null, // ownerEmail - デフォルト使用
+    today,
+    today, // 同じ日
+    '体調不良のため本日は不在です。',
+    false // テストなので通知なし
+  );
+
+  Logger.log('作成された病欠イベント:');
+  Logger.log('ID: ' + result.id);
+  Logger.log('URL: ' + result.url);
+
+  return result;
+}
+
+
+/**
+ * テスト関数 - 不在イベント削除
+ * 注意: 実行前に有効なeventIdに変更してください
+ */
+function testDeleteOutOfOfficeEvent() {
+  // テスト用のイベントIDを設定（実際のイベントIDに変更してください）
+  const testEventId = 'YOUR_EVENT_ID_HERE';
+  const testOwnerEmail = Session.getActiveUser().getEmail();
+
+  const result = deleteOutOfOfficeEvent(
+    testOwnerEmail,
+    testEventId
+  );
+
+  Logger.log('削除結果:');
+  Logger.log('Success: ' + result.success);
+  Logger.log('Message: ' + result.message);
+
+  return result;
+}
+
+
+/**
+ * テスト関数 - 不在イベント作成して削除（統合テスト）
+ */
+function testCreateAndDeleteOutOfOfficeEvent() {
+  // まず不在イベントを作成
+  Logger.log('=== 不在イベント作成 ===');
+
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() + 7); // 1週間後
+
+  const endDate = new Date(startDate);
+  endDate.setDate(endDate.getDate() + 1); // 2日間
+
+  const createResult = createOutOfOfficeEvent(
+    '削除テスト不在イベント',
+    'OTHER',
+    null,
+    startDate,
+    endDate,
+    'このイベントは削除テスト用です',
+    false // テストなので通知なし
+  );
+
+  Logger.log('作成された不在イベント:');
+  Logger.log('ID: ' + createResult.id);
+  Logger.log('URL: ' + createResult.url);
+
+  // 少し待つ
+  Utilities.sleep(2000);
+
+  // 作成した不在イベントを削除
+  Logger.log('\n=== 不在イベント削除 ===');
+  const deleteResult = deleteOutOfOfficeEvent(
     Session.getActiveUser().getEmail(),
     createResult.id
   );
