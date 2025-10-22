@@ -52,7 +52,7 @@ const CONFIG = {
 
   // --- Vertex AI設定 ---
 
-  GCP_PROJECT_ID: 'gemini-api-437609',
+  GCP_PROJECT_ID: 'macro-shadow-458705-v8',
 
   GCP_LOCATION: 'us-central1',
 
@@ -275,6 +275,9 @@ function assignStaffForNextMonth() {
 
     const dailyRouteAssignments = {};
 
+    // Vertex AIバッチ処理用：全訪問グループを収集
+    const visitGroupsForBatch = [];
+
     for (const key in visitsByDayAndRoute) {
 
       const [visitDateStr, routeTag] = key.split('|');
@@ -297,17 +300,72 @@ function assignStaffForNextMonth() {
 
       }
 
+      // 同じ日の同じルートに既に割り当てられている場合はスキップ
+      if (dailyRouteAssignments[visitDateStr][routeTag]) {
+        continue;
+      }
+
+      const assignedStaffOnDay = Object.values(dailyRouteAssignments[visitDateStr]);
+
+      // 「看護」スタッフ（01-03）のみを対象に
+
+      const availableStaff = findAvailableStaff(visitStartTime, visitEndTime, staffWorkSchedules, staffDetails, ['01', '02', '03'], assignedStaffOnDay);
+
+      if (availableStaff.length > 0) {
+
+        const preferredStaffId = clientPreferences[clientId];
+
+        // Vertex AIバッチ処理用にグループ情報を収集
+        if(CONFIG.USE_VERTEX_AI_ASSIGNMENT) {
+          visitGroupsForBatch.push({
+            key: key,
+            visitDateStr: visitDateStr,
+            visitDate: visitDate.toISOString().split('T')[0],
+            routeTag: routeTag,
+            clientId: clientId,
+            visitsInGroup: visitsInGroup,
+            availableStaff: availableStaff,
+            preferredStaffId: preferredStaffId
+          });
+        }
+
+      }
+
+    }
+
+    // Vertex AIバッチ処理実行
+    let batchAssignments = {};
+    if(CONFIG.USE_VERTEX_AI_ASSIGNMENT && visitGroupsForBatch.length > 0) {
+      batchAssignments = assignStaffWithVertexAIBatch(visitGroupsForBatch, lastMonthStats, logger);
+    }
+
+    // 割り当て結果を適用
+    for (const key in visitsByDayAndRoute) {
+
+      const [visitDateStr, routeTag] = key.split('|');
+
+      const visitsInGroup = visitsByDayAndRoute[key];
+
+      const firstVisit = visitsInGroup[0];
+
+      const visitDate = new Date(firstVisit.row[scheduleCols.VISIT_DATE]);
+
+      const visitStartTime = combineDateAndTime(visitDate, firstVisit.row[scheduleCols.START_TIME]);
+
+      const visitEndTime = combineDateAndTime(visitDate, firstVisit.row[scheduleCols.END_TIME]);
+
+      const clientId = firstVisit.row[scheduleCols.CLIENT_ID];
+
       let assignedStaffId = null;
 
-      if (dailyRouteAssignments[visitDateStr][routeTag]) {
+      // 同じ日の同じルートに既に割り当てられている場合は再利用
+      if (dailyRouteAssignments[visitDateStr] && dailyRouteAssignments[visitDateStr][routeTag]) {
 
         assignedStaffId = dailyRouteAssignments[visitDateStr][routeTag];
 
       } else {
 
-        const assignedStaffOnDay = Object.values(dailyRouteAssignments[visitDateStr]);
-
-        // ★修正：「看護」スタッフ（01-03）のみを対象に
+        const assignedStaffOnDay = Object.values(dailyRouteAssignments[visitDateStr] || {});
 
         const availableStaff = findAvailableStaff(visitStartTime, visitEndTime, staffWorkSchedules, staffDetails, ['01', '02', '03'], assignedStaffOnDay);
 
@@ -315,18 +373,10 @@ function assignStaffForNextMonth() {
 
            const preferredStaffId = clientPreferences[clientId];
 
-           if(CONFIG.USE_VERTEX_AI_ASSIGNMENT){
+           if(CONFIG.USE_VERTEX_AI_ASSIGNMENT && batchAssignments[key]){
 
-               // Vertex AIで最適なスタッフを選択（ロガー渡す）
-               assignedStaffId = selectStaffWithVertexAI(
-                 availableStaff,
-                 preferredStaffId,
-                 lastMonthStats,
-                 assignedCounts,
-                 routeTag,
-                 clientId,
-                 logger
-               );
+               // バッチ処理の結果を使用
+               assignedStaffId = batchAssignments[key];
 
            } else if(CONFIG.USE_RATIO_ASSIGNMENT){
 
@@ -345,6 +395,10 @@ function assignStaffForNextMonth() {
       }
 
       if (assignedStaffId) {
+
+        if (!dailyRouteAssignments[visitDateStr]) {
+          dailyRouteAssignments[visitDateStr] = {};
+        }
 
         dailyRouteAssignments[visitDateStr][routeTag] = assignedStaffId;
 
@@ -783,7 +837,177 @@ function getLastMonthVisitStatistics(rows, cols, prevMonth) {
 }
 
 /**
- * Vertex AIを使って最適なスタッフを選択
+ * Vertex AIバッチ処理：全スケジュールを1回のAPI呼び出しでまとめて割り当て
+ * @param {Array} visitGroups - 訪問グループの配列 [{key, visitsInGroup, availableStaff, preferredStaffId, visitDate, routeTag, clientId}]
+ * @param {Object} lastMonthStats - 先月の訪問統計
+ * @param {GASLogger} logger - ロガーインスタンス
+ * @return {Object} {key: staffId} の割り当て結果
+ */
+function assignStaffWithVertexAIBatch(visitGroups, lastMonthStats, logger) {
+  if (!visitGroups || visitGroups.length === 0) {
+    return {};
+  }
+
+  logger.info(`[Vertex AI Batch] ${visitGroups.length}件のスケジュールをまとめて処理開始`);
+
+  // バッチプロンプト構築
+  const prompt = buildBatchAssignmentPrompt(visitGroups, lastMonthStats);
+
+  try {
+    // Vertex AI API呼び出し（JSONレスポンス）
+    const result = callVertexAIForJSONGeneration(prompt, CONFIG.VERTEX_AI_MODEL, logger);
+
+    // レスポンスパース
+    const assignments = parseBatchAssignmentResponse(result.text, visitGroups);
+
+    logger.success(`[Vertex AI Batch] ${Object.keys(assignments).length}件の割り当て完了`);
+
+    return assignments;
+
+  } catch (error) {
+    logger.error(`[Vertex AI Batch] エラー: ${error.message}`);
+    // エラー時はフォールバック（最初の候補を使用）
+    const fallbackAssignments = {};
+    visitGroups.forEach(group => {
+      if (group.availableStaff.length > 0) {
+        fallbackAssignments[group.key] = group.availableStaff[0].staffId;
+      }
+    });
+    return fallbackAssignments;
+  }
+}
+
+/**
+ * バッチ割り当て用プロンプトを構築
+ * @param {Array} visitGroups - 訪問グループ
+ * @param {Object} lastMonthStats - 先月統計
+ * @return {string} プロンプト
+ */
+function buildBatchAssignmentPrompt(visitGroups, lastMonthStats) {
+  let prompt = `あなたは訪問看護のスタッフ配置を最適化するAIアシスタントです。
+
+【目的】
+${visitGroups.length}件の訪問スケジュールに対して、最適なスタッフを一括で割り当ててください。
+
+【割り当て基準】
+1. 先月と今月の合計訪問件数が概ね均等になること
+2. 今月内でもある程度均等な配置になること
+3. 規定の目標比率に概ね近づくこと（厳密でなくてOK）
+4. 利用者との継続性（可能であれば同じスタッフ）
+5. 同じ日の同じルートは同じスタッフに割り当てること
+
+【規定の目標比率】
+`;
+
+  // 目標比率
+  if (CONFIG.STAFF_ASSIGNMENT_RATIO && Object.keys(CONFIG.STAFF_ASSIGNMENT_RATIO).length > 0) {
+    for (const staffId in CONFIG.STAFF_ASSIGNMENT_RATIO) {
+      const ratio = CONFIG.STAFF_ASSIGNMENT_RATIO[staffId];
+      const percentage = (ratio * 100).toFixed(1);
+      prompt += `- ${staffId}: ${percentage}%\n`;
+    }
+  } else {
+    prompt += `（設定なし - 完全均等を目指す）\n`;
+  }
+
+  // 先月の実績
+  prompt += `\n【先月の訪問実績】\n`;
+  const staffIds = Object.keys(lastMonthStats.staffVisits).sort();
+  const lastMonthTotal = lastMonthStats.totalVisits;
+  staffIds.forEach(staffId => {
+    const count = lastMonthStats.staffVisits[staffId];
+    const percentage = lastMonthTotal > 0 ? ((count / lastMonthTotal) * 100).toFixed(1) : 0;
+    prompt += `- ${staffId}: ${count}件 (${percentage}%)\n`;
+  });
+
+  // 各スケジュールの情報
+  prompt += `\n【割り当て対象スケジュール】\n`;
+  visitGroups.forEach((group, index) => {
+    prompt += `\n## スケジュール${index + 1} (ID: ${group.key})\n`;
+    prompt += `- 日付: ${group.visitDate}\n`;
+    prompt += `- ルート: ${group.routeTag}\n`;
+    prompt += `- 利用者ID: ${group.clientId}\n`;
+    if (group.preferredStaffId) {
+      prompt += `- 先月の担当: ${group.preferredStaffId}\n`;
+    }
+    prompt += `- 訪問件数: ${group.visitsInGroup.length}件\n`;
+    prompt += `- 利用可能なスタッフ: ${group.availableStaff.map(s => s.staffId).join(', ')}\n`;
+  });
+
+  prompt += `\n【出力形式】
+以下のJSON形式で出力してください。説明は不要です。
+
+\`\`\`json
+{
+  "assignments": [
+    {
+      "scheduleId": "スケジュールID（例: 2025-11-01|Route-A）",
+      "staffId": "割り当てるスタッフID（例: STF-001）",
+      "reason": "選択理由（簡潔に）"
+    }
+  ]
+}
+\`\`\`
+
+【重要】
+- 全${visitGroups.length}件のスケジュールに対して割り当てを行ってください
+- 利用可能なスタッフの中から必ず選択してください
+- 同じ日の同じルートは同じスタッフに割り当ててください
+- 全体のバランスを考慮して最適化してください`;
+
+  return prompt;
+}
+
+/**
+ * バッチレスポンスをパース
+ * @param {string} responseText - APIレスポンステキスト
+ * @param {Array} visitGroups - 訪問グループ
+ * @return {Object} {key: staffId}
+ */
+function parseBatchAssignmentResponse(responseText, visitGroups) {
+  // JSONブロック抽出
+  let jsonText = responseText;
+  const jsonBlockMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/);
+  if (jsonBlockMatch) {
+    jsonText = jsonBlockMatch[1];
+  } else {
+    const codeBlockMatch = responseText.match(/```\s*([\s\S]*?)\s*```/);
+    if (codeBlockMatch) {
+      jsonText = codeBlockMatch[1];
+    }
+  }
+
+  // JSONパース
+  let jsonData;
+  try {
+    jsonData = JSON.parse(jsonText.trim());
+  } catch (e) {
+    throw new Error(`JSONパースエラー: ${e.message}\nレスポンス: ${responseText.substring(0, 500)}`);
+  }
+
+  // 割り当て結果を抽出
+  const assignments = {};
+  if (jsonData.assignments && Array.isArray(jsonData.assignments)) {
+    jsonData.assignments.forEach(assignment => {
+      if (assignment.scheduleId && assignment.staffId) {
+        assignments[assignment.scheduleId] = assignment.staffId;
+      }
+    });
+  }
+
+  // 欠落している割り当てをフォールバックで補完
+  visitGroups.forEach(group => {
+    if (!assignments[group.key] && group.availableStaff.length > 0) {
+      assignments[group.key] = group.availableStaff[0].staffId;
+    }
+  });
+
+  return assignments;
+}
+
+/**
+ * Vertex AIを使って最適なスタッフを選択（個別処理・非推奨）
+ * @deprecated バッチ処理（assignStaffWithVertexAIBatch）を使用してください
  * @param {Array} availableStaff - 利用可能なスタッフリスト [{staffId: 'STF-001'}, ...]
  * @param {string} preferredStaffId - 優先スタッフID（先月最も訪問したスタッフ）
  * @param {Object} lastMonthStats - 先月の訪問統計
@@ -1003,6 +1227,82 @@ function callVertexAIForTextGeneration(prompt, model, logger) {
     // ロガーにコスト情報を記録
     logger.setUsageMetadata(usageMetadata);
     logger.info(`[Vertex AI] Input ${usageMetadata.inputTokens} tokens, Output ${usageMetadata.outputTokens} tokens, 合計 ¥${usageMetadata.totalCostJPY.toFixed(4)}`);
+  }
+
+  return {
+    text: generatedText,
+    usageMetadata: usageMetadata
+  };
+}
+
+/**
+ * Vertex AI APIでJSON生成（バッチ処理用・コスト追跡付き）
+ * @param {string} prompt - プロンプトテキスト
+ * @param {string} model - モデル名
+ * @param {GASLogger} logger - ロガーインスタンス
+ * @return {Object} {text: 生成されたテキスト, usageMetadata: 使用量情報}
+ */
+function callVertexAIForJSONGeneration(prompt, model, logger) {
+  // エンドポイントURL構築
+  const endpoint = `https://${CONFIG.GCP_LOCATION}-aiplatform.googleapis.com/v1/projects/${CONFIG.GCP_PROJECT_ID}/locations/${CONFIG.GCP_LOCATION}/publishers/google/models/${model}:generateContent`;
+
+  // リクエストボディ構築（バッチ処理用に大きめのトークン数）
+  const requestBody = {
+    contents: [{
+      role: 'user',
+      parts: [{ text: prompt }]
+    }],
+    generationConfig: {
+      responseMimeType: "application/json",
+      temperature: 0.3,
+      maxOutputTokens: 8192,  // バッチ処理用に大きめ
+      topP: 0.95,
+      topK: 40
+    }
+  };
+
+  // API呼び出しオプション
+  const options = {
+    method: 'post',
+    contentType: 'application/json',
+    payload: JSON.stringify(requestBody),
+    headers: {
+      'Authorization': `Bearer ${ScriptApp.getOAuthToken()}`
+    },
+    muteHttpExceptions: true
+  };
+
+  // API実行
+  logger.info(`[Vertex AI Batch] API呼び出し開始（モデル: ${model}, JSON形式）`);
+  const response = UrlFetchApp.fetch(endpoint, options);
+  const statusCode = response.getResponseCode();
+  const responseText = response.getContentText();
+
+  // ステータスコードチェック
+  if (statusCode !== 200) {
+    throw new Error(`Vertex AI APIエラー (HTTP ${statusCode}): ${responseText}`);
+  }
+
+  // JSONパース
+  const jsonResponse = JSON.parse(responseText);
+
+  // コンテンツ抽出
+  if (!jsonResponse.candidates || jsonResponse.candidates.length === 0 ||
+      !jsonResponse.candidates[0].content || !jsonResponse.candidates[0].content.parts ||
+      jsonResponse.candidates[0].content.parts.length === 0) {
+    const finishReason = jsonResponse.candidates?.[0]?.finishReason || 'UNKNOWN';
+    throw new Error(`Vertex AIレスポンスにコンテンツがありません（finishReason: ${finishReason}）`);
+  }
+
+  const generatedText = jsonResponse.candidates[0].content.parts[0].text.trim();
+
+  // usageMetadataを抽出してコスト計算
+  const usageMetadata = extractVertexAIUsageMetadata(jsonResponse, model, 'text');
+
+  if (usageMetadata) {
+    // ロガーにコスト情報を記録
+    logger.setUsageMetadata(usageMetadata);
+    logger.info(`[Vertex AI Batch] Input ${usageMetadata.inputTokens} tokens, Output ${usageMetadata.outputTokens} tokens, 合計 ¥${usageMetadata.totalCostJPY.toFixed(4)}`);
   }
 
   return {
