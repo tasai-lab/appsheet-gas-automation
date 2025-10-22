@@ -164,11 +164,13 @@ function disableDuplicationPrevention() {
 /**
  * 重複回避機能が有効かを確認
  * @return {boolean} 有効ならtrue、無効ならfalse
+ * @deprecated duplication_prevention.gs の同名関数を使用してください
  */
-function isDuplicationPreventionEnabled() {
-  const value = getScriptProperty(DUPLICATION_PREVENTION_KEY, 'true');
-  return value === 'true';
-}
+// function isDuplicationPreventionEnabled() {
+//   const value = getScriptProperty(DUPLICATION_PREVENTION_KEY, 'true');
+//   return value === 'true';
+// }
+// 注: この関数は duplication_prevention.gs で定義されています
 
 /**
  * 重複回避機能の状態を表示
