@@ -823,7 +823,15 @@ function extractInfoWithGemini_(fileContentBase64, mimeType, originalFileName) {
 
   const promptText = `あなたは経費精算の専門家です。添付されたレシート（または請求書PDF）から以下の情報を抽出し、指定されたJSON形式で厳密に回答してください。JSON以外のテキスト（説明文、マークダウンなど）は一切含めないでください。駐車場代については、必ず旅費交通費としてください。\n\n抽出項目:\n- 年月日 (YYYY-MM-DD形式)\n- 時間 (HH:MM形式, 24時間表記)\n- 支払先 (店舗名のみ、支店名は含めない)\n- 支払先_支店名 (店舗の支店名、なければ空文字列 "")\n- 支払金額 (数値のみ、通貨記号やカンマなし。整数または小数点付き数値)\n- 購入品_内訳 (品目と金額を改行(\\n)区切りで記述。例: "食料品 500\\n雑貨 300")\n- 支払方法 (「現金」「クレジットカード」「電子マネー」など、具体的な支払い手段を文字列で記述)\n- 勘定科目 (以下のリストから最も適切なものを1つ選択):\n ${ACCOUNT_TITLES.join(', ')}\n- 税区分 (以下のリストから最も適切なものを1つ選択):\n ${TAX_CATEGORIES.join(', ')}\n\n勘定科目リスト:\n${ACCOUNT_TITLES.join('\n')}\n\n税区分リスト:\n${TAX_CATEGORIES.join('\n')}\n\n出力形式 (JSONのみ):\n{\n "date": "YYYY-MM-DD",\n "time": "HH:MM",\n "storeName": "支払先",\n "storeBranchName": "支払先_支店名",\n "totalAmount": 金額 (数値),\n "items": "購入品_内訳",\n "paymentMethod": "支払方法",\n "accountTitle": "勘定科目",\n "taxCategory": "税区分"\n}\n\n情報が読み取れない場合は、該当項目に "不明" または空文字列 "" を入れてください。\n支払金額は必ず数値で返してください。 カンマは含めないでください。\n元のファイル名は ${originalFileName} です。`;
 
-  const payload = JSON.stringify({ contents: [ { parts: [ { text: promptText }, { inline_data: { mime_type: mimeType, data: fileContentBase64 } } ] } ], });
+  const payload = JSON.stringify({
+    contents: [{
+      role: "user",
+      parts: [
+        { text: promptText },
+        { inline_data: { mime_type: mimeType, data: fileContentBase64 } }
+      ]
+    }]
+  });
   const options = {
     method: 'post',
     contentType: 'application/json',

@@ -51,6 +51,7 @@ function callGeminiAPI(prompt, options = {}) {
   
   const payload = {
     contents: [{
+      role: "user",
       parts: parts
     }]
   };
