@@ -881,10 +881,30 @@ function assignStaffWithVertexAIBatch(visitGroups, lastMonthStats, logger) {
  * @return {string} プロンプト
  */
 function buildBatchAssignmentPrompt(visitGroups, lastMonthStats) {
+  // 実際の訪問件数と目標件数を計算
+  const totalVisits = visitGroups.length;
+  const targetCounts = {};
+  const minCounts = {};
+  const maxCounts = {};
+  const allowedMarginRatio = 0.15; // ±15%の許容範囲
+
+  // 各スタッフの目標件数と許容範囲を計算
+  if (CONFIG.STAFF_ASSIGNMENT_RATIO && Object.keys(CONFIG.STAFF_ASSIGNMENT_RATIO).length > 0) {
+    for (const staffId in CONFIG.STAFF_ASSIGNMENT_RATIO) {
+      const ratio = CONFIG.STAFF_ASSIGNMENT_RATIO[staffId];
+      const targetCount = Math.round(totalVisits * ratio);
+      const margin = Math.ceil(targetCount * allowedMarginRatio);
+
+      targetCounts[staffId] = targetCount;
+      minCounts[staffId] = Math.max(1, targetCount - margin);
+      maxCounts[staffId] = targetCount + margin;
+    }
+  }
+
   let prompt = `あなたは訪問看護のスタッフ配置を最適化するAIアシスタントです。
 
 【目的】
-翌月の全${visitGroups.length}件の訪問スケジュールに対して、既存の割り当てを無視して、ゼロから最適なスタッフを一括で割り当ててください。
+翌月の全${totalVisits}件の訪問スケジュールに対して、既存の割り当てを無視して、ゼロから最適なスタッフを一括で割り当ててください。
 
 【重要】均等配置の定義
 「均等」とは、**曜日とルートのパターン**で各スタッフが偏りなく担当することを意味します。
@@ -904,15 +924,16 @@ function buildBatchAssignmentPrompt(visitGroups, lastMonthStats) {
 2. **曜日×ルートのパターンで均等配置**: 各スタッフが様々な曜日とルートを担当できるようにする
 3. **同じ日の同じルートは同じスタッフ**: 1日の中では同じルートは同じスタッフが担当
 
-【規定の目標比率】
+【規定の目標比率と件数】
 `;
 
-  // 目標比率
+  // 目標比率と計算された件数
   if (CONFIG.STAFF_ASSIGNMENT_RATIO && Object.keys(CONFIG.STAFF_ASSIGNMENT_RATIO).length > 0) {
     for (const staffId in CONFIG.STAFF_ASSIGNMENT_RATIO) {
       const ratio = CONFIG.STAFF_ASSIGNMENT_RATIO[staffId];
       const percentage = (ratio * 100).toFixed(1);
-      prompt += `- ${staffId}: ${percentage}%\n`;
+      const targetCount = targetCounts[staffId] || 0;
+      prompt += `- ${staffId}: ${percentage}% → 目標 ${targetCount}件（全${totalVisits}件中）\n`;
     }
   } else {
     prompt += `（設定なし - 完全均等を目指す）\n`;
@@ -982,21 +1003,24 @@ function buildBatchAssignmentPrompt(visitGroups, lastMonthStats) {
 - 同じ日の同じルートは同じスタッフに割り当ててください
 
 【最優先事項（必ず守ること）】
-1. **目標比率を厳守**: 全130件中、STF-001≈13件(10%), STF-003≈52件(40%), STF-004≈65件(50%)
+1. **目標比率を厳守**: 全${totalVisits}件を以下の比率で割り当てること
+   ${Object.keys(targetCounts).map(staffId =>
+     `- ${staffId}: 目標${targetCounts[staffId]}件（${(CONFIG.STAFF_ASSIGNMENT_RATIO[staffId] * 100).toFixed(1)}%）`
+   ).join('\n   ')}
    - これは最優先の制約であり、他の全ての条件より優先されます
    - 先月の実績や過去のパターンは一切無視してください
 2. **曜日×ルートで均等配置**: 各スタッフが様々な曜日・ルートを担当
 3. **特定パターンへの偏り禁止**: 特定のスタッフが特定の曜日・ルートに集中しない
 
-【厳守すべき件数制限】
-- STF-001: 最大20件まで（目標13件+余裕7件）
-- STF-003: 40～60件の範囲内（目標52件±8件）
-- STF-004: 最低50件以上（目標65件）
+【厳守すべき件数制限（±15%の許容範囲）】
+${Object.keys(targetCounts).map(staffId =>
+  `- ${staffId}: ${minCounts[staffId]}～${maxCounts[staffId]}件の範囲内（目標${targetCounts[staffId]}件）`
+).join('\n')}
 
 【禁止事項（これらに該当する割り当ては絶対に不可）】
-- STF-001が21件以上担当すること
-- STF-003が40件未満または60件超を担当すること
-- STF-004が49件以下しか担当しないこと
+${Object.keys(targetCounts).map(staffId =>
+  `- ${staffId}が${maxCounts[staffId] + 1}件以上、または${minCounts[staffId] - 1}件以下しか担当しないこと`
+).join('\n')}
 - 特定のスタッフが特定の曜日に集中すること`;
 
   return prompt;
