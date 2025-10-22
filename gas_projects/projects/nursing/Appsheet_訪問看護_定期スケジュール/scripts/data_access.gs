@@ -239,7 +239,7 @@ function createSchedulesInAppSheet(masterData, dates, creatorId, visitorMap) {
         companion_names: masterData.companion_names,
         route_category: masterData.route_category,
         status: PlanStatus.PROCESSING,
-        lock: false,
+        lock_key: false,
         created_at: now,
         created_by: creatorId,
         updated_at: now,
