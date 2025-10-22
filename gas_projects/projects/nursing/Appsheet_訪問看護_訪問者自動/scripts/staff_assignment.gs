@@ -201,21 +201,18 @@ function assignStaffForNextMonth() {
       logger.info(`[先月統計] スタッフ別: ${JSON.stringify(lastMonthStats.staffVisits)}`);
     }
 
-    // ★修正：翌月の未割り当てスケジュールから「看護」のみを抽出
+    // ★修正：翌月の全スケジュールから「看護」のみを抽出（既割り当ても含む）
 
-    const unassignedVisits = scheduleData.rows.map((row, index) => ({ row, index }))
+    const allVisits = scheduleData.rows.map((row, index) => ({ row, index }))
 
       .filter(item => {
 
         const visitDate = new Date(item.row[scheduleCols.VISIT_DATE]);
 
-        const visitor = item.row[scheduleCols.VISITOR_NAME];
-
         const jobType = item.row[scheduleCols.JOB_TYPE];
 
-        return !visitor &&
-
-               jobType === '看護' && // 「看護」のみを対象
+        // 未割り当て条件を削除し、全スケジュールを対象に
+        return jobType === '看護' && // 「看護」のみを対象
 
                visitDate.getFullYear() === nextMonth.getFullYear() &&
 
@@ -223,11 +220,11 @@ function assignStaffForNextMonth() {
 
       });
 
-    logger.info(`翌月の未割り当てスケジュール（看護）: ${unassignedVisits.length}件`);
+    logger.info(`翌月の全スケジュール（看護）: ${allVisits.length}件（Vertex AIで全体最適化）`);
 
-    if (unassignedVisits.length === 0) {
+    if (allVisits.length === 0) {
 
-      logger.info('翌月の未割り当てスケジュール（看護）はありませんでした。');
+      logger.info('翌月のスケジュール（看護）はありませんでした。');
 
       logger.saveToSpreadsheet(status);
 
@@ -247,7 +244,7 @@ function assignStaffForNextMonth() {
 
     if(CONFIG.USE_RATIO_ASSIGNMENT) {
 
-        const totalVisits = unassignedVisits.length;
+        const totalVisits = allVisits.length;
 
         for(const staffId in CONFIG.STAFF_ASSIGNMENT_RATIO){
 
@@ -271,7 +268,7 @@ function assignStaffForNextMonth() {
 
     }
 
-    const visitsByDayAndRoute = groupVisitsByDayAndRoute(unassignedVisits, scheduleCols);
+    const visitsByDayAndRoute = groupVisitsByDayAndRoute(allVisits, scheduleCols);
 
     const dailyRouteAssignments = {};
 
@@ -887,21 +884,26 @@ function buildBatchAssignmentPrompt(visitGroups, lastMonthStats) {
   let prompt = `あなたは訪問看護のスタッフ配置を最適化するAIアシスタントです。
 
 【目的】
-${visitGroups.length}件の訪問スケジュールに対して、最適なスタッフを一括で割り当ててください。
+翌月の全${visitGroups.length}件の訪問スケジュールに対して、既存の割り当てを無視して、ゼロから最適なスタッフを一括で割り当ててください。
 
 【重要】均等配置の定義
 「均等」とは、**曜日とルートのパターン**で各スタッフが偏りなく担当することを意味します。
 
-例：
-- 月曜日のRoute-A → STF-001, STF-003, STF-004が週ごとに交代
-- 火曜日のRoute-B → STF-001, STF-003, STF-004が週ごとに交代
-- 各スタッフが特定の曜日・ルートに偏らないようにバランス配置
+具体例：
+- 月曜日のRoute-A（4週分）→ 週1: STF-003, 週2: STF-004, 週3: STF-003, 週4: STF-004
+- 火曜日のRoute-B（4週分）→ 週1: STF-001, 週2: STF-003, 週3: STF-004, 週4: STF-001
+- 水曜日のRoute-C（4週分）→ 週1: STF-004, 週2: STF-003, 週3: STF-001, 週4: STF-003
+
+このように、各スタッフが特定の曜日・ルートに偏らず、様々なパターンを担当することで：
+- スタッフのスキル均等化
+- 利用者との関係性の分散
+- 業務負担の公平化
 
 【割り当て基準（優先順位順）】
 1. **曜日×ルートのパターンで均等配置**: 各スタッフが様々な曜日とルートを担当できるようにする
-2. **規定の目標比率に概ね近づける**: 全体の割り当て件数が目標比率に近づくようにする（厳密でなくてOK）
+2. **規定の目標比率に概ね従う**: 全体の割り当て件数が目標比率に近づくようにする（多少のズレはOK）
 3. **同じ日の同じルートは同じスタッフ**: 1日の中では同じルートは同じスタッフが担当
-4. **利用者との継続性**: 可能であれば先月と同じスタッフを優先（ただし均等性を優先）
+4. **先月からの極端な変更は避ける**: 可能であれば先月と似たパターンも考慮（ただし均等性を優先）
 
 【規定の目標比率】
 `;
