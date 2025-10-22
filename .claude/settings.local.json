@@ -75,7 +75,16 @@
       "Bash(copy script_properties_manager.gs \"..\\..\\Appsheet_利用者_情報統合\\scripts\\script_properties_manager.gs\")",
       "WebFetch(domain:help.appsheet.com)",
       "WebFetch(domain:support.google.com)",
-      "WebFetch(domain:community.appsheet.com)"
+      "WebFetch(domain:community.appsheet.com)",
+      "Bash(chcp 65001)",
+      "Bash(PYTHONIOENCODING=utf-8 python:*)",
+      "Bash(for:*)",
+      "Bash(do cp common_modules/logger.gs \"$dir/logger.gs\")",
+      "Bash(del \"C:\\tools\\python\\code\\all-gas\\common_modules\\rate_limiter.gs\")",
+      "Bash(if exist \"C:\\tools\\python\\code\\all-gas\\common_modules\\rate_limiter.gs\" echo \"ファイルが存在します\")",
+      "Bash(del \"C:\\tools\\python\\code\\all-gas\\gas_projects\\projects\\nursing\\Appsheet_訪問看護_定期スケジュール\\scripts\\コード.gs\")",
+      "Bash(git checkout:*)",
+      "Bash(move \"コード.gs\" \"staff_assignment.gs\")"
     ],
     "deny": [],
     "ask": []

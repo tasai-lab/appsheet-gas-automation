@@ -10,7 +10,9 @@ AppSheetまたは直接実行から、Google Chatのスレッドにメッセー�
 
 - ✅ **スレッド返信**: 既存スレッドに返信投稿
 - ✅ **スペース投稿**: スペースに新規スレッドを作成して投稿
+- ✅ **メッセージ更新**: 既存メッセージのテキストを更新 ⭐NEW
 - ✅ **ユーザーなりすまし**: 指定されたユーザーとして投稿
+- ✅ **マークダウン自動変換**: 標準マークダウンをGoogle Chat形式に自動変換
 - ✅ **メッセージ整形**: HTMLの`<br>`タグを改行に自動変換
 - ✅ **エラーハンドリング**: 詳細なエラーメッセージ
 - ✅ **JSON形式のレスポンス**: 投稿したメッセージIDを返却
@@ -40,6 +42,41 @@ spaces/AAAA
 ```
 
 スペースIDのみを指定すると、新しいスレッドを作成して投稿します。
+
+## マークダウン自動変換 ⭐NEW
+
+標準マークダウン形式で記述されたメッセージを、Google Chat形式に自動変換します。
+
+### 変換ルール
+
+| 標準マークダウン | Google Chat形式 | 説明 |
+|---------------|----------------|------|
+| `**太字**` | `*太字*` | 太字 |
+| `*斜体*` | `_斜体_` | 斜体 |
+| `~~打ち消し~~` | `~打ち消し~` | 打ち消し線 |
+| `[テキスト](URL)` | `<URL\|テキスト>` | リンク |
+| `` `コード` `` | `` `コード` `` | インラインコード（変換なし） |
+| ` ```コード``` ` | ` ```コード``` ` | コードブロック（変換なし） |
+
+### 使用例
+
+**入力（標準マークダウン）:**
+```
+これは**重要**な*お知らせ*です。
+詳細は[こちら](https://example.com)を確認してください。
+```
+
+**出力（Google Chat形式）:**
+```
+これは*重要*な_お知らせ_です。
+詳細は<https://example.com|こちら>を確認してください。
+```
+
+### 注意事項
+
+- コードブロック内およびインラインコード内のマークダウン記法は変換されません
+- 変換は自動的に行われるため、特別な設定は不要です
+- 既にGoogle Chat形式で記述されている場合も安全に処理されます
 
 ## 使用方法
 
@@ -92,6 +129,17 @@ const result = postChatMessage(
   "新しいスレッドです",        // messageText
   "user@example.com"          // userEmail
 );
+```
+
+**既存メッセージを更新:** ⭐NEW
+```javascript
+const result = updateChatMessage(
+  "spaces/AAAA/messages/CCCC",  // messageId（更新対象）
+  "更新されたメッセージです",    // newMessageText
+  "user@example.com"           // userEmail（元の投稿者と同じ）
+);
+
+console.log(result.messageId);  // 更新されたメッセージのID
 ```
 
 ## パラメータ
@@ -152,7 +200,8 @@ const result = postChatMessage(
 
 - **Google Chat API**
   - スコープ: `https://www.googleapis.com/auth/chat.messages`
-  - 高度なサービス: `Chat` (API v1)
+  - スコープ: `https://www.googleapis.com/auth/chat.messages.readonly`
+  - **注:** v1.1以降、REST APIを直接使用（高度なサービス不要）
 
 ### Script Properties設定
 
@@ -190,7 +239,7 @@ SERVICE_ACCOUNT_JSON = '{
 ### 3. GASプロジェクト設定
 
 1. OAuth2ライブラリを追加
-2. Chat API (高度なサービス) を有効化
+2. GCPでGoogle Chat APIを有効化
 3. Script PropertiesにSERVICE_ACCOUNT_JSONを設定
 
 ### 4. デプロイ
@@ -201,6 +250,8 @@ clasp push --force
 ```
 
 ## テスト関数
+
+### メッセージ投稿テスト
 
 ```javascript
 // テスト実行
@@ -213,6 +264,45 @@ function testPostChatMessage() {
   Logger.log(JSON.stringify(result, null, 2));
 }
 ```
+
+### メッセージ更新テスト ⭐NEW
+
+```javascript
+// メッセージ更新のテスト実行
+function testUpdateChatMessage() {
+  const messageId = "spaces/AAAA/messages/CCCC";  // 更新対象のメッセージID
+  const newMessageText = "メッセージを更新しました: " + new Date().toLocaleString('ja-JP');
+  const userEmail = "user@example.com";  // 元の投稿者と同じメールアドレス
+
+  const result = updateChatMessage(messageId, newMessageText, userEmail);
+  Logger.log(JSON.stringify(result, null, 2));
+}
+```
+
+GASエディタから`testUpdateChatMessage()`を実行すると、指定したメッセージが更新されます。
+
+**注意事項:**
+- メッセージIDは `spaces/xxx/messages/xxx` の形式である必要があります
+- 更新者のメールアドレスは元の投稿者と同じである必要があります
+- マークダウン自動変換が適用されます
+
+### マークダウン変換テスト
+
+```javascript
+// マークダウン変換のテスト実行
+function testMarkdownConversion() {
+  const result = testMarkdownConversion();
+  Logger.log(`テスト結果: ${result.passCount}件成功, ${result.failCount}件失敗`);
+}
+```
+
+GASエディタから`testMarkdownConversion()`を実行すると、以下のテストケースが自動的に検証されます：
+- 太字変換
+- 斜体変換
+- 打ち消し線変換
+- リンク変換
+- 複合変換
+- コードブロック保護
 
 ## エラーハンドリング
 
@@ -232,7 +322,7 @@ function testPostChatMessage() {
 
 4. **スレッド情報を取得できない**
    - エラー: `スレッド情報を取得できませんでした`
-   - 対処: メッセージIDが正しいか確認、Chat API (高度なサービス) が有効か確認
+   - 対処: メッセージIDが正しいか確認、GCPでChat APIが有効か確認
 
 ## 制限事項
 
@@ -247,6 +337,29 @@ function testPostChatMessage() {
 - ドメイン全体委任のスコープは最小限に
 
 ## バージョン履歴
+
+### v1.3.0 (2025-10-22)
+- ✅ **メッセージ更新機能追加**: `updateChatMessage()` 関数を実装
+  - 既存メッセージのテキストを更新可能
+  - Chat API の PATCH メソッドを使用
+  - マークダウン自動変換にも対応
+- ✅ **テスト関数追加**: `testUpdateChatMessage()` でメッセージ更新のテストが可能
+- ✅ **ドキュメント更新**: README にメッセージ更新の使用例を追加
+
+### v1.2.0 (2025-10-22)
+- ✅ **マークダウン自動変換**: 標準マークダウンをGoogle Chat形式に自動変換
+  - `**太字**` → `*太字*`
+  - `*斜体*` → `_斜体_`
+  - `~~打ち消し~~` → `~打ち消し~`
+  - `[テキスト](URL)` → `<URL|テキスト>`
+- ✅ **コード保護**: コードブロック内のマークダウンは変換されない
+- ✅ **テスト関数追加**: `testMarkdownConversion()`で変換テストが可能
+
+### v1.1.0 (2025-10-22)
+- ✅ **REST API移行**: Chat高度なサービスから REST API へ完全移行
+- ✅ **デバッグログ追加**: 全関数に詳細なデバッグログを追加
+- ✅ **認証改善**: `ScriptApp.getOAuthToken()`を使用
+- ✅ **エラー解決**: "Google Chat app not found" エラーを修正
 
 ### v1.0.0 (2025-10-21)
 - 初回リリース

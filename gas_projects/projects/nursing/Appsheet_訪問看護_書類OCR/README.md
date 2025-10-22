@@ -2,14 +2,21 @@
 
 **Script ID:** 1a5w4i6tO8CviYE2obxd0aCiU5BtwoNc2Ajrscedi5ceoQWa7DdlZGbP1
 **Created:** 2025-07-17T07:50:20.523Z
-**Last Modified:** 2025-10-20T12:00:00.000Z
-**Version:** v2.1.0
+**Last Modified:** 2025-10-22T12:00:00.000Z
+**Version:** v2.2.0
 
 ## 概要
 
 訪問看護書類（医療保険証、介護保険証、公費受給者証、口座情報、指示書、負担割合証等）を、**Vertex AI Gemini 2.5-Flash**を使用して**1回のAPI呼び出し**でOCR + 構造化データ抽出を行い、各種テーブルに自動登録するGoogle Apps Scriptプロジェクトです。
 
-### ⚡ 最新の重要変更（2025-10-20）
+### ⚡ 最新の重要変更（2025-10-22）
+
+**全書類タイプにOCRテキスト抽出を適用**
+- 変更: 提供票以外の全ての書類タイプでもOCRテキスト（要点のマークダウン形式）をcontextに含めるように修正
+- 影響: 全ての書類仕分けハンドラーで`context.ocrText`が利用可能に
+- デプロイ: v2.2 (Deployment @43)
+
+### 以前の重要変更（2025-10-20）
 
 **Google AI Studio API完全廃止 → Vertex AI専用化**
 - 理由: Google AI Studio API無料枠超過により90%エラー発生

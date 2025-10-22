@@ -28,12 +28,37 @@
    - 外部API呼び出し（Gemini APIなど）
    - データ変換と保存
 
+## 主要機能
+
+### 1. 通話要約生成（音声解析）
+- 音声ファイルから要約、文字起こし、アクション抽出を実行
+- Vertex AI (gemini-2.5-flash) を使用
+- 音声入力モード
+
+### 2. 質疑応答（テキストベース）
+- 利用者情報と参照データを基に質問に回答
+- Vertex AI (gemini-2.5-flash) を使用
+- テキスト入力モード
+- 個別引数での直接実行が可能
+
 ## 関数一覧
 
+### 通話要約関連
 - `updateCallLog` (core_appsheet)
 - `addCallActions` (core_appsheet)
 - `callAppSheetAPI` (core_appsheet)
 - `recordError` (core_appsheet)
+- `processCallSummary` (call_summary_processor)
+- `processCallSummaryDirect` (call_summary_processor)
+
+### 質疑応答関連
+- `answerQueryDirect` (query_service) - **新機能**
+- `answerQueryWithVertexAI` (query_service)
+- `generateQueryPrompt` (query_service)
+- `callVertexAIForTextQuery` (query_service)
+- `extractTextFromVertexAIResponse` (query_service)
+
+### 設定・ユーティリティ
 - `getConfig` (core_config)
 - `setupScriptProperties` (core_config)
 - `showCurrentConfig` (core_config)

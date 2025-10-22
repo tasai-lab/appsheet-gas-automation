@@ -1,13 +1,38 @@
 /**
- * Vertex AI音声解析モジュール（最適化版 v2.0）
- * - 1回のAPI呼び出しで要約+全文+アクション+依頼情報を取得
+ * Vertex AI音声解析・テキスト生成モジュール（統合版 v3.0）
+ * - 音声解析: 1回のAPI呼び出しで要約+全文+アクション+依頼情報を取得
  * - base64 inlineData使用でCloud Storageのオーバーヘッド削減
  * - コスト削減: 約28%（API呼び出し2回→1回、Storage料金ゼロ）
- * 
+ * - vertex_ai_utils.gsから統合
+ *
  * @author Fractal Group
- * @version 2.0.0
- * @date 2025-10-17
+ * @version 3.0.0
+ * @date 2025-10-22
  */
+
+/**
+ * Gemini モデル定義（Vertex AI用）
+ * vertex_ai_utils.gsから統合
+ */
+const VERTEX_GEMINI_MODELS = {
+  // Flash: 高速・コスト効率重視（通常タスク向け）
+  FLASH: 'gemini-2.5-flash',
+
+  // Pro: 高度な推論が必要なタスク向け
+  PRO: 'gemini-2.5-pro',
+
+  // Flash Lite: 最軽量・最速（シンプルなタスク向け）
+  FLASH_LITE: 'gemini-2.5-flash-lite'
+};
+
+/**
+ * タスクタイプ別の推奨モデル
+ */
+const VERTEX_TASK_TYPE_MODELS = {
+  simple: VERTEX_GEMINI_MODELS.FLASH_LITE,    // シンプルなタスク
+  moderate: VERTEX_GEMINI_MODELS.FLASH,        // 中程度のタスク
+  complex: VERTEX_GEMINI_MODELS.PRO            // 複雑なタスク
+};
 
 /**
  * Vertex AIで音声ファイルを解析（統合版）

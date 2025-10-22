@@ -109,7 +109,8 @@ function processRequest(params) {
         staffId: staffId,
         driveFileId: fileId,
         clientName: clientName,
-        staffName: staffName
+        staffName: staffName,
+        ocrText: resultData.ocr_text  // 全文OCRテキストを渡す（全書類タイプ共通）
       };
 
       recordId = processStructuredData(documentType, resultData.structured_data, context);

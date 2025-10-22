@@ -440,6 +440,139 @@ function testProcessClientQAWithAppSheet() {
 
 
 /**
+ * テスト用関数: saveResultToAppSheet（結果保存）
+ * processClientQAの結果をAppSheetに保存するテスト
+ * ⚠️ 注意: 実際のAppSheet APIが呼ばれます！
+ *
+ * @return {Object} 処理結果
+ */
+function testSaveResultToAppSheet() {
+  Logger.log('='.repeat(60));
+  Logger.log('🧪 saveResultToAppSheet() テスト');
+  Logger.log('⚠️  注意: 実際のAppSheet APIが呼ばれます！');
+  Logger.log('='.repeat(60));
+
+  const documentText = `
+# 利用者基本情報
+
+氏名: 山田次郎
+年齢: 75歳
+住所: 埼玉県さいたま市
+要介護度: 要介護2
+
+# 現在の状態
+
+・配偶者と二人暮らし
+・週2回の訪問介護利用中
+・膝の痛みがある
+`;
+
+  const promptText = "膝の痛みを和らげるための運動指導の方法は？";
+  const testAnalysisId = 'TEST-SAVE-' + new Date().getTime();
+
+  Logger.log(`Analysis ID: ${testAnalysisId}`);
+  Logger.log('');
+
+  try {
+    // ステップ1: 質疑応答処理（AppSheet更新なし）
+    Logger.log('【ステップ1】質疑応答処理');
+    const result = processClientQA(documentText, promptText);
+
+    Logger.log('✅ 質疑応答処理成功');
+    Logger.log('回答の長さ: ' + result.answer.length + '文字');
+    Logger.log('要約の長さ: ' + result.summary.length + '文字');
+    Logger.log('');
+
+    // ステップ2: AppSheetに保存
+    Logger.log('【ステップ2】AppSheetに保存');
+    saveResultToAppSheet(result, testAnalysisId, 'Edit');
+
+    Logger.log('✅ AppSheet保存成功');
+    Logger.log('');
+    Logger.log(`Analysis ID: ${testAnalysisId} で保存されました`);
+    Logger.log('AppSheetで確認してください');
+
+    Logger.log('='.repeat(60));
+    return {
+      success: true,
+      analysisId: testAnalysisId,
+      result: result
+    };
+
+  } catch (error) {
+    Logger.log('❌ テストエラー: ' + error.toString());
+    throw error;
+  }
+}
+
+
+/**
+ * テスト用関数: processClientQAAndSave（処理と保存を一度に）
+ * 質疑応答処理とAppSheet保存を一度に実行するテスト
+ * ⚠️ 注意: 実際のAppSheet APIが呼ばれます！
+ *
+ * @return {Object} 処理結果
+ */
+function testProcessClientQAAndSave() {
+  Logger.log('='.repeat(60));
+  Logger.log('🧪 processClientQAAndSave() テスト');
+  Logger.log('⚠️  注意: 実際のAppSheet APIが呼ばれます！');
+  Logger.log('='.repeat(60));
+
+  const documentText = `
+# 利用者基本情報
+
+氏名: 鈴木三郎
+年齢: 80歳
+住所: 千葉県千葉市
+要介護度: 要介護3
+
+# 現在の状態
+
+・独居
+・週3回の訪問看護利用中
+・認知症あり（軽度）
+・最近、食事量が減少
+`;
+
+  const promptText = "食事量が減少している利用者への対応方法は？";
+  const testAnalysisId = 'TEST-ANDSAVE-' + new Date().getTime();
+
+  Logger.log(`Analysis ID: ${testAnalysisId}`);
+  Logger.log('質問: ' + promptText);
+  Logger.log('');
+
+  try {
+    // 処理と保存を一度に実行
+    const result = processClientQAAndSave(
+      documentText,
+      promptText,
+      testAnalysisId,
+      'Edit'
+    );
+
+    Logger.log('✅ 処理と保存が完了');
+    Logger.log('');
+    Logger.log('📝 回答（抜粋）:');
+    Logger.log(result.answer.substring(0, 200) + '...');
+    Logger.log('');
+    Logger.log('📋 要約:');
+    Logger.log(result.summary);
+    Logger.log('');
+    Logger.log(`Analysis ID: ${result.analysisId}`);
+    Logger.log('AppSheetで確認してください');
+
+    Logger.log('='.repeat(60));
+    return result;
+
+  } catch (error) {
+    Logger.log('❌ テストエラー: ' + error.toString());
+    throw error;
+  }
+}
+
+
+/**
  * テスト用関数: processClientQA（エラーハンドリング）
  * 必須パラメータ不足のエラー処理をテスト
  *

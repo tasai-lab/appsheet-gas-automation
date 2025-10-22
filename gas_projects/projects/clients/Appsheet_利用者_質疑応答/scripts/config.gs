@@ -18,7 +18,7 @@ const CONFIG = {
     // API_KEY: '',  // ★削除済み - Vertex AIはOAuth2認証を使用
     // API_ENDPOINT: '',  // ★削除済み - Vertex AI専用エンドポイントを使用
 
-    MODEL_NAME: 'gemini-2.5-flash',
+    MODEL_NAME: 'gemini-2.5-pro',
 
     GCP_PROJECT_ID: 'macro-shadow-458705-v8',
 

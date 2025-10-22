@@ -3,13 +3,6 @@
   "exceptionLogging": "STACKDRIVER",
   "runtimeVersion": "V8",
   "dependencies": {
-    "enabledAdvancedServices": [
-      {
-        "userSymbol": "Chat",
-        "serviceId": "chat",
-        "version": "v1"
-      }
-    ],
     "libraries": [
       {
         "userSymbol": "OAuth2",
@@ -20,6 +13,7 @@
   },
   "oauthScopes": [
     "https://www.googleapis.com/auth/chat.messages",
+    "https://www.googleapis.com/auth/chat.messages.readonly",
     "https://www.googleapis.com/auth/script.external_request",
     "https://www.googleapis.com/auth/script.scriptapp"
   ]

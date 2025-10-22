@@ -4,9 +4,9 @@
 
 **Created:** 2025-07-20T13:35:28.251Z
 
-**Modified:** 2025-10-20
+**Modified:** 2025-10-22
 
-**Current Version:** v2.0.0
+**Current Version:** v2.3.0
 
 **Owners:** Fractal Group
 
@@ -16,6 +16,31 @@
 思考モード（Thinking Mode）を活用し、複雑な質問にも深い推論で答えます。
 
 ## 主な機能
+
+### v2.3.0の改善（2025-10-22）
+
+- ✅ **エラー時コスト記録**: API呼び出し失敗時でもusageMetadataが存在すれば必ずコストを記録
+- ✅ **重複回避機能廃止**: より柔軟な実行を実現
+- ✅ **エラーハンドリング強化**: 失敗時にAppSheet APIでステータスを"エラー"に更新
+- ✅ **コスト記録の一元化**: usageMetadataの記録をgemini_client.gs内で完結
+
+### v2.2.0の改善（2025-10-22）
+
+- ✅ **OAuth2スコープ追加**: cloud-platformスコープ追加でVertex AI認証エラー修正
+
+### v2.1.0の改善（2025-10-22）
+
+- ✅ **ファイル構造の最適化**: 保守性向上のため11ファイル→6ファイルに整理
+  - 重複防止・デバッグ関数を統合
+  - 未使用ファイルを削除（utils_*、script_properties_manager、コード.gs）
+  - 役割が明確なモジュール構成に改善
+
+### v2.0.0の改善（2025-10-22）
+
+- ✅ **Vertex AI完全移行**: Google AI Studio APIからVertex AIに完全移行
+  - OAuth2認証（ScriptApp.getOAuthToken()）で安全性向上
+  - APIキー管理不要に
+  - エンドポイント形式を統一
 
 ### AI駆動の質疑応答システム
 - ✅ **Vertex AI Gemini 2.5 Flash/Pro**: OAuth2認証による安全なAPI呼び出し
@@ -43,24 +68,26 @@
 
 ## Structure
 
-### スクリプトファイル構成
+### スクリプトファイル構成（最適化済み v2.1.0）
 
 #### エントリーポイント
 - `main.gs`: Webhookリクエスト受信・処理フロー制御
 
-#### コアモジュール
-- `gemini_client.gs`: Vertex AI Gemini APIクライアント（Flash/Pro対応）
+#### コアモジュール（4ファイル）
+- `gemini_client.gs`: Vertex AI Gemini APIクライアント（Flash/Pro対応、OAuth2認証）
 - `appsheet_client.gs`: AppSheet API連携（Call_Queriesテーブル更新）
 - `duplication_prevention.gs`: 重複実行防止
 - `logger.gs`: 実行ログ記録
 
-#### ユーティリティ
-- `test_functions.gs`: テスト関数
-- `debug_logger.gs`: デバッグログ出力
+#### テスト・デバッグ（1ファイル）
+- `test_functions.gs`: テスト関数・デバッグ関数（debug_logger.gsから統合）
 
-#### レガシー（非推奨）
-- `コード.gs`: 旧バージョンコード（後方互換性のため保持）
-- `utils_*.gs`: 旧ユーティリティモジュール
+**削除されたファイル（v2.1.0で統合・整理）:**
+- ~~`debug_logger.gs`~~ → `test_functions.gs`に統合
+- ~~`utils_duplicationPrevention.gs`~~ → 未使用のため削除
+- ~~`utils_vertex_ai.gs`~~ → 未使用のため削除
+- ~~`script_properties_manager.gs`~~ → 未使用のため削除
+- ~~`コード.gs`~~ → レガシーコードのため削除
 
 ### その他
 - `appsscript.json`: プロジェクトマニフェスト
@@ -75,7 +102,7 @@
 
 ```bash
 # 統合デプロイスクリプトを使用（推奨）
-python deploy_unified.py Appsheet_通話_質疑応答 "v2.x: 説明"
+python deploy_unified.py Appsheet_通話_質疑応答 "v2.1: ファイル構造最適化"
 ```
 
 詳細は [DEPLOY_GUIDE.md](../../DEPLOY_GUIDE.md) を参照してください。

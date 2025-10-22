@@ -79,23 +79,8 @@ function processRequest(queryId, promptText, callSummary, callTranscript, call_i
       modelKeyword: modelKeyword
     };
 
-    // 重複実行防止
-    const dupPrevention = createDuplicationPrevention(CONFIG.SCRIPT_NAME);
-    const result = dupPrevention.executeWithRetry(recordId, (id) => {
-      return processQuery(id, params, logger);
-    }, logger);
-    
-    // 重複チェック結果
-    if (result.isDuplicate) {
-      status = '重複';
-      logger.warning('重複実行を検出しました');
-      return ContentService.createTextOutput('DUPLICATE').setMimeType(ContentService.MimeType.TEXT);
-    }
-    
-    if (!result.success) {
-      status = 'エラー';
-      throw new Error(result.error);
-    }
+    // クエリ処理を実行
+    processQuery(recordId, params, logger);
     
     logger.success('処理完了');
     return ContentService.createTextOutput('OK').setMimeType(ContentService.MimeType.TEXT);
@@ -153,49 +138,51 @@ function testProcessRequest() {
  */
 function processQuery(queryId, params, logger) {
   logger.info(`クエリ処理開始: ${queryId}`);
-  
+
   const { promptText, callSummary, callTranscript, call_info, modelKeyword } = params;
-  
+
   // モデル選択
   const usePro = modelKeyword === 'しっかり' || CONFIG.USE_PRO_MODEL;
   logger.info(`使用モデル (Vertex AI): ${usePro ? 'gemini-2.5-pro' : 'gemini-2.5-flash'} + 思考モード`);
-  
+
   // Vertex AIクライアント作成
-  const gemini = usePro ? 
+  const gemini = usePro ?
     createGeminiProClient({ temperature: 0.3, maxOutputTokens: 20000, enableThinking: true, thinkingBudget: -1 }) :
     createGeminiFlashClient({ temperature: 0.3, maxOutputTokens: 20000, enableThinking: true, thinkingBudget: -1 });
-  
+
   // プロンプト構築
   const prompt = buildPrompt(promptText, callSummary, callTranscript, call_info);
   logger.info(`プロンプト構築完了（${prompt.length}文字）`);
-  
-  // Gemini APIで回答生成
-  const response = gemini.generateText(prompt, logger);
-  const answer = response.text;
 
-  // API使用量情報をloggerに記録
-  if (response.usageMetadata) {
-    logger.setUsageMetadata(response.usageMetadata);
+  try {
+    // Gemini APIで回答生成（usageMetadataはgemini_client内でloggerに記録済み）
+    const response = gemini.generateText(prompt, logger);
+    const answer = response.text;
+
+    if (!answer) {
+      throw new Error('AIからの応答が空です');
+    }
+
+    logger.info(`回答生成成功（${answer.length}文字）`);
+
+    // AppSheetに書き戻し
+    const appsheet = createAppSheetClient(CONFIG.APP_ID, CONFIG.ACCESS_KEY);
+    appsheet.updateSuccessStatus(
+      CONFIG.TABLE_NAME,
+      queryId,
+      CONFIG.KEY_COLUMN,
+      { response_text: answer },
+      'status',
+      logger
+    );
+
+    return answer;
+
+  } catch (error) {
+    // エラー時でもusageMetadataはgemini_client内でloggerに記録済み
+    // AppSheetエラーステータス更新はdoPost関数のcatchブロックで行う
+    throw error;
   }
-
-  if (!answer) {
-    throw new Error('AIからの応答が空です');
-  }
-
-  logger.info(`回答生成成功（${answer.length}文字）`);
-  
-  // AppSheetに書き戻し
-  const appsheet = createAppSheetClient(CONFIG.APP_ID, CONFIG.ACCESS_KEY);
-  appsheet.updateSuccessStatus(
-    CONFIG.TABLE_NAME,
-    queryId,
-    CONFIG.KEY_COLUMN,
-    { response_text: answer },
-    'status',
-    logger
-  );
-  
-  return answer;
 }
 
 /**

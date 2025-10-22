@@ -191,6 +191,15 @@ class AppSheetClient {
         action: payload.Action,
         payload: logPayload
       });
+      // デバッグ用：Rowsの完全な内容をログに出力（最初の行のみ）
+      if (payload.Rows && payload.Rows.length > 0) {
+        const firstRow = payload.Rows[0];
+        const rowKeys = Object.keys(firstRow);
+        logger.info('送信行の詳細', {
+          keys: rowKeys.join(', '),
+          values: JSON.stringify(firstRow).substring(0, 300)
+        });
+      }
     }
 
     try {
@@ -211,11 +220,16 @@ class AppSheetClient {
       }
 
       const jsonResponse = JSON.parse(responseText);
-      
+
       if (logger) {
         logger.success('AppSheet API呼び出し成功');
+        // レスポンスの詳細をログに記録
+        logger.info('AppSheet APIレスポンス詳細', {
+          rows: jsonResponse.Rows ? jsonResponse.Rows.length : 0,
+          response: JSON.stringify(jsonResponse).substring(0, 500)
+        });
       }
-      
+
       return jsonResponse;
       
     } catch (error) {
