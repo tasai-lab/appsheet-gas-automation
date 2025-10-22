@@ -112,6 +112,7 @@ const MasterStatus = {
  */
 const PlanStatus = {
   UNCONFIRMED: '未確定',
+  PROCESSING: '処理中',
   CONFIRMED: '確定',
   CANCELLED: 'キャンセル'
 };
