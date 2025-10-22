@@ -58,8 +58,8 @@ function processCallSummary(params) {
   }
   
   // 処理モードの判定
-  let processingMode = 'summary_only'; // デフォルト: 要約のみ
-  
+  let processingMode = 'normal'; // デフォルト: 通常モード（要約+transcript、AppSheet更新あり）
+
   if (callType === '新規依頼' || callType === 'new_request') {
     processingMode = 'create_request';
     Logger.log(`[処理モード] 新規依頼作成モード`);
@@ -67,7 +67,7 @@ function processCallSummary(params) {
     processingMode = 'update_request';
     Logger.log(`[処理モード] 既存依頼更新モード (Request ID: ${requestId})`);
   } else {
-    Logger.log(`[処理モード] 通常要約モード（依頼情報なし）`);
+    Logger.log(`[処理モード] 通常モード（要約+transcript、依頼情報なし）`);
   }
 
   // file_pathからファイルIDとURLを取得
