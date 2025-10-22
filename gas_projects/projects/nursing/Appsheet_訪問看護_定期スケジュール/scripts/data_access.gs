@@ -225,6 +225,12 @@ function createSchedulesInAppSheet(masterData, dates, creatorId, visitorMap) {
       // 既存担当者がいればそれを使用、なければマスターの担当者を使用
       const assignedVisitor = visitorMap.get(visitorMapKey) || masterData.visitor_name || '';
 
+      // 時刻を日本時間で結合（日付 + 時刻）
+      const startTimeStr = formatTimeValue(masterData.start_time);
+      const endTimeStr = formatTimeValue(masterData.end_time);
+      const startDateTime = `${visitDateStr} ${startTimeStr}:00`;
+      const endDateTime = `${visitDateStr} ${endTimeStr}:00`;
+
       return {
         master_id: masterData.master_id,
         client_id: masterData.client_id,
@@ -232,8 +238,8 @@ function createSchedulesInAppSheet(masterData, dates, creatorId, visitorMap) {
         insurance_type: masterData.insurance_type,
         is_regular_visit: true,
         visit_date: visitDateStr,
-        start_time: masterData.start_time,
-        end_time: masterData.end_time,
+        start_time: startDateTime,
+        end_time: endDateTime,
         duration_minutes: masterData.service_duration_minutes,
         visitor_name: assignedVisitor,
         companion_names: masterData.companion_names,
