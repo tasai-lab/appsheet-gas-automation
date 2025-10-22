@@ -110,6 +110,63 @@ function getMasterDataById(masterId) {
 }
 
 /**
+ * 有効なスケジュールマスターを全件取得
+ *
+ * @returns {Array<Object>} 有効なマスターデータの配列（is_active = TRUE のもののみ）
+ *
+ * @example
+ * const activeMasters = getActiveScheduleMasters();
+ * console.log(`有効なマスター数: ${activeMasters.length}`);
+ */
+function getActiveScheduleMasters() {
+  const logger = createDebugLogger('DataAccess.getActiveScheduleMasters');
+  logger.checkpoint('取得開始');
+
+  try {
+    const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(MASTER_SHEET_NAME);
+    const data = sheet.getDataRange().getValues();
+    const headers = data.shift();
+
+    // 列インデックスマップを作成
+    const colIndex = {};
+    headers.forEach((header, index) => {
+      colIndex[header] = index;
+    });
+
+    logger.debug(`全マスター行数: ${data.length}`);
+
+    // is_active が TRUE のマスターのみをフィルタ
+    const activeMasters = [];
+    for (const row of data) {
+      const isActive = row[colIndex['is_active']];
+      const masterId = row[colIndex['master_id']];
+
+      // is_active が TRUE かつ master_id が存在する行のみ
+      if (isActive === true && masterId) {
+        const masterData = {};
+        headers.forEach((header, index) => {
+          masterData[header] = row[index];
+        });
+        activeMasters.push(masterData);
+      }
+    }
+
+    logger.success(`有効なマスター数: ${activeMasters.length}件`);
+    logger.checkpoint('取得完了');
+
+    if (isDebugMode()) {
+      logger.summary();
+    }
+
+    return activeMasters;
+
+  } catch (error) {
+    logger.error('有効マスター取得中にエラー', error);
+    throw error;
+  }
+}
+
+/**
  * スプレッドシートから既存の予定情報を読み込み
  * 重複チェック用キーと担当者割り当てマップを作成
  *

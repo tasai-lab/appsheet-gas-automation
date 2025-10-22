@@ -275,6 +275,192 @@ function filterDuplicateDates(potentialDates, masterData, masterId, existingKeys
 }
 
 // =============================================================================
+// バッチ処理（AppSheet Automation連携）
+// =============================================================================
+
+/**
+ * 翌月の日付範囲を計算
+ *
+ * @returns {{startDate: Date, endDate: Date, startDateStr: string, endDateStr: string}} 翌月の1日と末日
+ *
+ * @example
+ * const range = calculateNextMonthRange();
+ * // 現在が2025年10月の場合
+ * // => {
+ * //   startDate: Date(2025-11-01),
+ * //   endDate: Date(2025-11-30),
+ * //   startDateStr: '2025-11-01',
+ * //   endDateStr: '2025-11-30'
+ * // }
+ */
+function calculateNextMonthRange() {
+  const today = new Date();
+  const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+
+  // 翌月の1日
+  const startDate = new Date(nextMonth.getFullYear(), nextMonth.getMonth(), 1);
+
+  // 翌月の末日（翌々月の0日 = 翌月の末日）
+  const endDate = new Date(nextMonth.getFullYear(), nextMonth.getMonth() + 1, 0);
+
+  const startDateStr = Utilities.formatDate(startDate, TIMEZONE, 'yyyy-MM-dd');
+  const endDateStr = Utilities.formatDate(endDate, TIMEZONE, 'yyyy-MM-dd');
+
+  return { startDate, endDate, startDateStr, endDateStr };
+}
+
+/**
+ * 有効なマスターを翌月モードに更新（AppSheet Automation連携用）
+ *
+ * この関数は有効なマスターのステータスと日付範囲を更新するのみで、
+ * 実際の予定作成はAppSheetのAutomationがWebhookを呼び出して行います。
+ *
+ * 処理フロー:
+ * 1. is_active = TRUE のマスターを取得
+ * 2. 各マスターに対してAppSheet APIで更新:
+ *    - status = '処理中'
+ *    - apply_start_date = 翌月1日
+ *    - apply_end_date = 翌月末日
+ * 3. AppSheetのAutomationが更新を検知してWebhookを実行
+ * 4. WebhookがこのスクリプトのcreateScheduleFromMaster()を呼び出し
+ *
+ * @returns {Object} 実行結果
+ *   - totalMasters: 更新対象マスター数
+ *   - updatedMasters: 更新されたマスターのIDリスト
+ *   - nextMonthRange: 翌月の日付範囲
+ *
+ * @example
+ * // GASトリガーから毎月25日に実行
+ * const result = updateMastersForNextMonth();
+ * console.log(`${result.totalMasters}件のマスターを翌月モードに更新しました`);
+ */
+function updateMastersForNextMonth() {
+  const logger = createDebugLogger('BatchProcess.updateMastersForNextMonth');
+  logger.checkpoint('バッチ処理開始');
+
+  Logger.log('='.repeat(80));
+  Logger.log('📅 翌月スケジュール生成バッチ開始（マスター更新モード）');
+  Logger.log('='.repeat(80));
+
+  try {
+    // 翌月の日付範囲を計算
+    const { startDate, endDate, startDateStr, endDateStr } = calculateNextMonthRange();
+
+    Logger.log(`翌月範囲: ${startDateStr} 〜 ${endDateStr}`);
+    logger.checkpoint('日付範囲計算完了');
+
+    // 有効なマスターを取得
+    const activeMasters = getActiveScheduleMasters();
+    logger.checkpoint('有効マスター取得完了');
+
+    if (activeMasters.length === 0) {
+      Logger.log('⚠️ 有効なスケジュールマスターが見つかりませんでした。');
+      logger.summary();
+      return {
+        totalMasters: 0,
+        updatedMasters: [],
+        nextMonthRange: { startDateStr, endDateStr }
+      };
+    }
+
+    Logger.log(`更新対象マスター数: ${activeMasters.length}件`);
+    Logger.log('');
+
+    // AppSheet APIで一括更新
+    const rows = activeMasters.map(master => ({
+      master_id: master.master_id,
+      status: MasterStatus.PROCESSING,
+      apply_start_date: startDateStr,
+      apply_end_date: endDateStr
+    }));
+
+    logger.checkpoint('更新ペイロード構築完了');
+
+    if (isDebugMode()) {
+      dumpArray(rows, 'Update Rows', 3);
+    }
+
+    // AppSheet API呼び出し
+    const payload = {
+      Action: 'Edit',
+      Properties: {
+        Locale: LOCALE,
+        Timezone: 'Asia/Tokyo'
+      },
+      Rows: rows
+    };
+
+    const apiUrl = `${APPSHEET_API_BASE_URL}/${APP_ID}/tables/${MASTER_TABLE_NAME}/Action`;
+
+    const options = {
+      method: 'post',
+      contentType: 'application/json',
+      headers: {
+        'ApplicationAccessKey': ACCESS_KEY
+      },
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    };
+
+    logger.checkpoint('API呼び出し');
+    Logger.log('AppSheet APIを呼び出してマスターを更新中...');
+
+    const response = UrlFetchApp.fetch(apiUrl, options);
+    const responseCode = response.getResponseCode();
+    const responseText = response.getContentText();
+
+    logger.debug(`レスポンスコード: ${responseCode}`);
+
+    if (responseCode >= 400) {
+      logger.error(`AppSheet API エラー: ${responseText}`);
+      throw new Error(`AppSheet API Error: ${responseText}`);
+    }
+
+    logger.success('マスター更新成功');
+    logger.checkpoint('更新完了');
+
+    const updatedMasterIds = activeMasters.map(m => m.master_id);
+
+    // サマリー出力
+    Logger.log('');
+    Logger.log('='.repeat(80));
+    Logger.log('📊 バッチ処理完了サマリー');
+    Logger.log('='.repeat(80));
+    Logger.log(`翌月範囲: ${startDateStr} 〜 ${endDateStr}`);
+    Logger.log(`更新対象マスター数: ${activeMasters.length}件`);
+    Logger.log('');
+    Logger.log('更新されたマスター:');
+    updatedMasterIds.slice(0, 10).forEach((id, i) => {
+      Logger.log(`  ${i + 1}. ${id}`);
+    });
+    if (updatedMasterIds.length > 10) {
+      Logger.log(`  ... 他 ${updatedMasterIds.length - 10}件`);
+    }
+    Logger.log('');
+    Logger.log('✅ AppSheetのAutomationが起動して各マスターの予定を作成します');
+    Logger.log('='.repeat(80));
+
+    logger.summary();
+
+    return {
+      totalMasters: activeMasters.length,
+      updatedMasters: updatedMasterIds,
+      nextMonthRange: { startDateStr, endDateStr }
+    };
+
+  } catch (error) {
+    logger.error('バッチ処理中に致命的エラー', error);
+    Logger.log('');
+    Logger.log('='.repeat(80));
+    Logger.log('❌ バッチ処理失敗');
+    Logger.log(`エラー: ${error.message}`);
+    Logger.log('='.repeat(80));
+
+    throw error;
+  }
+}
+
+// =============================================================================
 // テスト関数
 // =============================================================================
 
@@ -330,6 +516,50 @@ function listAllMasterIds() {
 
   Logger.log('='.repeat(60));
   Logger.log(`合計: ${data.filter(r => r[masterIdIndex]).length}件`);
+}
+
+/**
+ * 翌月日付範囲計算のテスト
+ */
+function testCalculateNextMonthRange() {
+  Logger.log('='.repeat(60));
+  Logger.log('翌月日付範囲計算のテスト');
+  Logger.log('='.repeat(60));
+
+  const range = calculateNextMonthRange();
+
+  Logger.log(`翌月開始日: ${range.startDateStr}`);
+  Logger.log(`翌月終了日: ${range.endDateStr}`);
+
+  // 日数を計算
+  const days = Math.floor((range.endDate - range.startDate) / (1000 * 60 * 60 * 24)) + 1;
+  Logger.log(`日数: ${days}日`);
+
+  Logger.log('='.repeat(60));
+}
+
+/**
+ * 有効マスター取得のテスト
+ */
+function testGetActiveScheduleMasters() {
+  Logger.log('='.repeat(60));
+  Logger.log('有効マスター取得のテスト');
+  Logger.log('='.repeat(60));
+
+  const activeMasters = getActiveScheduleMasters();
+
+  Logger.log(`有効なマスター数: ${activeMasters.length}件`);
+  Logger.log('');
+
+  if (activeMasters.length > 0) {
+    Logger.log('最初の3件:');
+    activeMasters.slice(0, 3).forEach((master, index) => {
+      Logger.log(`${index + 1}. ${master.master_id} - ${master.client_name_temporary || '(名称なし)'}`);
+      Logger.log(`   頻度: ${master.frequency}, 曜日: ${master.day_of_week}`);
+    });
+  }
+
+  Logger.log('='.repeat(60));
 }
 
 /**
