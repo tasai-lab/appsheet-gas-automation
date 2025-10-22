@@ -17,13 +17,22 @@ const CONFIG = {
   ATTENDANCE_SPREADSHEET_ID: '1QDMA3DP4Y9XSFRWY9ewwP3Vih2NJEpq7NmNRRgASqRY',
 
 
-  // --- 新機能：訪問比率の設定 ---
+  // --- 新機能：Vertex AIによる均等配置 ---
+
+  // trueにすると、Vertex AIが先月の訪問履歴を分析して最適なスタッフを選択します
+
+  // falseにすると、STAFF_ASSIGNMENT_RATIOに基づいた比率で割り当てを試みます
+
+  USE_VERTEX_AI_ASSIGNMENT: true,
+
+
+  // --- 従来の訪問比率の設定（USE_VERTEX_AI_ASSIGNMENT=falseの時に使用） ---
 
   // trueにすると、STAFF_ASSIGNMENT_RATIOに基づいた比率で割り当てを試みます。
 
   // falseにすると、従来のロジック（空いているスタッフを順に割り当て）で動作します。
 
-  USE_RATIO_ASSIGNMENT: true,
+  USE_RATIO_ASSIGNMENT: false,
 
 
   // 各スタッフの訪問比率 (合計が1.0になるように調整してください)
@@ -39,6 +48,15 @@ const CONFIG = {
     'STF-004': 0.5
 
   },
+
+
+  // --- Vertex AI設定 ---
+
+  GCP_PROJECT_ID: 'gemini-api-437609',
+
+  GCP_LOCATION: 'us-central1',
+
+  VERTEX_AI_MODEL: 'gemini-2.0-flash-exp',
 
 
   // シート名
@@ -157,6 +175,16 @@ function assignStaffForNextMonth() {
 
     const staffWorkSchedules = createWorkSchedules(staffDetails, attendanceData, attendanceCols);
 
+    // Vertex AI用: 先月の訪問統計を取得
+    const lastMonthStats = CONFIG.USE_VERTEX_AI_ASSIGNMENT
+      ? getLastMonthVisitStatistics(scheduleData.rows, scheduleCols, prevMonth)
+      : null;
+
+    if (CONFIG.USE_VERTEX_AI_ASSIGNMENT && lastMonthStats) {
+      Logger.log(`[先月統計] 総訪問件数: ${lastMonthStats.totalVisits}件`);
+      Logger.log(`[先月統計] スタッフ別: ${JSON.stringify(lastMonthStats.staffVisits)}`);
+    }
+
     // ★修正：翌月の未割り当てスケジュールから「看護」のみを抽出
 
     const unassignedVisits = scheduleData.rows.map((row, index) => ({ row, index }))
@@ -193,9 +221,9 @@ function assignStaffForNextMonth() {
 
     let assignedCount = 0;
 
-    const assignedCounts = {}; // スタッフごとの割り当て件数を記録
+    const assignedCounts = {}; // スタッフごとの割り当て件数を記録（今月の累積）
 
-    // 比率計算の準備
+    // 比率計算の準備（USE_RATIO_ASSIGNMENT=trueの場合のみ）
 
     let targetCounts = {};
 
@@ -206,6 +234,18 @@ function assignStaffForNextMonth() {
         for(const staffId in CONFIG.STAFF_ASSIGNMENT_RATIO){
 
             targetCounts[staffId] = totalVisits * CONFIG.STAFF_ASSIGNMENT_RATIO[staffId];
+
+            assignedCounts[staffId] = 0;
+
+        }
+
+    }
+
+    // Vertex AI用: 全スタッフの割り当てカウンターを初期化
+
+    if(CONFIG.USE_VERTEX_AI_ASSIGNMENT) {
+
+        for(const staffId in staffDetails){
 
             assignedCounts[staffId] = 0;
 
@@ -257,7 +297,19 @@ function assignStaffForNextMonth() {
 
            const preferredStaffId = clientPreferences[clientId];
 
-           if(CONFIG.USE_RATIO_ASSIGNMENT){
+           if(CONFIG.USE_VERTEX_AI_ASSIGNMENT){
+
+               // Vertex AIで最適なスタッフを選択
+               assignedStaffId = selectStaffWithVertexAI(
+                 availableStaff,
+                 preferredStaffId,
+                 lastMonthStats,
+                 assignedCounts,
+                 routeTag,
+                 clientId
+               );
+
+           } else if(CONFIG.USE_RATIO_ASSIGNMENT){
 
                assignedStaffId = selectStaffByRatio(availableStaff, preferredStaffId, assignedCounts, targetCounts);
 
@@ -285,9 +337,9 @@ function assignStaffForNextMonth() {
 
         });
 
-        // 割り当て件数をカウント
+        // 割り当て件数をカウント（Vertex AIまたは比率割り当て使用時）
 
-        if(CONFIG.USE_RATIO_ASSIGNMENT && assignedCounts[assignedStaffId] !== undefined) {
+        if((CONFIG.USE_VERTEX_AI_ASSIGNMENT || CONFIG.USE_RATIO_ASSIGNMENT) && assignedCounts[assignedStaffId] !== undefined) {
 
             assignedCounts[assignedStaffId] += visitsInGroup.length;
 
@@ -305,7 +357,9 @@ function assignStaffForNextMonth() {
 
     Logger.log(`処理が完了しました。${assignedCount}件のスケジュールにスタッフを割り当てました。`);
 
-    if(CONFIG.USE_RATIO_ASSIGNMENT) Logger.log(`最終割り当て件数: ${JSON.stringify(assignedCounts)}`);
+    if(CONFIG.USE_VERTEX_AI_ASSIGNMENT || CONFIG.USE_RATIO_ASSIGNMENT) {
+      Logger.log(`最終割り当て件数（今月）: ${JSON.stringify(assignedCounts)}`);
+    }
 
   } catch (e) {
 
@@ -642,4 +696,229 @@ function combineDateAndTime(dateObj, time) {
 
   return newDate;
 
+}
+
+
+// ============================================================================
+// Vertex AI統合による均等配置機能
+// ============================================================================
+
+/**
+ * 先月の訪問統計を取得
+ * @param {Array} rows - Schedule_Planのデータ行
+ * @param {Object} cols - 列インデックス
+ * @param {Date} prevMonth - 先月の基準日
+ * @return {Object} スタッフごとの訪問件数統計
+ */
+function getLastMonthVisitStatistics(rows, cols, prevMonth) {
+  const stats = {
+    totalVisits: 0,
+    staffVisits: {},  // スタッフID → 件数
+    staffByRoute: {}  // ルートカテゴリ → {スタッフID → 件数}
+  };
+
+  rows.forEach(row => {
+    const visitDate = new Date(row[cols.VISIT_DATE]);
+    const staffId = row[cols.VISITOR_NAME];
+    const routeTag = row[cols.ROUTE_TAG];
+    const jobType = row[cols.JOB_TYPE];
+
+    // 先月かつ看護のみ
+    if (staffId &&
+        jobType === '看護' &&
+        visitDate.getFullYear() === prevMonth.getFullYear() &&
+        visitDate.getMonth() === prevMonth.getMonth()) {
+
+      stats.totalVisits++;
+
+      // スタッフごとの集計
+      if (!stats.staffVisits[staffId]) {
+        stats.staffVisits[staffId] = 0;
+      }
+      stats.staffVisits[staffId]++;
+
+      // ルートカテゴリ×スタッフの集計
+      if (routeTag) {
+        if (!stats.staffByRoute[routeTag]) {
+          stats.staffByRoute[routeTag] = {};
+        }
+        if (!stats.staffByRoute[routeTag][staffId]) {
+          stats.staffByRoute[routeTag][staffId] = 0;
+        }
+        stats.staffByRoute[routeTag][staffId]++;
+      }
+    }
+  });
+
+  return stats;
+}
+
+/**
+ * Vertex AIを使って最適なスタッフを選択
+ * @param {Array} availableStaff - 利用可能なスタッフリスト [{staffId: 'STF-001'}, ...]
+ * @param {string} preferredStaffId - 優先スタッフID（先月最も訪問したスタッフ）
+ * @param {Object} lastMonthStats - 先月の訪問統計
+ * @param {Object} currentMonthAssignments - 今月の割り当て状況 {staffId: 件数}
+ * @param {string} routeTag - ルートタグ
+ * @param {string} clientId - 利用者ID
+ * @return {string} 選択されたスタッフID
+ */
+function selectStaffWithVertexAI(availableStaff, preferredStaffId, lastMonthStats, currentMonthAssignments, routeTag, clientId) {
+
+  // 利用可能なスタッフが1人だけの場合はそのまま返す
+  if (availableStaff.length === 1) {
+    return availableStaff[0].staffId;
+  }
+
+  // 利用可能なスタッフがいない場合はnull
+  if (availableStaff.length === 0) {
+    return null;
+  }
+
+  // プロンプト構築
+  const prompt = buildStaffSelectionPrompt(
+    availableStaff,
+    preferredStaffId,
+    lastMonthStats,
+    currentMonthAssignments,
+    routeTag,
+    clientId
+  );
+
+  try {
+    // Vertex AI呼び出し
+    const client = createVertexAIClient(CONFIG.VERTEX_AI_MODEL, {
+      temperature: 0.3,
+      maxOutputTokens: 500
+    });
+
+    const response = client.generateContent(prompt);
+
+    // レスポンスからスタッフIDを抽出
+    const selectedStaffId = extractStaffIdFromResponse(response, availableStaff);
+
+    Logger.log(`[Vertex AI] 選択されたスタッフ: ${selectedStaffId} (候補: ${availableStaff.map(s => s.staffId).join(', ')})`);
+
+    return selectedStaffId || availableStaff[0].staffId; // フォールバック
+
+  } catch (error) {
+    Logger.log(`[Vertex AI] エラー: ${error.message}、最初の候補を使用します`);
+    return availableStaff[0].staffId; // エラー時はフォールバック
+  }
+}
+
+/**
+ * スタッフ選択用プロンプトを構築
+ */
+function buildStaffSelectionPrompt(availableStaff, preferredStaffId, lastMonthStats, currentMonthAssignments, routeTag, clientId) {
+  let prompt = `あなたは訪問看護のスタッフ配置を最適化するAIアシスタントです。
+
+【目的】
+訪問スケジュールにスタッフを割り当てる際、以下の基準で最適なスタッフを1名選択してください：
+1. 先月と今月の合計訪問件数が概ね均等になること
+2. 今月内でもある程度均等な配置になること
+3. 規定の目標比率に概ね近づくこと（厳密でなくてOK）
+4. 利用者との継続性（可能であれば同じスタッフ）
+
+【規定の目標比率】
+`;
+
+  // 目標比率を表示
+  if (CONFIG.STAFF_ASSIGNMENT_RATIO && Object.keys(CONFIG.STAFF_ASSIGNMENT_RATIO).length > 0) {
+    for (const staffId in CONFIG.STAFF_ASSIGNMENT_RATIO) {
+      const ratio = CONFIG.STAFF_ASSIGNMENT_RATIO[staffId];
+      const percentage = (ratio * 100).toFixed(1);
+      prompt += `- ${staffId}: ${percentage}%\n`;
+    }
+  } else {
+    prompt += `（設定なし - 完全均等を目指す）\n`;
+  }
+
+  prompt += `\n【先月の訪問実績】\n`;
+
+  // 先月の訪問件数
+  const staffIds = Object.keys(lastMonthStats.staffVisits).sort();
+  const lastMonthTotal = lastMonthStats.totalVisits;
+  staffIds.forEach(staffId => {
+    const count = lastMonthStats.staffVisits[staffId];
+    const percentage = lastMonthTotal > 0 ? ((count / lastMonthTotal) * 100).toFixed(1) : 0;
+    prompt += `- ${staffId}: ${count}件 (${percentage}%)\n`;
+  });
+
+  prompt += `\n【今月の割り当て状況（これまでの累計）】\n`;
+
+  // 今月の割り当て状況
+  let currentMonthTotal = 0;
+  for (const staffId in currentMonthAssignments) {
+    currentMonthTotal += currentMonthAssignments[staffId] || 0;
+  }
+
+  for (const staffId in currentMonthAssignments) {
+    const count = currentMonthAssignments[staffId] || 0;
+    const percentage = currentMonthTotal > 0 ? ((count / currentMonthTotal) * 100).toFixed(1) : 0;
+    prompt += `- ${staffId}: ${count}件 (${percentage}%)\n`;
+  }
+
+  prompt += `\n【今回の訪問情報】\n`;
+  prompt += `- 利用者ID: ${clientId}\n`;
+  prompt += `- ルートカテゴリ: ${routeTag}\n`;
+  if (preferredStaffId) {
+    prompt += `- 先月の主担当: ${preferredStaffId}\n`;
+  }
+
+  prompt += `\n【利用可能なスタッフ（今回割り当て可能）】\n`;
+  availableStaff.forEach(staff => {
+    const lastMonthCount = lastMonthStats.staffVisits[staff.staffId] || 0;
+    const currentCount = currentMonthAssignments[staff.staffId] || 0;
+    const total = lastMonthCount + currentCount;
+    const targetRatio = CONFIG.STAFF_ASSIGNMENT_RATIO[staff.staffId];
+    const ratioInfo = targetRatio ? ` (目標比率: ${(targetRatio * 100).toFixed(1)}%)` : '';
+    prompt += `- ${staff.staffId}: 先月${lastMonthCount}件 + 今月${currentCount}件 = 合計${total}件${ratioInfo}\n`;
+  });
+
+  prompt += `\n【判断基準】
+最も適切なスタッフを選択する際は：
+- 先月と今月の合計が最も少ないスタッフを優先
+- ただし、目標比率から大きく外れないように配慮
+- 利用者との継続性も考慮（同じスタッフなら+5%の優先度）
+
+【出力形式】
+スタッフIDのみを出力してください。理由の説明は不要です。
+例: STF-001
+
+選択するスタッフID:`;
+
+  return prompt;
+}
+
+/**
+ * Vertex AIのレスポンスからスタッフIDを抽出
+ */
+function extractStaffIdFromResponse(response, availableStaff) {
+  const text = response.trim();
+
+  // 利用可能なスタッフIDリスト
+  const availableStaffIds = availableStaff.map(s => s.staffId);
+
+  // レスポンステキストから最初に見つかったスタッフIDを返す
+  for (const staffId of availableStaffIds) {
+    if (text.includes(staffId)) {
+      return staffId;
+    }
+  }
+
+  // 見つからない場合はnull
+  return null;
+}
+
+/**
+ * Vertex AIクライアントを作成
+ */
+function createVertexAIClient(model, options = {}) {
+  return new VertexAIClient(
+    CONFIG.GCP_PROJECT_ID,
+    CONFIG.GCP_LOCATION,
+    model,
+    options
+  );
 }

@@ -73,6 +73,7 @@ class GeminiClient {
     const requestBody = {
       contents: [
         {
+          role: "user",
           parts: [
             {
               text: prompt
