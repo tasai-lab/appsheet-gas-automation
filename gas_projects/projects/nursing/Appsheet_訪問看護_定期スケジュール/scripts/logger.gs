@@ -10,13 +10,17 @@
  * ログ設定
  */
 const LOGGER_CONFIG = {
-  // ログスプレッドシート格納先（共有ドライブ）
+  // ログスプレッドシート（統合コスト管理シート）
+  logSpreadsheetId: '16UHnMlSUlnUy-67gbwuvjeeU73AwDomqzJwGi6L4rVA', // 統合GAS実行ログ
+  logSheetName: 'コスト管理', // シート名
+
+  // フォールバック用（スプレッドシートが見つからない場合）
   logFolderId: '16swPUizvdlyPxUjbDpVl9-VBDJZO91kX', // 共有ドライブのGASフォルダー
-  logSpreadsheetName: 'GAS実行ログ',
-  
+  logSpreadsheetName: 'GAS実行ログ', // スプレッドシート名
+
   // ログ保持期間（日数）
   retentionDays: 90,
-  
+
   // ログレベル
   levels: {
     INFO: 'INFO',
@@ -194,25 +198,34 @@ class GASLogger {
    * @private
    */
   _getOrCreateLogSheet() {
-    const folder = DriveApp.getFolderById(LOGGER_CONFIG.logFolderId);
     let spreadsheet;
-    
-    // 既存のログスプレッドシートを検索
-    const files = folder.getFilesByName(LOGGER_CONFIG.logSpreadsheetName);
-    if (files.hasNext()) {
-      const file = files.next();
-      spreadsheet = SpreadsheetApp.openById(file.getId());
-    } else {
-      // 新規作成
-      spreadsheet = SpreadsheetApp.create(LOGGER_CONFIG.logSpreadsheetName);
-      const file = DriveApp.getFileById(spreadsheet.getId());
-      folder.addFile(file);
-      DriveApp.getRootFolder().removeFile(file);
+
+    try {
+      // 固定のスプレッドシートIDを使用（統合コスト管理シート）
+      spreadsheet = SpreadsheetApp.openById(LOGGER_CONFIG.logSpreadsheetId);
+    } catch (e) {
+      // スプレッドシートが見つからない場合はフォールバック
+      console.error(`統合ログシートが見つかりません（ID: ${LOGGER_CONFIG.logSpreadsheetId}）。フォールバック処理を実行します。`);
+
+      const folder = DriveApp.getFolderById(LOGGER_CONFIG.logFolderId);
+
+      // 既存のログスプレッドシートを検索
+      const files = folder.getFilesByName(LOGGER_CONFIG.logSpreadsheetName);
+      if (files.hasNext()) {
+        const file = files.next();
+        spreadsheet = SpreadsheetApp.openById(file.getId());
+      } else {
+        // 新規作成
+        spreadsheet = SpreadsheetApp.create(LOGGER_CONFIG.logSpreadsheetName);
+        const file = DriveApp.getFileById(spreadsheet.getId());
+        folder.addFile(file);
+        DriveApp.getRootFolder().removeFile(file);
+      }
     }
-    
-    let sheet = spreadsheet.getSheetByName('コスト管理');
+
+    let sheet = spreadsheet.getSheetByName(LOGGER_CONFIG.logSheetName);
     if (!sheet) {
-      sheet = spreadsheet.insertSheet('コスト管理');
+      sheet = spreadsheet.insertSheet(LOGGER_CONFIG.logSheetName);
 
       // 統合ヘッダー行を追加
       const headers = [
@@ -334,24 +347,37 @@ class GASLogger {
    */
   _saveDetailedLogs() {
     try {
-      const spreadsheet = SpreadsheetApp.openById(
-        DriveApp.getFilesByName(LOGGER_CONFIG.logSpreadsheetName).next().getId()
-      );
-      
+      let spreadsheet;
+
+      try {
+        // 固定のスプレッドシートIDを使用
+        spreadsheet = SpreadsheetApp.openById(LOGGER_CONFIG.logSpreadsheetId);
+      } catch (e) {
+        // フォールバック
+        const folder = DriveApp.getFolderById(LOGGER_CONFIG.logFolderId);
+        const files = folder.getFilesByName(LOGGER_CONFIG.logSpreadsheetName);
+        if (files.hasNext()) {
+          spreadsheet = SpreadsheetApp.openById(files.next().getId());
+        } else {
+          console.error('詳細ログスプレッドシートが見つかりません');
+          return;
+        }
+      }
+
       let sheet = spreadsheet.getSheetByName('詳細ログ');
       if (!sheet) {
         sheet = spreadsheet.insertSheet('詳細ログ');
         const headers = ['リクエストID', 'タイムスタンプ', 'レベル', 'メッセージ', '詳細'];
         sheet.appendRow(headers);
-        
+
         const headerRange = sheet.getRange(1, 1, 1, headers.length);
         headerRange.setFontWeight('bold');
         headerRange.setBackground('#4285f4');
         headerRange.setFontColor('#ffffff');
-        
+
         sheet.setFrozenRows(1);
       }
-      
+
       // 詳細ログを追加
       this.logs.forEach(log => {
         const row = [
@@ -363,7 +389,7 @@ class GASLogger {
         ];
         sheet.appendRow(row);
       });
-      
+
     } catch (e) {
       console.error(`詳細ログの保存に失敗: ${e.toString()}`);
     }
@@ -375,14 +401,26 @@ class GASLogger {
    */
   static cleanupOldLogs() {
     try {
-      const folder = DriveApp.getFolderById(LOGGER_CONFIG.logFolderId);
-      const files = folder.getFilesByName(LOGGER_CONFIG.logSpreadsheetName);
-      
-      if (!files.hasNext()) return;
-      
-      const spreadsheet = SpreadsheetApp.openById(files.next().getId());
-      const sheet = spreadsheet.getSheetByName('実行履歴');
-      
+      let spreadsheet;
+
+      try {
+        // 固定のスプレッドシートIDを使用
+        spreadsheet = SpreadsheetApp.openById(LOGGER_CONFIG.logSpreadsheetId);
+      } catch (e) {
+        // フォールバック
+        const folder = DriveApp.getFolderById(LOGGER_CONFIG.logFolderId);
+        const files = folder.getFilesByName(LOGGER_CONFIG.logSpreadsheetName);
+
+        if (!files.hasNext()) {
+          console.error('ログスプレッドシートが見つかりません');
+          return;
+        }
+
+        spreadsheet = SpreadsheetApp.openById(files.next().getId());
+      }
+
+      const sheet = spreadsheet.getSheetByName(LOGGER_CONFIG.logSheetName);
+
       if (!sheet) return;
       
       const data = sheet.getDataRange().getValues();
