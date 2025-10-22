@@ -315,6 +315,198 @@ function testConfigValidation() {
 }
 
 /**
+ * テスト用関数: processClientQA（個別引数）- 基本テスト
+ * 新しい個別引数関数のテスト（AppSheet更新なし）
+ *
+ * @return {Object} 処理結果
+ */
+function testProcessClientQA() {
+  Logger.log('='.repeat(60));
+  Logger.log('🧪 processClientQA() 基本テスト');
+  Logger.log('='.repeat(60));
+
+  const documentText = `
+# 利用者基本情報
+
+氏名: 田中花子
+年齢: 82歳
+住所: 東京都渋谷区
+要介護度: 要介護3
+
+# 現在の状態
+
+・独居
+・週3回の訪問介護利用中
+・最近、歩行が不安定になってきた
+・血圧が高め（150/90）
+`;
+
+  const promptText = "転倒リスクを減らすために、どのような対策が必要ですか？";
+
+  Logger.log(`ドキュメント長: ${documentText.length}文字`);
+  Logger.log(`質問: ${promptText}`);
+  Logger.log('');
+
+  try {
+    const result = processClientQA(documentText, promptText);
+
+    Logger.log('✅ 処理成功');
+    Logger.log('');
+    Logger.log('📝 回答:');
+    Logger.log(result.answer.substring(0, 300) + '...');
+    Logger.log('');
+    Logger.log('📋 要約:');
+    Logger.log(result.summary);
+    Logger.log('');
+
+    if (result.usageMetadata) {
+      Logger.log('💰 API使用量:');
+      Logger.log(`  Input Tokens: ${result.usageMetadata.inputTokens}`);
+      Logger.log(`  Output Tokens: ${result.usageMetadata.outputTokens}`);
+      Logger.log(`  Total Cost: ¥${result.usageMetadata.totalCostJPY.toFixed(4)}`);
+    }
+
+    Logger.log('='.repeat(60));
+    return result;
+
+  } catch (error) {
+    Logger.log('❌ テストエラー: ' + error.toString());
+    throw error;
+  }
+}
+
+
+/**
+ * テスト用関数: processClientQA（AppSheet更新付き）
+ * analysisIdを指定してAppSheet更新をテストする
+ * 注意: 実際のAppSheet APIが呼ばれます
+ *
+ * @return {Object} 処理結果
+ */
+function testProcessClientQAWithAppSheet() {
+  Logger.log('='.repeat(60));
+  Logger.log('🧪 processClientQA() AppSheet更新テスト');
+  Logger.log('⚠️  注意: 実際のAppSheet APIが呼ばれます！');
+  Logger.log('='.repeat(60));
+
+  const documentText = `
+# 利用者基本情報
+
+氏名: 佐藤一郎
+年齢: 78歳
+住所: 神奈川県横浜市
+要介護度: 要介護2
+
+# 現在の状態
+
+・配偶者と二人暮らし
+・週2回の訪問看護利用中
+・糖尿病の管理が必要
+`;
+
+  const promptText = "糖尿病管理のための食事指導のポイントは？";
+  const testAnalysisId = 'TEST-' + new Date().getTime();
+
+  Logger.log(`Analysis ID: ${testAnalysisId}`);
+  Logger.log(`質問: ${promptText}`);
+  Logger.log('');
+
+  try {
+    const result = processClientQA(
+      documentText,
+      promptText,
+      testAnalysisId,
+      true  // AppSheet更新を実行
+    );
+
+    Logger.log('✅ 処理成功（AppSheet更新含む）');
+    Logger.log('');
+    Logger.log('📝 回答:');
+    Logger.log(result.answer.substring(0, 200) + '...');
+    Logger.log('');
+    Logger.log('📋 要約:');
+    Logger.log(result.summary);
+    Logger.log('');
+    Logger.log(`Analysis ID: ${result.analysisId}`);
+
+    Logger.log('='.repeat(60));
+    return result;
+
+  } catch (error) {
+    Logger.log('❌ テストエラー: ' + error.toString());
+    throw error;
+  }
+}
+
+
+/**
+ * テスト用関数: processClientQA（エラーハンドリング）
+ * 必須パラメータ不足のエラー処理をテスト
+ *
+ * @return {Object} テスト結果
+ */
+function testProcessClientQAErrorHandling() {
+  Logger.log('='.repeat(60));
+  Logger.log('🧪 processClientQA() エラーハンドリングテスト');
+  Logger.log('='.repeat(60));
+
+  const tests = [];
+
+  // テスト1: documentText不足
+  Logger.log('【テスト1】documentText不足');
+  try {
+    processClientQA('', '質問');
+    tests.push({ name: 'documentText不足', success: false, message: 'エラーが発生しませんでした' });
+  } catch (error) {
+    if (error.message.includes('documentText')) {
+      Logger.log('✅ 期待通りのエラー: ' + error.message);
+      tests.push({ name: 'documentText不足', success: true });
+    } else {
+      Logger.log('❌ 予期しないエラー: ' + error.message);
+      tests.push({ name: 'documentText不足', success: false, message: error.message });
+    }
+  }
+  Logger.log('');
+
+  // テスト2: promptText不足
+  Logger.log('【テスト2】promptText不足');
+  try {
+    processClientQA('ドキュメント', '');
+    tests.push({ name: 'promptText不足', success: false, message: 'エラーが発生しませんでした' });
+  } catch (error) {
+    if (error.message.includes('promptText')) {
+      Logger.log('✅ 期待通りのエラー: ' + error.message);
+      tests.push({ name: 'promptText不足', success: true });
+    } else {
+      Logger.log('❌ 予期しないエラー: ' + error.message);
+      tests.push({ name: 'promptText不足', success: false, message: error.message });
+    }
+  }
+  Logger.log('');
+
+  // 結果サマリー
+  Logger.log('📊 テスト結果:');
+  tests.forEach(test => {
+    const status = test.success ? '✅' : '❌';
+    Logger.log(`  ${status} ${test.name}`);
+    if (!test.success && test.message) {
+      Logger.log(`     ${test.message}`);
+    }
+  });
+
+  const allSuccess = tests.every(t => t.success);
+  Logger.log('');
+  Logger.log(allSuccess ? '✅ すべてのテスト成功' : '❌ 一部のテストが失敗');
+  Logger.log('='.repeat(60));
+
+  return {
+    success: allSuccess,
+    tests: tests
+  };
+}
+
+
+/**
  * 統合テスト実行
  * すべてのテストを順次実行
  */
