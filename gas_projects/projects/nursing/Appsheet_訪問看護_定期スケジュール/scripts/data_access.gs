@@ -8,6 +8,44 @@
  */
 
 // =============================================================================
+// ユーティリティ関数
+// =============================================================================
+
+/**
+ * 時刻データを HH:MM 形式の文字列に変換
+ * Date オブジェクト、文字列、その他の型に対応
+ *
+ * @param {*} timeValue - 時刻データ（Date、文字列、など）
+ * @returns {string} HH:MM 形式の文字列
+ *
+ * @example
+ * formatTimeValue(new Date('2025-10-22 09:30:00')); // => '09:30'
+ * formatTimeValue('09:30:00');                      // => '09:30'
+ * formatTimeValue('9:30');                          // => '9:30'
+ */
+function formatTimeValue(timeValue) {
+  if (!timeValue) {
+    return '00:00';
+  }
+
+  // Date オブジェクトの場合
+  if (timeValue instanceof Date) {
+    return Utilities.formatDate(timeValue, TIMEZONE, 'HH:mm');
+  }
+
+  // 文字列の場合
+  const timeStr = String(timeValue);
+
+  // すでに HH:MM 形式または HH:MM:SS 形式の場合
+  if (timeStr.includes(':')) {
+    return timeStr.substring(0, 5); // HH:MM を取得
+  }
+
+  // その他の場合はそのまま返す
+  return timeStr;
+}
+
+// =============================================================================
 // スプレッドシート読み取り
 // =============================================================================
 
@@ -121,8 +159,8 @@ function getExistingScheduleData() {
       const visitDate = Utilities.formatDate(new Date(row[idx.visitDate]), TIMEZONE, 'yyyy-MM-dd');
 
       // 時刻を文字列として HH:MM 形式で取得
-      const startTimeStr = String(row[idx.startTime]).substring(0, 5);
-      const endTimeStr = String(row[idx.endTime]).substring(0, 5);
+      const startTimeStr = formatTimeValue(row[idx.startTime]);
+      const endTimeStr = formatTimeValue(row[idx.endTime]);
 
       // 重複判定キー: masterId|visitDate|startTime|endTime
       const masterKey = [row[idx.masterId], visitDate, startTimeStr, endTimeStr].join('|');
@@ -339,6 +377,33 @@ function updateMasterStatus(masterId, status, errorMessage) {
 // =============================================================================
 // テスト関数
 // =============================================================================
+
+/**
+ * formatTimeValue 関数のテスト
+ */
+function testFormatTimeValue() {
+  Logger.log('='.repeat(60));
+  Logger.log('formatTimeValue 関数のテスト');
+  Logger.log('='.repeat(60));
+
+  // テスト1: Date オブジェクト
+  const date1 = new Date('2025-10-22 09:30:45');
+  Logger.log(`Date(09:30:45): ${formatTimeValue(date1)}`); // => '09:30'
+
+  // テスト2: 文字列（HH:MM:SS）
+  const time2 = '14:45:30';
+  Logger.log(`String(14:45:30): ${formatTimeValue(time2)}`); // => '14:45'
+
+  // テスト3: 文字列（HH:MM）
+  const time3 = '08:15';
+  Logger.log(`String(08:15): ${formatTimeValue(time3)}`); // => '08:15'
+
+  // テスト4: null/undefined
+  Logger.log(`null: ${formatTimeValue(null)}`); // => '00:00'
+  Logger.log(`undefined: ${formatTimeValue(undefined)}`); // => '00:00'
+
+  Logger.log('='.repeat(60));
+}
 
 /**
  * データアクセスモジュールのテスト

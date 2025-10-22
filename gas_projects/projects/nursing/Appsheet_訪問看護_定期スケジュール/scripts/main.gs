@@ -251,8 +251,8 @@ function filterDuplicateDates(potentialDates, masterData, masterId, existingKeys
 
   for (const date of potentialDates) {
     const visitDateStr = Utilities.formatDate(date, TIMEZONE, 'yyyy-MM-dd');
-    const startTimeStr = masterData.start_time ? masterData.start_time.substring(0, 5) : '00:00';
-    const endTimeStr = masterData.end_time ? masterData.end_time.substring(0, 5) : '00:00';
+    const startTimeStr = formatTimeValue(masterData.start_time);
+    const endTimeStr = formatTimeValue(masterData.end_time);
 
     // 重複判定キー: masterId|visitDate|startTime|endTime
     const masterKey = [masterId, visitDateStr, startTimeStr, endTimeStr].join('|');
