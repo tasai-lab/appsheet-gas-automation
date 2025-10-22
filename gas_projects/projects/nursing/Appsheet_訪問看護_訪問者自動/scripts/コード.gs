@@ -56,7 +56,7 @@ const CONFIG = {
 
   GCP_LOCATION: 'us-central1',
 
-  VERTEX_AI_MODEL: 'gemini-2.0-flash-exp',
+  VERTEX_AI_MODEL: 'gemini-2.5-flash',
 
 
   // シート名
@@ -129,7 +129,21 @@ const CONFIG = {
 
 function assignStaffForNextMonth() {
 
+  // ロガー初期化（GAS実行ログへの記録用）
+
+  const logger = createLogger('訪問看護_訪問者自動');
+
+  let status = '成功';
+
+
+
   try {
+
+    logger.info('=== スタッフ自動割り当て処理を開始 ===');
+
+    logger.info(`設定: Vertex AI使用=${CONFIG.USE_VERTEX_AI_ASSIGNMENT}, モデル=${CONFIG.VERTEX_AI_MODEL}`);
+
+
 
     const ssSchedule = SpreadsheetApp.openById(CONFIG.SCHEDULE_SPREADSHEET_ID);
 
@@ -145,11 +159,13 @@ function assignStaffForNextMonth() {
 
     if (!scheduleSheet || !staffSheet || !attendanceSheet) {
 
-      Logger.log('設定されたシート名が見つかりません。CONFIGを確認してください。');
-
-      return;
+      throw new Error('設定されたシート名が見つかりません。CONFIGを確認してください。');
 
     }
+
+
+
+    logger.info('スプレッドシート接続成功');
 
     const scheduleData = getSheetData(scheduleSheet);
 
@@ -181,8 +197,8 @@ function assignStaffForNextMonth() {
       : null;
 
     if (CONFIG.USE_VERTEX_AI_ASSIGNMENT && lastMonthStats) {
-      Logger.log(`[先月統計] 総訪問件数: ${lastMonthStats.totalVisits}件`);
-      Logger.log(`[先月統計] スタッフ別: ${JSON.stringify(lastMonthStats.staffVisits)}`);
+      logger.info(`[先月統計] 総訪問件数: ${lastMonthStats.totalVisits}件`);
+      logger.info(`[先月統計] スタッフ別: ${JSON.stringify(lastMonthStats.staffVisits)}`);
     }
 
     // ★修正：翌月の未割り当てスケジュールから「看護」のみを抽出
@@ -207,11 +223,13 @@ function assignStaffForNextMonth() {
 
       });
 
-    Logger.log(`翌月の未割り当てスケジュール（看護）: ${unassignedVisits.length}件`);
+    logger.info(`翌月の未割り当てスケジュール（看護）: ${unassignedVisits.length}件`);
 
     if (unassignedVisits.length === 0) {
 
-      Logger.log('翌月の未割り当てスケジュール（看護）はありませんでした。');
+      logger.info('翌月の未割り当てスケジュール（看護）はありませんでした。');
+
+      logger.saveToSpreadsheet(status);
 
       return;
 
@@ -299,14 +317,15 @@ function assignStaffForNextMonth() {
 
            if(CONFIG.USE_VERTEX_AI_ASSIGNMENT){
 
-               // Vertex AIで最適なスタッフを選択
+               // Vertex AIで最適なスタッフを選択（ロガー渡す）
                assignedStaffId = selectStaffWithVertexAI(
                  availableStaff,
                  preferredStaffId,
                  lastMonthStats,
                  assignedCounts,
                  routeTag,
-                 clientId
+                 clientId,
+                 logger
                );
 
            } else if(CONFIG.USE_RATIO_ASSIGNMENT){
@@ -355,15 +374,25 @@ function assignStaffForNextMonth() {
 
     scheduleSheet.getRange(1, 1, updatedData.length, updatedData[0].length).setValues(updatedData);
 
-    Logger.log(`処理が完了しました。${assignedCount}件のスケジュールにスタッフを割り当てました。`);
+    logger.success(`処理完了: ${assignedCount}件のスケジュールにスタッフを割り当てました。`);
 
     if(CONFIG.USE_VERTEX_AI_ASSIGNMENT || CONFIG.USE_RATIO_ASSIGNMENT) {
-      Logger.log(`最終割り当て件数（今月）: ${JSON.stringify(assignedCounts)}`);
+      logger.info(`最終割り当て件数（今月）: ${JSON.stringify(assignedCounts)}`);
     }
 
   } catch (e) {
 
-    Logger.log(`エラーが発生しました: ${e.stack}`);
+    status = 'エラー';
+
+    logger.error(`エラーが発生しました: ${e.message}`, { stack: e.stack });
+
+  } finally {
+
+    // GAS実行ログにコスト含めて保存
+
+    logger.saveToSpreadsheet(status);
+
+    logger.info('=== 処理終了 ===');
 
   }
 
@@ -761,9 +790,10 @@ function getLastMonthVisitStatistics(rows, cols, prevMonth) {
  * @param {Object} currentMonthAssignments - 今月の割り当て状況 {staffId: 件数}
  * @param {string} routeTag - ルートタグ
  * @param {string} clientId - 利用者ID
+ * @param {GASLogger} logger - ロガーインスタンス（コスト記録用）
  * @return {string} 選択されたスタッフID
  */
-function selectStaffWithVertexAI(availableStaff, preferredStaffId, lastMonthStats, currentMonthAssignments, routeTag, clientId) {
+function selectStaffWithVertexAI(availableStaff, preferredStaffId, lastMonthStats, currentMonthAssignments, routeTag, clientId, logger) {
 
   // 利用可能なスタッフが1人だけの場合はそのまま返す
   if (availableStaff.length === 1) {
@@ -786,23 +816,18 @@ function selectStaffWithVertexAI(availableStaff, preferredStaffId, lastMonthStat
   );
 
   try {
-    // Vertex AI呼び出し
-    const client = createVertexAIClient(CONFIG.VERTEX_AI_MODEL, {
-      temperature: 0.3,
-      maxOutputTokens: 500
-    });
-
-    const response = client.generateContent(prompt);
+    // Vertex AI API直接呼び出し（コスト追跡付き）
+    const result = callVertexAIForTextGeneration(prompt, CONFIG.VERTEX_AI_MODEL, logger);
 
     // レスポンスからスタッフIDを抽出
-    const selectedStaffId = extractStaffIdFromResponse(response, availableStaff);
+    const selectedStaffId = extractStaffIdFromResponse(result.text, availableStaff);
 
-    Logger.log(`[Vertex AI] 選択されたスタッフ: ${selectedStaffId} (候補: ${availableStaff.map(s => s.staffId).join(', ')})`);
+    logger.info(`[Vertex AI] 選択: ${selectedStaffId} (候補: ${availableStaff.map(s => s.staffId).join(', ')})`);
 
     return selectedStaffId || availableStaff[0].staffId; // フォールバック
 
   } catch (error) {
-    Logger.log(`[Vertex AI] エラー: ${error.message}、最初の候補を使用します`);
+    logger.warning(`[Vertex AI] エラー: ${error.message}、最初の候補を使用します`);
     return availableStaff[0].staffId; // エラー時はフォールバック
   }
 }
@@ -912,13 +937,157 @@ function extractStaffIdFromResponse(response, availableStaff) {
 }
 
 /**
- * Vertex AIクライアントを作成
+ * Vertex AI APIでテキスト生成（コスト追跡付き）
+ * @param {string} prompt - プロンプトテキスト
+ * @param {string} model - モデル名
+ * @param {GASLogger} logger - ロガーインスタンス
+ * @return {Object} {text: 生成されたテキスト, usageMetadata: 使用量情報}
  */
-function createVertexAIClient(model, options = {}) {
-  return new VertexAIClient(
-    CONFIG.GCP_PROJECT_ID,
-    CONFIG.GCP_LOCATION,
-    model,
-    options
-  );
+function callVertexAIForTextGeneration(prompt, model, logger) {
+  // エンドポイントURL構築
+  const endpoint = `https://${CONFIG.GCP_LOCATION}-aiplatform.googleapis.com/v1/projects/${CONFIG.GCP_PROJECT_ID}/locations/${CONFIG.GCP_LOCATION}/publishers/google/models/${model}:generateContent`;
+
+  // リクエストボディ構築
+  const requestBody = {
+    contents: [{
+      role: 'user',
+      parts: [{ text: prompt }]
+    }],
+    generationConfig: {
+      temperature: 0.3,
+      maxOutputTokens: 500,
+      topP: 0.95,
+      topK: 40
+    }
+  };
+
+  // API呼び出しオプション
+  const options = {
+    method: 'post',
+    contentType: 'application/json',
+    payload: JSON.stringify(requestBody),
+    headers: {
+      'Authorization': `Bearer ${ScriptApp.getOAuthToken()}`
+    },
+    muteHttpExceptions: true
+  };
+
+  // API実行
+  logger.info(`[Vertex AI] API呼び出し開始（モデル: ${model}）`);
+  const response = UrlFetchApp.fetch(endpoint, options);
+  const statusCode = response.getResponseCode();
+  const responseText = response.getContentText();
+
+  // ステータスコードチェック
+  if (statusCode !== 200) {
+    throw new Error(`Vertex AI APIエラー (HTTP ${statusCode}): ${responseText}`);
+  }
+
+  // JSONパース
+  const jsonResponse = JSON.parse(responseText);
+
+  // コンテンツ抽出
+  if (!jsonResponse.candidates || jsonResponse.candidates.length === 0 ||
+      !jsonResponse.candidates[0].content || !jsonResponse.candidates[0].content.parts ||
+      jsonResponse.candidates[0].content.parts.length === 0) {
+    const finishReason = jsonResponse.candidates?.[0]?.finishReason || 'UNKNOWN';
+    throw new Error(`Vertex AIレスポンスにコンテンツがありません（finishReason: ${finishReason}）`);
+  }
+
+  const generatedText = jsonResponse.candidates[0].content.parts[0].text.trim();
+
+  // usageMetadataを抽出してコスト計算
+  const usageMetadata = extractVertexAIUsageMetadata(jsonResponse, model, 'text');
+
+  if (usageMetadata) {
+    // ロガーにコスト情報を記録
+    logger.setUsageMetadata(usageMetadata);
+    logger.info(`[Vertex AI] Input ${usageMetadata.inputTokens} tokens, Output ${usageMetadata.outputTokens} tokens, 合計 ¥${usageMetadata.totalCostJPY.toFixed(4)}`);
+  }
+
+  return {
+    text: generatedText,
+    usageMetadata: usageMetadata
+  };
+}
+
+/**
+ * 為替レート設定（USD -> JPY）
+ */
+const EXCHANGE_RATE_USD_TO_JPY = 150;
+
+/**
+ * Vertex AI APIレスポンスからusageMetadataを抽出（日本円計算）
+ * @param {Object} jsonResponse - APIレスポンス
+ * @param {string} modelName - 使用したモデル名
+ * @param {string} inputType - 入力タイプ ('audio' | 'text')
+ * @return {Object|null} {inputTokens, outputTokens, inputCostJPY, outputCostJPY, totalCostJPY, model}
+ */
+function extractVertexAIUsageMetadata(jsonResponse, modelName, inputType = 'text') {
+  if (!jsonResponse.usageMetadata) {
+    return null;
+  }
+
+  const usage = jsonResponse.usageMetadata;
+  const inputTokens = usage.promptTokenCount || 0;
+  const outputTokens = usage.candidatesTokenCount || 0;
+
+  // モデル名と入力タイプに応じた価格を取得
+  const pricing = getVertexAIPricing(modelName, inputType);
+  const inputCostUSD = (inputTokens / 1000000) * pricing.inputPer1M;
+  const outputCostUSD = (outputTokens / 1000000) * pricing.outputPer1M;
+  const totalCostUSD = inputCostUSD + outputCostUSD;
+
+  // 日本円に換算
+  const inputCostJPY = inputCostUSD * EXCHANGE_RATE_USD_TO_JPY;
+  const outputCostJPY = outputCostUSD * EXCHANGE_RATE_USD_TO_JPY;
+  const totalCostJPY = totalCostUSD * EXCHANGE_RATE_USD_TO_JPY;
+
+  return {
+    model: modelName,
+    inputTokens: inputTokens,
+    outputTokens: outputTokens,
+    inputCostJPY: inputCostJPY,
+    outputCostJPY: outputCostJPY,
+    totalCostJPY: totalCostJPY
+  };
+}
+
+/**
+ * Vertex AIモデルの価格情報を取得（モデル名と入力タイプに応じて動的に決定）
+ * @param {string} modelName - モデル名
+ * @param {string} inputType - 入力タイプ ('audio' | 'text')
+ * @return {Object} {inputPer1M, outputPer1M}
+ */
+function getVertexAIPricing(modelName, inputType = 'text') {
+  // 2025年1月時点のVertex AI価格（USD/100万トークン）
+  const pricingTable = {
+    'gemini-2.5-flash': {
+      text: { inputPer1M: 0.075, outputPer1M: 0.30 },
+      audio: { inputPer1M: 1.00, outputPer1M: 2.50 }
+    },
+    'gemini-2.5-pro': {
+      text: { inputPer1M: 1.25, outputPer1M: 10.00 },
+      audio: { inputPer1M: 1.25, outputPer1M: 10.00 }
+    },
+    'gemini-2.5-flash-lite': {
+      text: { inputPer1M: 0.10, outputPer1M: 0.40 },
+      audio: { inputPer1M: 0.10, outputPer1M: 0.40 }
+    }
+  };
+
+  // モデル名を正規化（バージョン番号削除）
+  const normalizedModelName = modelName.toLowerCase().replace(/-\d{3}$/, '');
+
+  // モデルが見つからない場合はデフォルト価格を使用
+  if (!pricingTable[normalizedModelName]) {
+    return pricingTable['gemini-2.5-flash'][inputType] || pricingTable['gemini-2.5-flash']['text'];
+  }
+
+  // 入力タイプが見つからない場合はテキスト価格を使用
+  if (!pricingTable[normalizedModelName][inputType]) {
+    return pricingTable[normalizedModelName]['text'];
+  }
+
+  return pricingTable[normalizedModelName][inputType];
 }
