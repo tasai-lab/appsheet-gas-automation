@@ -1012,12 +1012,8 @@ function callVertexAIForTextGeneration(prompt, model, logger) {
 }
 
 /**
- * 為替レート設定（USD -> JPY）
- */
-const EXCHANGE_RATE_USD_TO_JPY = 150;
-
-/**
  * Vertex AI APIレスポンスからusageMetadataを抽出（日本円計算）
+ * @note 為替レートはgemini_client.gsのEXCHANGE_RATE_USD_TO_JPYを使用
  * @param {Object} jsonResponse - APIレスポンス
  * @param {string} modelName - 使用したモデル名
  * @param {string} inputType - 入力タイプ ('audio' | 'text')
