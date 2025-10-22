@@ -137,23 +137,45 @@ class GASLogger {
       const outputCostJPY = this.usageMetadata ? this.usageMetadata.outputCostJPY : 0;
       const totalCostJPY = this.usageMetadata ? this.usageMetadata.totalCostJPY : 0;
 
-      // メインログ行を追加
+      // 統合コスト管理シート用のログ行（37列）
       const mainLogRow = [
-        this.startTime,
-        endTime,
-        executionTime,
-        this.scriptName,
-        status,
-        recordId || '',
-        this.requestId,
-        this._getLogSummary(),
-        this._getErrorSummary(),
-        model,
-        inputTokens,
-        outputTokens,
-        inputCostJPY,
-        outputCostJPY,
-        totalCostJPY
+        this.startTime,                    // 1. タイムスタンプ
+        this.scriptName,                   // 2. スクリプト名
+        status,                            // 3. ステータス
+        recordId || '',                    // 4. レコードID
+        this.requestId,                    // 5. リクエストID
+        executionTime,                     // 6. 処理時間(秒)
+        model,                             // 7. モデル名
+        inputTokens,                       // 8. Input Tokens
+        outputTokens,                      // 9. Output Tokens
+        inputCostJPY,                      // 10. Input料金(円)
+        outputCostJPY,                     // 11. Output料金(円)
+        totalCostJPY,                      // 12. 合計料金(円)
+        '',                                // 13. 通話ID（プロジェクト固有）
+        '',                                // 14. ファイルパス
+        '',                                // 15. ファイルID
+        '',                                // 16. ファイルサイズ
+        '',                                // 17. 要約(抜粋)
+        '',                                // 18. 文字起こし長
+        '',                                // 19. アクション数
+        '',                                // 20. 利用者ID
+        '',                                // 21. 利用者名
+        '',                                // 22. 依頼理由
+        '',                                // 23. 全文回答ID
+        '',                                // 24. 記録ID
+        '',                                // 25. スタッフID
+        '',                                // 26. 記録タイプ
+        '',                                // 27. 入力テキスト長
+        '',                                // 28. ドキュメントキー
+        '',                                // 29. 処理種別
+        '',                                // 30. ファイル名
+        '',                                // 31. 処理結果(ページ数)
+        this.startTime,                    // 32. 開始時刻
+        endTime,                           // 33. 終了時刻
+        this._getLogSummary(),             // 34. ログサマリー
+        this._getErrorSummary(),           // 35. エラー詳細
+        '',                                // 36. 実行ユーザー
+        ''                                 // 37. 備考
       ];
 
       sheet.appendRow(mainLogRow);
@@ -188,27 +210,49 @@ class GASLogger {
       DriveApp.getRootFolder().removeFile(file);
     }
     
-    let sheet = spreadsheet.getSheetByName('実行履歴');
+    let sheet = spreadsheet.getSheetByName('コスト管理');
     if (!sheet) {
-      sheet = spreadsheet.insertSheet('実行履歴');
-      
-      // ヘッダー行を追加
+      sheet = spreadsheet.insertSheet('コスト管理');
+
+      // 統合ヘッダー行を追加
       const headers = [
-        '開始時刻',
-        '終了時刻',
-        '実行時間(秒)',
+        'タイムスタンプ',
         'スクリプト名',
         'ステータス',
         'レコードID',
         'リクエストID',
-        'ログサマリー',
-        'エラー詳細',
-        'モデル',
+        '処理時間(秒)',
+        'モデル名',
         'Input Tokens',
         'Output Tokens',
         'Input料金(円)',
         'Output料金(円)',
-        '合計料金(円)'
+        '合計料金(円)',
+        '通話ID',
+        'ファイルパス',
+        'ファイルID',
+        'ファイルサイズ',
+        '要約(抜粋)',
+        '文字起こし長',
+        'アクション数',
+        '利用者ID',
+        '利用者名',
+        '依頼理由',
+        '全文回答ID',
+        '記録ID',
+        'スタッフID',
+        '記録タイプ',
+        '入力テキスト長',
+        'ドキュメントキー',
+        '処理種別',
+        'ファイル名',
+        '処理結果(ページ数)',
+        '開始時刻',
+        '終了時刻',
+        'ログサマリー',
+        'エラー詳細',
+        '実行ユーザー',
+        '備考'
       ];
       sheet.appendRow(headers);
 
@@ -218,23 +262,32 @@ class GASLogger {
       headerRange.setBackground('#4285f4');
       headerRange.setFontColor('#ffffff');
 
-      // 列幅を調整
-      sheet.setColumnWidth(1, 150);  // 開始時刻
-      sheet.setColumnWidth(2, 150);  // 終了時刻
-      sheet.setColumnWidth(3, 100);  // 実行時間
-      sheet.setColumnWidth(4, 250);  // スクリプト名
-      sheet.setColumnWidth(5, 100);  // ステータス
-      sheet.setColumnWidth(6, 150);  // レコードID
-      sheet.setColumnWidth(7, 250);  // リクエストID
-      sheet.setColumnWidth(8, 400);  // ログサマリー
-      sheet.setColumnWidth(9, 400);  // エラー詳細
-      sheet.setColumnWidth(10, 180); // モデル
-      sheet.setColumnWidth(11, 120); // Input Tokens
-      sheet.setColumnWidth(12, 120); // Output Tokens
-      sheet.setColumnWidth(13, 120); // Input Cost
-      sheet.setColumnWidth(14, 120); // Output Cost
-      sheet.setColumnWidth(15, 120); // Total Cost
-      
+      // 列幅を調整（統合コスト管理シート用）
+      sheet.setColumnWidth(1, 150);  // タイムスタンプ
+      sheet.setColumnWidth(2, 250);  // スクリプト名
+      sheet.setColumnWidth(3, 100);  // ステータス
+      sheet.setColumnWidth(4, 150);  // レコードID
+      sheet.setColumnWidth(5, 250);  // リクエストID
+      sheet.setColumnWidth(6, 100);  // 処理時間(秒)
+      sheet.setColumnWidth(7, 180);  // モデル名
+      sheet.setColumnWidth(8, 120);  // Input Tokens
+      sheet.setColumnWidth(9, 120);  // Output Tokens
+      sheet.setColumnWidth(10, 120); // Input料金(円)
+      sheet.setColumnWidth(11, 120); // Output料金(円)
+      sheet.setColumnWidth(12, 120); // 合計料金(円)
+
+      // プロジェクト固有の列（デフォルト幅）
+      for (let col = 13; col <= 31; col++) {
+        sheet.setColumnWidth(col, 150);
+      }
+
+      sheet.setColumnWidth(32, 150); // 開始時刻
+      sheet.setColumnWidth(33, 150); // 終了時刻
+      sheet.setColumnWidth(34, 400); // ログサマリー
+      sheet.setColumnWidth(35, 400); // エラー詳細
+      sheet.setColumnWidth(36, 150); // 実行ユーザー
+      sheet.setColumnWidth(37, 200); // 備考
+
       // 固定行
       sheet.setFrozenRows(1);
     }
