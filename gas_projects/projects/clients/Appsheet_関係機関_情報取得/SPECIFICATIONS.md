@@ -537,7 +537,7 @@ return { isDuplicate: true };
 
 ### ログ監視
 
-- **ログスプレッドシート**: `16swPUizvdlyPxUjbDpVl9-VBDJZO91kX`
+- **ログスプレッドシート**: `16UHnMlSUlnUy-67gbwuvjeeU73AwDomqzJwGi6L4rVA` （統合GAS実行ログ）
 - **監視項目**:
   - ステータス（成功/エラー/重複）
   - 処理時間

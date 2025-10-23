@@ -17,8 +17,8 @@ const APPSHEET_APP_ID = '27bceb6f-9a2c-4ab6-9438-31fec25a495e';
 const APPSHEET_ACCESS_KEY = 'V2-A0207-tnP4i-YwteT-Cg55O-7YBvg-zMXQX-sS4Xv-XuaKP';
 const ORGANIZATIONS_TABLE_NAME = 'Organizations';
 
-// 実行ログスプレッドシート設定
-const EXECUTION_LOG_SPREADSHEET_ID = '16swPUizvdlyPxUjbDpVl9-VBDJZO91kX';
+// 実行ログスプレッドシート設定（統合GAS実行ログ）
+const EXECUTION_LOG_SPREADSHEET_ID = '16UHnMlSUlnUy-67gbwuvjeeU73AwDomqzJwGi6L4rVA';
 
 // Places API設定
 const PLACES_API_CONFIG = {

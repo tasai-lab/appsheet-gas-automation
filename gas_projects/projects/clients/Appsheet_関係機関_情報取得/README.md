@@ -297,7 +297,7 @@ testLogHelpers();
 testDebugLogger();
 ```
 
-**注意**: `testLogHelpers()`は実際に統合コスト管理シートに書き込みを行います。テスト実行後、スプレッドシート（`16swPUizvdlyPxUjbDpVl9-VBDJZO91kX`）を確認してください。
+**注意**: `testLogHelpers()`は実際に統合コスト管理シートに書き込みを行います。テスト実行後、スプレッドシート（`16UHnMlSUlnUy-67gbwuvjeeU73AwDomqzJwGi6L4rVA`）を確認してください。
 
 ## パラメータ
 
