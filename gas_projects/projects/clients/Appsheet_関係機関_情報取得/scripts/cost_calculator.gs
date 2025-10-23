@@ -23,32 +23,31 @@ const PLACES_API_PRICING = {
     pricePerRequest: 0.017, // USD per request
     priceUSD: 17.00, // USD per 1,000 requests
     freeTier: 0
-  },
-
-  // 為替レート（USD to JPY）
-  EXCHANGE_RATE: 150
+  }
 };
 
 /**
  * Places API Text Search のコストを計算
  * @param {number} apiCallCount - API呼び出し回数
- * @returns {Object} { costUSD: ドル, costJPY: 日本円 }
+ * @returns {Object} { costUSD: ドル, costJPY: 日本円, exchangeRate: 為替レート }
  */
 function calculatePlacesAPICost(apiCallCount) {
   if (!apiCallCount || apiCallCount === 0) {
     return {
       costUSD: 0,
-      costJPY: 0
+      costJPY: 0,
+      exchangeRate: EXCHANGE_RATE_USD_TO_JPY
     };
   }
 
   // Text Search (New) の料金計算
   const costUSD = apiCallCount * PLACES_API_PRICING.TEXT_SEARCH.pricePerRequest;
-  const costJPY = costUSD * PLACES_API_PRICING.EXCHANGE_RATE;
+  const costJPY = costUSD * EXCHANGE_RATE_USD_TO_JPY;
 
   return {
     costUSD: parseFloat(costUSD.toFixed(4)),
-    costJPY: parseFloat(costJPY.toFixed(2))
+    costJPY: parseFloat(costJPY.toFixed(2)),
+    exchangeRate: EXCHANGE_RATE_USD_TO_JPY
   };
 }
 
@@ -66,12 +65,13 @@ function generateCostReport(apiCallCount, cacheUsed) {
     cacheUsed: cacheUsed,
     costUSD: cost.costUSD,
     costJPY: cost.costJPY,
-    costSummary: `¥${cost.costJPY.toFixed(2)} (${cost.costUSD.toFixed(4)} USD)`,
+    exchangeRate: cost.exchangeRate,
+    costSummary: `¥${cost.costJPY.toFixed(2)} ($${cost.costUSD.toFixed(4)})`,
     pricingDetails: {
       apiType: 'Places API (New) - Text Search',
       pricePerRequest: `$${PLACES_API_PRICING.TEXT_SEARCH.pricePerRequest} / request`,
       pricePer1000: `$${PLACES_API_PRICING.TEXT_SEARCH.priceUSD} / 1,000 requests`,
-      exchangeRate: `1 USD = ${PLACES_API_PRICING.EXCHANGE_RATE} JPY`
+      exchangeRate: `1 USD = ${EXCHANGE_RATE_USD_TO_JPY} JPY`
     }
   };
 }

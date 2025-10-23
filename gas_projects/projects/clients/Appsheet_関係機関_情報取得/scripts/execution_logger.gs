@@ -76,7 +76,7 @@ function logExecution(status, orgId, details = {}) {
 
     // 統合コスト管理シート用のログ行（37列）
     // 備考欄の内容を構築（デバッグ情報含む）
-    let notesContent = details.notes || `USD: $${cost.costUSD.toFixed(4)}, キャッシュ使用: ${details.cacheUsed ? 'はい' : 'いいえ'}`;
+    let notesContent = details.notes || `USD: $${cost.costUSD.toFixed(4)}, JPY: ¥${cost.costJPY.toFixed(2)}, 為替: 1 USD = ${cost.exchangeRate} JPY, キャッシュ: ${details.cacheUsed ? '使用' : '未使用'}`;
 
     // デバッグモードが有効で、デバッグノートがある場合は追加
     if (DEBUG_MODE && details.debugNotes) {
@@ -250,8 +250,9 @@ function calculateApiCostDetails(apiCallCount, cacheUsed = false) {
     cacheUsed: cacheUsed,
     costUSD: cost.costUSD,
     costJPY: cost.costJPY,
+    exchangeRate: cost.exchangeRate,
     apiType: 'Places API (New) - Text Search',
-    notes: `USD: $${cost.costUSD.toFixed(4)}, キャッシュ使用: ${cacheUsed ? 'はい' : 'いいえ'}`
+    notes: `USD: $${cost.costUSD.toFixed(4)}, JPY: ¥${cost.costJPY.toFixed(2)}, 為替: 1 USD = ${cost.exchangeRate} JPY, キャッシュ: ${cacheUsed ? '使用' : '未使用'}`
   };
 }
 

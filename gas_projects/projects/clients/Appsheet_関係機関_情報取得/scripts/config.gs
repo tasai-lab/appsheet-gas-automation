@@ -9,6 +9,10 @@ const SCRIPT_NAME = 'Appsheet_関係機関_情報取得';
 // デバッグモード設定
 const DEBUG_MODE = true; // 本番環境ではfalseに設定
 
+// 為替レート設定（USD → JPY）
+// 全プロジェクト共通: 2025年1月時点の想定レート
+const EXCHANGE_RATE_USD_TO_JPY = 150;
+
 // Google Places API設定
 const PLACES_API_KEY = 'AIzaSyD-V_IwW1flPJif6eYFZPFjLpfonyLKT-Y';
 
