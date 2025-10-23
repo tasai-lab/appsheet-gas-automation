@@ -251,32 +251,7 @@ function processRequest(orgId, commonName, fullAddress) {
 
     // AppSheetに取得結果を書き込み
     debugLogger.logStep('AppSheet更新');
-    const appsheetTimer = new ExecutionTimer();
-
-    try {
-      updateOrganization(orgId, placeData);
-
-      // AppSheet API成功をログに記録
-      logSuccess(orgId, {
-        places_api_calls: 0, // AppSheet APIはPlaces APIではない
-        processingTime: appsheetTimer.getElapsedSeconds(),
-        processType: 'AppSheet更新',
-        searchQuery: '',
-        summary: `AppSheet更新成功: ${orgId}`,
-        notes: '組織情報を更新しました'
-      });
-
-    } catch (error) {
-      // AppSheet APIエラーをログに記録
-      logFailure(orgId, error, {
-        places_api_calls: 0,
-        processingTime: appsheetTimer.getElapsedSeconds(),
-        processType: 'AppSheet更新',
-        searchQuery: '',
-        summary: `AppSheet更新失敗: ${orgId}`
-      });
-      throw error;
-    }
+    updateOrganization(orgId, placeData);
 
     debugLogger.info('処理完了', {
       orgId: orgId,
