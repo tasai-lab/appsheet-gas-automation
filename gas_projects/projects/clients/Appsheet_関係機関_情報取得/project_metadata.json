@@ -1,0 +1,23 @@
+{
+  "name": "Appsheet_関係機関_情報取得",
+  "description": "Google Mapの登録名称と住所から、Google Places APIで関係機関の詳細情報を取得し、AppSheetのOrganizationsテーブルを更新",
+  "created": "2025-10-23T00:00:00Z",
+  "category": "clients",
+  "apis": [
+    "Google Places API (New)",
+    "AppSheet API v2"
+  ],
+  "features": [
+    "Google Places統合",
+    "営業時間整形",
+    "郵便番号抽出",
+    "重複防止",
+    "実行ログ記録"
+  ],
+  "version": "1.0.0",
+  "author": "GAS Automation Toolkit",
+  "dependencies": [
+    "execution_logger.gs",
+    "duplication_prevention.gs"
+  ]
+}

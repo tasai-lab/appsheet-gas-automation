@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir:*)",
+      "Bash(awk:*)",
+      "Bash(clasp push:*)",
+      "Bash(cat:*)",
+      "Bash(clasp deployments:*)",
+      "Bash(clasp deploy:*)",
+      "Bash(gcloud services list:*)",
+      "Bash(gcloud services enable:*)",
+      "Bash(gcloud alpha services api-keys list:*)",
+      "Bash(gcloud alpha services api-keys get-key-string:*)",
+      "Bash(python deploy_unified.py:*)",
+      "Read(//c/tools/python/code/all-gas/**)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
