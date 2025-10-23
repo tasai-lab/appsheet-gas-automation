@@ -270,8 +270,15 @@ function processSingleBusinessCard(card, destinationFolder) {
     logInfo('   ⚠️  完全重複のためファイルをアーカイブ');
     archiveFile(getFileId(actualFront));
     
+    // OCRで使用した裏面をアーカイブ
     if (actualBack) {
       archiveFile(getFileId(actualBack));
+    }
+    
+    // OCRで使用しなかった裏面も存在すればアーカイブ
+    if (unusedBackFile) {
+      logInfo('   📦 OCR未使用の裏面もアーカイブ');
+      archiveFile(getFileId(unusedBackFile));
     }
     
     return buildProcessingResult(
@@ -279,7 +286,7 @@ function processSingleBusinessCard(card, destinationFolder) {
       null,
       extractedInfo,
       actualFront.getName(),
-      actualBack ? actualBack.getName() : null
+      actualBack ? actualBack.getName() : (unusedBackFile ? unusedBackFile.getName() : null)
     );
     
   } else if (actionResult.action === 'CHECK_ORG') {
@@ -320,14 +327,21 @@ function processSingleBusinessCard(card, destinationFolder) {
   const frontFileName = generateFileName(extractedInfo, contactId, false);
   const backFileName = actualBack ? generateFileName(extractedInfo, contactId, true) : null;
   
+  // OCRで使用しなかった裏面ファイルも処理対象に含める
+  const unusedBackFile = (card.back && !actualBack) ? card.back : null;
+  const unusedBackFileName = unusedBackFile ? generateFileName(extractedInfo, contactId, true) : null;
+  
   logDebug('ファイル名生成結果', {
     swapped: extractedInfo._swapped || false,
     hasFront: !!actualFront,
     hasBack: !!actualBack,
+    hasUnusedBack: !!unusedBackFile,
     frontFileName: frontFileName,
     backFileName: backFileName,
+    unusedBackFileName: unusedBackFileName,
     actualFrontName: actualFront.getName(),
-    actualBackName: actualBack ? actualBack.getName() : 'なし'
+    actualBackName: actualBack ? actualBack.getName() : 'なし',
+    unusedBackName: unusedBackFile ? unusedBackFile.getName() : 'なし'
   });
   
   // STEP 6: ファイル移動（入れ替え済みのファイルを使用）
@@ -336,9 +350,13 @@ function processSingleBusinessCard(card, destinationFolder) {
   moveAndRenameFile(actualFront, destinationFolder, frontFileName);
   
   if (actualBack) {
-    logInfo(`   裏面: ${actualBack.getName()} → ${backFileName}`);
+    logInfo(`   裏面(OCR使用): ${actualBack.getName()} → ${backFileName}`);
     moveAndRenameFile(actualBack, destinationFolder, backFileName);
     logInfo(`   ✅ 裏面ファイル移動完了`);
+  } else if (unusedBackFile) {
+    logInfo(`   裏面(OCR未使用): ${unusedBackFile.getName()} → ${unusedBackFileName}`);
+    moveAndRenameFile(unusedBackFile, destinationFolder, unusedBackFileName);
+    logInfo(`   ✅ 裏面ファイル移動完了（OCR未使用だが存在）`);
   } else {
     logInfo(`   ⚠️  裏面ファイルなし`);
   }
@@ -348,13 +366,16 @@ function processSingleBusinessCard(card, destinationFolder) {
   
   let actionExecuted = finalAction;
   
+  // 最終的な裏面ファイル名を決定（OCR使用 or 未使用のいずれか）
+  const finalBackFileName = backFileName || unusedBackFileName;
+  
   if (finalAction === 'CREATE') {
-    createContactInAppSheet(contactId, extractedInfo, frontFileName, backFileName);
-    
+    createContactInAppSheet(contactId, extractedInfo, frontFileName, finalBackFileName);
+  
   } else if (finalAction === 'UPDATE') {
     // 名刺が既に存在する場合はスキップされる可能性がある
     try {
-      updateContactInAppSheet(contactId, extractedInfo, frontFileName, backFileName);
+      updateContactInAppSheet(contactId, extractedInfo, frontFileName, finalBackFileName);
     } catch (error) {
       // スキップの場合は特別なエラーメッセージをチェック
       if (error.message && error.message.includes('名刺画像が既に存在')) {
@@ -371,12 +392,14 @@ function processSingleBusinessCard(card, destinationFolder) {
           archiveFile(movedFrontFile.getId());
         }
         
-        if (backFileName) {
-          const movedBackFile = destinationFolder.getFilesByName(backFileName).hasNext() 
-            ? destinationFolder.getFilesByName(backFileName).next() 
+        // 裏面ファイルもアーカイブ（OCR使用・未使用問わず）
+        if (finalBackFileName) {
+          const movedBackFile = destinationFolder.getFilesByName(finalBackFileName).hasNext() 
+            ? destinationFolder.getFilesByName(finalBackFileName).next() 
             : null;
           
           if (movedBackFile) {
+            logInfo(`   📦 裏面もアーカイブ: ${finalBackFileName}`);
             archiveFile(movedBackFile.getId());
           }
         }
@@ -393,6 +416,6 @@ function processSingleBusinessCard(card, destinationFolder) {
     contactId,
     extractedInfo,
     frontFileName,
-    backFileName
+    finalBackFileName
   );
 }

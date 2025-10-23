@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>自動化処理管理</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .content {
+      padding: 30px;
+    }
+
+    .button-group {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    .btn {
+      padding: 16px 24px;
+      font-size: 15px;
+      font-weight: 600;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-receipt {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+
+    .btn-receipt-corp {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+
+    .btn-card {
+      background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    }
+
+    .log-section {
+      margin-bottom: 30px;
+    }
+
+    .log-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .log-header h2 {
+      font-size: 18px;
+      color: #333;
+    }
+
+    .log-controls {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-clear {
+      padding: 8px 16px;
+      font-size: 13px;
+      background: #6c757d;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .log-container {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      padding: 20px;
+      height: 400px;
+      overflow-y: auto;
+      font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .log-entry {
+      margin-bottom: 8px;
+      padding: 6px 10px;
+      border-left: 3px solid transparent;
+      border-radius: 4px;
+    }
+
+    .log-info {
+      color: #0066cc;
+      border-left-color: #0066cc;
+      background: rgba(0, 102, 204, 0.05);
+    }
+
+    .log-success {
+      color: #28a745;
+      border-left-color: #28a745;
+      background: rgba(40, 167, 69, 0.05);
+    }
+
+    .log-error {
+      color: #dc3545;
+      border-left-color: #dc3545;
+      background: rgba(220, 53, 69, 0.05);
+    }
+
+    .log-warning {
+      color: #ffc107;
+      border-left-color: #ffc107;
+      background: rgba(255, 193, 7, 0.05);
+    }
+
+    .log-timestamp {
+      color: #6c757d;
+      font-size: 11px;
+      margin-right: 8px;
+    }
+
+    .cost-section {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 25px;
+      border-radius: 8px;
+      display: none;
+    }
+
+    .cost-section.show {
+      display: block;
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .cost-header {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .cost-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+    }
+
+    .cost-item {
+      background: rgba(255, 255, 255, 0.15);
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .cost-label {
+      font-size: 12px;
+      opacity: 0.9;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .cost-value {
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 8px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .status-processing {
+      background: rgba(0, 102, 204, 0.2);
+      color: #0066cc;
+    }
+
+    .status-completed {
+      background: rgba(40, 167, 69, 0.2);
+      color: #28a745;
+    }
+
+    .status-error {
+      background: rgba(220, 53, 69, 0.2);
+      color: #dc3545;
+    }
+
+    /* スクロールバーのスタイル */
+    .log-container::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .log-container::-webkit-scrollbar-track {
+      background: #e9ecef;
+      border-radius: 4px;
+    }
+
+    .log-container::-webkit-scrollbar-thumb {
+      background: #adb5bd;
+      border-radius: 4px;
+    }
+
+    .log-container::-webkit-scrollbar-thumb:hover {
+      background: #6c757d;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🚀 自動化処理管理</h1>
+      <p>レシート・名刺の自動処理システム</p>
+    </div>
+
+    <div class="content">
+      <!-- ボタングループ -->
+      <div class="button-group">
+        <button class="btn btn-receipt" onclick="executeProcess('receipt-personal')" id="btn-receipt-personal">
+          📄 レシート処理（個人）
+        </button>
+        <button class="btn btn-receipt-corp" onclick="executeProcess('receipt-corporate')" id="btn-receipt-corporate">
+          🏢 レシート処理（法人）
+        </button>
+        <button class="btn btn-card" onclick="executeProcess('business-card')" id="btn-business-card">
+          👤 名刺取り込み
+        </button>
+      </div>
+
+      <!-- ログセクション -->
+      <div class="log-section">
+        <div class="log-header">
+          <h2>📋 実行ログ</h2>
+          <div class="log-controls">
+            <button class="btn-clear" onclick="clearLogs()">ログクリア</button>
+          </div>
+        </div>
+        <div class="log-container" id="logContainer">
+          <div class="log-entry log-info">
+            <span class="log-timestamp">[待機中]</span>
+            処理を開始するボタンを押してください
+          </div>
+        </div>
+      </div>
+
+      <!-- コストセクション -->
+      <div class="cost-section" id="costSection">
+        <div class="cost-header">💰 処理コスト</div>
+        <div class="cost-grid">
+          <div class="cost-item">
+            <div class="cost-label">処理件数</div>
+            <div class="cost-value" id="cost-count">-</div>
+          </div>
+          <div class="cost-item">
+            <div class="cost-label">Input Tokens</div>
+            <div class="cost-value" id="cost-input-tokens">-</div>
+          </div>
+          <div class="cost-item">
+            <div class="cost-label">Output Tokens</div>
+            <div class="cost-value" id="cost-output-tokens">-</div>
+          </div>
+          <div class="cost-item">
+            <div class="cost-label">コスト (USD)</div>
+            <div class="cost-value" id="cost-usd">$0.00</div>
+          </div>
+          <div class="cost-item">
+            <div class="cost-label">コスト (JPY)</div>
+            <div class="cost-value" id="cost-jpy">¥0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentProcess = null;
+
+    function addLog(message, type = 'info') {
+      const container = document.getElementById('logContainer');
+      const timestamp = new Date().toLocaleTimeString('ja-JP');
+      const entry = document.createElement('div');
+      entry.className = `log-entry log-${type}`;
+      entry.innerHTML = `<span class="log-timestamp">[${timestamp}]</span>${message}`;
+      container.appendChild(entry);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function clearLogs() {
+      const container = document.getElementById('logContainer');
+      container.innerHTML = '<div class="log-entry log-info"><span class="log-timestamp">[クリア]</span>ログをクリアしました</div>';
+      document.getElementById('costSection').classList.remove('show');
+    }
+
+    function setButtonsEnabled(enabled) {
+      const buttons = ['btn-receipt-personal', 'btn-receipt-corporate', 'btn-business-card'];
+      buttons.forEach(id => {
+        document.getElementById(id).disabled = !enabled;
+      });
+    }
+
+    function executeProcess(processType) {
+      // ボタンを無効化
+      setButtonsEnabled(false);
+
+      // コストセクションを非表示
+      document.getElementById('costSection').classList.remove('show');
+
+      // 処理名を表示
+      const processNames = {
+        'receipt-personal': 'レシート処理（個人）',
+        'receipt-corporate': 'レシート処理（法人）',
+        'business-card': '名刺取り込み'
+      };
+
+      addLog(`🚀 ${processNames[processType]}を開始します...`, 'info');
+
+      // サーバー側の処理を呼び出し
+      google.script.run
+        .withSuccessHandler(onProcessSuccess)
+        .withFailureHandler(onProcessError)
+        .withUserObject(processType)
+        .runProcess(processType);
+    }
+
+    function onProcessSuccess(result, processType) {
+      addLog(`✅ 処理が完了しました`, 'success');
+
+      // 結果ログを表示
+      if (result.logs && result.logs.length > 0) {
+        result.logs.forEach(log => {
+          addLog(log.message, log.type || 'info');
+        });
+      }
+
+      // コスト情報を表示
+      if (result.cost) {
+        displayCost(result.cost);
+      }
+
+      // 処理サマリー
+      if (result.summary) {
+        addLog(`📊 ${result.summary}`, 'info');
+      }
+
+      // ボタンを有効化
+      setButtonsEnabled(true);
+    }
+
+    function onProcessError(error, processType) {
+      addLog(`❌ エラーが発生しました: ${error.message}`, 'error');
+      setButtonsEnabled(true);
+    }
+
+    function displayCost(cost) {
+      document.getElementById('cost-count').textContent = cost.processedCount || 0;
+      document.getElementById('cost-input-tokens').textContent = (cost.inputTokens || 0).toLocaleString();
+      document.getElementById('cost-output-tokens').textContent = (cost.outputTokens || 0).toLocaleString();
+      document.getElementById('cost-usd').textContent = `$${(cost.costUSD || 0).toFixed(4)}`;
+      document.getElementById('cost-jpy').textContent = `¥${(cost.costJPY || 0).toLocaleString()}`;
+
+      document.getElementById('costSection').classList.add('show');
+    }
+
+    // 初期化
+    window.onload = function() {
+      addLog('システム準備完了。処理を開始できます。', 'success');
+    };
+  </script>
+</body>
+</html>
