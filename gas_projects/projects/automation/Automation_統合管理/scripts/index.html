@@ -14,7 +14,7 @@
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: #f8f5f2;
       min-height: 100vh;
       padding: 20px;
     }
@@ -22,28 +22,32 @@
     .container {
       max-width: 1200px;
       margin: 0 auto;
-      background: white;
+      background: #fffffe;
       border-radius: 12px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 8px 24px rgba(35, 35, 35, 0.12);
       overflow: hidden;
+      border: 1px solid rgba(35, 35, 35, 0.08);
     }
 
     .header {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
+      background: #078080;
+      color: #fffffe;
       padding: 30px;
       text-align: center;
+      border-bottom: 2px solid #232323;
     }
 
     .header h1 {
       font-size: 28px;
       font-weight: 600;
       margin-bottom: 8px;
+      color: #fffffe;
     }
 
     .header p {
       font-size: 14px;
-      opacity: 0.9;
+      opacity: 0.95;
+      color: #fffffe;
     }
 
     .content {
@@ -61,17 +65,17 @@
       padding: 16px 24px;
       font-size: 15px;
       font-weight: 600;
-      color: white;
-      border: none;
+      color: #232323;
+      border: 2px solid #232323;
       border-radius: 8px;
       cursor: pointer;
       transition: all 0.3s ease;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 2px 8px rgba(35, 35, 35, 0.1);
     }
 
     .btn:hover {
       transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 4px 16px rgba(35, 35, 35, 0.15);
     }
 
     .btn:active {
@@ -79,21 +83,24 @@
     }
 
     .btn:disabled {
-      opacity: 0.6;
+      opacity: 0.5;
       cursor: not-allowed;
       transform: none;
     }
 
     .btn-receipt {
-      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      background: #078080;
+      color: #fffffe;
     }
 
     .btn-receipt-corp {
-      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      background: #078080;
+      color: #fffffe;
     }
 
     .btn-card {
-      background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+      background: #f45d48;
+      color: #fffffe;
     }
 
     .log-section {
@@ -109,7 +116,8 @@
 
     .log-header h2 {
       font-size: 18px;
-      color: #333;
+      color: #232323;
+      font-weight: 600;
     }
 
     .log-controls {
@@ -120,16 +128,21 @@
     .btn-clear {
       padding: 8px 16px;
       font-size: 13px;
-      background: #6c757d;
-      color: white;
-      border: none;
+      background: #f8f5f2;
+      color: #232323;
+      border: 1px solid #232323;
       border-radius: 6px;
       cursor: pointer;
     }
 
+    .btn-clear:hover {
+      background: #232323;
+      color: #fffffe;
+    }
+
     .log-container {
-      background: #f8f9fa;
-      border: 1px solid #dee2e6;
+      background: #f8f5f2;
+      border: 2px solid #232323;
       border-radius: 8px;
       padding: 20px;
       height: 400px;
@@ -137,6 +150,7 @@
       font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
       font-size: 13px;
       line-height: 1.6;
+      color: #222525;
     }
 
     .log-entry {
@@ -147,40 +161,43 @@
     }
 
     .log-info {
-      color: #0066cc;
-      border-left-color: #0066cc;
-      background: rgba(0, 102, 204, 0.05);
+      color: #078080;
+      border-left-color: #078080;
+      background: rgba(7, 128, 128, 0.08);
     }
 
     .log-success {
-      color: #28a745;
-      border-left-color: #28a745;
-      background: rgba(40, 167, 69, 0.05);
+      color: #078080;
+      border-left-color: #078080;
+      background: rgba(7, 128, 128, 0.08);
+      font-weight: 600;
     }
 
     .log-error {
-      color: #dc3545;
-      border-left-color: #dc3545;
-      background: rgba(220, 53, 69, 0.05);
+      color: #f45d48;
+      border-left-color: #f45d48;
+      background: rgba(244, 93, 72, 0.08);
     }
 
     .log-warning {
-      color: #ffc107;
-      border-left-color: #ffc107;
-      background: rgba(255, 193, 7, 0.05);
+      color: #f45d48;
+      border-left-color: #f45d48;
+      background: rgba(244, 93, 72, 0.08);
     }
 
     .log-timestamp {
-      color: #6c757d;
+      color: #222525;
       font-size: 11px;
       margin-right: 8px;
+      opacity: 0.7;
     }
 
     .cost-section {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
+      background: #078080;
+      color: #fffffe;
       padding: 25px;
       border-radius: 8px;
+      border: 2px solid #232323;
       display: none;
     }
 
@@ -205,6 +222,7 @@
       font-weight: 600;
       margin-bottom: 20px;
       text-align: center;
+      color: #fffffe;
     }
 
     .cost-grid {
@@ -214,9 +232,10 @@
     }
 
     .cost-item {
-      background: rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 254, 0.1);
       padding: 15px;
       border-radius: 8px;
+      border: 1px solid rgba(255, 255, 254, 0.2);
       text-align: center;
     }
 
@@ -226,11 +245,13 @@
       margin-bottom: 8px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
+      color: #fffffe;
     }
 
     .cost-value {
       font-size: 24px;
       font-weight: 700;
+      color: #fffffe;
     }
 
     .spinner {
@@ -259,8 +280,8 @@
     }
 
     .status-processing {
-      background: rgba(0, 102, 204, 0.2);
-      color: #0066cc;
+      background: rgba(65, 135, 225, 0.2);
+      color: #4187E1;
     }
 
     .status-completed {
