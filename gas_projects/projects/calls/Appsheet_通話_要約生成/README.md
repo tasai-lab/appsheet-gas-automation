@@ -4,9 +4,9 @@
 
 **Created:** 2025-07-20T11:00:09.647Z
 
-**Modified:** 2025-10-22
+**Modified:** 2025-10-23
 
-**Current Version:** v101
+**Current Version:** v102
 
 **Owners:** 
 
@@ -27,6 +27,15 @@ v100では、処理モードの条件分岐機能が追加され、新規依頼�
 - **[OPTIMIZATION_GUIDE_v95.md](./OPTIMIZATION_GUIDE_v95.md)** - API統合最適化の詳細
 
 ## 主な機能
+
+### v102の新機能（2025-10-23）
+
+- ✅ **JSON修正機能**: AIレスポンスのJSONパースエラー時に自動修正
+  - Gemini 2.5 Proでテキストベースの修正を実行
+  - 1回のみリトライ（無限ループ防止）
+  - 修正失敗時は詳細なエラーメッセージをAppSheetに記録
+  - コスト効率: テキスト処理のみで約¥1-2/回
+  - テスト関数: `testFixMalformedJSON()`, `testFixMalformedJSONComplex()`
 
 ### v101の新機能（2025-10-22）
 

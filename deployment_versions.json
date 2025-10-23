@@ -69,6 +69,12 @@
       "script_id": "1PK1RNjLaA7g-1-JrJ-AFn1S0D_nL5cGHNJeDtyhIap_otDnYsUAquSz6",
       "deployments": [
         {
+          "version": 118,
+          "description": "v102: JSON修正機能追加 - Proリトライで自動修正",
+          "timestamp": "2025-10-23T12:00:00.000000",
+          "status": "success"
+        },
+        {
           "version": null,
           "description": "Vertex AIモデルをgemini-2.5-flashに変更 - 音声解析に最適な高速モデル",
           "timestamp": "2025-10-17T19:31:08.072553",

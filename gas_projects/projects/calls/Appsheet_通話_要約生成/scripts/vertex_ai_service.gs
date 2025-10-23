@@ -483,8 +483,42 @@ function extractAndValidateJSON(responseText, includeRequestDetails = false, ena
 
   const contentText = candidate.content.parts[0].text;
 
-  // JSON抽出（2段階戦略）
-  const result = extractJSONFromText(contentText);
+  // JSON抽出（2段階戦略 + Proリトライ）
+  let result;
+  try {
+    result = extractJSONFromText(contentText);
+  } catch (parseError) {
+    Logger.log(`[JSON抽出] 初回パース失敗: ${parseError.message}`);
+    Logger.log(`[JSON抽出] Gemini 2.5 Pro による修正を試みます`);
+
+    try {
+      // configオブジェクトを取得（analyzeAudioWithVertexAI から渡されている）
+      const config = getConfig();
+
+      // Proで修正を試みる（1回のみ）
+      result = fixMalformedJSONWithVertexAI(
+        contentText,
+        config,
+        includeRequestDetails,
+        enableTranscript
+      );
+
+      Logger.log('[JSON抽出] ✓ Pro修正により正常なJSONを取得');
+
+    } catch (fixError) {
+      Logger.log(`[JSON抽出] ❌ Pro修正も失敗: ${fixError.message}`);
+      Logger.log(`[JSON抽出] 元のエラー: ${parseError.message}`);
+      Logger.log(`[JSON抽出] 元のテキスト (先頭1000文字): ${contentText.substring(0, 1000)}`);
+
+      // 修正も失敗した場合は詳細なエラーメッセージをthrow
+      throw new Error(
+        `JSONパース失敗（Proリトライも失敗）\n` +
+        `初回エラー: ${parseError.message}\n` +
+        `修正エラー: ${fixError.message}\n` +
+        `AIレスポンスを確認してください`
+      );
+    }
+  }
 
   // 構造検証と修復
   const validatedResult = validateAndFixJSONStructure(result, contentText, includeRequestDetails, enableTranscript);
@@ -748,4 +782,131 @@ function validateAndFixJSONStructure(result, originalText, includeRequestDetails
   }
   
   return repairedResult;
+}
+
+/**
+ * 不正なJSONをVertex AI (Gemini 2.5 Pro)で修正
+ * テキスト入力専用 - 音声データなし
+ *
+ * @param {string} malformedJson - 不正なJSON文字列
+ * @param {Object} config - 設定オブジェクト
+ * @param {boolean} includeRequestDetails - 依頼情報を含むか
+ * @param {boolean} enableTranscript - 全文文字起こしを含むか
+ * @return {Object} 修正されたJSONオブジェクト
+ * @throws {Error} 修正に失敗した場合
+ */
+function fixMalformedJSONWithVertexAI(malformedJson, config, includeRequestDetails = false, enableTranscript = true) {
+  Logger.log('[JSON修正] Gemini 2.5 Pro で不正なJSONを修正します');
+
+  // 期待されるスキーマを構築
+  let schemaDescription = '以下のキーを含むJSON:\n';
+  schemaDescription += '- "summary": 文字列型（要約）\n';
+  if (enableTranscript) {
+    schemaDescription += '- "transcript": 文字列型（全文文字起こし）\n';
+  }
+  schemaDescription += '- "actions": 配列型（アクション、空配列可）\n';
+  if (includeRequestDetails) {
+    schemaDescription += '- "request_details": オブジェクト型（依頼情報）\n';
+  }
+
+  // 修正プロンプト
+  const fixPrompt = `
+# 指示
+
+以下の不正なJSONテキストを修正して、有効なJSONオブジェクトとして出力してください。
+
+**期待されるJSON構造:**
+${schemaDescription}
+
+**重要な修正ルール:**
+1. 欠けている閉じ括弧やカンマを補完
+2. エスケープ漏れの引用符を修正
+3. 途中で切れている文字列は「...（続き不明）」で終了
+4. 必須キーが欠けている場合は空の値（空文字列、空配列、null）で補完
+5. 出力は有効なJSONのみ（説明文やMarkdownコードブロックは不要）
+
+**不正なJSON:**
+\`\`\`
+${malformedJson}
+\`\`\`
+
+**出力形式:**
+有効なJSONオブジェクトをそのまま返してください（コードブロック不要）。
+`;
+
+  // Vertex AI API呼び出し（Proモデル、テキストのみ）
+  const proModel = VERTEX_GEMINI_MODELS.PRO; // 'gemini-2.5-pro'
+  const endpoint = `https://${config.gcpLocation}-aiplatform.googleapis.com/v1/projects/${config.gcpProjectId}/locations/${config.gcpLocation}/publishers/google/models/${proModel}:generateContent`;
+
+  Logger.log(`[JSON修正] モデル: ${proModel}, リージョン: ${config.gcpLocation}`);
+
+  const requestBody = {
+    contents: [{
+      role: 'user',
+      parts: [{ text: fixPrompt }]
+    }],
+    generationConfig: {
+      responseMimeType: "application/json",
+      temperature: 0.1, // 修正タスクなので低めの温度
+      topP: 0.95,
+      maxOutputTokens: 8192
+    }
+  };
+
+  const options = {
+    method: 'post',
+    contentType: 'application/json',
+    payload: JSON.stringify(requestBody),
+    headers: {
+      'Authorization': `Bearer ${ScriptApp.getOAuthToken()}`
+    },
+    muteHttpExceptions: true
+  };
+
+  // API実行
+  Logger.log('[JSON修正] Pro API呼び出し開始');
+  const response = UrlFetchApp.fetch(endpoint, options);
+  const statusCode = response.getResponseCode();
+  const responseText = response.getContentText();
+
+  // ステータスコードチェック
+  if (statusCode !== 200) {
+    Logger.log(`[JSON修正] APIエラー: ${statusCode}\n${responseText}`);
+    throw new Error(`JSON修正API呼び出し失敗 (HTTP ${statusCode})`);
+  }
+
+  Logger.log(`[JSON修正] Pro API呼び出し成功`);
+
+  // レスポンスからJSONを抽出
+  let jsonResponse;
+  try {
+    jsonResponse = JSON.parse(responseText);
+  } catch (error) {
+    throw new Error(`修正APIレスポンスのJSON解析失敗: ${error.message}`);
+  }
+
+  // 候補チェック
+  if (!jsonResponse.candidates || jsonResponse.candidates.length === 0) {
+    throw new Error('修正APIから有効な応答がありません');
+  }
+
+  const candidate = jsonResponse.candidates[0];
+  if (!candidate.content || !candidate.content.parts || candidate.content.parts.length === 0) {
+    throw new Error('修正APIの応答にコンテンツがありません');
+  }
+
+  const fixedText = candidate.content.parts[0].text;
+  Logger.log(`[JSON修正] 修正されたテキスト (先頭500文字): ${fixedText.substring(0, 500)}`);
+
+  // 修正されたJSONをパース
+  const fixedJson = extractJSONFromText(fixedText);
+
+  // usageMetadataを抽出（修正タスクはテキスト入力）
+  const usageMetadata = extractVertexAIUsageMetadata(jsonResponse, proModel, 'text');
+  if (usageMetadata) {
+    Logger.log(`[JSON修正] Pro使用量: Input ${usageMetadata.inputTokens} tokens, Output ${usageMetadata.outputTokens} tokens, 合計 ¥${usageMetadata.totalCostJPY.toFixed(2)}`);
+  }
+
+  Logger.log('[JSON修正] ✓ 修正成功');
+  return fixedJson;
 }

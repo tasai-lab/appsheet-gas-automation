@@ -169,3 +169,121 @@ function testAnswerQuerySimple() {
 
   return result;
 }
+
+/**
+ * テスト用関数: JSON修正機能
+ * 不正なJSONをGemini 2.5 Proで修正するテスト
+ * GASエディタから直接実行してテスト可能
+ *
+ * @return {Object} 修正結果
+ */
+function testFixMalformedJSON() {
+  Logger.log('[JSON修正テスト] 開始');
+
+  // テスト用の不正なJSON（閉じ括弧が欠けている、カンマが不足、など）
+  const malformedJson = `
+{
+  "summary": "通話の要約です。",
+  "transcript": "スタッフ: こんにちは。\\n相手: はい、お願いします
+  "actions": [
+    {
+      "title": "フォローアップ",
+      "details": "1週間後に連絡",
+      "action_type": "タスク"
+    }
+  ]
+`;
+
+  Logger.log('[JSON修正テスト] 不正なJSON:');
+  Logger.log(malformedJson);
+
+  const config = getConfig();
+
+  try {
+    const fixedJson = fixMalformedJSONWithVertexAI(
+      malformedJson,
+      config,
+      false, // includeRequestDetails
+      true   // enableTranscript
+    );
+
+    Logger.log('[JSON修正テスト] ✓ 修正成功');
+    Logger.log('[JSON修正テスト] 修正後のJSON:');
+    Logger.log(JSON.stringify(fixedJson, null, 2));
+
+    return {
+      success: true,
+      fixedJson: fixedJson
+    };
+
+  } catch (error) {
+    Logger.log('[JSON修正テスト] ❌ 修正失敗');
+    Logger.log(`エラー: ${error.message}`);
+
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
+
+/**
+ * テスト用関数: JSON修正機能（複雑なケース）
+ * より複雑な不正JSONのテスト
+ *
+ * @return {Object} 修正結果
+ */
+function testFixMalformedJSONComplex() {
+  Logger.log('[JSON修正テスト(複雑)] 開始');
+
+  // より複雑な不正JSON（request_detailsあり、途中で切れている）
+  const malformedJson = `
+{
+  "summary": "新規依頼の通話です。\\n\\n**通話の概要**\\n- 日時: 2025/10/23\\n- 対応者: 田中\\n",
+  "transcript": "スタッフ: お電話ありがとうございます。\\n相手: 訪問看護の依頼をしたいのですが...\\nスタッフ: 承知しました。詳細を
+  "actions": [
+    {
+      "title": "初回訪問",
+      "details": "来週月曜日に訪問",
+      "action_type": "イベント",
+      "start_datetime": "2025-10-28T10:00:00Z"
+    }
+  ],
+  "request_details": {
+    "priority": "高",
+    "request_type": "新規依頼",
+    "request_reason": "独居高齢者の見守り依頼
+`;
+
+  Logger.log('[JSON修正テスト(複雑)] 不正なJSON:');
+  Logger.log(malformedJson);
+
+  const config = getConfig();
+
+  try {
+    const fixedJson = fixMalformedJSONWithVertexAI(
+      malformedJson,
+      config,
+      true, // includeRequestDetails
+      true  // enableTranscript
+    );
+
+    Logger.log('[JSON修正テスト(複雑)] ✓ 修正成功');
+    Logger.log('[JSON修正テスト(複雑)] 修正後のJSON:');
+    Logger.log(JSON.stringify(fixedJson, null, 2));
+
+    return {
+      success: true,
+      fixedJson: fixedJson
+    };
+
+  } catch (error) {
+    Logger.log('[JSON修正テスト(複雑)] ❌ 修正失敗');
+    Logger.log(`エラー: ${error.message}`);
+
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
