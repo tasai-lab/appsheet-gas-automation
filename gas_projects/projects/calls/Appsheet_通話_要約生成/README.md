@@ -6,7 +6,7 @@
 
 **Modified:** 2025-10-23
 
-**Current Version:** v102
+**Current Version:** v103
 
 **Owners:** 
 
@@ -27,6 +27,13 @@ v100では、処理モードの条件分岐機能が追加され、新規依頼�
 - **[OPTIMIZATION_GUIDE_v95.md](./OPTIMIZATION_GUIDE_v95.md)** - API統合最適化の詳細
 
 ## 主な機能
+
+### v103のバグ修正（2025-10-23）
+
+- 🐛 **requestId配列対応**: `requestId`が配列の場合に`trim()`エラーが発生する問題を修正
+  - 配列の場合は最初の要素を取得して文字列化
+  - すべてのケースで安全に処理できるよう正規化処理を追加
+  - エラー: `TypeError: requestId.trim is not a function` を解消
 
 ### v102の新機能（2025-10-23）
 

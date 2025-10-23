@@ -34,13 +34,21 @@ function processCallSummary(params) {
   const callId = params.callId;
   const callDatetime = params.callDatetime;
   const callType = params.callType || params.call_type || ''; // callTypeまたはcall_type
-  const requestId = params.requestId || params.request_id || params.request_ids || params.requestIds || ''; // 複数の形式に対応
+
+  // requestIdの取得と正規化（配列の場合は最初の要素を取得）
+  let requestId = params.requestId || params.request_id || params.request_ids || params.requestIds || '';
+  if (Array.isArray(requestId)) {
+    requestId = requestId.length > 0 ? String(requestId[0]).trim() : '';
+  } else {
+    requestId = String(requestId).trim();
+  }
+
   const filePath = params.filePath;
   const fileId = params.fileId;
   const callContextText = params.callContextText;
   const userInfoText = params.userInfoText;
   const clientId = params.clientId;
-  
+
   Logger.log(`[処理開始] 通話ID: ${callId}, callType: ${callType}, requestId: ${requestId}`);
   
   // 処理開始をログ記録
@@ -63,7 +71,7 @@ function processCallSummary(params) {
   if (callType === '新規依頼' || callType === 'new_request') {
     processingMode = 'create_request';
     Logger.log(`[処理モード] 新規依頼作成モード`);
-  } else if (requestId && requestId.trim() !== '') {
+  } else if (requestId && requestId !== '') {
     processingMode = 'update_request';
     Logger.log(`[処理モード] 既存依頼更新モード (Request ID: ${requestId})`);
   } else {
