@@ -1,0 +1,32 @@
+{
+  "timeZone": "Asia/Tokyo",
+  "dependencies": {
+    "libraries": [
+      {
+        "userSymbol": "ReceiptLib",
+        "version": "0",
+        "libraryId": "1fiasxaxXqPk8JEUkZWODUilE6-Oyj_LK7XdKLgnStvECST2nxVN09yJa",
+        "developmentMode": true
+      },
+      {
+        "userSymbol": "BusinessCardLib",
+        "version": "0",
+        "libraryId": "1mwwFgGKKmFDw25xskQ_uRM8cTGNoEZYOqbJe1w6rlvru76vD02YG97Po",
+        "developmentMode": true
+      }
+    ]
+  },
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8",
+  "webapp": {
+    "access": "ANYONE",
+    "executeAs": "USER_DEPLOYING"
+  },
+  "oauthScopes": [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive",
+    "https://www.googleapis.com/auth/script.external_request",
+    "https://www.googleapis.com/auth/cloud-platform",
+    "https://www.googleapis.com/auth/userinfo.email"
+  ]
+}

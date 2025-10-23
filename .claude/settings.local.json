@@ -85,7 +85,9 @@
       "Bash(del \"C:\\tools\\python\\code\\all-gas\\gas_projects\\projects\\nursing\\Appsheet_訪問看護_定期スケジュール\\scripts\\コード.gs\")",
       "Bash(git checkout:*)",
       "Bash(move \"コード.gs\" \"staff_assignment.gs\")",
-      "Bash(xargs:*)"
+      "Bash(xargs:*)",
+      "Bash(mkdir:*)",
+      "Bash(mv:*)"
     ],
     "deny": [],
     "ask": []

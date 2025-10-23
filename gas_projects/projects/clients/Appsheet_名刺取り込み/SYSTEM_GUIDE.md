@@ -178,8 +178,12 @@ flowchart TD
     O --> T[次のペアへ]
     Q --> U[ファイル移動]
     R --> U
-    U --> V[AppSheet更新]
-    V --> T
+    U --> V{名刺既存?}
+    V -->|Yes| W[SKIPアクション]
+    V -->|No| X[AppSheet更新]
+    W --> Y[ファイルアーカイブ]
+    X --> T
+    Y --> T
     
     T --> W{全て完了?}
     W -->|No| G
@@ -251,6 +255,47 @@ sequenceDiagram
     Note over W,D: 表面ファイルを裏面名で保存
 ```
 
+### 処理アクション
+
+| アクション | 発生条件 | 処理内容 |
+|-----------|---------|---------|
+| **CREATE** | 新規連絡先 | AppSheetに新規作成、ファイル移動 |
+| **UPDATE** | 既存連絡先（名刺なし） | AppSheet更新、ファイル移動 |
+| **SKIP** | 既存連絡先（名刺あり） | 更新スキップ、ファイルアーカイブ |
+| **DELETE** | 完全重複 | ファイルアーカイブ（AppSheet操作なし） |
+| **ERROR** | 処理失敗 | エラーログ記録 |
+
+**処理統計出力例**:
+```
+📊 処理統計
+   合計: 15件
+   登録/更新: 10件
+   スキップ: 3件 (名刺既存)
+   重複削除: 2件
+   エラー: 0件
+```
+
+### 裏面ファイル処理
+
+**OCR使用・未使用に関わらず、裏面ファイルが存在すれば必ず処理**:
+
+1. **OCRで両面読取**: 両方移動・リネーム
+2. **OCRで片面読取**: 使用した面＋未使用の裏面も移動
+3. **アーカイブ時**: 表面＋裏面（OCR未使用含む）すべてアーカイブ
+
+```javascript
+// OCR未使用の裏面も処理対象
+const unusedBackFile = (card.back && !actualBack) ? card.back : null;
+const unusedBackFileName = unusedBackFile ? generateFileName(...) : null;
+
+// 移動処理
+if (actualBack) {
+  moveAndRenameFile(actualBack, destinationFolder, backFileName);
+} else if (unusedBackFile) {
+  moveAndRenameFile(unusedBackFile, destinationFolder, unusedBackFileName);
+}
+```
+
 ---
 
 ## コンポーネント詳細
@@ -306,8 +351,21 @@ AppSheet連携とデータ操作。
 - `determineContactAction()`: 重複チェック
 - `compareOrganizations()`: AI組織比較
 - `createContactInAppSheet()`: 新規作成
-- `updateContactInAppSheet()`: 更新
+- `updateContactInAppSheet()`: 更新（名刺既存時はエラー送出）
 - `getContactFromAppSheet()`: データ取得
+
+**既存名刺保護**:
+```javascript
+// updateContactInAppSheet内
+const existingData = getContactByIdFromAppSheet(contactId);
+const hasFrontCard = existingData.business_card_front && 
+                     existingData.business_card_front.trim() !== '';
+
+if (hasFrontCard) {
+  // 名刺画像が既に存在する場合は更新をスキップ
+  throw new Error('名刺画像が既に存在するため更新をスキップしました');
+}
+```
 
 ### 5. drive_service.gs
 
