@@ -6,9 +6,9 @@
  * @date 2025-10-21
  */
 
-// 設定（統合GAS実行ログを使用、専用シート）
+// 設定（統合GAS実行ログを使用、コスト管理シート）
 const EXECUTION_LOG_SPREADSHEET_ID = '16UHnMlSUlnUy-67gbwuvjeeU73AwDomqzJwGi6L4rVA';
-const EXECUTION_LOG_SHEET_NAME = '実行履歴_利用者情報統合';
+const EXECUTION_LOG_SHEET_NAME = 'コスト管理';
 const SCRIPT_NAME_LOG = 'Appsheet_利用者_情報統合';
 
 /**
@@ -42,24 +42,45 @@ function logExecution(status, clientId, details = {}) {
       userEmail = 'システム';
     }
 
+    // 統合コスト管理シート用のログ行（37列）
     const row = [
-      Utilities.formatDate(timestamp, 'Asia/Tokyo', 'yyyy/MM/dd HH:mm:ss'),
-      SCRIPT_NAME_LOG,
-      status,
-      clientId || '',
-      details.clientName || '',
-      details.processType || '',
-      details.updatedCount || '',
-      details.processingTime || '',
-      details.errorMessage || '',
-      details.modelName || '',
-      userEmail,
-      details.notes || '',
-      details.inputTokens || '',
-      details.outputTokens || '',
-      details.inputCost || '',
-      details.outputCost || '',
-      details.totalCost || ''
+      timestamp,                        // 1. タイムスタンプ
+      SCRIPT_NAME_LOG,                  // 2. スクリプト名
+      status,                           // 3. ステータス
+      clientId || '',                   // 4. レコードID
+      '',                               // 5. リクエストID
+      details.processingTime || '',     // 6. 処理時間(秒)
+      details.modelName || '',          // 7. モデル名
+      details.inputTokens || '',        // 8. Input Tokens
+      details.outputTokens || '',       // 9. Output Tokens
+      details.inputCost || '',          // 10. Input料金(円)
+      details.outputCost || '',         // 11. Output料金(円)
+      details.totalCost || '',          // 12. 合計料金(円)
+      '',                               // 13. 通話ID
+      '',                               // 14. ファイルパス
+      '',                               // 15. ファイルID
+      '',                               // 16. ファイルサイズ
+      '',                               // 17. 要約(抜粋)
+      '',                               // 18. 文字起こし長
+      '',                               // 19. アクション数
+      clientId || '',                   // 20. 利用者ID
+      details.clientName || '',         // 21. 利用者名
+      '',                               // 22. 依頼理由
+      '',                               // 23. 全文回答ID
+      '',                               // 24. 記録ID
+      '',                               // 25. スタッフID
+      '',                               // 26. 記録タイプ
+      '',                               // 27. 入力テキスト長
+      '',                               // 28. ドキュメントキー
+      details.processType || '',        // 29. 処理種別
+      '',                               // 30. ファイル名
+      details.updatedCount || '',       // 31. 処理結果(ページ数)
+      timestamp,                        // 32. 開始時刻
+      timestamp,                        // 33. 終了時刻
+      '',                               // 34. ログサマリー
+      details.errorMessage || '',       // 35. エラー詳細
+      userEmail,                        // 36. 実行ユーザー
+      details.notes || ''               // 37. 備考
     ];
 
     sheet.appendRow(row);
@@ -76,30 +97,52 @@ function logExecution(status, clientId, details = {}) {
  * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet
  */
 function initializeLogSheet(sheet) {
+  // 統合コスト管理シート用ヘッダー（37列）
   const headers = [
     'タイムスタンプ',
     'スクリプト名',
     'ステータス',
-    '利用者ID',
-    '利用者名',
-    '処理種別',
-    '更新件数',
-    '処理時間（秒）',
-    'エラーメッセージ',
+    'レコードID',
+    'リクエストID',
+    '処理時間(秒)',
     'モデル名',
-    '実行ユーザー',
-    '備考',
     'Input Tokens',
     'Output Tokens',
     'Input料金(円)',
     'Output料金(円)',
-    '合計料金(円)'
+    '合計料金(円)',
+    '通話ID',
+    'ファイルパス',
+    'ファイルID',
+    'ファイルサイズ',
+    '要約(抜粋)',
+    '文字起こし長',
+    'アクション数',
+    '利用者ID',
+    '利用者名',
+    '依頼理由',
+    '全文回答ID',
+    '記録ID',
+    'スタッフID',
+    '記録タイプ',
+    '入力テキスト長',
+    'ドキュメントキー',
+    '処理種別',
+    'ファイル名',
+    '処理結果(ページ数)',
+    '開始時刻',
+    '終了時刻',
+    'ログサマリー',
+    'エラー詳細',
+    '実行ユーザー',
+    '備考'
   ];
 
   sheet.appendRow(headers);
   sheet.getRange(1, 1, 1, headers.length)
     .setFontWeight('bold')
-    .setBackground('#f3f3f3');
+    .setBackground('#4285f4')
+    .setFontColor('#ffffff');
   sheet.setFrozenRows(1);
 
   Logger.log('[実行ログ] シートを初期化しました');
