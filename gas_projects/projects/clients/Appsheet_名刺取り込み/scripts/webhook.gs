@@ -168,11 +168,19 @@ function processAllBusinessCards() {
     const costCalc = getCostCalculator();
     const costSummary = costCalc.getSummary(VERTEX_AI_CONFIG.ocrModel);
     
+    // 統計計算
+    const successCount = results.filter(r => r.action === 'CREATE' || r.action === 'UPDATE').length;
+    const skipCount = results.filter(r => r.action === 'SKIP').length;
+    const deleteCount = results.filter(r => r.action === 'DELETE').length;
+    const errorCount = results.filter(r => r.action === 'ERROR').length;
+    
     logInfo(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
     logInfo(`📊 処理統計`);
     logInfo(`   合計: ${results.length}件`);
-    logInfo(`   成功: ${results.filter(r => r.action !== 'ERROR').length}件`);
-    logInfo(`   エラー: ${results.filter(r => r.action === 'ERROR').length}件`);
+    logInfo(`   登録/更新: ${successCount}件`);
+    logInfo(`   スキップ: ${skipCount}件 (名刺既存)`);
+    logInfo(`   重複削除: ${deleteCount}件`);
+    logInfo(`   エラー: ${errorCount}件`);
     logInfo(`💰 コスト情報`);
     logInfo(`   API呼び出し: ${costSummary.totalApiCalls}回`);
     logInfo(`   入力トークン: ${costSummary.totalInputTokens}`);
@@ -181,23 +189,20 @@ function processAllBusinessCards() {
     logInfo(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
     
     // 実行ログ記録
-    const successCount = results.filter(r => r.action !== 'ERROR').length;
-    const errorCount = results.filter(r => r.action === 'ERROR').length;
-    
     logExecution(
       'Appsheet_名刺取り込み',
       errorCount === 0 ? '成功' : (successCount > 0 ? '一部成功' : '失敗'),
       Utilities.getUuid(),
       {
-        summary: `${results.length}件処理 (成功:${successCount}, エラー:${errorCount})`,
+        summary: `${results.length}件処理 (登録/更新:${successCount}, スキップ:${skipCount}, 重複:${deleteCount}, エラー:${errorCount})`,
         processingTime: `${executionTimer.getElapsedSeconds()}秒`,
         apiUsed: 'Vertex AI',
         modelName: VERTEX_AI_CONFIG.ocrModel,
         tokens: costCalc.getLogString(VERTEX_AI_CONFIG.ocrModel),
         cost: costSummary.costFormatted,
         inputSummary: `${results.length}枚の名刺画像`,
-        outputSummary: `${successCount}件登録/更新`,
-        notes: errorCount > 0 ? `${errorCount}件のエラーあり` : ''
+        outputSummary: `${successCount}件登録/更新, ${skipCount}件スキップ`,
+        notes: errorCount > 0 ? `${errorCount}件のエラーあり` : (skipCount > 0 ? `${skipCount}件は名刺既存のためスキップ` : '')
       }
     );
     
@@ -341,15 +346,50 @@ function processSingleBusinessCard(card, destinationFolder) {
   // STEP 7: AppSheet更新
   logInfo('STEP 5️⃣: AppSheet更新');
   
+  let actionExecuted = finalAction;
+  
   if (finalAction === 'CREATE') {
     createContactInAppSheet(contactId, extractedInfo, frontFileName, backFileName);
     
   } else if (finalAction === 'UPDATE') {
-    updateContactInAppSheet(contactId, extractedInfo, frontFileName, backFileName);
+    // 名刺が既に存在する場合はスキップされる可能性がある
+    try {
+      updateContactInAppSheet(contactId, extractedInfo, frontFileName, backFileName);
+    } catch (error) {
+      // スキップの場合は特別なエラーメッセージをチェック
+      if (error.message && error.message.includes('名刺画像が既に存在')) {
+        logInfo('   ⚠️  名刺画像が既に存在するため更新スキップ');
+        logInfo('   📦 ファイルをアーカイブへ移動');
+        
+        // 移動済みファイルを元に戻してからアーカイブ
+        // ※既にdestinationFolderに移動済みなので、そこから取得
+        const movedFrontFile = destinationFolder.getFilesByName(frontFileName).hasNext() 
+          ? destinationFolder.getFilesByName(frontFileName).next() 
+          : null;
+        
+        if (movedFrontFile) {
+          archiveFile(movedFrontFile.getId());
+        }
+        
+        if (backFileName) {
+          const movedBackFile = destinationFolder.getFilesByName(backFileName).hasNext() 
+            ? destinationFolder.getFilesByName(backFileName).next() 
+            : null;
+          
+          if (movedBackFile) {
+            archiveFile(movedBackFile.getId());
+          }
+        }
+        
+        actionExecuted = 'SKIP';
+      } else {
+        throw error;
+      }
+    }
   }
   
   return buildProcessingResult(
-    finalAction,
+    actionExecuted,
     contactId,
     extractedInfo,
     frontFileName,

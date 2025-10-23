@@ -251,8 +251,25 @@ function updateContactInAppSheet(contactId, info, frontFileName, backFileName = 
     
     logDebug('既存データ取得成功', {
       org_id: existingData.org_id,
-      status: existingData.status
+      status: existingData.status,
+      existing_front: existingData.business_card_front,
+      existing_back: existingData.business_card_back
     });
+    
+    // STEP 2: 名刺画像が既に存在するかチェック
+    const hasFrontCard = existingData.business_card_front && existingData.business_card_front.trim() !== '';
+    const hasBackCard = existingData.business_card_back && existingData.business_card_back.trim() !== '';
+    
+    if (hasFrontCard) {
+      logInfo(`⚠️  名刺画像が既に存在します - 更新をスキップ: ${contactId}`);
+      logInfo(`   既存の表面: ${existingData.business_card_front}`);
+      if (hasBackCard) {
+        logInfo(`   既存の裏面: ${existingData.business_card_back}`);
+      }
+      
+      // スキップを示すエラーをスロー（実際はエラーではなく正常なスキップ）
+      throw new Error('名刺画像が既に存在するため更新をスキップしました');
+    }
     
     logDebug('ファイル名情報', {
       frontFileName: frontFileName,
@@ -260,7 +277,7 @@ function updateContactInAppSheet(contactId, info, frontFileName, backFileName = 
       hasBack: backFileName !== null && backFileName !== undefined
     });
     
-    // STEP 2: 名刺情報のみを更新（既存フィールドは保持）
+    // STEP 3: 名刺情報のみを更新（既存フィールドは保持）
     const updateData = {
       contact_id: contactId,  // キー
       
@@ -303,7 +320,7 @@ function updateContactInAppSheet(contactId, info, frontFileName, backFileName = 
       business_card_back: updateData.business_card_back
     });
     
-    // STEP 3: AppSheet更新実行
+    // STEP 4: AppSheet更新実行
     AppSheetConnector.updateRow(config, updateData);
     logInfo(`✅ 連絡先更新成功: ${contactId}`);
     

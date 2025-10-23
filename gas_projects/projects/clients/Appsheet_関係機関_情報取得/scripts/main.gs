@@ -198,6 +198,7 @@ function processRequest(orgId, commonName, fullAddress) {
 
     // Places APIで情報を取得（キャッシュ対応）
     debugLogger.logStep('Places API情報取得');
+    const placesApiTimer = new ExecutionTimer();
     const placeDataResult = getPlaceDetailsWithCache(commonName, fullAddress);
     apiCallCount = placeDataResult.apiCalled ? 1 : 0;
 
@@ -209,10 +210,35 @@ function processRequest(orgId, commonName, fullAddress) {
 
     if (placeDataResult.error) {
       debugLogger.error('Places APIエラー', { error: placeDataResult.error });
+
+      // Places APIエラーをログに記録
+      if (placeDataResult.apiCalled) {
+        const apiCostDetails = calculateApiCostDetails(1, false);
+        logFailure(orgId, new Error(placeDataResult.error), {
+          ...apiCostDetails,
+          processingTime: placesApiTimer.getElapsedSeconds(),
+          processType: 'Places API検索',
+          searchQuery: `${commonName} ${fullAddress}`,
+          summary: `Places API失敗: ${orgId}`
+        });
+      }
+
       throw new Error(placeDataResult.error);
     }
 
     const placeData = placeDataResult.data;
+
+    // Places API成功をログに記録
+    if (placeDataResult.apiCalled) {
+      const apiCostDetails = calculateApiCostDetails(1, false);
+      logSuccess(orgId, {
+        ...apiCostDetails,
+        processingTime: placesApiTimer.getElapsedSeconds(),
+        processType: 'Places API検索',
+        searchQuery: `${commonName} ${fullAddress}`,
+        summary: `Places API成功: ${orgId}`
+      });
+    }
 
     debugLogger.logTransformation('Places API → AppSheet', placeDataResult.data, {
       postal_code: placeData.postal_code,
@@ -225,7 +251,32 @@ function processRequest(orgId, commonName, fullAddress) {
 
     // AppSheetに取得結果を書き込み
     debugLogger.logStep('AppSheet更新');
-    updateOrganization(orgId, placeData);
+    const appsheetTimer = new ExecutionTimer();
+
+    try {
+      updateOrganization(orgId, placeData);
+
+      // AppSheet API成功をログに記録
+      logSuccess(orgId, {
+        places_api_calls: 0, // AppSheet APIはPlaces APIではない
+        processingTime: appsheetTimer.getElapsedSeconds(),
+        processType: 'AppSheet更新',
+        searchQuery: '',
+        summary: `AppSheet更新成功: ${orgId}`,
+        notes: '組織情報を更新しました'
+      });
+
+    } catch (error) {
+      // AppSheet APIエラーをログに記録
+      logFailure(orgId, error, {
+        places_api_calls: 0,
+        processingTime: appsheetTimer.getElapsedSeconds(),
+        processType: 'AppSheet更新',
+        searchQuery: '',
+        summary: `AppSheet更新失敗: ${orgId}`
+      });
+      throw error;
+    }
 
     debugLogger.info('処理完了', {
       orgId: orgId,
