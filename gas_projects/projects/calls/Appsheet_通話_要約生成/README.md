@@ -6,7 +6,7 @@
 
 **Modified:** 2025-10-23
 
-**Current Version:** v103
+**Current Version:** v104
 
 **Owners:** 
 
@@ -27,6 +27,12 @@ v100では、処理モードの条件分岐機能が追加され、新規依頼�
 - **[OPTIMIZATION_GUIDE_v95.md](./OPTIMIZATION_GUIDE_v95.md)** - API統合最適化の詳細
 
 ## 主な機能
+
+### v104のバグ修正（2025-10-23）
+
+- 🐛 **transcript空文字列対応**: `transcript`が空文字列の場合にエラーが発生する問題を修正
+  - `hasOwnProperty()`でキーの存在をチェック（空文字列は許容）
+  - Pro修正でtranscriptが空になる場合に対応
 
 ### v103のバグ修正（2025-10-23）
 

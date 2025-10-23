@@ -143,8 +143,8 @@ function processCallSummary(params) {
     throw new Error('解析結果に必須キー (summary, actions) が不足しています');
   }
 
-  // enableTranscript が true の場合のみ transcript をチェック
-  if (config.enableTranscript && !analysisResult.transcript) {
+  // enableTranscript が true の場合のみ transcript をチェック（空文字列は許容）
+  if (config.enableTranscript && !analysisResult.hasOwnProperty('transcript')) {
     throw new Error('解析結果に transcript が不足しています（enableTranscript=true）');
   }
 

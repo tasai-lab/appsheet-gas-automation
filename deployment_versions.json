@@ -69,6 +69,12 @@
       "script_id": "1PK1RNjLaA7g-1-JrJ-AFn1S0D_nL5cGHNJeDtyhIap_otDnYsUAquSz6",
       "deployments": [
         {
+          "version": 120,
+          "description": "v104: transcript空文字列対応 - hasOwnPropertyでチェック",
+          "timestamp": "2025-10-23T18:00:00.000000",
+          "status": "success"
+        },
+        {
           "version": 119,
           "description": "v103: requestId配列対応バグ修正 - 配列の場合は最初の要素を取得",
           "timestamp": "2025-10-23T17:45:00.000000",
