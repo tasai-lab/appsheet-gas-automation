@@ -26,13 +26,27 @@ const EXCHANGE_RATE_USD_TO_JPY_VERTEX = 150;
  * @return {Object} { extractedInfo: 抽出された利用者情報, usageMetadata: コスト情報 }
  */
 function extractClientInfoWithGemini(clientInfoTemp, requestReason) {
+  const startTime = new Date();
+  Logger.log('🤖 [extractClientInfoWithGemini] 開始 - AI情報抽出処理');
+  Logger.log(`🤖 [extractClientInfoWithGemini] 入力文字数: ${clientInfoTemp ? clientInfoTemp.length : 0}文字`);
+
+  Logger.log('🤖 [extractClientInfoWithGemini] プロンプト構築中...');
   const prompt = buildExtractionPrompt(clientInfoTemp, requestReason);
+
+  Logger.log('🤖 [extractClientInfoWithGemini] リクエストボディ構築中...');
   const parts = buildRequestParts(prompt);
   const requestBody = buildVertexAIRequest(parts);
 
+  Logger.log('🤖 [extractClientInfoWithGemini] Vertex AI API呼び出し開始...');
   const response = callVertexAI(requestBody);
 
-  return parseVertexAIResponse(response);
+  Logger.log('🤖 [extractClientInfoWithGemini] レスポンス解析中...');
+  const result = parseVertexAIResponse(response);
+
+  const elapsedMs = new Date() - startTime;
+  Logger.log(`✅ [extractClientInfoWithGemini] 完了 (${elapsedMs}ms) - 抽出情報: ${result.extractedInfo ? '成功' : '失敗'}`);
+
+  return result;
 }
 
 /**
@@ -131,17 +145,25 @@ function buildVertexAIRequest(parts) {
  * @private
  */
 function callVertexAI(requestBody) {
+  Logger.log('🌐 [callVertexAI] 開始 - Vertex AI API呼び出し');
+  Logger.log(`🌐 [callVertexAI] モデル: ${VERTEX_AI_MODEL}`);
+  Logger.log(`🌐 [callVertexAI] プロジェクト: ${GCP_PROJECT_ID}, ロケーション: ${GCP_LOCATION}`);
+
   const url = `https://${GCP_LOCATION}-aiplatform.googleapis.com/v1/projects/${GCP_PROJECT_ID}/locations/${GCP_LOCATION}/publishers/google/models/${VERTEX_AI_MODEL}:generateContent`;
+
+  Logger.log('🌐 [callVertexAI] OAuthトークン取得中...');
+  const token = ScriptApp.getOAuthToken();
+  Logger.log(`🌐 [callVertexAI] OAuthトークン取得完了 (長さ: ${token ? token.length : 0})`);
 
   const options = {
     method: 'post',
     contentType: 'application/json',
-    headers: { 'Authorization': `Bearer ${ScriptApp.getOAuthToken()}` },
+    headers: { 'Authorization': `Bearer ${token}` },
     payload: JSON.stringify(requestBody),
     muteHttpExceptions: true
   };
 
-  Logger.log('[Vertex AI] API呼び出し開始');
+  Logger.log('🌐 [callVertexAI] HTTP POSTリクエスト送信中...');
   const startTime = new Date().getTime();
 
   const response = UrlFetchApp.fetch(url, options);
@@ -151,13 +173,15 @@ function callVertexAI(requestBody) {
   const endTime = new Date().getTime();
   const responseTime = endTime - startTime;
 
-  Logger.log(`[Vertex AI] API応答: ${responseCode}, 処理時間: ${responseTime}ms`);
+  Logger.log(`🌐 [callVertexAI] API応答受信 (${responseTime}ms) - ステータス: ${responseCode}`);
+  Logger.log(`🌐 [callVertexAI] 応答サイズ: ${responseText.length}文字`);
 
   if (responseCode !== 200) {
-    Logger.log(`[Vertex AI] エラーレスポンス: ${responseText}`);
+    Logger.log(`❌ [callVertexAI] APIエラー - ${responseCode}: ${responseText.substring(0, 500)}`);
     throw new Error(`Vertex AI API Error: ${responseCode} - ${responseText.substring(0, 200)}`);
   }
 
+  Logger.log(`✅ [callVertexAI] 正常完了`);
   return responseText;
 }
 

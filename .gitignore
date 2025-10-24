@@ -2,6 +2,8 @@
 credentials.json
 token.pickle
 execution_log_spreadsheet_id.txt
+.env
+.env.*
 
 # Python
 __pycache__/
@@ -50,3 +52,6 @@ deployment_results.json
 *.backup3
 *.backup_individual_params
 nul
+
+# Claude Code local settings
+.claude/settings.local.json

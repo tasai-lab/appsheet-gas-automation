@@ -20,11 +20,15 @@
  * @return {string} 新しいClientID（例: "CL-00001"）
  */
 function getNewClientId() {
+  const startTime = new Date();
+  Logger.log('🔹 [getNewClientId] 開始 - ClientID採番処理');
+
   const findPayload = {
     Action: "Find",
     Properties: { "Locale": "ja-JP" }
   };
 
+  Logger.log(`🔹 [getNewClientId] AppSheet API呼び出し: ${CLIENTS_TABLE_NAME}`);
   const responseText = callAppSheetApi(
     CLIENTS_APP_ID,
     CLIENTS_APP_ACCESS_KEY,
@@ -32,11 +36,16 @@ function getNewClientId() {
     findPayload
   );
 
+  Logger.log(`🔹 [getNewClientId] API応答を受信、パース中...`);
   const rows = JSON.parse(responseText);
   const newCount = rows.length + 1;
   const newIdNumber = "00000".substring(0, 5 - String(newCount).length) + newCount;
+  const newClientId = `CL-${newIdNumber}`;
 
-  return `CL-${newIdNumber}`;
+  const elapsedMs = new Date() - startTime;
+  Logger.log(`✅ [getNewClientId] 完了 (${elapsedMs}ms) - 新ClientID: ${newClientId} (既存件数: ${rows.length}件)`);
+
+  return newClientId;
 }
 
 /**
@@ -47,6 +56,9 @@ function getNewClientId() {
  * @param {Object} params - Webhookで受け取った元のパラメータ
  */
 function createClientInAppSheet(clientId, extractedInfo, params) {
+  const startTime = new Date();
+  Logger.log(`🔹 [createClientInAppSheet] 開始 - ClientID: ${clientId}`);
+
   const rowData = {
     "client_id": clientId,
     "status": DEFAULT_CLIENT_STATUS,
@@ -72,6 +84,8 @@ function createClientInAppSheet(clientId, extractedInfo, params) {
     "updated_by": params.staffId
   };
 
+  Logger.log(`🔹 [createClientInAppSheet] 利用者データ構築完了 - 名前: ${extractedInfo.last_name} ${extractedInfo.first_name}`);
+
   const payload = {
     Action: "Add",
     Properties: { "Locale": "ja-JP" },
@@ -84,6 +98,9 @@ function createClientInAppSheet(clientId, extractedInfo, params) {
     CLIENTS_TABLE_NAME,
     payload
   );
+
+  const elapsedMs = new Date() - startTime;
+  Logger.log(`✅ [createClientInAppSheet] 完了 (${elapsedMs}ms) - ClientID: ${clientId}`);
 }
 
 /**
@@ -94,6 +111,9 @@ function createClientInAppSheet(clientId, extractedInfo, params) {
  * @param {string} errorMessage - エラーメッセージ（オプション）
  */
 function updateRequestStatus(requestId, status, errorMessage) {
+  const startTime = new Date();
+  Logger.log(`🔹 [updateRequestStatus] 開始 - RequestID: ${requestId}, ステータス: ${status}`);
+
   const rowData = {
     "request_id": requestId,
     "status": status
@@ -101,6 +121,7 @@ function updateRequestStatus(requestId, status, errorMessage) {
 
   if (errorMessage) {
     rowData.error_details = `GAS Script Error: ${errorMessage}`;
+    Logger.log(`🔹 [updateRequestStatus] エラー詳細を設定: ${errorMessage.substring(0, 100)}`);
   }
 
   const payload = {
@@ -115,6 +136,9 @@ function updateRequestStatus(requestId, status, errorMessage) {
     REQUESTS_TABLE_NAME,
     payload
   );
+
+  const elapsedMs = new Date() - startTime;
+  Logger.log(`✅ [updateRequestStatus] 完了 (${elapsedMs}ms) - RequestID: ${requestId}`);
 }
 
 /**
@@ -127,6 +151,9 @@ function updateRequestStatus(requestId, status, errorMessage) {
  * @return {string} APIレスポンステキスト
  */
 function callAppSheetApi(appId, accessKey, tableName, payload) {
+  const startTime = new Date();
+  Logger.log(`📡 [callAppSheetApi] 開始 - テーブル: ${tableName}, アクション: ${payload.Action}`);
+
   const apiUrl = `https://api.appsheet.com/api/v2/apps/${appId}/tables/${tableName}/Action`;
 
   const options = {
@@ -137,14 +164,20 @@ function callAppSheetApi(appId, accessKey, tableName, payload) {
     muteHttpExceptions: true
   };
 
+  Logger.log(`📡 [callAppSheetApi] HTTP POSTリクエスト送信中...`);
   const response = UrlFetchApp.fetch(apiUrl, options);
+  const responseCode = response.getResponseCode();
   const responseText = response.getContentText();
+  const elapsedMs = new Date() - startTime;
 
-  Logger.log(`AppSheet API (${tableName}) 応答: ${response.getResponseCode()} - ${responseText}`);
+  Logger.log(`📡 [callAppSheetApi] 応答受信 (${elapsedMs}ms) - ステータス: ${responseCode}`);
+  Logger.log(`📡 [callAppSheetApi] 応答本文 (先頭500文字): ${responseText.substring(0, 500)}`);
 
-  if (response.getResponseCode() >= 400) {
-    throw new Error(`AppSheet API Error (${tableName}): ${response.getResponseCode()} - ${responseText}`);
+  if (responseCode >= 400) {
+    Logger.log(`❌ [callAppSheetApi] APIエラー - ${responseCode}: ${responseText}`);
+    throw new Error(`AppSheet API Error (${tableName}): ${responseCode} - ${responseText}`);
   }
 
+  Logger.log(`✅ [callAppSheetApi] 正常完了 - テーブル: ${tableName}`);
   return responseText;
 }

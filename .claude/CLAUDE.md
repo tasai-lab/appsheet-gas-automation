@@ -1,6 +1,23 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+このファイルは、Claude Code (claude.ai/code) がこのリポジトリで作業する際のガイダンスを提供します。
+
+## クイックスタート
+
+### よく使うコマンド
+
+- `/deploy` - GASプロジェクトをデプロイ
+- `/retrieve` - Google DriveからGASプロジェクトを取得
+- `/analyze-project` - プロジェクト構造を分析
+- `/check-logs` - 実行ログを確認
+- `/optimize-scripts` - 共通モジュールを適用
+- `/test-project` - テスト関数を確認
+
+### 重要な制約
+
+- **機密ファイル保護**: `.env`, `credentials.json`, `token.pickle` は読み書き禁止
+- **デプロイ確認**: `git push`, `clasp push` は実行前に確認が必要
+- **Python構文チェック**: `.py`ファイルの編集後は自動的にコンパイルチェック実行
 
 ## プロジェクト概要
 
@@ -367,3 +384,21 @@ python ツール/generate_all_documentation.py
 - データモデル: `docs/ja/データモデル.md`
 - サービスクラス: `docs/ja/サービスクラス.md`
 - 新規GASの作成先はフォルダーID（16swPUizvdlyPxUjbDpVl9-VBDJZO91kX）にすること。
+
+## Claude Code設定ファイル
+
+### 設定ファイルの階層
+
+1. `.claude/settings.json` - プロジェクト共有設定（Git管理対象）
+2. `.claude/settings.local.json` - 個人用設定（Git除外）
+3. `.claudeignore` - Claude Codeがアクセスすべきでないファイル
+
+### カスタムコマンド
+
+`.claude/commands/` ディレクトリに配置されたMarkdownファイルは、`/コマンド名` でアクセス可能なカスタムコマンドとして利用できます。
+
+### ファイル参照のベストプラクティス
+
+- ファイル参照は必ずマークダウンリンク形式を使用: `[filename.gs](path/to/filename.gs)`
+- 特定行の参照: `[filename.gs:42](path/to/filename.gs#L42)`
+- 行範囲の参照: `[filename.gs:42-51](path/to/filename.gs#L42-L51)`

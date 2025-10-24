@@ -9,7 +9,7 @@
 // 設定（統合GAS実行ログを使用、コスト管理シート）
 const EXECUTION_LOG_SPREADSHEET_ID = '16UHnMlSUlnUy-67gbwuvjeeU73AwDomqzJwGi6L4rVA';
 const EXECUTION_LOG_SHEET_NAME = 'コスト管理';
-const SCRIPT_NAME = 'Appsheet_利用者_反映';
+// SCRIPT_NAMEはconfig.gsで定義済み
 
 /**
  * 実行ログを記録

@@ -97,16 +97,28 @@ function processRequest(params) {
   let clientName = '';
 
   try {
+    Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    Logger.log('🚀 [processRequest] メイン処理開始');
+    Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
     // 必須パラメータチェック
+    Logger.log('✓ [STEP 0] パラメータ検証中...');
     validateRequiredParams(params, ['requestId', 'clientInfoTemp', 'staffId']);
+    Logger.log('✓ [STEP 0] パラメータ検証完了');
 
     Logger.log(`処理開始: Request ID = ${requestId}`);
 
     // 1. 新しいClientIDをAppSheetから取得して採番
+    Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    Logger.log('✓ [STEP 1] ClientID採番開始');
+    Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     newClientId = getNewClientId();
-    Logger.log(`新しいClientIDを採番しました: ${newClientId}`);
+    Logger.log(`✓ [STEP 1] ClientID採番完了: ${newClientId}`);
 
     // 2. AIでテキスト情報から利用者情報を抽出
+    Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    Logger.log('✓ [STEP 2] AI情報抽出開始');
+    Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     const result = extractClientInfoWithGemini(clientInfoTemp, requestReason);
     const extractedInfo = result.extractedInfo;
     usageMetadata = result.usageMetadata;
@@ -115,14 +127,25 @@ function processRequest(params) {
 
     // 利用者名を取得（ログ用）
     clientName = `${extractedInfo.last_name || ''} ${extractedInfo.first_name || ''}`.trim();
+    Logger.log(`✓ [STEP 2] AI情報抽出完了: ${clientName}`);
 
     // 3. Clientsテーブルに新しい利用者を作成
+    Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    Logger.log('✓ [STEP 3] 利用者データ作成開始');
+    Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     createClientInAppSheet(newClientId, extractedInfo, params);
+    Logger.log('✓ [STEP 3] 利用者データ作成完了');
 
     // 4. 元の依頼ステータスを「反映済み」に更新
+    Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    Logger.log('✓ [STEP 4] 依頼ステータス更新開始');
+    Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     updateRequestStatus(requestId, PROCESS_STATUS.REFLECTED, null);
+    Logger.log('✓ [STEP 4] 依頼ステータス更新完了');
 
-    Logger.log(`処理完了。新しい利用者ID ${newClientId} を作成しました。`);
+    Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    Logger.log(`🎉 処理完了。新しい利用者ID ${newClientId} を作成しました。`);
+    Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
     // 成功ログを記録
     logSuccess(requestId, {
