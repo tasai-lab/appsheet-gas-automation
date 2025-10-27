@@ -87,7 +87,22 @@
       "Bash(move \"コード.gs\" \"staff_assignment.gs\")",
       "Bash(xargs:*)",
       "Bash(mkdir:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "WebFetch(domain:ai.google.dev)",
+      "WebFetch(domain:medium.com)",
+      "WebFetch(domain:www.allganize.ai)",
+      "Bash(aiplatform.googleapis.com )",
+      "Bash(run.googleapis.com )",
+      "Bash(sheets.googleapis.com )",
+      "Bash(drive.googleapis.com )",
+      "Bash(logging.googleapis.com )",
+      "Bash(monitoring.googleapis.com )",
+      "Bash(cloudbuild.googleapis.com )",
+      "Bash(artifactregistry.googleapis.com )",
+      "Bash(secretmanager.googleapis.com )",
+      "Bash(cloudresourcemanager.googleapis.com)",
+      "WebFetch(domain:arxiv.org)",
+      "WebFetch(domain:docs.cloud.google.com)"
     ],
     "deny": [],
     "ask": []
