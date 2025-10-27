@@ -175,10 +175,10 @@ export default function ChatContainer() {
             </svg>
           </button>
           <div className="flex items-center gap-3">
-            {/* FRACTALロゴ */}
+            {/* F Assistantロゴ */}
             <img
-              src="/fractal-logo.png"
-              alt="FRACTAL"
+              src="/f-assistant.png"
+              alt="F Assistant"
               className="h-10 w-auto dark:invert"
             />
             <div>

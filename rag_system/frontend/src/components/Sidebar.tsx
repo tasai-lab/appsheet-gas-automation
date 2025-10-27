@@ -59,28 +59,48 @@ export default function Sidebar({
           isOpen ? "translate-x-0" : "-translate-x-full"
         } lg:translate-x-0 lg:static flex flex-col`}
       >
-        {/* ヘッダー */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+        {/* ヘッダー: タイトル、説明、ロゴ */}
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-start justify-between mb-4">
+            {/* ロゴとタイトル */}
+            <div className="flex items-center gap-3 flex-1">
+              <img
+                src="/f-assistant.png"
+                alt="F Assistant"
+                className="h-12 w-auto dark:invert"
+              />
+              <div>
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+                  F Assistant
+                </h1>
+                <p className="text-xs text-gray-600 dark:text-gray-400">
+                  フラクタルのRAG検索ツール
+                </p>
+              </div>
+            </div>
+            {/* テーマ切り替えと閉じるボタン */}
+            <div className="flex gap-1">
+              {/* テーマ切り替えボタン */}
+              <button
+                onClick={toggleTheme}
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400"
+                title={theme === "light" ? "ダークモードに切り替え" : "ライトモードに切り替え"}
+              >
+                {theme === "light" ? "🌙" : "☀️"}
+              </button>
+              {/* 閉じるボタン（モバイルのみ） */}
+              <button
+                onClick={onClose}
+                className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+          {/* チャット履歴セクションタイトル */}
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
             チャット履歴
           </h2>
-          <div className="flex gap-2">
-            {/* テーマ切り替えボタン */}
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400"
-              title={theme === "light" ? "ダークモードに切り替え" : "ライトモードに切り替え"}
-            >
-              {theme === "light" ? "🌙" : "☀️"}
-            </button>
-            {/* 閉じるボタン（モバイルのみ） */}
-            <button
-              onClick={onClose}
-              className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400"
-            >
-              ✕
-            </button>
-          </div>
         </div>
 
         {/* セッションリスト */}
