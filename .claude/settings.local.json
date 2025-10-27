@@ -1,7 +1,29 @@
 {
   "permissions": {
     "allow": [
-      "Bash(pip3 install:*)"
+      "Bash(pip3 install:*)",
+      "Bash(tee:*)",
+      "Bash(npm run lint)",
+      "Bash(curl:*)",
+      "Bash(python -m uvicorn:*)",
+      "Bash(python3 -m uvicorn:*)",
+      "Bash(npm run dev:*)",
+      "Bash(lsof:*)",
+      "Bash(kill:*)",
+      "Bash(gcloud config get-value:*)",
+      "Bash(gcloud services list:*)",
+      "Bash(gcloud auth application-default print-access-token:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat(RAG Phase 4.3): リアルタイムステータス表示・利用者選択・Vertex AI対応\n\n## Backend改善\n- Status streaming実装（searching/reranking/generating）\n- 各処理フェーズの時間計測とメタデータ送信\n- /searchエンドポイント削除（チャットのみに集中）\n- Vertex AI APIタイムアウト対応（コンテキストベースの一時レスポンス）\n\n## Frontend改善\n- リアルタイムステータス表示（3段階プログレス）\n- 経過時間表示（100ms更新）\n- 新規チャットモーダル実装\n- 利用者選択・固定機能\n- ClientsContextでグローバル状態管理\n- Markdown表示改善（react-markdown v9対応）\n- 参照元表示の最適化\n\n## スクリプト・ドキュメント\n- ベクトル化スクリプト改善（data_sources.json更新）\n- テストスクリプト追加（精度評価、パフォーマンステスト、E2Eテスト）\n- API最適化ドキュメント追加\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git push)",
+      "Bash(python3:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm install:*)",
+      "Bash(vercel whoami:*)",
+      "Bash(vercel:*)",
+      "Bash(git commit:*)",
+      "Bash(firebase:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []

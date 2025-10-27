@@ -111,16 +111,23 @@ export async function* streamChatMessage(
 
       // [DEBUG] Rawバッファデバッグログ
       console.log(`[API] [DEBUG] Raw buffer received: ${buffer.length} bytes`);
-      if (buffer.length > 0) {
-        console.log(`[API] [DEBUG] Raw buffer content (first 300 chars):`, buffer.substring(0, 300));
-      }
 
       // SSEメッセージを解析
       const messages = buffer.split("\n\n");
-      buffer = messages.pop() || "";
+      console.log(`[API] [DEBUG] Split into ${messages.length} messages (before pop)`);
 
-      for (const message of messages) {
-        if (message.trim() === "") continue;
+      buffer = messages.pop() || "";
+      console.log(`[API] [DEBUG] Remaining buffer after pop: ${buffer.length} bytes`);
+
+      for (let i = 0; i < messages.length; i++) {
+        const message = messages[i];
+        if (message.trim() === "") {
+          console.log(`[API] [DEBUG] Message #${i} is empty, skipping`);
+          continue;
+        }
+
+        console.log(`[API] [DEBUG] Processing message #${i} (length: ${message.length})`);
+        console.log(`[API] [DEBUG] Message content:`, message.substring(0, 200));
 
         const lines = message.split("\n");
         let eventType = "message";
@@ -141,8 +148,10 @@ export async function* streamChatMessage(
             console.log(`[API] Chunk #${chunkCount}:`, chunk.type, chunk.status || "");
             yield chunk;
           } catch (e) {
-            console.error("[API] Failed to parse SSE data:", e, "Raw data:", data);
+            console.error("[API] Failed to parse SSE data:", e, "Raw data:", data.substring(0, 100));
           }
+        } else {
+          console.warn(`[API] [DEBUG] Message #${i} has no data field`);
         }
       }
     }

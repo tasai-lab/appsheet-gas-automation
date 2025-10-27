@@ -14,9 +14,17 @@ import vertexai
 from vertexai.generative_models import GenerativeModel, Content, Part
 from google.auth import default
 
-# Google Gen AI SDK (思考モード用)
-from google import genai
-from google.genai import types
+# Google Gen AI SDK (思考モード用) - 条件付きインポート
+try:
+    from google import genai
+    from google.genai import types
+    GENAI_AVAILABLE = True
+except ImportError:
+    logger = logging.getLogger(__name__)
+    logger.warning("google-generativeai package not available. Thinking mode will be disabled.")
+    genai = None
+    types = None
+    GENAI_AVAILABLE = False
 
 from app.config import get_settings
 
@@ -48,20 +56,27 @@ class GeminiService:
         os.environ['GOOGLE_CLOUD_LOCATION'] = settings.gcp_location
         os.environ['GOOGLE_GENAI_USE_VERTEXAI'] = 'True'
 
-        try:
-            self.genai_client = genai.Client(
-                vertexai=True,
-                project=settings.gcp_project_id,
-                location=settings.gcp_location
-            )
-            logger.info(
-                f"Gemini Service initialized - "
-                f"Model: {settings.vertex_ai_generation_model}, "
-                f"Thinking Mode: {settings.vertex_ai_enable_thinking}"
-            )
-        except Exception as e:
-            logger.warning(f"Failed to initialize Gen AI client: {e}. Falling back to vertexai SDK only.")
+        # google-generativeai パッケージが利用可能な場合のみ初期化
+        if GENAI_AVAILABLE:
+            try:
+                self.genai_client = genai.Client(
+                    vertexai=True,
+                    project=settings.gcp_project_id,
+                    location=settings.gcp_location
+                )
+                logger.info(
+                    f"✅ Gemini Service initialized with Thinking Mode support - "
+                    f"Model: {settings.vertex_ai_generation_model}"
+                )
+            except Exception as e:
+                logger.warning(f"Failed to initialize Gen AI client: {e}. Falling back to vertexai SDK only.")
+                self.genai_client = None
+        else:
             self.genai_client = None
+            logger.info(
+                f"✅ Gemini Service initialized (vertexai SDK only) - "
+                f"Model: {settings.vertex_ai_generation_model}"
+            )
 
     async def generate_response(
         self,

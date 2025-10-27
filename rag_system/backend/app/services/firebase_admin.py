@@ -47,9 +47,11 @@ def initialize_firebase_admin():
             cred = credentials.ApplicationDefault()
             logger.info("Firebase using Application Default Credentials")
 
-        # Firebase Admin初期化
-        _firebase_app = firebase_admin.initialize_app(cred)
-        logger.info("✅ Firebase Admin SDK initialized successfully")
+        # Firebase Admin初期化（プロジェクトIDを明示的に指定）
+        _firebase_app = firebase_admin.initialize_app(cred, {
+            'projectId': settings.gcp_project_id  # fractal-ecosystemを明示的に指定
+        })
+        logger.info(f"✅ Firebase Admin SDK initialized successfully for project: {settings.gcp_project_id}")
 
         return _firebase_app
 
