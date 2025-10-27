@@ -1,0 +1,83 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ヘルパー関数: フィールドの必須チェック
+    function hasRequiredFields(data, fields) {
+      return fields.toSet().difference(data.keys().toSet()).size() == 0;
+    }
+
+    // ヘルパー関数: フィールドの型チェック
+    function isValidSessionData(data) {
+      return hasRequiredFields(data, ['user_id', 'title', 'created_at', 'updated_at'])
+             && data.user_id is string
+             && data.title is string
+             && data.created_at is timestamp
+             && data.updated_at is timestamp;
+    }
+
+    // ヘルパー関数: メッセージデータの検証
+    function isValidMessageData(data) {
+      return hasRequiredFields(data, ['role', 'content', 'timestamp'])
+             && data.role is string
+             && data.role in ['user', 'assistant', 'system']
+             && data.content is string
+             && data.content.size() > 0
+             && data.content.size() <= 10000
+             && data.timestamp is timestamp;
+    }
+
+    // チャットセッションコレクション
+    match /chat_sessions/{sessionId} {
+      // セッション作成: user_idが認証ユーザーと一致し、データが有効であることを確認
+      allow create: if request.auth != null
+                    && request.resource.data.user_id == request.auth.uid
+                    && isValidSessionData(request.resource.data);
+
+      // セッション更新: user_idが認証ユーザーと一致し、user_idの変更を許可しない
+      allow update: if request.auth != null
+                    && resource.data.user_id == request.auth.uid
+                    && request.resource.data.user_id == request.auth.uid;
+
+      // セッション読み取り: user_idが認証ユーザーと一致することを確認
+      allow read: if request.auth != null
+                  && resource.data.user_id == request.auth.uid;
+
+      // セッション削除: user_idが認証ユーザーと一致することを確認
+      allow delete: if request.auth != null
+                    && resource.data.user_id == request.auth.uid;
+
+      // メッセージサブコレクション
+      match /messages/{messageId} {
+        // メッセージ作成: 親セッションのuser_idが認証ユーザーと一致し、データが有効
+        allow create: if request.auth != null
+                      && get(/databases/$(database)/documents/chat_sessions/$(sessionId)).data.user_id == request.auth.uid
+                      && isValidMessageData(request.resource.data);
+
+        // メッセージ読み取り: 親セッションのuser_idが認証ユーザーと一致
+        allow read: if request.auth != null
+                    && get(/databases/$(database)/documents/chat_sessions/$(sessionId)).data.user_id == request.auth.uid;
+
+        // メッセージ更新: 禁止（メッセージは不変）
+        allow update: if false;
+
+        // メッセージ削除: 親セッションのuser_idが認証ユーザーと一致
+        allow delete: if request.auth != null
+                      && get(/databases/$(database)/documents/chat_sessions/$(sessionId)).data.user_id == request.auth.uid;
+      }
+    }
+
+    // メトリクス/使用統計コレクション（システムのみアクセス可能）
+    match /metrics/{document=**} {
+      allow read, write: if false;
+    }
+
+    // 管理者用コレクション
+    match /admin/{document=**} {
+      // 管理者のみアクセス可能（カスタムクレームで判定）
+      allow read, write: if request.auth != null
+                         && request.auth.token.admin == true;
+    }
+  }
+}

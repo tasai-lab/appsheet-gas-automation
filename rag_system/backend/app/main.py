@@ -4,6 +4,7 @@ RAG Medical Assistant API - メインアプリケーション
 医療・看護記録検索 RAGシステムのBackend APIサーバー。
 """
 
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 
@@ -13,6 +14,7 @@ from fastapi.responses import JSONResponse
 
 from app.config import get_settings
 from app.routers import chat, clients, health
+from app.services.cache_service import get_cache_service
 
 # ロガー設定
 logging.basicConfig(
@@ -24,6 +26,29 @@ logger = logging.getLogger(__name__)
 # 設定読み込み
 settings = get_settings()
 
+# グローバル変数：クリーンアップタスク
+_cleanup_task = None
+
+
+async def cache_cleanup_task():
+    """
+    キャッシュクリーンアップタスク（バックグラウンド）
+
+    定期的に期限切れのキャッシュエントリを削除します。
+    """
+    cache = get_cache_service()
+    cleanup_interval = settings.cache_cleanup_interval
+
+    logger.info(f"🧹 Cache cleanup task started (interval: {cleanup_interval}s)")
+
+    while True:
+        try:
+            await asyncio.sleep(cleanup_interval)
+            cache.cleanup_expired()
+            logger.debug(f"Cache cleanup executed (cache size: {len(cache._cache)})")
+        except Exception as e:
+            logger.error(f"Cache cleanup error: {e}", exc_info=True)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -32,23 +57,39 @@ async def lifespan(app: FastAPI):
 
     起動時と終了時に実行される処理を定義します。
     """
+    global _cleanup_task
+
     # 起動時処理
     logger.info("=" * 60)
     logger.info(f"🚀 {settings.app_name} v{settings.app_version} 起動中...")
     logger.info("=" * 60)
+    logger.info(f"Environment: {settings.environment}")
     logger.info(f"GCP Project: {settings.gcp_project_id}")
     logger.info(f"GCP Location: {settings.gcp_location}")
     logger.info(f"Vector DB Spreadsheet ID: {settings.vector_db_spreadsheet_id or '未設定'}")
     logger.info(f"Embeddings Model: {settings.vertex_ai_embeddings_model}")
     logger.info(f"Generation Model: {settings.vertex_ai_generation_model}")
     logger.info(f"Reranker: {settings.reranker_type} ({settings.reranker_model})")
+    logger.info(f"Cache Enabled: {settings.cache_enabled}")
+    logger.info(f"Cache Max Size: {settings.cache_max_size}")
     logger.info(f"Log Level: {settings.log_level}")
+    logger.info(f"Authentication Required: {settings.require_authentication}")
+    logger.info(f"LangSmith Tracing: {settings.langchain_tracing_v2}")
     logger.info("=" * 60)
 
-    # TODO: 起動時の初期化処理
-    # - Vertex AI クライアント初期化
-    # - Vector DB 接続確認
-    # - 医療用語辞書ロード
+    # Firebase Admin SDK初期化
+    try:
+        from app.services.firebase_admin import initialize_firebase_admin
+        initialize_firebase_admin()
+    except Exception as e:
+        logger.error(f"Firebase Admin initialization failed: {e}")
+        # 認証が必須でない場合は続行
+        if settings.require_authentication:
+            raise
+
+    # キャッシュクリーンアップタスクを開始
+    if settings.cache_enabled:
+        _cleanup_task = asyncio.create_task(cache_cleanup_task())
 
     yield
 
@@ -57,9 +98,21 @@ async def lifespan(app: FastAPI):
     logger.info(f"🛑 {settings.app_name} 終了中...")
     logger.info("=" * 60)
 
-    # TODO: 終了時のクリーンアップ処理
-    # - 接続クローズ
-    # - キャッシュクリア
+    # クリーンアップタスクを停止
+    if _cleanup_task:
+        _cleanup_task.cancel()
+        try:
+            await _cleanup_task
+        except asyncio.CancelledError:
+            logger.info("Cache cleanup task stopped")
+
+    # キャッシュをクリア
+    if settings.cache_enabled:
+        cache = get_cache_service()
+        metrics = cache.get_metrics()
+        logger.info(f"Final cache metrics: {metrics}")
+        cache.clear()
+        logger.info("Cache cleared")
 
 
 # FastAPIアプリケーション作成

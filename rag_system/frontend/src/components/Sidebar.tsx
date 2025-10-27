@@ -3,6 +3,8 @@
 import { useState } from "react";
 import type { ChatSession } from "@/types/chat";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/navigation";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -18,29 +20,31 @@ export default function Sidebar({
   currentSessionId,
 }: SidebarProps) {
   const { theme, toggleTheme } = useTheme();
+  const { user, signOut } = useAuth();
+  const router = useRouter();
   const [displayCount, setDisplayCount] = useState(10);
   const [loading, setLoading] = useState(false);
 
-  // 仮のセッションデータ（実際はAPIから取得）
-  // 注: サーバー/クライアント間でハイドレーションエラーを防ぐため、決定的なデータを使用
-  const mockSessions: ChatSession[] = Array.from({ length: 25 }, (_, i) => ({
-    id: `session-${i + 1}`,
-    title: `チャット ${i + 1}`,
-    created_at: new Date(Date.now() - i * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - i * 86400000).toISOString(),
-    message_count: (i % 10) + 5, // 決定的な値（5-14の範囲）
-    preview: `サンプルメッセージ ${i + 1}の内容です...`,
-    client_id: i % 3 === 0 ? null : `client-${i % 5 + 1}`, // 3つに1つは全利用者、それ以外は特定利用者
-    client_name: i % 3 === 0 ? undefined : `利用者${i % 5 + 1}`,
-  }));
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      router.push('/login');
+    } catch (error) {
+      console.error('ログアウトエラー:', error);
+    }
+  };
 
-  const displayedSessions = mockSessions.slice(0, displayCount);
-  const hasMore = displayCount < mockSessions.length;
+  // TODO: チャット履歴はバックエンドAPIから取得する実装を追加予定
+  // 現在はチャット履歴をSpreadsheetに保存しているが、表示機能は未実装
+  const sessions: ChatSession[] = [];
+
+  const displayedSessions = sessions.slice(0, displayCount);
+  const hasMore = displayCount < sessions.length;
 
   const loadMore = () => {
     setLoading(true);
     setTimeout(() => {
-      setDisplayCount((prev) => Math.min(prev + 5, mockSessions.length));
+      setDisplayCount((prev) => Math.min(prev + 5, sessions.length));
       setLoading(false);
     }, 300);
   };
@@ -86,7 +90,7 @@ export default function Sidebar({
 
         {/* タブ切り替え */}
         <div className="border-b border-gray-200 dark:border-gray-700">
-          <div className="py-3 px-4 text-sm font-medium text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400">
+          <div className="py-3 px-4 text-sm font-medium text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 text-center">
             チャット履歴
           </div>
         </div>
@@ -95,38 +99,51 @@ export default function Sidebar({
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
           {/* チャット履歴 */}
           <>
-            {displayedSessions.map((session) => (
-                <button
-                  key={session.id}
-                  onClick={() => onSessionSelect(session.id)}
-                  className={`w-full text-left p-3 rounded-lg transition-colors ${
-                    currentSessionId === session.id
-                      ? "bg-blue-100 dark:bg-blue-900/30 border-blue-500"
-                      : "hover:bg-gray-100 dark:hover:bg-gray-800 border-transparent"
-                  } border`}
-                >
-                  <div className="font-semibold text-gray-900 dark:text-white truncate">
-                    {session.title}
-                  </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400 truncate">
-                    {session.preview}
-                  </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                    {new Date(session.created_at).toLocaleDateString("ja-JP")} · {session.message_count}件
-                  </div>
-                </button>
-              ))}
+            {displayedSessions.length > 0 ? (
+              <>
+                {displayedSessions.map((session) => (
+                  <button
+                    key={session.id}
+                    onClick={() => onSessionSelect(session.id)}
+                    className={`w-full text-left p-3 rounded-lg transition-colors ${
+                      currentSessionId === session.id
+                        ? "bg-blue-100 dark:bg-blue-900/30 border-blue-500"
+                        : "hover:bg-gray-100 dark:hover:bg-gray-800 border-transparent"
+                    } border`}
+                  >
+                    <div className="font-semibold text-gray-900 dark:text-white truncate">
+                      {session.title}
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400 truncate">
+                      {session.preview}
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                      {new Date(session.created_at).toLocaleDateString("ja-JP")} · {session.message_count}件
+                    </div>
+                  </button>
+                ))}
 
-              {/* もっと読み込むボタン */}
-              {hasMore && (
-                <button
-                  onClick={loadMore}
-                  disabled={loading}
-                  className="w-full py-2 px-4 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
-                >
-                  {loading ? "読み込み中..." : "さらに5件読み込む"}
-            </button>
-          )}
+                {/* もっと読み込むボタン */}
+                {hasMore && (
+                  <button
+                    onClick={loadMore}
+                    disabled={loading}
+                    className="w-full py-2 px-4 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+                  >
+                    {loading ? "読み込み中..." : "さらに5件読み込む"}
+                  </button>
+                )}
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-center p-6">
+                <p className="text-gray-500 dark:text-gray-400 text-sm">
+                  チャット履歴はありません
+                </p>
+                <p className="text-gray-400 dark:text-gray-500 text-xs mt-2">
+                  新しいチャットを開始してください
+                </p>
+              </div>
+            )}
           </>
         </div>
 
@@ -145,19 +162,53 @@ export default function Sidebar({
           {/* ユーザー情報とテーマ切り替え */}
           <div className="px-4 pb-4 flex items-center justify-between">
             {/* ユーザー情報 */}
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold text-sm">
-                U
+            {user ? (
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                {user.photoURL ? (
+                  <img
+                    src={user.photoURL}
+                    alt={user.displayName || 'User'}
+                    className="w-8 h-8 rounded-full"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold text-sm">
+                    {user.email?.charAt(0).toUpperCase() || 'U'}
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                    {user.displayName || 'ユーザー'}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                    {user.email}
+                  </p>
+                </div>
+                <button
+                  onClick={handleSignOut}
+                  className="px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                  title="ログアウト"
+                >
+                  ログアウト
+                </button>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                  ユーザー
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  user@example.com
-                </p>
+            ) : (
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <div className="w-8 h-8 rounded-full bg-gray-400 text-white flex items-center justify-center font-semibold text-sm">
+                  ?
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">
+                    未ログイン
+                  </p>
+                  <button
+                    onClick={() => router.push('/login')}
+                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    ログイン
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* テーマ切り替えボタン */}
             <button

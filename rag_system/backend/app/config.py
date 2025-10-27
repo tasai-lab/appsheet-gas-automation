@@ -24,8 +24,13 @@ class Settings(BaseSettings):
     app_name: str = "RAG Medical Assistant API"
     app_version: str = "1.0.0"
     app_description: str = "医療・看護記録検索 RAGシステム Backend API"
+    environment: Literal["development", "staging", "production"] = "development"
     debug: bool = False
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
+
+    # セキュリティ設定
+    admin_api_key: str = ""  # 管理者APIキー（必須設定）
+    enable_admin_endpoints: bool = True  # 管理エンドポイントの有効化
 
     # サーバー設定
     host: str = "0.0.0.0"
@@ -33,7 +38,12 @@ class Settings(BaseSettings):
     reload: bool = False
 
     # CORS設定
-    cors_origins: list[str] = ["http://localhost:3000", "https://rag-frontend.vercel.app"]
+    cors_origins: list[str] = [
+        "http://localhost:3000",
+        "https://rag-frontend.vercel.app",
+        "https://fractal-ecosystem.web.app",
+        "https://fractal-ecosystem.firebaseapp.com"
+    ]
     cors_credentials: bool = True
     cors_methods: list[str] = ["*"]
     cors_headers: list[str] = ["*"]
@@ -61,6 +71,11 @@ class Settings(BaseSettings):
     vertex_ai_max_output_tokens: int = 2048
     vertex_ai_top_p: float = 0.95
     vertex_ai_top_k: int = 40
+
+    # Gemini思考モード設定
+    vertex_ai_enable_thinking: bool = True  # 思考モードを有効化
+    vertex_ai_thinking_budget: int = -1  # -1=自動制御, 0=無効, >0=トークン数指定
+    vertex_ai_include_thoughts: bool = False  # 思考要約を応答に含めるか
 
     # Vertex AI Ranking API設定
     reranker_type: str = "vertex_ai_ranking_api"
@@ -90,12 +105,32 @@ class Settings(BaseSettings):
 
     # キャッシュ設定
     cache_enabled: bool = True
-    cache_ttl: int = 300  # 5分
+    cache_default_ttl: int = 3600  # 1時間（デフォルト）
+    cache_embeddings_ttl: int = 86400  # 24時間（Embeddings）
+    cache_vector_db_ttl: int = 3600  # 1時間（Vector DBデータ）
+    cache_search_results_ttl: int = 1800  # 30分（検索結果）
+    cache_cleanup_interval: int = 600  # 10分（クリーンアップ間隔）
+    cache_max_size: int = 1000  # 最大キャッシュエントリ数
 
     # モニタリング設定
     enable_cloud_logging: bool = True
     enable_cloud_monitoring: bool = True
     metrics_export_interval: int = 60
+
+    # Firebase Admin設定
+    firebase_admin_credentials_path: str = ""  # サービスアカウントJSONファイルパス
+    firebase_admin_credentials_json: str = ""  # サービスアカウントJSON文字列（Cloud Run用）
+    require_authentication: bool = True        # 認証を必須にする
+
+    # チャット履歴設定
+    use_firestore_chat_history: bool = True   # Firestoreを使用（False=Spreadsheet使用）
+
+    # LangSmith設定
+    langchain_tracing_v2: bool = False  # LangSmithトレーシング有効化
+    langchain_endpoint: str = "https://api.smith.langchain.com"
+    langchain_api_key: str = ""
+    langchain_project: str = "RAG-Medical-Assistant"
+    langsmith_sampling_rate: float = 1.0  # 0.0-1.0（1.0 = 全リクエストをトレース）
 
 
 @lru_cache()

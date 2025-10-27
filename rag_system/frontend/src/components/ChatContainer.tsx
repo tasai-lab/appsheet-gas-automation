@@ -9,6 +9,7 @@ import NewChatModal from "./NewChatModal";
 import type { ChatMessage, KnowledgeItem } from "@/types/chat";
 import { streamChatMessage } from "@/lib/api";
 import { useClients } from "@/contexts/ClientsContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function ChatContainer() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -30,8 +31,16 @@ export default function ChatContainer() {
   const [processingStartTime, setProcessingStartTime] = useState<number | null>(null);
   const [elapsedTime, setElapsedTime] = useState<number>(0);
 
+  // 認証コンテキストからトークン取得関数を取得
+  const { getIdToken } = useAuth();
+
   // ClientsContextから利用者データを取得
   const { clients, loading: clientsLoading } = useClients();
+
+  // currentStatus変更を監視（デバッグ用）
+  useEffect(() => {
+    console.log("[ChatContainer] 🔄 currentStatus変更検知:", currentStatus, "statusMessage:", statusMessage);
+  }, [currentStatus, statusMessage]);
 
   // リアルタイム経過時間の更新
   useEffect(() => {
@@ -94,13 +103,16 @@ export default function ChatContainer() {
         selectedClientId
       });
 
+      // 認証トークン取得
+      const token = await getIdToken();
+
       // SSEストリーミングで実装
       const stream = streamChatMessage({
         message: messageText,
         session_id: sessionId || undefined,
         context_size: 5,
         client_id: selectedClientId || undefined,
-      }, abortController.signal);
+      }, abortController.signal, token);
 
       console.log("[ChatContainer] ストリーム取得完了、ループ開始");
 
@@ -113,14 +125,22 @@ export default function ChatContainer() {
 
         if (chunk.type === "status" && chunk.status) {
           // ステータス更新
-          console.log("[ChatContainer] ステータス更新:", chunk.status, chunk.metadata?.message);
-          setCurrentStatus(chunk.status);
+          console.log("[ChatContainer] ===== ステータス更新受信 =====");
+          console.log("[ChatContainer] chunk.status:", chunk.status);
+          console.log("[ChatContainer] chunk.metadata:", chunk.metadata);
+          console.log("[ChatContainer] 現在のcurrentStatus:", currentStatus);
+
+          setCurrentStatus(chunk.status as "searching" | "reranking" | "generating");
           setStatusMessage(chunk.metadata?.message || "");
+
+          console.log("[ChatContainer] setCurrentStatus 呼び出し完了:", chunk.status);
+
           if (chunk.metadata?.search_time_ms) {
             setStatusMetadata((prev) => ({
               ...prev,
               search_time_ms: chunk.metadata!.search_time_ms,
             }));
+            console.log("[ChatContainer] search_time_ms 更新:", chunk.metadata.search_time_ms);
           }
         } else if (chunk.type === "context" && chunk.context) {
           // コンテキストを更新
@@ -238,23 +258,12 @@ export default function ChatContainer() {
   };
 
   const handleNewChatCancel = () => {
-    // モーダルを閉じる（初回起動時以外）
-    if (sessionId || messages.length > 0) {
-      setIsNewChatModalOpen(false);
-    }
+    // モーダルを閉じる
+    setIsNewChatModalOpen(false);
   };
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-      {/* 新規チャット作成モーダル */}
-      <NewChatModal
-        isOpen={isNewChatModalOpen}
-        onClose={handleNewChatCancel}
-        onConfirm={handleNewChatConfirm}
-        clients={clients}
-        loading={clientsLoading}
-      />
-
       {/* サイドバー */}
       <Sidebar
         isOpen={sidebarOpen}
@@ -265,6 +274,14 @@ export default function ChatContainer() {
 
       {/* メインコンテンツ */}
       <div className="flex flex-col flex-1 max-w-6xl mx-auto w-full bg-white dark:bg-gray-900 relative">
+        {/* 新規チャット作成モーダル */}
+        <NewChatModal
+          isOpen={isNewChatModalOpen}
+          onClose={handleNewChatCancel}
+          onConfirm={handleNewChatConfirm}
+          clients={clients}
+          loading={clientsLoading}
+        />
         {/* ヘッダー */}
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between gap-4">
@@ -390,6 +407,8 @@ export default function ChatContainer() {
                   <div className="flex-1">
                     <div className="text-sm font-semibold">
                       {statusMessage || "処理中..."}
+                      {/* デバッグ用 */}
+                      <span className="text-xs opacity-75 ml-2">[{currentStatus || "null"}]</span>
                     </div>
                     <div className="text-xs opacity-90 mt-0.5">
                       経過時間: {(elapsedTime / 1000).toFixed(1)}秒

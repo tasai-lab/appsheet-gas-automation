@@ -55,3 +55,9 @@ nul
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# RAG system specific
+rag_system/.firebase/
+rag_system/vectorization*.log
+rag_system/frontend/.next/
+rag_system/backend/__pycache__/

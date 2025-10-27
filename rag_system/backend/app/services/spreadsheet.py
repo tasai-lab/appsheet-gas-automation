@@ -13,6 +13,7 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 from app.config import get_settings
+from app.services.cache_service import get_cache_service
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -81,7 +82,7 @@ class SpreadsheetClient:
 
     def read_knowledge_base(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
         """
-        KnowledgeBaseシートを読み込み
+        KnowledgeBaseシートを読み込み（キャッシュ対応）
 
         Args:
             limit: 取得する最大行数（Noneの場合は全データ）
@@ -89,6 +90,17 @@ class SpreadsheetClient:
         Returns:
             ナレッジベースのレコードリスト
         """
+        # キャッシュ確認
+        cache = get_cache_service()
+        cache_key = f"knowledge_base_limit_{limit}"
+
+        if settings.cache_enabled:
+            cached_data = cache.get("vector_db", cache_key)
+            if cached_data is not None:
+                logger.info(f"✅ Using cached KnowledgeBase data ({len(cached_data)} records)")
+                return cached_data
+
+        logger.info("📡 Fetching KnowledgeBase from Spreadsheet...")
         sheet_name = self.sheets['knowledge_base']
         values = self.read_sheet(sheet_name)
 
@@ -123,11 +135,17 @@ class SpreadsheetClient:
             records.append(record)
 
         logger.info(f"Loaded {len(records)} records from KnowledgeBase")
+
+        # キャッシュに保存
+        if settings.cache_enabled:
+            cache.set("vector_db", cache_key, records, settings.cache_vector_db_ttl)
+            logger.info(f"💾 Cached KnowledgeBase data (TTL: {settings.cache_vector_db_ttl}s)")
+
         return records
 
     def read_embeddings(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
         """
-        Embeddingsシートを読み込み
+        Embeddingsシートを読み込み（キャッシュ対応）
 
         3分割されたembedding（embedding_part1, embedding_part2, embedding_part3）を統合します。
 
@@ -137,6 +155,17 @@ class SpreadsheetClient:
         Returns:
             Embeddingsレコードリスト（統合されたembeddingを含む）
         """
+        # キャッシュ確認
+        cache = get_cache_service()
+        cache_key = f"embeddings_limit_{limit}"
+
+        if settings.cache_enabled:
+            cached_data = cache.get("vector_db", cache_key)
+            if cached_data is not None:
+                logger.info(f"✅ Using cached Embeddings data ({len(cached_data)} records)")
+                return cached_data
+
+        logger.info("📡 Fetching Embeddings from Spreadsheet...")
         sheet_name = self.sheets['embeddings']
         values = self.read_sheet(sheet_name)
 
@@ -170,6 +199,12 @@ class SpreadsheetClient:
             records.append(record)
 
         logger.info(f"Loaded {len(records)} embeddings")
+
+        # キャッシュに保存
+        if settings.cache_enabled:
+            cache.set("vector_db", cache_key, records, settings.cache_vector_db_ttl)
+            logger.info(f"💾 Cached Embeddings data (TTL: {settings.cache_vector_db_ttl}s)")
+
         return records
 
     def read_medical_terms(self) -> List[Dict[str, Any]]:

@@ -7,6 +7,8 @@ pydantic-settings==2.6.0
 # Google Cloud
 google-cloud-aiplatform==1.71.1
 google-cloud-discoveryengine==0.13.10
+google-cloud-firestore==2.19.0
+firebase-admin==6.6.0
 google-auth==2.35.0
 google-auth-httplib2==0.2.0
 google-api-python-client==2.149.0
@@ -30,6 +32,8 @@ orjson==3.10.10
 
 # Monitoring & Logging
 structlog==24.4.0
+langsmith>=0.1.0
+langchain-core>=0.1.0
 
 # Development & Testing
 pytest==8.3.3

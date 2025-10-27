@@ -4,6 +4,7 @@ Vertex AI サービス
 Embeddings生成とRanking APIを提供します。
 """
 
+import hashlib
 import logging
 from typing import List, Optional
 
@@ -12,6 +13,7 @@ from google.cloud import aiplatform
 from vertexai.language_models import TextEmbeddingInput, TextEmbeddingModel
 
 from app.config import get_settings
+from app.services.cache_service import get_cache_service
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -98,7 +100,7 @@ class VertexAIClient:
         output_dimensionality: Optional[int] = None
     ) -> List[float]:
         """
-        クエリ用のEmbeddingを生成
+        クエリ用のEmbeddingを生成（キャッシュ対応）
 
         Args:
             query: クエリテキスト
@@ -107,12 +109,31 @@ class VertexAIClient:
         Returns:
             Embeddingベクトル
         """
+        # キャッシュキーを生成（クエリテキストのハッシュ）
+        cache = get_cache_service()
+        cache_key = hashlib.sha256(f"{query}_{output_dimensionality}".encode()).hexdigest()
+
+        if settings.cache_enabled:
+            cached_embedding = cache.get("embeddings", cache_key)
+            if cached_embedding is not None:
+                logger.info(f"✅ Using cached query embedding for: {query[:50]}...")
+                return cached_embedding
+
+        # ★★★ Vertex AI API呼び出し: 1回のみ実行 ★★★
+        logger.info(f"📡 Generating query embedding for: {query[:50]}...")
         vectors = self.generate_embeddings(
             texts=[query],
             task_type="RETRIEVAL_QUERY",
             output_dimensionality=output_dimensionality
         )
-        return vectors[0]
+        embedding = vectors[0]
+
+        # キャッシュに保存
+        if settings.cache_enabled:
+            cache.set("embeddings", cache_key, embedding, settings.cache_embeddings_ttl)
+            logger.info(f"💾 Cached query embedding (TTL: {settings.cache_embeddings_ttl}s)")
+
+        return embedding
 
     def generate_document_embeddings(
         self,

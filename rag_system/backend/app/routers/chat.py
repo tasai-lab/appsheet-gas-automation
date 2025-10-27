@@ -2,17 +2,21 @@
 チャットエンドポイント
 """
 
+import json
 import logging
 import time
 import uuid
 from datetime import datetime
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from sse_starlette.sse import EventSourceResponse
 
 from app.config import get_settings
 from app.models.request import ChatRequest
 from app.models.response import ChatMessage, ChatResponse, StreamChunk
+from app.services.chat_history import get_chat_history_service
+from app.services.firestore_chat_history import get_firestore_chat_history_service
+from app.middleware.auth import verify_firebase_token
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -26,7 +30,10 @@ settings = get_settings()
     summary="ストリーミングチャット",
     description="SSEによるストリーミングチャット応答"
 )
-async def chat_stream(request: ChatRequest):
+async def chat_stream(
+    request: ChatRequest,
+    user: dict = Depends(verify_firebase_token)
+):
     """
     ストリーミングチャット
 
@@ -46,9 +53,31 @@ async def chat_stream(request: ChatRequest):
 
         # セッションID生成
         session_id = request.session_id or str(uuid.uuid4())
+        logger.info(f"Session ID: {session_id}")
+
+        # ユーザーID取得（認証済みユーザー）
+        user_uid = user.get("uid") if user else "anonymous"
+
+        # 1. セッション作成・ユーザーメッセージ保存（処理開始前に実行）
+        if settings.use_firestore_chat_history:
+            try:
+                firestore_history = get_firestore_chat_history_service()
+                firestore_history.save_user_message(
+                    session_id=session_id,
+                    user_id=user_uid,
+                    message=request.message,
+                    timestamp=datetime.now()
+                )
+                logger.info(f"✅ Session created & user message saved - Session: {session_id}")
+            except Exception as history_error:
+                logger.error(f"⚠️ Failed to save user message: {history_error}", exc_info=True)
 
         async def event_generator():
             """SSEイベントジェネレーター"""
+            accumulated_response = ""  # ストリーミングレスポンスを蓄積
+            context_ids = []  # コンテキストIDリスト
+            suggested_terms = []  # 提案用語リスト
+
             try:
                 # 1. コンテキスト検索
                 from app.services.rag_engine import get_hybrid_search_engine
@@ -59,15 +88,29 @@ async def chat_stream(request: ChatRequest):
                 search_start_time = time.time()
                 yield {
                     "event": "message",
-                    "data": StreamChunk(
+                    "data": json.dumps(StreamChunk(
                         type="status",
                         status="searching",
                         metadata={"message": "情報を検索中..."}
-                    ).model_dump_json()
+                    ).model_dump())
                 }
 
                 engine = get_hybrid_search_engine()
                 gemini_service = get_gemini_service()
+
+                # ★★★ 会話履歴取得（コンテキスト化） ★★★
+                history = []
+                if settings.use_firestore_chat_history:
+                    try:
+                        firestore_history_service = get_firestore_chat_history_service()
+                        history = firestore_history_service.get_session_history(
+                            session_id=session_id,
+                            limit=10  # 最新10件
+                        )
+                        logger.info(f"📚 Retrieved {len(history)} history messages for context")
+                    except Exception as history_error:
+                        logger.warning(f"⚠️ Failed to retrieve history: {history_error}")
+                        # 履歴取得失敗してもcontinue（graceful degradation）
 
                 # Hybrid Search実行
                 search_result = engine.search(
@@ -82,14 +125,14 @@ async def chat_stream(request: ChatRequest):
                 # ステータス: リランキング完了
                 yield {
                     "event": "message",
-                    "data": StreamChunk(
+                    "data": json.dumps(StreamChunk(
                         type="status",
                         status="reranking",
                         metadata={
                             "message": f"結果を最適化しました ({len(search_result.get('results', []))}件)",
                             "search_time_ms": search_time
                         }
-                    ).model_dump_json()
+                    ).model_dump())
                 }
 
                 # コンテキストをStreamChunkとして送信
@@ -108,48 +151,50 @@ async def chat_stream(request: ChatRequest):
                     for result in search_result.get('results', [])
                 ]
 
+                # チャット履歴保存用にIDを記録
+                context_ids = [result.get('id', '') for result in search_result.get('results', [])]
+                suggested_terms = search_result.get('suggested_terms', [])
+
                 # コンテキスト送信
                 yield {
                     "event": "message",
-                    "data": StreamChunk(
+                    "data": json.dumps(StreamChunk(
                         type="context",
                         context=context_items
-                    ).model_dump_json()
+                    ).model_dump())
                 }
 
                 # ステータス: 生成開始
                 generation_start_time = time.time()
                 yield {
                     "event": "message",
-                    "data": StreamChunk(
+                    "data": json.dumps(StreamChunk(
                         type="status",
                         status="generating",
                         metadata={"message": "回答を生成中..."}
-                    ).model_dump_json()
+                    ).model_dump())
                 }
 
-                # 2. Gemini API呼び出し (非ストリーミングモード - デバッグ用)
-                logger.info("🔵 Starting Gemini API call for response generation (non-streaming)...")
+                # 2. Gemini API呼び出し (ストリーミングモード + 会話履歴付き)
+                logger.info("🔵 Starting Gemini API call for response generation (streaming with history)...")
 
-                full_response = ""
                 async for text_chunk in gemini_service.generate_response(
                     query=request.message,
                     context=search_result.get('results', []),
-                    stream=False  # 非ストリーミングに変更
+                    history=history,  # ← 会話履歴を追加
+                    stream=True  # ストリーミング有効化
                 ):
-                    full_response += text_chunk
+                    if text_chunk:
+                        accumulated_response += text_chunk  # レスポンスを蓄積
+                        yield {
+                            "event": "message",
+                            "data": json.dumps(StreamChunk(
+                                type="text",
+                                content=text_chunk
+                            ).model_dump())
+                        }
 
-                logger.info(f"✅ Gemini response received - Length: {len(full_response)} chars")
-
-                # 一度に全文を送信
-                if full_response:
-                    yield {
-                        "event": "message",
-                        "data": StreamChunk(
-                            type="text",
-                            content=full_response
-                        ).model_dump_json()
-                    }
+                logger.info(f"✅ Gemini response completed - Total length: {len(accumulated_response)} chars")
 
                 generation_time = (time.time() - generation_start_time) * 1000
                 total_time = (time.time() - start_time) * 1000
@@ -158,7 +203,7 @@ async def chat_stream(request: ChatRequest):
                 logger.info(f"📊 Sending completion event - Total: {total_time:.2f}ms, Search: {search_time:.2f}ms, Generation: {generation_time:.2f}ms")
                 yield {
                     "event": "message",
-                    "data": StreamChunk(
+                    "data": json.dumps(StreamChunk(
                         type="done",
                         suggested_terms=search_result.get('suggested_terms', []),
                         metadata={
@@ -166,17 +211,46 @@ async def chat_stream(request: ChatRequest):
                             "search_time_ms": search_time,
                             "generation_time_ms": generation_time
                         }
-                    ).model_dump_json()
+                    ).model_dump())
                 }
+
+                # 4. チャット履歴を保存（Firestore or Spreadsheet）
+                try:
+                    if settings.use_firestore_chat_history:
+                        # Firestoreに保存（低コスト）- user_uidを使用
+                        firestore_history = get_firestore_chat_history_service()
+                        firestore_history.save_assistant_message(
+                            session_id=session_id,
+                            user_id=user_uid,  # ← user_uidに変更
+                            message=accumulated_response,
+                            context_ids=context_ids,
+                            suggested_terms=suggested_terms
+                        )
+                        logger.info(f"💾 Chat history saved to Firestore - Session: {session_id}")
+                    else:
+                        # Spreadsheetに保存（従来方式）
+                        chat_history = get_chat_history_service()
+                        chat_history.save_conversation(
+                            session_id=session_id,
+                            user_id=user_id,
+                            user_message=request.message,
+                            assistant_message=accumulated_response,
+                            context_ids=context_ids,
+                            suggested_terms=suggested_terms
+                        )
+                        logger.info(f"💾 Chat history saved to Spreadsheet - Session: {session_id}")
+                except Exception as history_error:
+                    # チャット履歴保存エラーは致命的ではないのでログのみ
+                    logger.error(f"⚠️ Failed to save chat history: {history_error}", exc_info=True)
 
             except Exception as e:
                 logger.error(f"Stream error: {e}", exc_info=True)
                 yield {
                     "event": "error",
-                    "data": StreamChunk(
+                    "data": json.dumps(StreamChunk(
                         type="error",
                         error=str(e)
-                    ).model_dump_json()
+                    ).model_dump())
                 }
 
         return EventSourceResponse(event_generator())
@@ -258,7 +332,40 @@ async def chat(request: ChatRequest):
         ):
             full_response += text_chunk
 
-        # 3. レスポンス構築
+        # 3. チャット履歴を保存（Firestore or Spreadsheet）
+        try:
+            user_id = request.client_id or "anonymous"
+            context_ids = [result.get('id', '') for result in search_result.get('results', [])]
+
+            if settings.use_firestore_chat_history:
+                # Firestoreに保存（低コスト）
+                firestore_history = get_firestore_chat_history_service()
+                firestore_history.save_conversation(
+                    session_id=session_id,
+                    user_id=user_id,
+                    user_message=request.message,
+                    assistant_message=full_response,
+                    context_ids=context_ids,
+                    suggested_terms=search_result.get('suggested_terms', [])
+                )
+                logger.info(f"💾 Chat history saved to Firestore - Session: {session_id}")
+            else:
+                # Spreadsheetに保存（従来方式）
+                chat_history = get_chat_history_service()
+                chat_history.save_conversation(
+                    session_id=session_id,
+                    user_id=user_id,
+                    user_message=request.message,
+                    assistant_message=full_response,
+                    context_ids=context_ids,
+                    suggested_terms=search_result.get('suggested_terms', [])
+                )
+                logger.info(f"💾 Chat history saved to Spreadsheet - Session: {session_id}")
+        except Exception as history_error:
+            # チャット履歴保存エラーは致命的ではないのでログのみ
+            logger.error(f"⚠️ Failed to save chat history: {history_error}", exc_info=True)
+
+        # 4. レスポンス構築
         return ChatResponse(
             session_id=session_id,
             message=ChatMessage(
