@@ -6,10 +6,21 @@
 
 ### よく使うコマンド
 
-- `/build-backend` - Backendをビルド・起動
-- `/build-frontend` - Frontendをビルド・起動
-- `/test-hybrid-search` - Hybrid Search機能テスト
+#### 開発環境管理
+- `/start-dev` - Backend + Frontend 同時起動
+- `/kill-dev` - 全開発サーバー停止
+- `/restart-dev` - 開発サーバー再起動
+
+#### テスト・検証
+- `/check-consistency` - 計画と実装の整合性チェック
+- `/test-backend` - Backend単体テスト実行
+- `/test-frontend` - Frontend単体テスト実行
 - `/check-api-calls` - API呼び出し回数確認
+
+#### デプロイ
+- `/deploy-vercel` - Vercel デプロイ（Frontend）
+
+#### ドキュメント
 - `/update-docs` - ドキュメント更新
 
 ### 重要な制約
