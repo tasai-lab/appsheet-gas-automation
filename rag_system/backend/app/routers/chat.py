@@ -79,6 +79,8 @@ async def chat_stream(
             suggested_terms = []  # 提案用語リスト
 
             try:
+                logger.info("🔵 [DEBUG] Event generator started")
+
                 # 1. コンテキスト検索
                 from app.services.rag_engine import get_hybrid_search_engine
                 from app.services.gemini_service import get_gemini_service
@@ -86,6 +88,7 @@ async def chat_stream(
 
                 # ステータス: 検索開始
                 search_start_time = time.time()
+                logger.info("🟢 [DEBUG] About to yield search status...")
                 yield {
                     "event": "message",
                     "data": json.dumps(StreamChunk(
@@ -94,6 +97,7 @@ async def chat_stream(
                         metadata={"message": "情報を検索中..."}
                     ).model_dump())
                 }
+                logger.info("✅ [DEBUG] Search status yielded successfully")
 
                 engine = get_hybrid_search_engine()
                 gemini_service = get_gemini_service()
@@ -123,6 +127,7 @@ async def chat_stream(
                 search_time = (time.time() - search_start_time) * 1000
 
                 # ステータス: リランキング完了
+                logger.info("🟢 [DEBUG] About to yield reranking status...")
                 yield {
                     "event": "message",
                     "data": json.dumps(StreamChunk(
@@ -134,6 +139,7 @@ async def chat_stream(
                         }
                     ).model_dump())
                 }
+                logger.info("✅ [DEBUG] Reranking status yielded successfully")
 
                 # コンテキストをStreamChunkとして送信
                 context_items = [
@@ -156,6 +162,7 @@ async def chat_stream(
                 suggested_terms = search_result.get('suggested_terms', [])
 
                 # コンテキスト送信
+                logger.info(f"🟢 [DEBUG] About to yield context ({len(context_items)} items)...")
                 yield {
                     "event": "message",
                     "data": json.dumps(StreamChunk(
@@ -163,9 +170,11 @@ async def chat_stream(
                         context=context_items
                     ).model_dump())
                 }
+                logger.info("✅ [DEBUG] Context yielded successfully")
 
                 # ステータス: 生成開始
                 generation_start_time = time.time()
+                logger.info("🟢 [DEBUG] About to yield generating status...")
                 yield {
                     "event": "message",
                     "data": json.dumps(StreamChunk(
@@ -174,10 +183,12 @@ async def chat_stream(
                         metadata={"message": "回答を生成中..."}
                     ).model_dump())
                 }
+                logger.info("✅ [DEBUG] Generating status yielded successfully")
 
                 # 2. Gemini API呼び出し (ストリーミングモード + 会話履歴付き)
-                logger.info("🔵 Starting Gemini API call for response generation (streaming with history)...")
+                logger.info("🔵 [DEBUG] Starting Gemini API call for response generation (streaming with history)...")
 
+                text_chunk_count = 0
                 async for text_chunk in gemini_service.generate_response(
                     query=request.message,
                     context=search_result.get('results', []),
@@ -185,7 +196,9 @@ async def chat_stream(
                     stream=True  # ストリーミング有効化
                 ):
                     if text_chunk:
+                        text_chunk_count += 1
                         accumulated_response += text_chunk  # レスポンスを蓄積
+                        logger.info(f"🟢 [DEBUG] About to yield text chunk #{text_chunk_count} (length: {len(text_chunk)})...")
                         yield {
                             "event": "message",
                             "data": json.dumps(StreamChunk(
@@ -193,14 +206,15 @@ async def chat_stream(
                                 content=text_chunk
                             ).model_dump())
                         }
+                        logger.info(f"✅ [DEBUG] Text chunk #{text_chunk_count} yielded successfully")
 
-                logger.info(f"✅ Gemini response completed - Total length: {len(accumulated_response)} chars")
+                logger.info(f"✅ [DEBUG] Gemini response completed - Total chunks: {text_chunk_count}, Total length: {len(accumulated_response)} chars")
 
                 generation_time = (time.time() - generation_start_time) * 1000
                 total_time = (time.time() - start_time) * 1000
 
                 # 3. 完了通知
-                logger.info(f"📊 Sending completion event - Total: {total_time:.2f}ms, Search: {search_time:.2f}ms, Generation: {generation_time:.2f}ms")
+                logger.info(f"🟢 [DEBUG] About to yield completion event - Total: {total_time:.2f}ms, Search: {search_time:.2f}ms, Generation: {generation_time:.2f}ms")
                 yield {
                     "event": "message",
                     "data": json.dumps(StreamChunk(
@@ -213,6 +227,7 @@ async def chat_stream(
                         }
                     ).model_dump())
                 }
+                logger.info("✅ [DEBUG] Completion event yielded successfully")
 
                 # 4. チャット履歴を保存（Firestore or Spreadsheet）
                 try:
@@ -253,7 +268,11 @@ async def chat_stream(
                     ).model_dump())
                 }
 
-        return EventSourceResponse(event_generator())
+        # EventSourceResponseにバッファリング無効化ヘッダーを追加
+        response = EventSourceResponse(event_generator())
+        response.headers["X-Accel-Buffering"] = "no"  # Nginx/Cloud Runバッファリング無効化
+        response.headers["Cache-Control"] = "no-cache"  # キャッシュ無効化
+        return response
 
     except Exception as e:
         logger.error(f"Chat error: {e}", exc_info=True)
