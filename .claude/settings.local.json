@@ -104,7 +104,12 @@
       "WebFetch(domain:arxiv.org)",
       "WebFetch(domain:docs.cloud.google.com)",
       "Bash(test:*)",
-      "Bash(do echo \"=== $project ===\" ls -1 \"gas_projects/projects/nursing/$project/scripts/\")"
+      "Bash(do echo \"=== $project ===\" ls -1 \"gas_projects/projects/nursing/$project/scripts/\")",
+      "Bash(curl:*)",
+      "Bash(npx create-next-app@latest frontend --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --no-git)",
+      "Bash(pkill:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run dev:*)"
     ],
     "deny": [],
     "ask": []

@@ -1,0 +1,85 @@
+{
+  "projectName": "Appsheet_カレンダー同期",
+  "scriptId": "1ZbJa2g-CRIa_dxQhPngHtmi7_VyWLyByTy1seZRQVFlpBVhG6_H3wVQy",
+  "version": "1.0.0",
+  "description": "社内ユーザーのGoogleカレンダーイベント変更を自動検知し、AppSheet（Schedule_Plan）にリアルタイムで同期",
+  "optimized": true,
+  "optimizationDate": "2025-10-27",
+  "category": "common",
+  "mainSpreadsheetId": "11ciS14lVjl1Ka_QyysD_ZPGLe6wRx9iBhxFkmr8a1Kc",
+  "staffMasterSpreadsheetId": "1F8-HxdTtz4ljW9NVqdLFX3U4mEx3Ux1QOfYCMOBXBB4",
+  "unifiedLogSpreadsheetId": "16UHnMlSUlnUy-67gbwuvjeeU73AwDomqzJwGi6L4rVA",
+  "features": [
+    "カレンダートリガーによる自動同期",
+    "ユーザー個別設定（Webアプリ）",
+    "監査ログ記録（Event_Audit_Log）",
+    "統合ログ記録（コスト管理シート）",
+    "期間制限（過去2日〜未来1年）",
+    "管理者ツール（メール一括送信）"
+  ],
+  "modules": [
+    "config.gs",
+    "main.gs",
+    "calendar_service.gs",
+    "webapp.gs",
+    "admin.gs",
+    "logger.gs",
+    "appsheet_client.gs",
+    "script_properties_manager.gs",
+    "test_functions.gs"
+  ],
+  "dependencies": {
+    "advancedServices": [
+      "Calendar API v3"
+    ],
+    "libraries": [
+      {
+        "name": "AppSheetSecureConnector",
+        "id": "1YjYuWL9-bfSkk_QRLtzBxl00V4p_95yYDFJ6rUeDifeRlRFsQqaNDHlG",
+        "version": "0",
+        "developmentMode": true
+      }
+    ]
+  },
+  "oauthScopes": [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/calendar",
+    "https://www.googleapis.com/auth/calendar.events",
+    "https://www.googleapis.com/auth/script.external_request",
+    "https://www.googleapis.com/auth/script.scriptapp",
+    "https://www.googleapis.com/auth/userinfo.email",
+    "https://www.googleapis.com/auth/script.send_mail"
+  ],
+  "triggers": [
+    {
+      "type": "Calendar",
+      "function": "onCalendarChanged",
+      "description": "ユーザーごとのカレンダートリガー",
+      "setupMethod": "Webアプリから有効化"
+    }
+  ],
+  "documentation": {
+    "readme": "README.md",
+    "specifications": "SPECIFICATIONS.md",
+    "flow": "FLOW.md"
+  },
+  "testing": {
+    "hasTests": true,
+    "testFile": "test_functions.gs",
+    "testFunctions": [
+      "testGetStaffMap",
+      "testGetSheetsAndColumns",
+      "testLogger",
+      "testGetUserCalendarTrigger",
+      "testEventDateParsing",
+      "runAllTests"
+    ]
+  },
+  "notes": [
+    "最適化版：既存コード（622行）をモジュール化（9ファイル、約2,938行）",
+    "統合ログ記録を適用：実行ログを一元管理（コスト追跡可能）",
+    "エラーハンドリング強化：try-catch-finallyパターンを全関数に適用",
+    "ドキュメント整備：README, SPECIFICATIONS, FLOWを作成",
+    "将来的にAppSheetSecureConnectorライブラリから共通モジュールのappsheet_clientへ移行予定"
+  ]
+}

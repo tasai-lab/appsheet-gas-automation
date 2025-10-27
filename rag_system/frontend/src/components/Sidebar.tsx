@@ -18,17 +18,17 @@ export default function Sidebar({
   currentSessionId,
 }: SidebarProps) {
   const { theme, toggleTheme } = useTheme();
-  const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [displayCount, setDisplayCount] = useState(10);
   const [loading, setLoading] = useState(false);
 
   // 仮のセッションデータ（実際はAPIから取得）
+  // 注: サーバー/クライアント間でハイドレーションエラーを防ぐため、決定的なデータを使用
   const mockSessions: ChatSession[] = Array.from({ length: 25 }, (_, i) => ({
     id: `session-${i + 1}`,
     title: `チャット ${i + 1}`,
     created_at: new Date(Date.now() - i * 86400000).toISOString(),
     updated_at: new Date(Date.now() - i * 86400000).toISOString(),
-    message_count: Math.floor(Math.random() * 20) + 1,
+    message_count: (i % 10) + 5, // 決定的な値（5-14の範囲）
     preview: `サンプルメッセージ ${i + 1}の内容です...`,
   }));
 

@@ -1,0 +1,43 @@
+# .claspignore for Appsheet_カレンダー同期
+
+# Backup files
+*_backup.*
+*_original.*
+*_v[0-9]*.*
+_backup/
+_archived/
+
+# Documentation
+*.md
+README.*
+SPECIFICATIONS.*
+FLOW.*
+ARCHITECTURE.*
+USAGE_GUIDE.*
+MIGRATION_GUIDE.*
+
+# Metadata
+project_metadata.json
+spreadsheets/
+
+# Git files
+.git/
+.gitignore
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Node modules (if any)
+node_modules/
+
+# Test files (optional - uncomment if you don't want to deploy tests)
+# test_*.gs
+# *_test.gs

@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&display=swap" rel="stylesheet">
+  
+  <style>
+    /* --- 全体のスタイル --- */
+    body {
+      font-family: 'M PLUS Rounded 1c', sans-serif;
+      background-color: #fdf2f4; /* 淡いピンクの背景 */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      color: #333;
+    }
+
+    /* --- カードデザインのコンテナ --- */
+    .container {
+      background-color: #ffffff;
+      padding: 30px 40px;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+      max-width: 500px;
+      width: 90%;
+      text-align: center;
+    }
+
+    /* --- 見出しとテキスト --- */
+    h1 {
+      color: #d81b60; /* アクセントカラー */
+      font-weight: 700;
+      margin-top: 0;
+      margin-bottom: 15px;
+      font-size: 24px;
+    }
+
+    p {
+      color: #666;
+      line-height: 1.7;
+      margin-bottom: 25px;
+    }
+
+    /* --- ステータスメッセージ --- */
+    .status-message {
+      margin-top: 20px;
+      padding: 15px 20px;
+      border-radius: 12px;
+      display: none;
+      text-align: left;
+      border-left-width: 6px;
+      border-left-style: solid;
+      animation: fadeIn 0.5s ease;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .status-message strong {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 700;
+    }
+    
+    .success { background-color: #e6f4ea; border-color: #34a853; color: #1e8e3e; }
+    .error   { background-color: #fce8e6; border-color: #ea4335; color: #d93025; }
+    .info    { background-color: #e8f0fe; border-color: #4285f4; color: #1a73e8; }
+
+    /* --- ボタン --- */
+    .button-container {
+      margin-top: 30px;
+      display: flex;
+      justify-content: center;
+      gap: 15px; /* ボタン間の隙間 */
+    }
+
+    .action-button {
+      font-family: 'M PLUS Rounded 1c', sans-serif;
+      font-weight: 700;
+      font-size: 16px;
+      padding: 12px 28px;
+      border: none;
+      border-radius: 50px; /* 丸いボタン */
+      cursor: pointer;
+      transition: all 0.3s ease;
+      color: white;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      letter-spacing: 0.5px;
+    }
+
+    #activateButton {
+      background: linear-gradient(45deg, #ff8a80, #ff5252);
+    }
+
+    #deactivateButton {
+      background: linear-gradient(45deg, #bdbdbd, #757575);
+    }
+    
+    .action-button:hover:not(:disabled) {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    }
+    
+    .action-button:disabled {
+      background: #e0e0e0;
+      color: #bdbdbd;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
+    }
+
+    /* --- ローディングスピナー --- */
+    .loader-container {
+      margin-top: 25px;
+      display: none; /* 初期状態は非表示 */
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      color: #777;
+    }
+
+    .spinner {
+      border: 4px solid rgba(0, 0, 0, 0.1);
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border-left-color: #d81b60; /* アクセントカラー */
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📅 カレンダー同期システム</h1>
+    <p>Googleカレンダーの予定を自動でAppSheetに反映します。</p>
+
+    <div id="statusMessage" class="status-message"></div>
+
+    <div id="loader" class="loader-container">
+      <div class="spinner"></div>
+      <span id="loader-text"></span>
+    </div>
+
+    <div class="button-container">
+      <button id="activateButton" class="action-button" onclick="handleAction('activate')" disabled>同期を有効化</button>
+      <button id="deactivateButton" class="action-button" onclick="handleAction('deactivate')" disabled>同期を無効化</button>
+    </div>
+  </div>
+
+  <script>
+    // ページロード時に現在の状態を確認
+    window.onload = function() {
+      showLoadingMessage('状態を確認中...');
+      google.script.run
+        .withSuccessHandler(updateStatusUI)
+        .withFailureHandler(showError)
+        .checkUserSyncStatusWebApp();
+    };
+
+    function handleAction(actionType) {
+      showLoadingMessage('処理中...');
+      document.getElementById('statusMessage').style.display = 'none';
+
+      const handler = google.script.run
+        .withSuccessHandler(handleResponse)
+        .withFailureHandler(showError);
+
+      if (actionType === 'activate') {
+        handler.activateUserSyncWebApp();
+      } else {
+        handler.deactivateUserSyncWebApp();
+      }
+    }
+
+    function handleResponse(response) {
+      hideLoadingMessage();
+      const statusDiv = document.getElementById('statusMessage');
+      statusDiv.innerHTML = '<strong>' + response.title + '</strong><p>' + response.message + '</p>';
+      statusDiv.className = 'status-message ' + response.status;
+      statusDiv.style.display = 'block';
+      updateButtonState(response.isActive);
+    }
+
+    function updateStatusUI(statusInfo) {
+      hideLoadingMessage();
+      const statusDiv = document.getElementById('statusMessage');
+      statusDiv.innerHTML = '<strong>現在の状態: ' + (statusInfo.isActive ? '有効' : '無効') + '</strong><p>対象カレンダー: ' + statusInfo.email + '</p>';
+      statusDiv.className = 'status-message info';
+      statusDiv.style.display = 'block';
+      updateButtonState(statusInfo.isActive);
+    }
+
+    function updateButtonState(isActive) {
+      document.getElementById('activateButton').disabled = isActive;
+      document.getElementById('deactivateButton').disabled = !isActive;
+    }
+
+    function showError(error) {
+      hideLoadingMessage();
+      const statusDiv = document.getElementById('statusMessage');
+      statusDiv.innerHTML = '<strong>エラーが発生しました</strong><p>処理中に問題が発生しました。権限を確認し、ページを再読み込みしてください。</p>';
+      statusDiv.className = 'status-message error';
+      statusDiv.style.display = 'block';
+      // エラー発生時はユーザーに再操作を促す
+      updateButtonState(false);
+    }
+    
+    // --- ローディング表示を制御する新しい関数 ---
+    function showLoadingMessage(message) {
+      const loader = document.getElementById('loader');
+      document.getElementById('loader-text').innerText = message;
+      loader.style.display = 'flex';
+      // ローディング中は両方のボタンを無効化
+      document.getElementById('activateButton').disabled = true;
+      document.getElementById('deactivateButton').disabled = true;
+    }
+
+    function hideLoadingMessage() {
+      document.getElementById('loader').style.display = 'none';
+    }
+  </script>
+</body>
+</html>
