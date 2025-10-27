@@ -312,7 +312,13 @@ npm run dev
 
 ### 5.2 Vercel デプロイ
 
-**方法1: Vercel CLI**
+**✅ 本番デプロイ済み**
+- **URL**: https://frontend-ifi7yz3to-asais-projects-00125c26.vercel.app
+- **リージョン**: 東京 (hnd1)
+- **Framework**: Next.js 14.2.23
+- **デプロイ日**: 2025-10-27
+
+**方法1: Vercel CLI** (推奨)
 
 ```bash
 # Vercel CLIインストール
@@ -321,8 +327,12 @@ npm install -g vercel
 # ログイン
 vercel login
 
-# デプロイ
-vercel
+# 環境変数を設定してデプロイ
+echo "https://rag-backend-411046620715.asia-northeast1.run.app" | \
+  vercel env add NEXT_PUBLIC_API_URL production
+
+# 本番デプロイ
+vercel --prod
 ```
 
 **方法2: GitHub連携**
@@ -338,11 +348,16 @@ vercel
 
 5. 環境変数設定:
    ```
-   NEXT_PUBLIC_API_URL=https://rag-backend-xxx.run.app
+   NEXT_PUBLIC_API_URL=https://rag-backend-411046620715.asia-northeast1.run.app
    NEXT_PUBLIC_APP_NAME=医療RAGシステム
    ```
 
 6. Deploy
+
+**実際の本番環境変数:**
+```env
+NEXT_PUBLIC_API_URL=https://rag-backend-411046620715.asia-northeast1.run.app
+```
 
 ### 5.3 カスタムドメイン設定 (オプション)
 
@@ -575,16 +590,19 @@ gcloud projects add-iam-policy-binding $GCP_PROJECT_ID \
 
 ### デプロイ後
 
-- [ ] GAS デプロイ完了 (全15プロジェクト)
-- [ ] Backend Cloud Run デプロイ完了
-- [ ] Frontend Vercel デプロイ完了
-- [ ] /health エンドポイント正常応答確認
-- [ ] /search エンドポイント動作確認
-- [ ] /chat/stream ストリーミング動作確認
+- [x] GAS デプロイ完了 (全15プロジェクト)
+- [x] Backend Cloud Run デプロイ完了 (`https://rag-backend-411046620715.asia-northeast1.run.app`)
+- [x] Frontend Vercel デプロイ完了 (`https://frontend-ifi7yz3to-asais-projects-00125c26.vercel.app`)
+- [x] /health エンドポイント正常応答確認
+- [x] /chat/stream ストリーミング動作確認 (SSE)
+- [x] /clients エンドポイント動作確認
 - [ ] 監視・ログ設定完了
 - [ ] アラート設定完了
+- [ ] 精度評価 (NDCG@10)
+- [ ] パフォーマンステスト
 
 ---
 
-**最終更新**: 2025-10-27
-**バージョン**: 1.0.0
+**最終更新**: 2025-10-27 23:45
+**バージョン**: 1.0.0-beta
+**ステータス**: Phase 4.4 完了

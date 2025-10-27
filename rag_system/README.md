@@ -15,10 +15,11 @@
 ### 🏗️ アーキテクチャ
 - **GAS Layer**: 15プロジェクトから自動ベクトル化
 - **Vector DB**: Google Spreadsheet (初期13,500件、月間200件追加想定)
-- **Backend**: Cloud Run + FastAPI (Python 3.11)
-- **Frontend**: Vercel + Next.js 14 (App Router)
+- **Backend**: Cloud Run + FastAPI (Python 3.11) - `https://rag-backend-411046620715.asia-northeast1.run.app`
+- **Frontend**: Vercel + Next.js 14 (App Router) - `https://frontend-ifi7yz3to-asais-projects-00125c26.vercel.app`
 - **Embeddings**: Vertex AI gemini-embedding-001 (3072次元)
 - **Generation**: Vertex AI Gemini 2.5 Flash/Pro (思考モード対応)
+- **Reranking**: Vertex AI Ranking API (semantic-ranker-default-004)
 
 ### 📊 対象データ
 - **Nursing (看護)**: 5プロジェクト - 通常記録、精神科記録、計画書、報告書等
@@ -141,15 +142,26 @@ curl -X POST http://localhost:8000/search \
 
 > 💡 **コスト最適化**: Vertex AI Ranking API採用により、Cross-Encoder比で**Re-rankingコスト90%削減** ($5.00 → $0.50) を達成。
 
+### 💬 Frontend機能
+- **リアルタイムステータス**: 検索→リランキング→生成の3段階進捗表示
+- **経過時間表示**: 100msごとに更新されるリアルタイムタイマー
+- **利用者選択・固定**: 新規チャット作成時に利用者を選択・固定
+- **Markdownレンダリング**: react-markdown v9によるMarkdown表示
+- **参照元表示**: 検索結果の出典を明示
+- **ダークモード**: システム設定に応じた自動切り替え
+- **レスポンシブデザイン**: モバイル・タブレット対応
+
 ## 開発ロードマップ
 
 - [x] Phase 1: 共通モジュール実装 (embeddings_service, vector_db_sync)
-- [ ] Phase 2: GASプロジェクト統合 (15プロジェクト)
-- [ ] Phase 3: Backend実装 (Hybrid Search, 用語提案)
-- [ ] Phase 4: Frontend実装 (チャットUI、ストリーミング)
-- [ ] Phase 5: 医療用語辞書構築 (100語)
+- [x] Phase 2: GASプロジェクト統合 (15プロジェクト)
+- [x] Phase 3: Backend実装 (Hybrid Search, 用語提案)
+- [x] Phase 4.1-4.2: Frontend実装 (チャットUI、コンポーネント)
+- [x] Phase 4.3: SSE Streaming対応 (リアルタイムステータス)
+- [x] Phase 4.4: Vercel本番デプロイ
+- [x] Phase 5: 医療用語辞書構築 (100語)
 - [ ] Phase 6: 統合テスト・精度評価
-- [ ] Phase 7: 本番デプロイ
+- [ ] Phase 7: 本番運用開始
 
 ## ドキュメント
 
@@ -194,5 +206,6 @@ Proprietary - Fractal Group
 
 ---
 
-**最終更新**: 2025-10-27
-**バージョン**: 1.0.0-alpha
+**最終更新**: 2025-10-27 23:45
+**バージョン**: 1.0.0-beta
+**ステータス**: 本番デプロイ完了 (Phase 4.4)
