@@ -28,12 +28,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 # アプリケーションコピー
 COPY ./app ./app
 
-# ポート公開
-EXPOSE 8000
+# ポート公開（Cloud Run用に環境変数PORTを使用）
+ENV PORT=8080
+EXPOSE ${PORT}
 
 # ヘルスチェック
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:8000/health')"
+    CMD python -c "import requests; requests.get('http://localhost:${PORT}/health')" || exit 1
 
-# アプリケーション起動
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# アプリケーション起動（PORT環境変数から取得）
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT}
