@@ -205,12 +205,12 @@ export default function ChatContainer() {
         {/* メッセージ入力 */}
         <MessageInput onSend={handleSendMessage} disabled={loading} />
 
-        {/* ローディング表示と中止ボタン（チャットエリア中央に配置） */}
+        {/* ローディング表示と中止ボタン（モバイル: 中央下部、デスクトップ: 中央） */}
         {loading && (
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-blue-600 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-4 z-10">
+          <div className="absolute bottom-24 lg:top-1/2 lg:bottom-auto left-1/2 transform -translate-x-1/2 lg:-translate-y-1/2 bg-blue-600 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-4 z-10">
             <div className="flex items-center gap-2">
               <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-              <span>応答を生成中...</span>
+              <span className="text-sm lg:text-base">応答を生成中...</span>
             </div>
             <button
               onClick={handleAbort}
