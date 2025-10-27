@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import MessageList from "./MessageList";
 import MessageInput from "./MessageInput";
 import Context from "./Context";
+import Sidebar from "./Sidebar";
 import type { ChatMessage, KnowledgeItem } from "@/types/chat";
 import { streamChatMessage } from "@/lib/api";
 
@@ -11,7 +12,8 @@ export default function ChatContainer() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [context, setContext] = useState<KnowledgeItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [sessionId] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const streamingMessageIndexRef = useRef<number | null>(null);
 
   const handleSendMessage = async (messageText: string) => {
@@ -98,32 +100,70 @@ export default function ChatContainer() {
     }
   };
 
+  const handleSessionSelect = (newSessionId: string) => {
+    if (newSessionId === "new") {
+      // 新しいチャットを開始
+      setMessages([]);
+      setContext([]);
+      setSessionId(null);
+    } else {
+      // 既存のセッションを読み込む（仮実装）
+      setSessionId(newSessionId);
+      // TODO: バックエンドからメッセージを取得
+    }
+    setSidebarOpen(false);
+  };
+
   return (
-    <div className="flex flex-col h-screen max-w-6xl mx-auto bg-white dark:bg-gray-900">
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          RAG Medical Assistant
-        </h1>
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          医療・看護記録検索 & チャットアシスタント
-        </p>
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+      {/* サイドバー */}
+      <Sidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        onSessionSelect={handleSessionSelect}
+        currentSessionId={sessionId}
+      />
+
+      {/* メインコンテンツ */}
+      <div className="flex flex-col flex-1 max-w-6xl mx-auto w-full bg-white dark:bg-gray-900">
+        {/* ヘッダー */}
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center gap-4">
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400"
+          >
+            ☰
+          </button>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              F Assistant
+            </h1>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              医療・看護記録検索 & チャットアシスタント
+            </p>
+          </div>
+        </div>
+
+        {/* コンテキスト */}
+        {context.length > 0 && (
+          <div className="p-4">
+            <Context items={context} />
+          </div>
+        )}
+
+        {/* メッセージリスト */}
+        <MessageList messages={messages} />
+
+        {/* メッセージ入力 */}
+        <MessageInput onSend={handleSendMessage} disabled={loading} />
+
+        {/* ローディング表示 */}
+        {loading && (
+          <div className="fixed bottom-20 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg">
+            応答を生成中...
+          </div>
+        )}
       </div>
-
-      {context.length > 0 && (
-        <div className="p-4">
-          <Context items={context} />
-        </div>
-      )}
-
-      <MessageList messages={messages} />
-
-      <MessageInput onSend={handleSendMessage} disabled={loading} />
-
-      {loading && (
-        <div className="fixed bottom-20 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg">
-          応答を生成中...
-        </div>
-      )}
     </div>
   );
 }

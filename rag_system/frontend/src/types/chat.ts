@@ -57,3 +57,20 @@ export interface ChatRequest {
   context_size?: number;
   stream?: boolean;
 }
+
+// チャット履歴セッションの型定義
+export interface ChatSession {
+  id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+  message_count: number;
+  preview: string;
+}
+
+// チャット履歴リストの型定義
+export interface ChatHistoryList {
+  sessions: ChatSession[];
+  total_count: number;
+  has_more: boolean;
+}
