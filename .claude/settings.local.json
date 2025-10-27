@@ -110,7 +110,8 @@
       "Bash(pkill:*)",
       "Bash(npm run build:*)",
       "Bash(npm run dev:*)",
-      "Bash(lsof:*)"
+      "Bash(lsof:*)",
+      "Bash(PORT=3000 npm run dev:*)"
     ],
     "deny": [],
     "ask": []

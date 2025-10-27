@@ -74,7 +74,7 @@ export default function Sidebar({
             <img
               src="/f-assistant.png"
               alt="F Assistant"
-              className="h-16 w-auto dark:invert"
+              className="h-16 w-auto object-contain dark:invert"
             />
             <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
               フラクタルのRAG検索ツール
