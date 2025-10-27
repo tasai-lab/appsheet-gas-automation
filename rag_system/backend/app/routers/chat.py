@@ -9,7 +9,9 @@ import uuid
 from datetime import datetime
 
 from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi.responses import StreamingResponse
 from sse_starlette.sse import EventSourceResponse
+import asyncio
 
 from app.config import get_settings
 from app.models.request import ChatRequest
@@ -25,7 +27,6 @@ settings = get_settings()
 
 @router.post(
     "/stream",
-    response_class=EventSourceResponse,
     status_code=status.HTTP_200_OK,
     summary="ストリーミングチャット",
     description="SSEによるストリーミングチャット応答"
@@ -268,11 +269,34 @@ async def chat_stream(
                     ).model_dump())
                 }
 
-        # EventSourceResponseにバッファリング無効化ヘッダーを追加
-        response = EventSourceResponse(event_generator())
-        response.headers["X-Accel-Buffering"] = "no"  # Nginx/Cloud Runバッファリング無効化
-        response.headers["Cache-Control"] = "no-cache"  # キャッシュ無効化
-        return response
+        # ★★★ StreamingResponseに変更 - 手動SSEフォーマット ★★★
+        async def sse_wrapper():
+            """SSEフォーマットラッパー - 明示的に \\n\\n 区切りを追加"""
+            async for event_dict in event_generator():
+                event_type = event_dict.get("event", "message")
+                data = event_dict.get("data", "")
+
+                # SSE形式: event: xxx\ndata: xxx\n\n
+                sse_message = f"event: {event_type}\ndata: {data}\n\n"
+
+                # デバッグログ
+                logger.info(f"📤 [DEBUG] Sending SSE message (length: {len(sse_message)} bytes, type: {event_type})")
+
+                yield sse_message.encode("utf-8")
+
+                # バッファリング防止 - イベントループに制御を戻す
+                await asyncio.sleep(0)
+
+        # StreamingResponseを返す
+        return StreamingResponse(
+            sse_wrapper(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no"
+            }
+        )
 
     except Exception as e:
         logger.error(f"Chat error: {e}", exc_info=True)
