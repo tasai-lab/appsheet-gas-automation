@@ -186,7 +186,7 @@ export default function ChatContainer() {
                 F Assistant
               </h1>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                フラクタル訪問看護のRAG検索ツール
+                フラクタルのRAG検索ツール
               </p>
             </div>
           </div>
