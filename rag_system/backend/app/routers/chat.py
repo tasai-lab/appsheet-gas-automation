@@ -50,25 +50,66 @@ async def chat_stream(request: ChatRequest):
         async def event_generator():
             """SSEイベントジェネレーター"""
             try:
-                # TODO: Phase 3.3-3.4で実装
                 # 1. コンテキスト検索
-                # 2. Gemini API呼び出し
-                # 3. ストリーミングレスポンス
+                from app.services.rag_engine import get_hybrid_search_engine
+                from app.services.gemini_service import get_gemini_service
+                from app.models.response import KnowledgeItem
 
-                # Stub実装
+                engine = get_hybrid_search_engine()
+                gemini_service = get_gemini_service()
+
+                # Hybrid Search実行
+                search_result = engine.search(
+                    query=request.message,
+                    domain=request.domain,
+                    top_k=request.context_size or 5
+                )
+
+                # コンテキストをStreamChunkとして送信
+                context_items = [
+                    KnowledgeItem(
+                        id=result.get('id', ''),
+                        domain=result.get('domain', ''),
+                        title=result.get('title', ''),
+                        content=result.get('content', ''),
+                        score=result.get('rank_score', 0.0),
+                        source_type=result.get('source_type'),
+                        source_table=result.get('source_table'),
+                        source_id=result.get('source_id'),
+                        tags=result.get('tags', '').split(',') if result.get('tags') else []
+                    )
+                    for result in search_result.get('results', [])
+                ]
+
+                # コンテキスト送信
                 yield {
                     "event": "message",
                     "data": StreamChunk(
-                        type="text",
-                        content="これはテストレスポンスです。Phase 3.4で実装予定。"
+                        type="context",
+                        context=context_items
                     ).model_dump_json()
                 }
 
+                # 2. Gemini API呼び出し & ストリーミング
+                async for text_chunk in gemini_service.generate_response(
+                    query=request.message,
+                    context=search_result.get('results', []),
+                    stream=True
+                ):
+                    yield {
+                        "event": "message",
+                        "data": StreamChunk(
+                            type="text",
+                            content=text_chunk
+                        ).model_dump_json()
+                    }
+
+                # 3. 完了通知
                 yield {
                     "event": "message",
                     "data": StreamChunk(
                         type="done",
-                        content=None
+                        suggested_terms=search_result.get('suggested_terms', [])
                     ).model_dump_json()
                 }
 
@@ -120,18 +161,56 @@ async def chat(request: ChatRequest):
         # セッションID生成
         session_id = request.session_id or str(uuid.uuid4())
 
-        # TODO: Phase 3.3-3.4で実装
+        # 1. コンテキスト検索
+        from app.services.rag_engine import get_hybrid_search_engine
+        from app.services.gemini_service import get_gemini_service
+        from app.models.response import KnowledgeItem
 
-        # Stub実装
+        engine = get_hybrid_search_engine()
+        gemini_service = get_gemini_service()
+
+        # Hybrid Search実行
+        search_result = engine.search(
+            query=request.message,
+            domain=request.domain,
+            top_k=request.context_size or 5
+        )
+
+        # コンテキストアイテムを構築
+        context_items = [
+            KnowledgeItem(
+                id=result.get('id', ''),
+                domain=result.get('domain', ''),
+                title=result.get('title', ''),
+                content=result.get('content', ''),
+                score=result.get('rank_score', 0.0),
+                source_type=result.get('source_type'),
+                source_table=result.get('source_table'),
+                source_id=result.get('source_id'),
+                tags=result.get('tags', '').split(',') if result.get('tags') else []
+            )
+            for result in search_result.get('results', [])
+        ]
+
+        # 2. Gemini応答生成（非ストリーミング）
+        full_response = ""
+        async for text_chunk in gemini_service.generate_response(
+            query=request.message,
+            context=search_result.get('results', []),
+            stream=False
+        ):
+            full_response += text_chunk
+
+        # 3. レスポンス構築
         return ChatResponse(
             session_id=session_id,
             message=ChatMessage(
                 role="assistant",
-                content="これはテストレスポンスです。Phase 3.4で実装予定。",
+                content=full_response,
                 timestamp=datetime.utcnow()
             ),
-            context=[],
-            suggested_terms=[],
+            context=context_items,
+            suggested_terms=search_result.get('suggested_terms', []),
             processing_time_ms=(time.time() - start_time) * 1000
         )
 

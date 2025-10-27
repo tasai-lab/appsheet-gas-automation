@@ -25,6 +25,7 @@ class ChatRequest(BaseModel):
     user_id: Optional[str] = Field(None, description="ユーザーID")
     domain: Optional[str] = Field(None, description="ドメインフィルタ")
     context_ids: Optional[list[str]] = Field(None, description="コンテキストとして使用するKB ID一覧")
+    context_size: Optional[int] = Field(5, description="コンテキスト取得数", ge=1, le=20)
     stream: bool = Field(True, description="ストリーミングレスポンス")
 
 
