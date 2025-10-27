@@ -12,6 +12,10 @@
 - `/kill-dev` - 全開発サーバー停止
 - `/restart-dev` - 開発サーバー再起動
 
+#### データ処理
+
+- `/vectorize-data` - 既存データのベクトル化
+
 #### テスト・検証
 
 - `/check-consistency` - 計画と実装の整合性チェック
