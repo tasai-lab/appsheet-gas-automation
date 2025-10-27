@@ -1,0 +1,30 @@
+{
+  "customCommands": {
+    "enabled": true,
+    "commandsDirectory": ".claude/commands"
+  },
+  "projectInstructions": {
+    "enabled": true,
+    "file": ".claude/CLAUDE.md"
+  },
+  "hooks": {
+    "beforeWrite": {
+      "enabled": true,
+      "command": "python check_retry_patterns.py"
+    }
+  },
+  "status": {
+    "enabled": true,
+    "format": "RAG: {project} | Phase: {phase} | Files: {files}"
+  },
+  "codeReview": {
+    "enabled": true,
+    "autoReview": false,
+    "checkpoints": [
+      "API呼び出しループチェック",
+      "エラーハンドリング確認",
+      "ログ出力確認",
+      "セキュリティ確認"
+    ]
+  }
+}

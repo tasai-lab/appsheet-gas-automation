@@ -266,7 +266,148 @@ function cleanupLogs() {
 - **gemini-2.5-pro**: 通話要約、看護記録、質疑応答など複雑な思考が必要
 - **gemini-2.5-flash**: データ抽出、OCR、分類など標準処理
 
+### 6. embeddings_service.gs - Vertex AI Embeddings
+Vertex AI gemini-embedding-001を使用した埋め込みベクトル生成サービス
+
+**主な機能:**
+- テキストの埋め込みベクトル生成 (3072次元)
+- バッチ処理対応 (最大250テキスト/リクエスト)
+- タスクタイプ指定 (RETRIEVAL_DOCUMENT / RETRIEVAL_QUERY)
+- OAuth2認証
+- コサイン類似度計算
+- 類似検索機能
+
+**使用例:**
+```javascript
+// 単一テキストの埋め込み生成
+const embedding = createEmbedding("看護記録のテキスト", "RETRIEVAL_DOCUMENT", logger);
+console.log(embedding.length); // 3072
+
+// バッチ処理
+const embeddings = createEmbeddingsBatch([
+  "テキスト1",
+  "テキスト2"
+], "RETRIEVAL_DOCUMENT", logger);
+
+// 類似検索
+const candidates = [
+  { id: 'doc1', text: '...', embedding: [...] },
+  { id: 'doc2', text: '...', embedding: [...] }
+];
+const results = searchSimilarTexts("検索クエリ", candidates, 10, logger);
+```
+
+### 7. vector_db_sync.gs - Vector DB同期
+統合Vector DBスプレッドシートへの同期サービス
+
+**主な機能:**
+- KnowledgeBaseシートへのデータ登録
+- Embeddingsシートへのベクトル登録
+- 医療用語キーワード自動抽出
+- BM25用キーワード正規化
+- バッチ同期対応
+
+**使用例:**
+```javascript
+// Vector DBに同期
+const kbId = syncToVectorDB({
+  domain: 'nursing',
+  sourceType: 'care_record',
+  sourceTable: 'Care_Records',
+  sourceId: 'rec_123',
+  userId: 'user_001',
+  title: '2025-10-27 訪問看護記録',
+  content: '訪問時の状態...',
+  structuredData: { vital_signs: {...} },
+  metadata: { audioFileId: '...' },
+  tags: 'バルーン交換,服薬確認',
+  date: '2025-10-27'
+}, logger);
+
+// バッチ同期
+const kbIds = syncToVectorDBBatch([params1, params2, params3], logger);
+
+// レコード取得
+const record = getKnowledgeBaseRecord(kbId, logger);
+```
+
+## RAG統合使用例
+
+全てのモジュールを組み合わせたRAG対応の完全な例:
+
+```javascript
+/**
+ * Webhookエントリポイント (RAG対応)
+ */
+function doPost(e) {
+  const logger = createLogger('訪問看護_通常記録');
+  logger.info('Webhook受信');
+
+  let recordId = null;
+  let status = '成功';
+
+  try {
+    const params = JSON.parse(e.postData.contents);
+    recordId = params.record_id;
+
+    // 重複防止
+    const dupPrevention = createDuplicationPrevention('訪問看護_通常記録');
+    const result = dupPrevention.executeWithRetry(recordId, (id) => {
+
+      // Gemini APIで看護記録生成
+      const gemini = createGeminiProClient();
+      const careRecord = gemini.generateJSON(params.prompt, logger);
+
+      // AppSheetに結果を書き戻し
+      const appsheet = createAppSheetClient(APP_ID, ACCESS_KEY);
+      appsheet.updateSuccessStatus(
+        'Care_Records',
+        id,
+        'record_id',
+        careRecord,
+        'status',
+        logger
+      );
+
+      // Vector DBに同期 (RAG用)
+      syncToVectorDB({
+        domain: 'nursing',
+        sourceType: 'care_record',
+        sourceTable: 'Care_Records',
+        sourceId: id,
+        userId: params.user_id,
+        title: `${params.visit_date} 訪問看護記録`,
+        content: buildFullText(careRecord),
+        structuredData: careRecord,
+        metadata: { audioFileId: params.audio_file_id },
+        tags: extractTags(careRecord),
+        date: params.visit_date
+      }, logger);
+
+      return careRecord;
+
+    }, logger);
+
+    if (result.isDuplicate) {
+      status = '重複';
+      return ContentService.createTextOutput('重複実行').setMimeType(ContentService.MimeType.TEXT);
+    }
+
+    logger.success('処理完了 (RAG同期含む)');
+    return ContentService.createTextOutput('OK').setMimeType(ContentService.MimeType.TEXT);
+
+  } catch (error) {
+    status = 'エラー';
+    logger.error(`処理エラー: ${error.toString()}`, { stack: error.stack });
+    return ContentService.createTextOutput('ERROR').setMimeType(ContentService.MimeType.TEXT);
+
+  } finally {
+    logger.saveToSpreadsheet(status, recordId);
+  }
+}
+```
+
 ## バージョン情報
-- Version: 1.0.0
+- Version: 2.0.0 (RAG対応)
 - 作成日: 2025-10-16
-- 最終更新: 2025-10-16
+- 最終更新: 2025-10-27
