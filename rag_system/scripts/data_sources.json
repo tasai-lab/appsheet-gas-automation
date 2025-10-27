@@ -17,24 +17,24 @@
   },
   "nursing_plan": {
     "name": "訪問看護_計画書問題点",
-    "spreadsheet_id": "【AppSheetアプリのSpreadsheet IDを入力】",
-    "sheet_name": "Care_Plans",
+    "spreadsheet_id": "1EhLGOPKrxqMNl2b1_c0mA1M3w1tXiHN4PsnXWfWHSPw",
+    "sheet_name": "VN_Plans",
     "domain": "nursing",
     "source_type": "care_plan",
     "description": "看護計画書と問題点"
   },
   "nursing_plan_eval": {
     "name": "訪問看護_計画書問題点_評価",
-    "spreadsheet_id": "【AppSheetアプリのSpreadsheet IDを入力】",
-    "sheet_name": "Plan_Evaluations",
+    "spreadsheet_id": "1EhLGOPKrxqMNl2b1_c0mA1M3w1tXiHN4PsnXWfWHSPw",
+    "sheet_name": "VN_Plan_Problems",
     "domain": "nursing",
     "source_type": "plan_evaluation",
     "description": "計画評価記録"
   },
   "nursing_report": {
     "name": "訪問看護_報告書",
-    "spreadsheet_id": "【AppSheetアプリのSpreadsheet IDを入力】",
-    "sheet_name": "Reports",
+    "spreadsheet_id": "1EhLGOPKrxqMNl2b1_c0mA1M3w1tXiHN4PsnXWfWHSPw",
+    "sheet_name": "VN_Reports",
     "domain": "nursing",
     "source_type": "report",
     "description": "訪問報告書"
@@ -73,24 +73,24 @@
   },
   "calls_summary": {
     "name": "通話_要約生成",
-    "spreadsheet_id": "【AppSheetアプリのSpreadsheet IDを入力】",
-    "sheet_name": "Call_Summaries",
+    "spreadsheet_id": "1rIKFm8jM_jMYyiUEY2w1Yz7PYsU-Gvp3XL-bsV05E8E",
+    "sheet_name": "Call_Logs",
     "domain": "calls",
     "source_type": "call_summary",
     "description": "通話要約記録"
   },
   "calls_qa": {
     "name": "通話_質疑応答",
-    "spreadsheet_id": "【AppSheetアプリのSpreadsheet IDを入力】",
-    "sheet_name": "Call_QA",
+    "spreadsheet_id": "1rIKFm8jM_jMYyiUEY2w1Yz7PYsU-Gvp3XL-bsV05E8E",
+    "sheet_name": "Call_Queries",
     "domain": "calls",
     "source_type": "call_qa",
     "description": "通話記録QA"
   },
   "calls_threads": {
     "name": "ALL_スレッド更新",
-    "spreadsheet_id": "【AppSheetアプリのSpreadsheet IDを入力】",
-    "sheet_name": "Threads",
+    "spreadsheet_id": "1rIKFm8jM_jMYyiUEY2w1Yz7PYsU-Gvp3XL-bsV05E8E",
+    "sheet_name": "Call_Actions",
     "domain": "calls",
     "source_type": "thread",
     "description": "スレッド管理"
