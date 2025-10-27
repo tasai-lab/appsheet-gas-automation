@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import type { ChatSession } from "@/types/chat";
 import { useTheme } from "@/contexts/ThemeContext";
-import { fetchClients, type ClientInfo } from "@/lib/api";
+import { useClients } from "@/contexts/ClientsContext";
 import ClientAutocomplete from "./ClientAutocomplete";
 
 interface SidebarProps {
@@ -26,31 +26,15 @@ export default function Sidebar({
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("history");
 
+  // ClientsContextから利用者データを取得
+  const { clients, loading: clientsLoading } = useClients();
+
   // テストタブ用の状態
-  const [clients, setClients] = useState<ClientInfo[]>([]);
-  const [clientsLoading, setClientsLoading] = useState(true);
   const [testClientId, setTestClientId] = useState<string | null>(null);
   const [testQuery, setTestQuery] = useState("");
   const [testStreaming, setTestStreaming] = useState(true);
   const [testLoading, setTestLoading] = useState(false);
   const [testResult, setTestResult] = useState<string>("");
-
-  // 利用者一覧を取得
-  useEffect(() => {
-    const loadClients = async () => {
-      try {
-        console.log("[Sidebar] 利用者一覧を取得中...");
-        const response = await fetchClients();
-        console.log(`[Sidebar] 利用者一覧取得成功: ${response.clients.length}件`, response.clients);
-        setClients(response.clients);
-      } catch (error) {
-        console.error("[Sidebar] 利用者一覧の取得に失敗しました:", error);
-      } finally {
-        setClientsLoading(false);
-      }
-    };
-    loadClients();
-  }, []);
 
   // 仮のセッションデータ（実際はAPIから取得）
   // 注: サーバー/クライアント間でハイドレーションエラーを防ぐため、決定的なデータを使用
@@ -61,6 +45,8 @@ export default function Sidebar({
     updated_at: new Date(Date.now() - i * 86400000).toISOString(),
     message_count: (i % 10) + 5, // 決定的な値（5-14の範囲）
     preview: `サンプルメッセージ ${i + 1}の内容です...`,
+    client_id: i % 3 === 0 ? null : `client-${i % 5 + 1}`, // 3つに1つは全利用者、それ以外は特定利用者
+    client_name: i % 3 === 0 ? undefined : `利用者${i % 5 + 1}`,
   }));
 
   const displayedSessions = mockSessions.slice(0, displayCount);

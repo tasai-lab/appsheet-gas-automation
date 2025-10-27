@@ -61,7 +61,7 @@ class GeminiService:
             # プロンプトを構築
             prompt = self._build_prompt(query, context)
 
-            logger.debug(f"Generating response - Query: {query[:50]}..., Context: {len(context)} items")
+            logger.info(f"🚀 Starting Gemini generation - Query: {query[:50]}..., Context: {len(context)} items, Stream: {stream}")
 
             # 生成設定
             generation_config = {
@@ -71,31 +71,63 @@ class GeminiService:
                 'top_k': settings.vertex_ai_top_k
             }
 
-            if stream:
-                # ストリーミング生成
-                response = await self.model.generate_content_async(
-                    prompt,
-                    generation_config=generation_config,
-                    stream=True
-                )
+            # ⚠️ TEMPORARY: Vertex AI APIがタイムアウトするため、コンテキストベースのレスポンスを返す
+            logger.warning("⚠️ Using context-based response (Vertex AI API timeout issue)")
 
-                async for chunk in response:
-                    if chunk.text:
-                        yield chunk.text
+            # コンテキストを基にレスポンスを構築
+            if context:
+                mock_response = f"# {query}\n\n"
+                mock_response += f"検索により{len(context)}件の関連情報が見つかりました。\n\n"
 
+                for i, item in enumerate(context, 1):
+                    title = item.get('title', '情報なし')
+                    content = item.get('content', '')
+                    source = item.get('source_type', '')
+                    date = item.get('date', '')
+
+                    mock_response += f"## {i}. {title}\n\n"
+
+                    if date:
+                        mock_response += f"**日付**: {date}\n\n"
+                    if source:
+                        mock_response += f"**ソース**: {source}\n\n"
+
+                    # コンテンツを適切な長さに制限
+                    if len(content) > 500:
+                        content = content[:500] + "..."
+
+                    mock_response += f"{content}\n\n"
+                    mock_response += "---\n\n"
+
+                mock_response += "\n\n> ⚠️ これは検索結果の表示です。Vertex AI APIの接続問題により、AI生成回答は現在利用できません。"
             else:
-                # 非ストリーミング生成
-                response = await self.model.generate_content_async(
-                    prompt,
-                    generation_config=generation_config
-                )
+                mock_response = f"# {query}\n\n申し訳ございません。関連する情報が見つかりませんでした。\n\n> ⚠️ Vertex AI APIの接続問題により、検索結果のみを表示しています。"
 
-                if response.text:
-                    yield response.text
+            yield mock_response
+            logger.info(f"✅ Context-based response sent - Length: {len(mock_response)} chars, Context items: {len(context)}")
+
+            # 元のコード（コメントアウト）
+            # if stream:
+            #     logger.info("📡 Calling Gemini API with streaming...")
+            #     response = await self.model.generate_content_async(
+            #         prompt,
+            #         generation_config=generation_config,
+            #         stream=True
+            #     )
+            #     ...
+            # else:
+            #     logger.info("📡 Calling Gemini API (non-streaming)...")
+            #     response = await self.model.generate_content_async(
+            #         prompt,
+            #         generation_config=generation_config
+            #     )
+            #     ...
 
         except Exception as e:
-            logger.error(f"Response generation failed: {e}", exc_info=True)
-            yield f"申し訳ございません。応答の生成中にエラーが発生しました: {str(e)}"
+            logger.error(f"❌ Response generation failed: {e}", exc_info=True)
+            error_message = f"申し訳ございません。応答の生成中にエラーが発生しました: {str(e)}"
+            logger.error(f"Returning error message to client: {error_message}")
+            yield error_message
 
     def _build_prompt(
         self,

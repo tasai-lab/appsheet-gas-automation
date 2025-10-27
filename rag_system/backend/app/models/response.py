@@ -57,11 +57,13 @@ class ChatResponse(BaseModel):
 class StreamChunk(BaseModel):
     """ストリームチャンク"""
 
-    type: str = Field(..., description="チャンクタイプ (text/context/done/error)")
+    type: str = Field(..., description="チャンクタイプ (text/context/done/error/status)")
     content: Optional[str] = Field(None, description="テキストコンテンツ")
     context: Optional[list[KnowledgeItem]] = Field(None, description="コンテキスト")
     suggested_terms: Optional[list[str]] = Field(None, description="提案された医療用語")
     error: Optional[str] = Field(None, description="エラーメッセージ")
+    status: Optional[str] = Field(None, description="処理ステータス (searching/reranking/generating)")
+    metadata: Optional[dict[str, Any]] = Field(None, description="メタデータ（処理時間など）")
 
 
 class HealthResponse(BaseModel):

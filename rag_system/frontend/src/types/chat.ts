@@ -31,11 +31,18 @@ export interface ChatResponse {
 
 // ストリームチャンクの型定義
 export interface StreamChunk {
-  type: "text" | "context" | "done" | "error";
+  type: "text" | "context" | "done" | "error" | "status";
   content?: string;
   context?: KnowledgeItem[];
   suggested_terms?: string[];
   error?: string;
+  status?: "searching" | "reranking" | "generating";
+  metadata?: {
+    message?: string;
+    search_time_ms?: number;
+    generation_time_ms?: number;
+    total_time_ms?: number;
+  };
 }
 
 // 検索リクエストの型定義
@@ -52,6 +59,7 @@ export interface ChatRequest {
   message: string;
   session_id?: string;
   user_id?: string;
+  client_id?: string;
   domain?: string;
   context_ids?: string[];
   context_size?: number;
@@ -66,6 +74,8 @@ export interface ChatSession {
   updated_at: string;
   message_count: number;
   preview: string;
+  client_id: string | null; // null = 全ての利用者
+  client_name?: string; // 利用者名（表示用）
 }
 
 // チャット履歴リストの型定義

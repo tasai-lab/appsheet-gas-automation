@@ -290,8 +290,14 @@ class VectorizeExistingData:
         with tqdm(total=len(records), desc=f"{source_config['name']}") as pbar:
             for record in records:
                 try:
+                    # フィールドマッピング取得
+                    field_mapping = source_config.get("field_mapping", {})
+                    id_field = field_mapping.get("id_field", "id")
+                    client_field = field_mapping.get("client_field", "user_id")
+
                     # レコードID生成
-                    record_id = f"{source_key}_{record.get('id', hash(str(record)))}"
+                    source_id = record.get(id_field, "")
+                    record_id = f"{source_key}_{source_id if source_id else hash(str(record))}"
 
                     # フルテキスト構築
                     full_text = self.build_full_text(record, source_config["source_type"])
@@ -311,10 +317,11 @@ class VectorizeExistingData:
 
                     # Vector DB書き込み
                     title = record.get("title", f"{source_config['name']} - {record_id[:8]}")
+                    client_id = record.get(client_field, "")
                     metadata = {
                         "source_table": sheet_name,
-                        "source_id": record.get("id", ""),
-                        "user_id": record.get("user_id", ""),
+                        "source_id": source_id,
+                        "user_id": client_id,
                         "structured_data": record,
                         "tags": [],
                         "date": record.get("date", ""),

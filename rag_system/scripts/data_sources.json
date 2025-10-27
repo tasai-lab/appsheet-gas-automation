@@ -5,7 +5,11 @@
     "sheet_name": "Care_Records",
     "domain": "nursing",
     "source_type": "care_record",
-    "description": "通常の訪問看護記録"
+    "description": "通常の訪問看護記録",
+    "field_mapping": {
+      "id_field": "record_id",
+      "client_field": "client_id"
+    }
   },
   "nursing_mental": {
     "name": "訪問看護_精神科記録",
@@ -21,7 +25,11 @@
     "sheet_name": "VN_Plans",
     "domain": "nursing",
     "source_type": "care_plan",
-    "description": "看護計画書と問題点"
+    "description": "看護計画書と問題点",
+    "field_mapping": {
+      "id_field": "plan_id",
+      "client_field": "client_id"
+    }
   },
   "nursing_plan_eval": {
     "name": "訪問看護_計画書問題点_評価",
@@ -29,7 +37,11 @@
     "sheet_name": "VN_Plan_Problems",
     "domain": "nursing",
     "source_type": "plan_evaluation",
-    "description": "計画評価記録"
+    "description": "計画評価記録",
+    "field_mapping": {
+      "id_field": "problem_id",
+      "client_field": "client_id"
+    }
   },
   "nursing_report": {
     "name": "訪問看護_報告書",
@@ -37,7 +49,11 @@
     "sheet_name": "VN_Reports",
     "domain": "nursing",
     "source_type": "report",
-    "description": "訪問報告書"
+    "description": "訪問報告書",
+    "field_mapping": {
+      "id_field": "report_id",
+      "client_field": "client_id"
+    }
   },
   "clients_basic": {
     "name": "利用者_基本情報",
@@ -45,7 +61,11 @@
     "sheet_name": "Clients",
     "domain": "clients",
     "source_type": "client_info",
-    "description": "利用者基本情報"
+    "description": "利用者基本情報",
+    "field_mapping": {
+      "id_field": "client_id",
+      "client_field": "client_id"
+    }
   },
   "clients_qa": {
     "name": "利用者_質疑応答",
@@ -53,7 +73,11 @@
     "sheet_name": "Client_Requests",
     "domain": "clients",
     "source_type": "client_qa",
-    "description": "利用者情報QA記録"
+    "description": "利用者情報QA記録",
+    "field_mapping": {
+      "id_field": "request_id",
+      "client_field": "client_id"
+    }
   },
   "clients_facesheet": {
     "name": "利用者_フェースシート",
@@ -61,7 +85,11 @@
     "sheet_name": "Client_Face_Sheets",
     "domain": "clients",
     "source_type": "facesheet",
-    "description": "フェースシート"
+    "description": "フェースシート",
+    "field_mapping": {
+      "id_field": "facesheet_id",
+      "client_field": "client_id"
+    }
   },
   "clients_family": {
     "name": "利用者_家族情報",
@@ -69,7 +97,11 @@
     "sheet_name": "Client_Family_Members",
     "domain": "clients",
     "source_type": "family_info",
-    "description": "家族情報"
+    "description": "家族情報",
+    "field_mapping": {
+      "id_field": "family_member_id",
+      "client_field": "client_id"
+    }
   },
   "calls_summary": {
     "name": "通話_要約生成",
@@ -77,7 +109,11 @@
     "sheet_name": "Call_Logs",
     "domain": "calls",
     "source_type": "call_summary",
-    "description": "通話要約記録"
+    "description": "通話要約記録",
+    "field_mapping": {
+      "id_field": "call_id",
+      "client_field": "client_id"
+    }
   },
   "calls_qa": {
     "name": "通話_質疑応答",
@@ -85,7 +121,11 @@
     "sheet_name": "Call_Queries",
     "domain": "calls",
     "source_type": "call_qa",
-    "description": "通話記録QA"
+    "description": "通話記録QA",
+    "field_mapping": {
+      "id_field": "query_id",
+      "client_field": "client_id"
+    }
   },
   "calls_threads": {
     "name": "ALL_スレッド更新",
@@ -93,7 +133,11 @@
     "sheet_name": "Call_Actions",
     "domain": "calls",
     "source_type": "thread",
-    "description": "スレッド管理"
+    "description": "スレッド管理",
+    "field_mapping": {
+      "id_field": "action_id",
+      "client_field": "client_id"
+    }
   },
   "sales_report": {
     "name": "営業レポート",
@@ -101,7 +145,11 @@
     "sheet_name": "Sales_Reports",
     "domain": "sales",
     "source_type": "sales_report",
-    "description": "営業活動記録"
+    "description": "営業活動記録",
+    "field_mapping": {
+      "id_field": "report_id",
+      "client_field": "org_id"
+    }
   },
   "sales_card": {
     "name": "名刺取り込み",
@@ -109,7 +157,11 @@
     "sheet_name": "Business_Cards",
     "domain": "sales",
     "source_type": "business_card",
-    "description": "名刺OCR管理"
+    "description": "名刺OCR管理",
+    "field_mapping": {
+      "id_field": "card_id",
+      "client_field": "org_id"
+    }
   },
   "automation_receipt": {
     "name": "レシート",

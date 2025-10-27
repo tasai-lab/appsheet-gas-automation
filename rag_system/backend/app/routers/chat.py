@@ -55,6 +55,17 @@ async def chat_stream(request: ChatRequest):
                 from app.services.gemini_service import get_gemini_service
                 from app.models.response import KnowledgeItem
 
+                # ステータス: 検索開始
+                search_start_time = time.time()
+                yield {
+                    "event": "message",
+                    "data": StreamChunk(
+                        type="status",
+                        status="searching",
+                        metadata={"message": "情報を検索中..."}
+                    ).model_dump_json()
+                }
+
                 engine = get_hybrid_search_engine()
                 gemini_service = get_gemini_service()
 
@@ -65,6 +76,21 @@ async def chat_stream(request: ChatRequest):
                     client_id=request.client_id,
                     top_k=request.context_size or 5
                 )
+
+                search_time = (time.time() - search_start_time) * 1000
+
+                # ステータス: リランキング完了
+                yield {
+                    "event": "message",
+                    "data": StreamChunk(
+                        type="status",
+                        status="reranking",
+                        metadata={
+                            "message": f"結果を最適化しました ({len(search_result.get('results', []))}件)",
+                            "search_time_ms": search_time
+                        }
+                    ).model_dump_json()
+                }
 
                 # コンテキストをStreamChunkとして送信
                 context_items = [
@@ -91,26 +117,55 @@ async def chat_stream(request: ChatRequest):
                     ).model_dump_json()
                 }
 
-                # 2. Gemini API呼び出し & ストリーミング
+                # ステータス: 生成開始
+                generation_start_time = time.time()
+                yield {
+                    "event": "message",
+                    "data": StreamChunk(
+                        type="status",
+                        status="generating",
+                        metadata={"message": "回答を生成中..."}
+                    ).model_dump_json()
+                }
+
+                # 2. Gemini API呼び出し (非ストリーミングモード - デバッグ用)
+                logger.info("🔵 Starting Gemini API call for response generation (non-streaming)...")
+
+                full_response = ""
                 async for text_chunk in gemini_service.generate_response(
                     query=request.message,
                     context=search_result.get('results', []),
-                    stream=True
+                    stream=False  # 非ストリーミングに変更
                 ):
+                    full_response += text_chunk
+
+                logger.info(f"✅ Gemini response received - Length: {len(full_response)} chars")
+
+                # 一度に全文を送信
+                if full_response:
                     yield {
                         "event": "message",
                         "data": StreamChunk(
                             type="text",
-                            content=text_chunk
+                            content=full_response
                         ).model_dump_json()
                     }
 
+                generation_time = (time.time() - generation_start_time) * 1000
+                total_time = (time.time() - start_time) * 1000
+
                 # 3. 完了通知
+                logger.info(f"📊 Sending completion event - Total: {total_time:.2f}ms, Search: {search_time:.2f}ms, Generation: {generation_time:.2f}ms")
                 yield {
                     "event": "message",
                     "data": StreamChunk(
                         type="done",
-                        suggested_terms=search_result.get('suggested_terms', [])
+                        suggested_terms=search_result.get('suggested_terms', []),
+                        metadata={
+                            "total_time_ms": total_time,
+                            "search_time_ms": search_time,
+                            "generation_time_ms": generation_time
+                        }
                     ).model_dump_json()
                 }
 
