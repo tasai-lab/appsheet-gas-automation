@@ -82,6 +82,11 @@ const result = createOutOfOfficeEvent(
 // レスポンス: {id: 'event_id', url: 'https://calendar.google.com/...'}
 ```
 
+**不在イベントの重要な仕様:**
+- Google Calendar APIの仕様により、不在イベントは終日（all-day）形式を使用できません
+- `allDay: true`を指定しても、内部的には開始日00:00:00～終了日翌日00:00:00の時間指定として処理されます
+- カレンダーUIでは終日イベントのように表示されます
+
 ### 4. 簡易版不在イベント作成（最もシンプル）
 
 ```javascript
@@ -287,6 +292,11 @@ scripts/
 │   ├── deleteOutOfOfficeEvent()   # 不在イベント削除
 │   ├── createDailyOutOfOfficeEvent() # 簡易版不在イベント作成
 │   └── doPost()                   # Webhookエントリーポイント
+├── test_functions.js              # テスト・修正ツール
+│   ├── testFixCurrentMonthOutOfOffice() # 今月の不在イベント修正（ドライラン）
+│   ├── testFixCurrentMonthOutOfOfficeExecute() # 今月の不在イベント修正（実行）
+│   ├── testFixOutOfOfficeEndTime() # 指定年月の不在イベント修正
+│   └── testFixOutOfOfficeEndTimeExecute() # 指定年月の不在イベント修正（実行）
 ├── config.js                      # 設定
 ├── AuthService.js                 # OAuth2認証サービス
 ├── logger.js                      # 実行ログ記録
@@ -340,6 +350,38 @@ testCreateAndDeleteDailyOutOfOfficeEvent()
 testCreateAndDeleteOutOfOfficeEvent()
 ```
 
+### 不在イベント修正ツール（test_functions.js）
+
+既存の不在イベントの終了時刻を修正するためのユーティリティ関数です。主に、23:59:59で終了している不在イベントを翌日00:00:00に修正します。
+
+```javascript
+// 今月の不在イベントを確認（ドライラン）
+testFixCurrentMonthOutOfOffice()
+
+// 今月の不在イベントを修正（実行モード）
+testFixCurrentMonthOutOfOfficeExecute()
+
+// 特定の年月・ユーザーの不在イベントを確認（ドライラン）
+testFixOutOfOfficeEndTime(2025, 10, 'user@example.com', true)
+
+// 特定の年月・ユーザーの不在イベントを修正（実行モード）
+testFixOutOfOfficeEndTimeExecute(2025, 10, 'user@example.com')
+```
+
+**使用例:**
+
+1. まず、ドライランモードで対象イベントを確認
+```javascript
+testFixCurrentMonthOutOfOffice()
+```
+
+2. 結果を確認し、問題なければ実行モードで更新
+```javascript
+testFixCurrentMonthOutOfOfficeExecute()
+```
+
+⚠️ **注意**: 実行モード（`Execute`関数）は実際にイベントを更新します。必ず事前にドライランで確認してください。
+
 ## エラーハンドリング
 
 ### エラータイプ
@@ -392,6 +434,34 @@ clasp push --force
 ```
 
 ## バージョン履歴
+
+### v1.2.0 (2025-10-27) - デプロイメント @13
+- **コード最適化**
+  - AuthService.jsのフォーマット整理
+  - main.jsのJSDocコメント改善
+  - コード可読性向上
+- **テスト関数追加**
+  - 新規ファイル: `test_functions.js`
+  - 既存の不在イベントの終了時刻修正ツール
+  - ドライランモード対応
+  - 指定年月・ユーザーでの一括修正機能
+
+### v1.1.1 (2025-10-27) - デプロイメント @12
+- **不在イベントの時間範囲修正**
+  - 終日イベントの終了時刻を23:59:59から翌日00:00:00に変更
+  - より自然な終日イベントの表現方法に変更
+
+### v1.1.0 (2025-10-27) - デプロイメント @11
+- **不在イベントのAPI仕様準拠**
+  - Google Calendar APIの仕様に完全準拠
+  - `transparency: 'opaque'`を必須フィールドとして追加
+  - 終日イベントでも`dateTime`フィールドを使用（`date`フィールド使用不可）
+  - 00:00:00～23:59:59の時間指定で終日扱い
+- **コード品質向上**
+  - ヘルパー関数をプライベート化（`_`プレフィックス）
+  - GASエディタの関数一覧がより見やすく
+- **レスポンス確認**
+  - 不在イベント作成時も正しく`{id, url}`を返却
 
 ### v1.0.0 (2025-10-16)
 - 初回リリース

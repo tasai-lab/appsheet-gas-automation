@@ -122,6 +122,35 @@ Googleカレンダーイベントと不在イベント（Out of Office）を作�
 3. 開始日・終了日を同じ日に設定
 4. `createOutOfOfficeEvent()`を呼び出し
 
+## 関数構成
+
+### 公開関数（GASエディタで表示）
+
+以下の関数が外部から呼び出し可能です：
+
+**メイン関数:**
+- `doPost(e)` - Webhookエントリーポイント
+- `createGenericEvent()` - 汎用イベント作成
+- `deleteGenericEvent()` - イベント削除
+- `createOutOfOfficeEvent()` - 不在イベント作成
+- `deleteOutOfOfficeEvent()` - 不在イベント削除
+- `createDailyOutOfOfficeEvent()` - 簡易版不在イベント作成
+
+**テスト関数:**
+- `testCreateBasicEvent()` - 基本イベント作成テスト
+- `testCreateOutOfOfficeEvent()` - 不在イベント作成テスト
+- その他のテスト関数
+
+### プライベート関数（内部使用のみ）
+
+以下の関数は`_`プレフィックスで定義されており、GASエディタの関数一覧には表示されません：
+
+- `_buildEventResource()` - イベントリソース構築
+- `_createCalendarEvent()` - Calendar API呼び出し（作成）
+- `_deleteCalendarEvent()` - Calendar API呼び出し（削除）
+- `_buildOutOfOfficeEventResource()` - 不在イベントリソース構築
+- `_formatDateOnly()` - 日付フォーマット
+
 ## API仕様
 
 ### 関数シグネチャ
@@ -296,12 +325,13 @@ function doPost(e)
 {
   "summary": "夏季休暇",
   "eventType": "outOfOffice",
+  "transparency": "opaque", // 不在イベントでは必須
   "start": {
-    "date": "2025-08-01",
+    "dateTime": "2025-08-01T00:00:00+09:00", // 不在イベントはdateTimeフィールドのみサポート
     "timeZone": "Asia/Tokyo"
   },
   "end": {
-    "date": "2025-08-06", // 終了日の翌日を指定（Googleカレンダーの仕様）
+    "dateTime": "2025-08-06T00:00:00+09:00", // 終日イベントの場合は翌日00:00:00を指定
     "timeZone": "Asia/Tokyo"
   },
   "outOfOfficeProperties": {
@@ -310,6 +340,11 @@ function doPost(e)
   }
 }
 ```
+
+**重要な仕様:**
+- 不在イベントは`start.date`/`end.date`フィールドを使用できません（Google Calendar APIの制限）
+- 終日イベントとして扱う場合も、`dateTime`フィールドで開始日00:00:00～終了日翌日00:00:00を指定します
+- `transparency: 'opaque'`は必須フィールドです
 
 ## OAuth2認証（なりすまし）
 
@@ -674,11 +709,161 @@ python deploy_unified.py "Appsheet_汎用_イベント作成" "v2: 不在イベ�
 
 **対処:**
 1. `eventType: 'outOfOffice'` が設定されているか確認
-2. 終日イベントの場合、`start.date` と `end.date` を使用
-3. 終了日は開始日の翌日を指定（Googleカレンダーの仕様）
-4. `outOfOfficeProperties.autoDeclineMode` が設定されているか確認
+2. `transparency: 'opaque'` が設定されているか確認（必須）
+3. **重要**: 不在イベントは`start.date`/`end.date`を使用できません。必ず`start.dateTime`/`end.dateTime`を使用してください
+4. 終日イベントの場合は、開始時刻を00:00:00、終了時刻を翌日00:00:00に設定
+5. `outOfOfficeProperties.autoDeclineMode` が設定されているか確認
+
+**参考資料:**
+- [Google Calendar API - 不在ステータスを設定する](https://developers.google.com/workspace/calendar/api/guides/calendar-status?hl=ja)
+
+## テスト関数（不在イベント修正ツール）
+
+### 概要
+
+`test_functions.js`には、既存の不在イベントの終了時刻を修正するためのユーティリティ関数が含まれています。主に、23:59:59で終了している不在イベントを翌日00:00:00に修正するために使用します。
+
+### 利用可能な関数
+
+#### testFixCurrentMonthOutOfOffice()
+
+今月の不在イベントを修正（ドライランモード）。最も簡単に実行できる関数です。
+
+```javascript
+// GASエディタで直接実行
+testFixCurrentMonthOutOfOffice();
+```
+
+**動作:**
+- 今月の不在イベントを取得
+- 23:39以降に終了しているイベントを検出
+- ドライランモードで実行（実際の更新なし）
+- 修正対象のイベントをログに表示
+
+**出力例:**
+```
+=== 今月の不在イベント修正テスト ===
+年月: 2025年10月
+対象ユーザー: user@example.com
+モード: ドライラン（実際の更新なし）
+
+=== 結果サマリー ===
+全不在イベント数: 15件
+修正対象: 3件
+
+実際に更新を実行する場合は testFixCurrentMonthOutOfOfficeExecute() を実行してください
+```
+
+#### testFixCurrentMonthOutOfOfficeExecute()
+
+今月の不在イベントを修正（実行モード）。実際にイベントを更新します。
+
+```javascript
+// GASエディタで直接実行
+testFixCurrentMonthOutOfOfficeExecute();
+```
+
+**動作:**
+1. まずドライランで対象イベントを確認
+2. 修正対象がある場合は実際の更新を実行
+3. 更新結果をログに表示
+
+⚠️ **警告**: この関数は実際にイベントを更新します。
+
+#### testFixOutOfOfficeEndTime(year, month, ownerEmail, dryRun)
+
+指定年月・ユーザーの不在イベントを修正する汎用関数です。
+
+**パラメータ:**
+- `year` (number) - 年（例: 2025）
+- `month` (number) - 月（1〜12）
+- `ownerEmail` (string) - イベント保有者のメールアドレス
+- `dryRun` (boolean) - trueの場合は実際の更新なし（デフォルト: true）
+
+**使用例:**
+
+```javascript
+// ドライラン（実際の更新なし）
+testFixOutOfOfficeEndTime(2025, 10, 'user@example.com', true);
+
+// 実際に更新を実行
+testFixOutOfOfficeEndTime(2025, 10, 'user@example.com', false);
+```
+
+**返り値:**
+```javascript
+{
+  total: 15,          // 全不在イベント数
+  targets: 3,         // 修正対象イベント数
+  updated: 3,         // 更新成功数
+  errors: 0,          // エラー数
+  dryRun: false,      // ドライランモードかどうか
+  errorMessages: []   // エラーメッセージ一覧（エラー時のみ）
+}
+```
+
+#### testFixOutOfOfficeEndTimeExecute(year, month, ownerEmail)
+
+特定の年月とユーザーの不在イベントを修正（実行モード）。
+
+```javascript
+// 2025年10月のイベントを修正
+testFixOutOfOfficeEndTimeExecute(2025, 10, 'user@example.com');
+```
+
+**動作:**
+1. まずドライランで対象イベントを確認
+2. 修正対象がある場合は実際の更新を実行
+3. 更新結果をログに表示
+
+### プライベート関数
+
+以下の関数は内部実装用です。通常は直接呼び出す必要はありません。
+
+#### _getOutOfOfficeEvents(ownerEmail, year, month)
+
+指定年月の不在イベントを取得します。
+
+#### _updateEventEndTime(ownerEmail, eventId, newEndDateTime, timeZone)
+
+イベントの終了時刻を更新します（Calendar API PATCH使用）。
+
+### 使用上の注意
+
+1. **ドライラン推奨**: 最初は必ずドライランモード（`dryRun: true`）で実行し、対象イベントを確認してください
+2. **APIレート制限**: 多数のイベントを更新する場合、API レート制限に注意してください（関数内で0.5秒の待機時間を設定済み）
+3. **実行ログ**: 全ての実行は実行ログスプレッドシートに記録されます
+4. **OAuth2認証**: AuthServiceを使用したなりすまし認証が必要です
 
 ## バージョン履歴
+
+### v1.2.0 (2025-10-27) - デプロイメント @13
+- **コード最適化**
+  - AuthService.jsのフォーマット整理（余分な空行を削除）
+  - main.jsのJSDocコメント改善
+  - `_buildOutOfOfficeEventResource`関数の詳細なドキュメント追加
+- **テスト関数追加**
+  - 新規ファイル: `test_functions.js`
+  - 既存の不在イベントの終了時刻修正ツール追加
+  - ドライランモード対応
+  - 指定年月・ユーザーでの一括修正機能
+  - 詳細なログ出力とエラーハンドリング
+
+### v1.1.1 (2025-10-27) - デプロイメント @12
+- **不在イベントの時間範囲修正**
+  - 終日イベントの終了時刻を23:59:59から翌日00:00:00に変更
+  - より自然な終日イベントの表現方法に変更
+
+### v1.1.0 (2025-10-27) - デプロイメント @11
+- **不在イベントのAPI仕様準拠**
+  - `transparency: 'opaque'`を必須フィールドとして追加
+  - 終日イベントでも`dateTime`フィールドを使用（`date`フィールドは使用不可）
+  - 00:00:00～23:59:59の時間指定で終日扱い
+- **プライベート関数化**
+  - ヘルパー関数に`_`プレフィックスを追加
+  - GASエディタでメイン関数とテスト関数のみ表示
+- **eventId返却の確認**
+  - 不在イベント作成時も`{id, url}`形式で正しく返却されることを確認
 
 ### v1.0.0 (2025-10-16)
 - 初回リリース

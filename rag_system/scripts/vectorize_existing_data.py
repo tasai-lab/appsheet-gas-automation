@@ -64,41 +64,18 @@ VECTOR_DB_SPREADSHEET_ID = os.getenv("VECTOR_DB_SPREADSHEET_ID")
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "gemini-embedding-001")
 EMBEDDING_DIMENSION = 3072
 
-# データソース定義（15プロジェクト）
-DATA_SOURCES = {
-    # Nursing (看護) - 5プロジェクト
-    "nursing_regular": {
-        "name": "訪問看護_通常記録",
-        "spreadsheet_id": "【要設定】",
-        "sheet_name": "Care_Records",
-        "domain": "nursing",
-        "source_type": "care_record",
-    },
-    "nursing_mental": {
-        "name": "訪問看護_精神科記録",
-        "spreadsheet_id": "【要設定】",
-        "sheet_name": "Mental_Records",
-        "domain": "nursing",
-        "source_type": "mental_care",
-    },
-    # Clients (利用者) - 4プロジェクト
-    "clients_basic": {
-        "name": "利用者_基本情報",
-        "spreadsheet_id": "【要設定】",
-        "sheet_name": "Clients",
-        "domain": "clients",
-        "source_type": "client_info",
-    },
-    # Calls (通話) - 3プロジェクト
-    "calls_summary": {
-        "name": "通話_要約生成",
-        "spreadsheet_id": "【要設定】",
-        "sheet_name": "Call_Summaries",
-        "domain": "calls",
-        "source_type": "call_summary",
-    },
-    # 必要に応じて追加
-}
+# データソース定義（data_sources.jsonから読み込み）
+DATA_SOURCES_FILE = Path(__file__).parent / "data_sources.json"
+
+def load_data_sources():
+    """data_sources.jsonを読み込み"""
+    if not DATA_SOURCES_FILE.exists():
+        raise FileNotFoundError(f"❌ data_sources.jsonが見つかりません: {DATA_SOURCES_FILE}")
+
+    with open(DATA_SOURCES_FILE, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+DATA_SOURCES = load_data_sources()
 
 
 class VectorizeExistingData:
@@ -300,7 +277,7 @@ class VectorizeExistingData:
 
         # データ読み込み
         spreadsheet_id = source_config.get("spreadsheet_id")
-        if spreadsheet_id == "【要設定】":
+        if not spreadsheet_id or spreadsheet_id in ["【要設定】", "【AppSheetアプリのSpreadsheet IDを入力】"]:
             logger.warning(f"⚠️ スキップ: Spreadsheet ID未設定 - {source_config['name']}")
             return 0
 
@@ -430,7 +407,7 @@ def main():
     if args.list_sources:
         print("\n利用可能なデータソース:")
         for key, config in DATA_SOURCES.items():
-            status = "✅ 設定済み" if config["spreadsheet_id"] != "【要設定】" else "⚠️ 未設定"
+            status = "✅ 設定済み" if (config["spreadsheet_id"] and config["spreadsheet_id"] not in ["【要設定】", "【AppSheetアプリのSpreadsheet IDを入力】"]) else "⚠️ 未設定"
             print(f"  {key:20s} - {config['name']:30s} {status}")
         print()
         return

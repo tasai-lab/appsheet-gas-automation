@@ -1,7 +1,7 @@
 {
   "nursing_regular": {
     "name": "訪問看護_通常記録",
-    "spreadsheet_id": "【AppSheetアプリのSpreadsheet IDを入力】",
+    "spreadsheet_id": "1EhLGOPKrxqMNl2b1_c0mA1M3w1tXiHN4PsnXWfWHSPw",
     "sheet_name": "Care_Records",
     "domain": "nursing",
     "source_type": "care_record",
@@ -97,7 +97,7 @@
   },
   "sales_report": {
     "name": "営業レポート",
-    "spreadsheet_id": "【AppSheetアプリのSpreadsheet IDを入力】",
+    "spreadsheet_id": "1auRrqem2h3p7tcVs34sQci6eQeYflhcP-TAg1S4islg",
     "sheet_name": "Sales_Reports",
     "domain": "sales",
     "source_type": "sales_report",
@@ -105,7 +105,7 @@
   },
   "sales_card": {
     "name": "名刺取り込み",
-    "spreadsheet_id": "【AppSheetアプリのSpreadsheet IDを入力】",
+    "spreadsheet_id": "1ctSjcAlu9VSloPT9S9hsTyTd7yCw5XvNtF7-URyBeKo",
     "sheet_name": "Business_Cards",
     "domain": "sales",
     "source_type": "business_card",

@@ -79,10 +79,10 @@ function createGenericEvent(
     logger.info('イベント作成開始', { title, config });
 
     // イベントリソースの構築
-    const eventResource = buildEventResource(title, config);
+    const eventResource = _buildEventResource(title, config);
 
     // Calendar APIでイベント作成
-    const result = createCalendarEvent(eventResource, config.ownerEmail, config.sendUpdates);
+    const result = _createCalendarEvent(eventResource, config.ownerEmail, config.sendUpdates);
 
     logger.success('イベント作成成功', { eventId: result.id, eventUrl: result.url });
     status = '成功';
@@ -280,7 +280,7 @@ function doPost(e) {
  * Google Calendar APIリソースオブジェクトを構築
  * @private
  */
-function buildEventResource(title, config) {
+function _buildEventResource(title, config) {
   const resource = {
     summary: title,
     description: config.description,
@@ -330,7 +330,7 @@ function buildEventResource(title, config) {
  * OAuth2なりすまし認証を使用
  * @private
  */
-function createCalendarEvent(eventResource, ownerEmail, sendUpdates) {
+function _createCalendarEvent(eventResource, ownerEmail, sendUpdates) {
   try {
     // OAuth2でownerEmailユーザーのアクセストークンを取得
     const accessToken = AuthService.getAccessTokenForUser(ownerEmail);
@@ -412,7 +412,7 @@ function deleteGenericEvent(
     logger.info('イベント削除開始', { ownerEmail, eventId });
 
     // Calendar APIでイベント削除
-    deleteCalendarEvent(eventId, ownerEmail, sendUpdates);
+    _deleteCalendarEvent(eventId, ownerEmail, sendUpdates);
 
     logger.success('イベント削除成功', { eventId, ownerEmail });
     status = '成功';
@@ -435,7 +435,7 @@ function deleteGenericEvent(
  * OAuth2なりすまし認証を使用
  * @private
  */
-function deleteCalendarEvent(eventId, ownerEmail, sendUpdates) {
+function _deleteCalendarEvent(eventId, ownerEmail, sendUpdates) {
   try {
     // OAuth2でownerEmailユーザーのアクセストークンを取得
     const accessToken = AuthService.getAccessTokenForUser(ownerEmail);
@@ -565,10 +565,10 @@ function createOutOfOfficeEvent(
     logger.info('不在イベント作成開始', { title, config });
 
     // 不在イベントリソースの構築
-    const eventResource = buildOutOfOfficeEventResource(title, config);
+    const eventResource = _buildOutOfOfficeEventResource(title, config);
 
     // Calendar APIで不在イベント作成
-    const result = createCalendarEvent(eventResource, config.ownerEmail, config.sendUpdates);
+    const result = _createCalendarEvent(eventResource, config.ownerEmail, config.sendUpdates);
 
     logger.success('不在イベント作成成功', { eventId: result.id, eventUrl: result.url });
     status = '成功';
@@ -654,7 +654,7 @@ function createDailyOutOfOfficeEvent(
     const endDate = new Date(startDate);
 
     logger.info('簡易版不在イベント作成', {
-      date: formatDateOnly(startDate),
+      date: _formatDateOnly(startDate),
       ownerEmail,
       title
     });
@@ -707,33 +707,51 @@ function deleteOutOfOfficeEvent(ownerEmail, eventId, sendUpdates = true) {
 
 /**
  * Google Calendar API 不在イベントリソースオブジェクトを構築
+ *
+ * 注意: Google Calendar APIの不在イベントは以下の制約があります:
+ * - start/endにdateフィールドは使用不可（dateTimeのみ）
+ * - transparency: 'opaque'が必須
+ * - 終日イベントの場合: 開始日00:00:00〜終了日翌日00:00:00を指定
+ *
  * @private
+ * @param {string} title - イベントタイトル
+ * @param {Object} config - 設定オブジェクト
+ * @param {boolean} config.allDay - 終日イベントとして設定
+ * @param {Date|string} config.startDate - 開始日時
+ * @param {Date|string} config.endDate - 終了日時
+ * @param {string} config.timeZone - タイムゾーン
+ * @param {string} config.declineMessage - 自動辞退メッセージ
+ * @returns {Object} Google Calendar APIリソースオブジェクト
  */
-function buildOutOfOfficeEventResource(title, config) {
+function _buildOutOfOfficeEventResource(title, config) {
   const resource = {
     summary: title,
-    eventType: 'outOfOffice'
+    eventType: 'outOfOffice',
+    transparency: 'opaque' // 不在イベントでは必須
   };
 
-  // 終日イベントまたは時間指定イベント
+  // 開始・終了日時の設定
   if (config.allDay) {
-    // 終日イベント（dateフィールドを使用）
+    // 終日の不在として、開始日の00:00:00から終了日+1日の00:00:00まで設定
     const startDate = new Date(config.startDate);
     const endDate = new Date(config.endDate);
 
-    // 終了日は翌日を指定（Googleカレンダーの仕様）
+    startDate.setHours(0, 0, 0, 0);
+
+    // 終了時刻: 終了日の翌日00:00:00（Google Calendar API仕様）
     endDate.setDate(endDate.getDate() + 1);
+    endDate.setHours(0, 0, 0, 0);
 
     resource.start = {
-      date: formatDateOnly(startDate),
+      dateTime: startDate.toISOString(),
       timeZone: config.timeZone
     };
     resource.end = {
-      date: formatDateOnly(endDate),
+      dateTime: endDate.toISOString(),
       timeZone: config.timeZone
     };
   } else {
-    // 時間指定イベント（dateTimeフィールドを使用）
+    // 時間指定イベント
     resource.start = {
       dateTime: new Date(config.startDate).toISOString(),
       timeZone: config.timeZone
@@ -758,7 +776,7 @@ function buildOutOfOfficeEventResource(title, config) {
  * 日付を YYYY-MM-DD 形式にフォーマット
  * @private
  */
-function formatDateOnly(date) {
+function _formatDateOnly(date) {
   const d = new Date(date);
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -1011,7 +1029,7 @@ function testCreateDailyOutOfOfficeEvent() {
   Logger.log('作成された簡易版不在イベント:');
   Logger.log('ID: ' + result.id);
   Logger.log('URL: ' + result.url);
-  Logger.log('日付: ' + formatDateOnly(tomorrow));
+  Logger.log('日付: ' + _formatDateOnly(tomorrow));
 
   return result;
 }
@@ -1058,7 +1076,7 @@ function testCreateAndDeleteDailyOutOfOfficeEvent() {
   Logger.log('作成された不在イベント:');
   Logger.log('ID: ' + createResult.id);
   Logger.log('URL: ' + createResult.url);
-  Logger.log('日付: ' + formatDateOnly(targetDate));
+  Logger.log('日付: ' + _formatDateOnly(targetDate));
 
   // 少し待つ
   Utilities.sleep(2000);

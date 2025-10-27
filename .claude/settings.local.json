@@ -111,7 +111,11 @@
       "Bash(npm run build:*)",
       "Bash(npm run dev:*)",
       "Bash(lsof:*)",
-      "Bash(PORT=3000 npm run dev:*)"
+      "Bash(PORT=3000 npm run dev:*)",
+      "Bash(if [ -f /Users/t.asai/code/appsheet-gas-automation/rag_system/backend/.env ])",
+      "Bash(else)",
+      "Bash(do if [ -d \"$project\" ])",
+      "Bash(then echo \"=== $project ===\" find \"$project\" -name \"*.gs\" -o -name \"README.md\" -o -name \"SPECIFICATIONS.md\")"
     ],
     "deny": [],
     "ask": []

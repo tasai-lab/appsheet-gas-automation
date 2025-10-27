@@ -139,18 +139,19 @@ graph TB
 
     BuildResource --> SetSummary[summary: title]
     SetSummary --> SetEventType[eventType: 'outOfOffice']
+    SetEventType --> SetTransparency[transparency: 'opaque'<br/>必須フィールド]
 
-    SetEventType --> CheckAllDay{allDay?}
+    SetTransparency --> CheckAllDay{allDay?}
 
-    CheckAllDay -->|true| SetDateOnly[start/end:<br/>date形式<br/>YYYY-MM-DD]
-    CheckAllDay -->|false| SetDateTime[start/end:<br/>dateTime形式<br/>ISO 8601]
+    CheckAllDay -->|true| SetAllDayTime[start/end:<br/>dateTime形式<br/>00:00:00 - 翌日00:00:00]
+    CheckAllDay -->|false| SetDateTime[start/end:<br/>dateTime形式<br/>指定時刻]
 
-    SetDateOnly --> AdjustEndDate[終了日を+1日<br/>Googleカレンダー仕様]
+    SetAllDayTime --> SetProperties[outOfOfficeProperties設定<br/>- autoDeclineMode<br/>- declineMessage]
     SetDateTime --> SetProperties
 
-    AdjustEndDate --> SetProperties[outOfOfficeProperties設定<br/>- autoDeclineMode<br/>- declineMessage]
+    SetProperties --> Note[※不在イベントは<br/>date形式使用不可<br/>必ずdateTime形式]
 
-    SetProperties --> OAuth2[AuthService.getAccessTokenForUser<br/>OAuth2トークン取得]
+    Note --> OAuth2[AuthService.getAccessTokenForUser<br/>OAuth2トークン取得]
 
     OAuth2 --> CheckToken{トークン<br/>取得成功?}
     CheckToken -->|失敗| ErrorOAuth[エラー: OAuth2認証失敗]
