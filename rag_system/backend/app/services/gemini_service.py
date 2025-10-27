@@ -4,6 +4,7 @@ Gemini生成サービス
 Vertex AI Gemini APIを使用してチャット応答を生成します。
 """
 
+import asyncio
 import logging
 from typing import List, Dict, Any, AsyncGenerator, Optional
 
@@ -71,57 +72,57 @@ class GeminiService:
                 'top_k': settings.vertex_ai_top_k
             }
 
-            # ⚠️ TEMPORARY: Vertex AI APIがタイムアウトするため、コンテキストベースのレスポンスを返す
-            logger.warning("⚠️ Using context-based response (Vertex AI API timeout issue)")
+            # ★★★ Vertex AI API呼び出し: 1回のみ実行 ★★★
+            # タイムアウト設定: 120秒（デフォルトより長めに設定）
+            timeout_seconds = 120
 
-            # コンテキストを基にレスポンスを構築
-            if context:
-                mock_response = f"# {query}\n\n"
-                mock_response += f"検索により{len(context)}件の関連情報が見つかりました。\n\n"
+            try:
+                if stream:
+                    logger.info("📡 Calling Gemini API with streaming...")
 
-                for i, item in enumerate(context, 1):
-                    title = item.get('title', '情報なし')
-                    content = item.get('content', '')
-                    source = item.get('source_type', '')
-                    date = item.get('date', '')
+                    # タイムアウト付きでAPI呼び出し
+                    response = await asyncio.wait_for(
+                        self.model.generate_content_async(
+                            prompt,
+                            generation_config=generation_config,
+                            stream=True
+                        ),
+                        timeout=timeout_seconds
+                    )
 
-                    mock_response += f"## {i}. {title}\n\n"
+                    # ストリーミングレスポンスを処理
+                    chunk_count = 0
+                    total_chars = 0
+                    async for chunk in response:
+                        if chunk.text:
+                            yield chunk.text
+                            chunk_count += 1
+                            total_chars += len(chunk.text)
 
-                    if date:
-                        mock_response += f"**日付**: {date}\n\n"
-                    if source:
-                        mock_response += f"**ソース**: {source}\n\n"
+                    logger.info(f"✅ Gemini streaming completed - Chunks: {chunk_count}, Total chars: {total_chars}")
 
-                    # コンテンツを適切な長さに制限
-                    if len(content) > 500:
-                        content = content[:500] + "..."
+                else:
+                    logger.info("📡 Calling Gemini API (non-streaming)...")
 
-                    mock_response += f"{content}\n\n"
-                    mock_response += "---\n\n"
+                    # タイムアウト付きでAPI呼び出し
+                    response = await asyncio.wait_for(
+                        self.model.generate_content_async(
+                            prompt,
+                            generation_config=generation_config
+                        ),
+                        timeout=timeout_seconds
+                    )
 
-                mock_response += "\n\n> ⚠️ これは検索結果の表示です。Vertex AI APIの接続問題により、AI生成回答は現在利用できません。"
-            else:
-                mock_response = f"# {query}\n\n申し訳ございません。関連する情報が見つかりませんでした。\n\n> ⚠️ Vertex AI APIの接続問題により、検索結果のみを表示しています。"
+                    if response.text:
+                        yield response.text
+                        logger.info(f"✅ Gemini response received - Length: {len(response.text)} chars")
+                    else:
+                        logger.warning("⚠️ Gemini returned empty response")
+                        yield "申し訳ございません。応答の生成中に問題が発生しました。もう一度お試しください。"
 
-            yield mock_response
-            logger.info(f"✅ Context-based response sent - Length: {len(mock_response)} chars, Context items: {len(context)}")
-
-            # 元のコード（コメントアウト）
-            # if stream:
-            #     logger.info("📡 Calling Gemini API with streaming...")
-            #     response = await self.model.generate_content_async(
-            #         prompt,
-            #         generation_config=generation_config,
-            #         stream=True
-            #     )
-            #     ...
-            # else:
-            #     logger.info("📡 Calling Gemini API (non-streaming)...")
-            #     response = await self.model.generate_content_async(
-            #         prompt,
-            #         generation_config=generation_config
-            #     )
-            #     ...
+            except asyncio.TimeoutError:
+                logger.error(f"❌ Vertex AI API timeout after {timeout_seconds}s")
+                yield f"申し訳ございません。応答の生成に時間がかかりすぎています（{timeout_seconds}秒でタイムアウト）。もう一度お試しください。"
 
         except Exception as e:
             logger.error(f"❌ Response generation failed: {e}", exc_info=True)

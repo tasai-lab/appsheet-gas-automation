@@ -88,6 +88,12 @@ export default function ChatContainer() {
     setMessages((prev) => [...prev, assistantMessage]);
 
     try {
+      console.log("[ChatContainer] メッセージ送信開始", {
+        messageText,
+        sessionId,
+        selectedClientId
+      });
+
       // SSEストリーミングで実装
       const stream = streamChatMessage({
         message: messageText,
@@ -96,11 +102,18 @@ export default function ChatContainer() {
         client_id: selectedClientId || undefined,
       }, abortController.signal);
 
+      console.log("[ChatContainer] ストリーム取得完了、ループ開始");
+
       let accumulatedText = "";
+      let chunkProcessedCount = 0;
 
       for await (const chunk of stream) {
+        chunkProcessedCount++;
+        console.log(`[ChatContainer] Chunk #${chunkProcessedCount} 処理:`, chunk.type);
+
         if (chunk.type === "status" && chunk.status) {
           // ステータス更新
+          console.log("[ChatContainer] ステータス更新:", chunk.status, chunk.metadata?.message);
           setCurrentStatus(chunk.status);
           setStatusMessage(chunk.metadata?.message || "");
           if (chunk.metadata?.search_time_ms) {
@@ -111,10 +124,12 @@ export default function ChatContainer() {
           }
         } else if (chunk.type === "context" && chunk.context) {
           // コンテキストを更新
+          console.log("[ChatContainer] コンテキスト更新:", chunk.context.length, "件");
           setContext(chunk.context);
         } else if (chunk.type === "text" && chunk.content) {
           // テキストを蓄積
           accumulatedText += chunk.content;
+          console.log("[ChatContainer] テキスト蓄積:", accumulatedText.length, "文字");
 
           // リアルタイムでメッセージを更新
           setMessages((prev) => {
@@ -130,6 +145,10 @@ export default function ChatContainer() {
           });
         } else if (chunk.type === "done") {
           // ストリーミング完了
+          console.log("[ChatContainer] ストリーミング完了", {
+            totalChunksProcessed: chunkProcessedCount,
+            finalTextLength: accumulatedText.length
+          });
           if (chunk.suggested_terms) {
             console.log("Suggested terms:", chunk.suggested_terms);
           }
@@ -141,12 +160,14 @@ export default function ChatContainer() {
             });
           }
         } else if (chunk.type === "error") {
-          console.error("Stream error:", chunk.error);
+          console.error("[ChatContainer] ストリームエラー:", chunk.error);
           throw new Error(chunk.error);
         }
       }
+
+      console.log("[ChatContainer] for-await ループ終了");
     } catch (error) {
-      console.error("Error sending message:", error);
+      console.error("[ChatContainer] エラー発生:", error);
 
       // 中止された場合
       if (error instanceof Error && error.name === "AbortError") {
