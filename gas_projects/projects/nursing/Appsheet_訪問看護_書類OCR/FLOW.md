@@ -17,12 +17,12 @@ graph TB
 
     Lock --> BuildPrompt[documentType別<br/>プロンプト生成]:::process
 
-    BuildPrompt --> CallGemini[★Gemini API呼び出し<br/>1回のみ]:::gemini
+    BuildPrompt --> CallGemini[★Gemini API呼び出し<br/>1回のみ]:::api
 
     CallGemini --> Parse[レスポンス解析<br/>OCR + structured_data]:::process
 
     Parse --> UpdateDoc[書類管理テーブル更新<br/>ocr_text, summary, title]:::appsheet
-    UpdateDoc --> RenameFile[ファイル名変更]:::process
+    UpdateDoc --> RenameFile[ファイル名変更]:::drive
     RenameFile --> CheckData{structured_data<br/>存在?}:::decision
 
     CheckData -->|あり| UpdateSpecific[種類別テーブル更新<br/>医療保険証/介護保険証/公費等]:::appsheet
@@ -35,15 +35,16 @@ graph TB
     CallGemini -->|失敗| Error2[エラー処理]:::error
     Error2 --> ErrorEnd([エラー応答]):::error
 
-    classDef webhook fill:#1e3a5f,stroke:#4a90e2,stroke-width:2px,color:#fff
-    classDef decision fill:#5f3a1e,stroke:#e2904a,stroke-width:2px,color:#fff
-    classDef process fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#fff
-    classDef gemini fill:#1e5f3a,stroke:#4ae290,stroke-width:2px,color:#fff
-    classDef appsheet fill:#5f1e5f,stroke:#e24ae2,stroke-width:2px,color:#fff
-    classDef notification fill:#5f1e5f,stroke:#e24ae2,stroke-width:2px,color:#fff
-    classDef success fill:#1e5f3a,stroke:#4ae290,stroke-width:3px,color:#fff
-    classDef error fill:#5f1e3a,stroke:#e24a90,stroke-width:3px,color:#fff
-    classDef skip fill:#3a3a3a,stroke:#888,stroke-width:2px,color:#fff
+    classDef webhook fill:#1e3a5f,stroke:#4a90e2,stroke-width:2px,color:#ffffff
+    classDef decision fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#ffffff
+    classDef process fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#ffffff
+    classDef api fill:#4a1e5f,stroke:#b84ae2,stroke-width:2px,color:#ffffff
+    classDef appsheet fill:#1e5f3a,stroke:#4ae290,stroke-width:2px,color:#ffffff
+    classDef drive fill:#1e5f5f,stroke:#4ae2e2,stroke-width:2px,color:#ffffff
+    classDef notification fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#ffffff
+    classDef success fill:#1e5f3a,stroke:#4ae290,stroke-width:3px,color:#ffffff
+    classDef error fill:#5f1e3a,stroke:#e24a90,stroke-width:3px,color:#ffffff
+    classDef skip fill:#3a3a3a,stroke:#888,stroke-width:2px,color:#ffffff
 ```
 
 ## 2. Gemini API呼び出し詳細（1回で完結）
@@ -51,13 +52,13 @@ graph TB
 ```mermaid
 %%{init: {'theme':'dark'}}%%
 graph TB
-    Start([documentType受信]):::input --> Prompt[documentType別<br/>プロンプト生成]:::process
+    Start([documentType受信]):::webhook --> Prompt[documentType別<br/>プロンプト生成]:::process
 
     Prompt --> Schema[スキーマ定義追加]:::process
 
     Schema --> Examples[出力例を含む]:::process
 
-    Examples --> API[Gemini API呼び出し<br/>generateContent]:::gemini
+    Examples --> API[Gemini API呼び出し<br/>generateContent]:::api
 
     API --> Response[JSON レスポンス受信]:::process
 
@@ -71,12 +72,12 @@ graph TB
     Result -->|OK| Return([ocr_text<br/>summary<br/>title<br/>structured_data]):::success
     Result -->|NG| Error
 
-    classDef input fill:#1e3a5f,stroke:#4a90e2,stroke-width:2px,color:#fff
-    classDef process fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#fff
-    classDef decision fill:#5f3a1e,stroke:#e2904a,stroke-width:2px,color:#fff
-    classDef gemini fill:#1e5f3a,stroke:#4ae290,stroke-width:2px,color:#fff
-    classDef success fill:#1e5f3a,stroke:#4ae290,stroke-width:3px,color:#fff
-    classDef error fill:#5f1e3a,stroke:#e24a90,stroke-width:3px,color:#fff
+    classDef webhook fill:#1e3a5f,stroke:#4a90e2,stroke-width:2px,color:#ffffff
+    classDef process fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#ffffff
+    classDef decision fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#ffffff
+    classDef api fill:#4a1e5f,stroke:#b84ae2,stroke-width:2px,color:#ffffff
+    classDef success fill:#1e5f3a,stroke:#4ae290,stroke-width:3px,color:#ffffff
+    classDef error fill:#5f1e3a,stroke:#e24a90,stroke-width:3px,color:#ffffff
 ```
 
 ## 3. 書類仕分け処理フロー
@@ -84,7 +85,7 @@ graph TB
 ```mermaid
 %%{init: {'theme':'dark'}}%%
 graph TB
-    Start([structured_data受信]):::input --> Check{データ存在?}:::decision
+    Start([structured_data受信]):::webhook --> Check{データ存在?}:::decision
 
     Check -->|null| Skip[仕分けスキップ]:::skip
     Check -->|あり| Type{documentType判定}:::decision
@@ -106,12 +107,12 @@ graph TB
     Other --> Return
     Skip --> Null([null返却]):::skip
 
-    classDef input fill:#1e3a5f,stroke:#4a90e2,stroke-width:2px,color:#fff
-    classDef decision fill:#5f3a1e,stroke:#e2904a,stroke-width:2px,color:#fff
-    classDef appsheet fill:#5f1e5f,stroke:#e24ae2,stroke-width:2px,color:#fff
-    classDef success fill:#1e5f3a,stroke:#4ae290,stroke-width:3px,color:#fff
-    classDef skip fill:#3a3a3a,stroke:#888,stroke-width:2px,color:#fff
-    classDef warn fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#fff
+    classDef webhook fill:#1e3a5f,stroke:#4a90e2,stroke-width:2px,color:#ffffff
+    classDef decision fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#ffffff
+    classDef appsheet fill:#1e5f3a,stroke:#4ae290,stroke-width:2px,color:#ffffff
+    classDef success fill:#1e5f3a,stroke:#4ae290,stroke-width:3px,color:#ffffff
+    classDef skip fill:#3a3a3a,stroke:#888,stroke-width:2px,color:#ffffff
+    classDef warn fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#ffffff
 ```
 
 ## 4. 完了通知メール送信フロー
@@ -119,7 +120,7 @@ graph TB
 ```mermaid
 %%{init: {'theme':'dark'}}%%
 graph TB
-    Start([レコード作成完了]):::input --> Check{通知設定確認}:::decision
+    Start([レコード作成完了]):::webhook --> Check{通知設定確認}:::decision
 
     Check -->|未設定| Skip[送信スキップ]:::skip
     Check -->|設定済み| Build[HTML メール本文作成]:::process
@@ -128,7 +129,7 @@ graph TB
     Link1 --> Link2[Googleドライブリンク生成]:::process
     Link2 --> Table[抽出データテーブル作成]:::process
 
-    Table --> Send[MailApp.sendEmail]:::email
+    Table --> Send[MailApp.sendEmail]:::utility
 
     Send --> Result{送信結果}:::decision
 
@@ -139,13 +140,13 @@ graph TB
     Log2 --> End
     Skip --> End
 
-    classDef input fill:#1e3a5f,stroke:#4a90e2,stroke-width:2px,color:#fff
-    classDef decision fill:#5f3a1e,stroke:#e2904a,stroke-width:2px,color:#fff
-    classDef process fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#fff
-    classDef email fill:#5f1e5f,stroke:#e24ae2,stroke-width:2px,color:#fff
-    classDef log fill:#1e5f5f,stroke:#4ae2e2,stroke-width:2px,color:#fff
-    classDef success fill:#1e5f3a,stroke:#4ae290,stroke-width:3px,color:#fff
-    classDef skip fill:#3a3a3a,stroke:#888,stroke-width:2px,color:#fff
+    classDef webhook fill:#1e3a5f,stroke:#4a90e2,stroke-width:2px,color:#ffffff
+    classDef decision fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#ffffff
+    classDef process fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#ffffff
+    classDef utility fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#ffffff
+    classDef log fill:#1e5f5f,stroke:#4ae2e2,stroke-width:2px,color:#ffffff
+    classDef success fill:#1e5f3a,stroke:#4ae290,stroke-width:3px,color:#ffffff
+    classDef skip fill:#3a3a3a,stroke:#888,stroke-width:2px,color:#ffffff
 ```
 
 ## 5. 従来版との比較
@@ -211,34 +212,34 @@ graph TB
     end
 
     subgraph "メイン処理"
-        main[processRequest]:::main
-        update1[updateDocumentOnSuccess]:::main
-        update2[updateDocumentOnError]:::main
-        rename[renameFile]:::main
+        main[processRequest]:::process
+        update1[updateDocumentOnSuccess]:::process
+        update2[updateDocumentOnError]:::process
+        rename[renameFile]:::drive
     end
 
     subgraph "Gemini API連携"
-        analyze[analyzeDocumentWithGemini]:::gemini
-        prompt[generatePrompt]:::gemini
-        schema[getStructuredDataSchema]:::gemini
+        analyze[analyzeDocumentWithGemini]:::api
+        prompt[generatePrompt]:::process
+        schema[getStructuredDataSchema]:::process
     end
 
     subgraph "書類仕分け"
-        process[processStructuredData]:::processor
-        medical[createMedicalInsuranceRecord]:::processor
-        ltci[createLtciInsuranceRecord]:::processor
-        subsidy[createPublicSubsidyRecord]:::processor
+        process_data[processStructuredData]:::process
+        medical[createMedicalInsuranceRecord]:::appsheet
+        ltci[createLtciInsuranceRecord]:::appsheet
+        subsidy[createPublicSubsidyRecord]:::appsheet
     end
 
     subgraph "通知"
-        error[sendErrorEmail]:::notify
-        complete[sendCompletionNotificationEmail]:::notify
+        error[sendErrorEmail]:::utility
+        complete[sendCompletionNotificationEmail]:::utility
     end
 
     subgraph "共通モジュール"
-        webhook[CommonWebhook]:::common
-        logger[utils_logger]:::common
-        config[config_settings]:::common
+        webhook[CommonWebhook]:::utility
+        logger[utils_logger]:::drive
+        config[config_settings]:::drive
     end
 
     doPost --> webhook
@@ -249,33 +250,33 @@ graph TB
     main --> update1
     main --> update2
     main --> rename
-    main --> process
+    main --> process_data
     main --> complete
     main --> error
 
     analyze --> prompt
     prompt --> schema
 
-    process --> medical
-    process --> ltci
-    process --> subsidy
+    process_data --> medical
+    process_data --> ltci
+    process_data --> subsidy
 
     main --> logger
     main --> config
     analyze --> logger
     analyze --> config
-    process --> logger
-    process --> config
+    process_data --> logger
+    process_data --> config
     complete --> config
     error --> config
 
-    classDef webhook fill:#1e3a5f,stroke:#4a90e2,stroke-width:2px,color:#fff
-    classDef test fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#fff
-    classDef main fill:#5f1e5f,stroke:#e24ae2,stroke-width:2px,color:#fff
-    classDef gemini fill:#1e5f3a,stroke:#4ae290,stroke-width:2px,color:#fff
-    classDef processor fill:#5f3a1e,stroke:#e2904a,stroke-width:2px,color:#fff
-    classDef notify fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#fff
-    classDef common fill:#1e5f5f,stroke:#4ae2e2,stroke-width:2px,color:#fff
+    classDef webhook fill:#1e3a5f,stroke:#4a90e2,stroke-width:2px,color:#ffffff
+    classDef test fill:#5f1e3a,stroke:#e24a90,stroke-width:2px,color:#ffffff
+    classDef process fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#ffffff
+    classDef api fill:#4a1e5f,stroke:#b84ae2,stroke-width:2px,color:#ffffff
+    classDef appsheet fill:#1e5f3a,stroke:#4ae290,stroke-width:2px,color:#ffffff
+    classDef drive fill:#1e5f5f,stroke:#4ae2e2,stroke-width:2px,color:#ffffff
+    classDef utility fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#ffffff
 ```
 
 ---

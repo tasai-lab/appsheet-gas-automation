@@ -27,14 +27,14 @@ graph TB
     UpdateError --> SendMail[エラー通知メール]:::process
     SendMail --> ErrorEnd([エラーレスポンス]):::error
 
-    classDef webhook fill:#1e3a5f,stroke:#4a90e2,stroke-width:2px,color:#fff
-    classDef process fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#fff
-    classDef decision fill:#5f3a1e,stroke:#e2904a,stroke-width:2px,color:#fff
-    classDef gemini fill:#1e5f3a,stroke:#4ae290,stroke-width:2px,color:#fff
-    classDef appsheet fill:#5f1e5f,stroke:#e24ae2,stroke-width:2px,color:#fff
-    classDef log fill:#1e5f5f,stroke:#4ae2e2,stroke-width:2px,color:#fff
-    classDef success fill:#1e5f3a,stroke:#4ae290,stroke-width:3px,color:#fff
-    classDef error fill:#5f1e3a,stroke:#e24a90,stroke-width:3px,color:#fff
+    classDef webhook fill:#1e3a5f,stroke:#4a90e2,stroke-width:2px,color:#ffffff
+    classDef process fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#ffffff
+    classDef decision fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#ffffff
+    classDef gemini fill:#4a1e5f,stroke:#b84ae2,stroke-width:2px,color:#ffffff
+    classDef appsheet fill:#1e5f3a,stroke:#4ae290,stroke-width:2px,color:#ffffff
+    classDef log fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#ffffff
+    classDef success fill:#1e5f3a,stroke:#4ae290,stroke-width:3px,color:#ffffff
+    classDef error fill:#5f1e3a,stroke:#e24a90,stroke-width:3px,color:#ffffff
 ```
 
 ## 2. Webhook受信処理
@@ -84,13 +84,13 @@ graph TB
     APIError --> Return
     NoCandidate --> Return
 
-    classDef entry fill:#1e3a5f,stroke:#4a90e2,stroke-width:2px,color:#fff
-    classDef process fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#fff
-    classDef decision fill:#5f3a1e,stroke:#e2904a,stroke-width:2px,color:#fff
-    classDef gemini fill:#1e5f3a,stroke:#4ae290,stroke-width:2px,color:#fff
-    classDef log fill:#1e5f5f,stroke:#4ae2e2,stroke-width:2px,color:#fff
-    classDef success fill:#1e5f3a,stroke:#4ae290,stroke-width:3px,color:#fff
-    classDef error fill:#5f1e3a,stroke:#e24a90,stroke-width:3px,color:#fff
+    classDef entry fill:#1e3a5f,stroke:#4a90e2,stroke-width:2px,color:#ffffff
+    classDef process fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#ffffff
+    classDef decision fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#ffffff
+    classDef gemini fill:#4a1e5f,stroke:#b84ae2,stroke-width:2px,color:#ffffff
+    classDef log fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#ffffff
+    classDef success fill:#1e5f3a,stroke:#4ae290,stroke-width:3px,color:#ffffff
+    classDef error fill:#5f1e3a,stroke:#e24a90,stroke-width:3px,color:#ffffff
 ```
 
 ## 4. 状態遷移図
@@ -181,13 +181,13 @@ graph TB
     sendMail --> logger
     sendMail --> config
 
-    classDef webhook fill:#1e3a5f,stroke:#4a90e2,stroke-width:2px,color:#fff
-    classDef test fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#fff
-    classDef common fill:#1e5f3a,stroke:#4ae290,stroke-width:2px,color:#fff
-    classDef main fill:#5f1e5f,stroke:#e24ae2,stroke-width:2px,color:#fff
-    classDef appsheet fill:#5f3a1e,stroke:#e2904a,stroke-width:2px,color:#fff
-    classDef util fill:#1e5f5f,stroke:#4ae2e2,stroke-width:2px,color:#fff
-    classDef mail fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#fff
+    classDef webhook fill:#1e3a5f,stroke:#4a90e2,stroke-width:2px,color:#ffffff
+    classDef test fill:#5f1e3a,stroke:#e24a90,stroke-width:2px,color:#ffffff
+    classDef common fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#ffffff
+    classDef main fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#ffffff
+    classDef appsheet fill:#1e5f3a,stroke:#4ae290,stroke-width:2px,color:#ffffff
+    classDef util fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#ffffff
+    classDef mail fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#ffffff
 ```
 
 ---

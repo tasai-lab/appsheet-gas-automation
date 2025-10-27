@@ -11,19 +11,34 @@ flowchart TD
     C -->|成功| D[リクエストID生成]
     C -->|失敗| E[エラーログ記録]
     E --> F[エラーレスポンス返却]
-    
+
     D --> G{重複チェック}
     G -->|重複あり| H[警告ログ記録]
     H --> I[スキップレスポンス返却]
-    
+
     G -->|重複なし| J[キャッシュに処理済みマーク]
     J --> K[ビジネスロジック実行]
-    
+
     K -->|成功| L[成功ログ記録]
     K -->|エラー| M[エラーログ記録]
-    
+
     L --> N[成功レスポンス返却]
     M --> F
+
+    style A fill:#1e3a5f,stroke:#4a90e2,stroke-width:2px,color:#ffffff
+    style B fill:#1e3a5f,stroke:#4a90e2,stroke-width:2px,color:#ffffff
+    style C fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#ffffff
+    style D fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#ffffff
+    style E fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#ffffff
+    style F fill:#5f1e3a,stroke:#e24a90,stroke-width:2px,color:#ffffff
+    style G fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#ffffff
+    style H fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#ffffff
+    style I fill:#5f1e3a,stroke:#e24a90,stroke-width:2px,color:#ffffff
+    style J fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#ffffff
+    style K fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#ffffff
+    style L fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#ffffff
+    style M fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#ffffff
+    style N fill:#1e3a5f,stroke:#4a90e2,stroke-width:2px,color:#ffffff
 ```
 
 ## 重複防止フロー
@@ -74,19 +89,32 @@ flowchart LR
     B --> C[Data Validation]
     C --> D[Data Transformation]
     D --> E{処理タイプ}
-    
+
     E -->|Gemini API| F[AI Processing]
     E -->|Spreadsheet| G[Sheet Operations]
     E -->|Calendar| H[Calendar Events]
     E -->|Chat| I[Chat Messages]
-    
+
     F --> J[Results]
     G --> J
     H --> J
     I --> J
-    
+
     J --> K[Log Recording]
     K --> L[Response Generation]
+
+    style A fill:#1e3a5f,stroke:#4a90e2,stroke-width:2px,color:#ffffff
+    style B fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#ffffff
+    style C fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#ffffff
+    style D fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#ffffff
+    style E fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#ffffff
+    style F fill:#4a1e5f,stroke:#b84ae2,stroke-width:2px,color:#ffffff
+    style G fill:#2d4a4a,stroke:#6dd6d6,stroke-width:2px,color:#ffffff
+    style H fill:#4a1e5f,stroke:#b84ae2,stroke-width:2px,color:#ffffff
+    style I fill:#4a1e5f,stroke:#b84ae2,stroke-width:2px,color:#ffffff
+    style J fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#ffffff
+    style K fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#ffffff
+    style L fill:#1e3a5f,stroke:#4a90e2,stroke-width:2px,color:#ffffff
 ```
 
 ## エラーハンドリングフロー
@@ -95,21 +123,36 @@ flowchart LR
 flowchart TD
     A[処理開始] --> B[Try Block]
     B --> C{エラー発生?}
-    
+
     C -->|なし| D[正常処理完了]
     D --> E[成功ログ記録]
     E --> F[実行時間記録]
     F --> G[成功レスポンス]
-    
+
     C -->|あり| H[Catch Block]
     H --> I[エラー情報取得]
     I --> J[スタックトレース取得]
     J --> K[エラーログ記録]
     K --> L[実行時間記録]
     L --> M[エラーレスポンス]
-    
+
     G --> N[処理終了]
     M --> N
+
+    style A fill:#1e3a5f,stroke:#4a90e2,stroke-width:2px,color:#ffffff
+    style B fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#ffffff
+    style C fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#ffffff
+    style D fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#ffffff
+    style E fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#ffffff
+    style F fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#ffffff
+    style G fill:#1e3a5f,stroke:#4a90e2,stroke-width:2px,color:#ffffff
+    style H fill:#5f1e3a,stroke:#e24a90,stroke-width:2px,color:#ffffff
+    style I fill:#5f1e3a,stroke:#e24a90,stroke-width:2px,color:#ffffff
+    style J fill:#5f1e3a,stroke:#e24a90,stroke-width:2px,color:#ffffff
+    style K fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#ffffff
+    style L fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#ffffff
+    style M fill:#5f1e3a,stroke:#e24a90,stroke-width:2px,color:#ffffff
+    style N fill:#1e3a5f,stroke:#4a90e2,stroke-width:2px,color:#ffffff
 ```
 
 ## ログ記録フロー
@@ -202,35 +245,46 @@ graph TB
     subgraph "AppSheet"
         A[Workflow]
     end
-    
+
     subgraph "Google Apps Script"
         B[doPost Handler]
         C[DuplicationPrevention]
         D[ExecutionLogger]
         E[Business Logic]
     end
-    
+
     subgraph "Google Services"
         F[ScriptCache]
         G[LockService]
         H[SpreadsheetApp]
         I[DriveApp]
     end
-    
+
     subgraph "External APIs"
         J[Gemini API]
     end
-    
+
     A -->|Webhook| B
     B --> C
     B --> E
     E --> D
-    
+
     C --> F
     C --> G
     D --> H
     E --> I
     E --> J
+
+    style A fill:#1e5f3a,stroke:#4ae290,stroke-width:2px,color:#ffffff
+    style B fill:#1e3a5f,stroke:#4a90e2,stroke-width:2px,color:#ffffff
+    style C fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#ffffff
+    style D fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#ffffff
+    style E fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#ffffff
+    style F fill:#2d4a4a,stroke:#6dd6d6,stroke-width:2px,color:#ffffff
+    style G fill:#2d4a4a,stroke:#6dd6d6,stroke-width:2px,color:#ffffff
+    style H fill:#2d4a4a,stroke:#6dd6d6,stroke-width:2px,color:#ffffff
+    style I fill:#1e5f5f,stroke:#4ae2e2,stroke-width:2px,color:#ffffff
+    style J fill:#4a1e5f,stroke:#b84ae2,stroke-width:2px,color:#ffffff
 ```
 
 ## 使用例

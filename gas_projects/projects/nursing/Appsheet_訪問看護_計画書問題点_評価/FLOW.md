@@ -33,15 +33,15 @@ graph TB
     Error2 --> ErrorLog[エラーログ記録]:::log
     ErrorLog --> ErrorEnd([エラー応答]):::error
 
-    classDef webhook fill:#1e3a5f,stroke:#4a90e2,stroke-width:2px,color:#fff
-    classDef decision fill:#5f3a1e,stroke:#e2904a,stroke-width:2px,color:#fff
-    classDef process fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#fff
-    classDef gemini fill:#1e5f3a,stroke:#4ae290,stroke-width:2px,color:#fff
-    classDef appsheet fill:#5f1e5f,stroke:#e24ae2,stroke-width:2px,color:#fff
-    classDef log fill:#1e5f5f,stroke:#4ae2e2,stroke-width:2px,color:#fff
-    classDef success fill:#1e5f3a,stroke:#4ae290,stroke-width:3px,color:#fff
-    classDef error fill:#5f1e3a,stroke:#e24a90,stroke-width:3px,color:#fff
-    classDef skip fill:#3a3a3a,stroke:#888,stroke-width:2px,color:#fff
+    classDef webhook fill:#1e3a5f,stroke:#4a90e2,stroke-width:2px,color:#ffffff
+    classDef decision fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#ffffff
+    classDef process fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#ffffff
+    classDef gemini fill:#4a1e5f,stroke:#b84ae2,stroke-width:2px,color:#ffffff
+    classDef appsheet fill:#1e5f3a,stroke:#4ae290,stroke-width:2px,color:#ffffff
+    classDef log fill:#1e5f5f,stroke:#4ae2e2,stroke-width:2px,color:#ffffff
+    classDef success fill:#1e5f3a,stroke:#4ae290,stroke-width:3px,color:#ffffff
+    classDef error fill:#5f1e3a,stroke:#e24a90,stroke-width:3px,color:#ffffff
+    classDef skip fill:#2d4a4a,stroke:#6dd6d6,stroke-width:2px,color:#ffffff
 ```
 
 ## 2. Vertex AI評価生成フロー
@@ -74,12 +74,12 @@ graph TB
     ParseError --> ErrorEnd
     ValidateError --> ErrorEnd
 
-    classDef input fill:#1e3a5f,stroke:#4a90e2,stroke-width:2px,color:#fff
-    classDef process fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#fff
-    classDef decision fill:#5f3a1e,stroke:#e2904a,stroke-width:2px,color:#fff
-    classDef gemini fill:#1e5f3a,stroke:#4ae290,stroke-width:2px,color:#fff
-    classDef success fill:#1e5f3a,stroke:#4ae290,stroke-width:3px,color:#fff
-    classDef error fill:#5f1e3a,stroke:#e24a90,stroke-width:3px,color:#fff
+    classDef input fill:#1e3a5f,stroke:#4a90e2,stroke-width:2px,color:#ffffff
+    classDef process fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#ffffff
+    classDef decision fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#ffffff
+    classDef gemini fill:#4a1e5f,stroke:#b84ae2,stroke-width:2px,color:#ffffff
+    classDef success fill:#1e5f3a,stroke:#4ae290,stroke-width:3px,color:#ffffff
+    classDef error fill:#5f1e3a,stroke:#e24a90,stroke-width:3px,color:#ffffff
 ```
 
 ## 3. AppSheet更新フロー
@@ -102,12 +102,12 @@ graph TB
 
     Error --> ErrorEnd([エラー]):::error
 
-    classDef input fill:#1e3a5f,stroke:#4a90e2,stroke-width:2px,color:#fff
-    classDef process fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#fff
-    classDef decision fill:#5f3a1e,stroke:#e2904a,stroke-width:2px,color:#fff
-    classDef appsheet fill:#5f1e5f,stroke:#e24ae2,stroke-width:2px,color:#fff
-    classDef success fill:#1e5f3a,stroke:#4ae290,stroke-width:3px,color:#fff
-    classDef error fill:#5f1e3a,stroke:#e24a90,stroke-width:3px,color:#fff
+    classDef input fill:#1e3a5f,stroke:#4a90e2,stroke-width:2px,color:#ffffff
+    classDef process fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#ffffff
+    classDef decision fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#ffffff
+    classDef appsheet fill:#1e5f3a,stroke:#4ae290,stroke-width:2px,color:#ffffff
+    classDef success fill:#1e5f3a,stroke:#4ae290,stroke-width:3px,color:#ffffff
+    classDef error fill:#5f1e3a,stroke:#e24a90,stroke-width:3px,color:#ffffff
 ```
 
 ## 4. 重複防止フロー
@@ -191,12 +191,12 @@ graph TB
 
     ParamError --> Catch
 
-    classDef start fill:#1e3a5f,stroke:#4a90e2,stroke-width:2px,color:#fff
-    classDef process fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#fff
-    classDef decision fill:#5f3a1e,stroke:#e2904a,stroke-width:2px,color:#fff
-    classDef log fill:#1e5f5f,stroke:#4ae2e2,stroke-width:2px,color:#fff
-    classDef success fill:#1e5f3a,stroke:#4ae290,stroke-width:3px,color:#fff
-    classDef error fill:#5f1e3a,stroke:#e24a90,stroke-width:3px,color:#fff
+    classDef start fill:#1e3a5f,stroke:#4a90e2,stroke-width:2px,color:#ffffff
+    classDef process fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#ffffff
+    classDef decision fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#ffffff
+    classDef log fill:#1e5f5f,stroke:#4ae2e2,stroke-width:2px,color:#ffffff
+    classDef success fill:#1e5f3a,stroke:#4ae290,stroke-width:3px,color:#ffffff
+    classDef error fill:#5f1e3a,stroke:#e24a90,stroke-width:3px,color:#ffffff
 ```
 
 ## 6. 実行ログ記録フロー
@@ -337,14 +337,14 @@ graph TB
     dup --> utilsDup
     dup --> scriptProps
 
-    classDef webhook fill:#1e3a5f,stroke:#4a90e2,stroke-width:2px,color:#fff
-    classDef test fill:#5f5f1e,stroke:#e2e24a,stroke-width:2px,color:#fff
-    classDef common fill:#5f3a1e,stroke:#e2904a,stroke-width:2px,color:#fff
-    classDef main fill:#5f1e5f,stroke:#e24ae2,stroke-width:2px,color:#fff
-    classDef gemini fill:#1e5f3a,stroke:#4ae290,stroke-width:2px,color:#fff
-    classDef appsheet fill:#5f1e5f,stroke:#e24ae2,stroke-width:2px,color:#fff
-    classDef log fill:#1e5f5f,stroke:#4ae2e2,stroke-width:2px,color:#fff
-    classDef dup fill:#3a3a3a,stroke:#888,stroke-width:2px,color:#fff
+    classDef webhook fill:#1e3a5f,stroke:#4a90e2,stroke-width:2px,color:#ffffff
+    classDef test fill:#5f1e3a,stroke:#e24a90,stroke-width:2px,color:#ffffff
+    classDef common fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#ffffff
+    classDef main fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#ffffff
+    classDef gemini fill:#4a1e5f,stroke:#b84ae2,stroke-width:2px,color:#ffffff
+    classDef appsheet fill:#1e5f3a,stroke:#4ae290,stroke-width:2px,color:#ffffff
+    classDef log fill:#1e5f5f,stroke:#4ae2e2,stroke-width:2px,color:#ffffff
+    classDef dup fill:#2d4a4a,stroke:#6dd6d6,stroke-width:2px,color:#ffffff
 ```
 
 ## 9. データフロー詳細
@@ -376,12 +376,12 @@ graph LR
 
     L --> M[更新完了]:::result
 
-    classDef input fill:#1e3a5f,stroke:#4a90e2,stroke-width:2px,color:#fff
-    classDef process fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#fff
-    classDef data fill:#5f1e3a,stroke:#e24a90,stroke-width:2px,color:#fff
-    classDef gemini fill:#1e5f3a,stroke:#4ae290,stroke-width:2px,color:#fff
-    classDef appsheet fill:#5f1e5f,stroke:#e24ae2,stroke-width:2px,color:#fff
-    classDef result fill:#1e5f3a,stroke:#4ae290,stroke-width:3px,color:#fff
+    classDef input fill:#1e3a5f,stroke:#4a90e2,stroke-width:2px,color:#ffffff
+    classDef process fill:#5f4c1e,stroke:#e2a84a,stroke-width:2px,color:#ffffff
+    classDef data fill:#2d4a4a,stroke:#6dd6d6,stroke-width:2px,color:#ffffff
+    classDef gemini fill:#4a1e5f,stroke:#b84ae2,stroke-width:2px,color:#ffffff
+    classDef appsheet fill:#1e5f3a,stroke:#4ae290,stroke-width:2px,color:#ffffff
+    classDef result fill:#1e5f3a,stroke:#4ae290,stroke-width:3px,color:#ffffff
 ```
 
 ## 10. タイミング図
