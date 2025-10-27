@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "F Assistant",
-  description: "医療・看護記録検索 & チャットアシスタント",
+  description: "フラクタル訪問看護のRAG検索ツール",
 };
 
 export default function RootLayout({

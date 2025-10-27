@@ -15,6 +15,7 @@ export default function ChatContainer() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const streamingMessageIndexRef = useRef<number | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const handleSendMessage = async (messageText: string) => {
     // ユーザーメッセージを追加
@@ -26,6 +27,10 @@ export default function ChatContainer() {
 
     setMessages((prev) => [...prev, userMessage]);
     setLoading(true);
+
+    // AbortControllerを作成
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
 
     // アシスタントメッセージのプレースホルダーを追加
     const assistantMessageIndex = messages.length + 1;
@@ -45,7 +50,7 @@ export default function ChatContainer() {
         message: messageText,
         session_id: sessionId || undefined,
         context_size: 5,
-      });
+      }, abortController.signal);
 
       let accumulatedText = "";
 
@@ -82,21 +87,43 @@ export default function ChatContainer() {
     } catch (error) {
       console.error("Error sending message:", error);
 
-      // エラーメッセージで置き換え
-      setMessages((prev) => {
-        const newMessages = [...prev];
-        const index = streamingMessageIndexRef.current;
-        if (index !== null && newMessages[index]) {
-          newMessages[index] = {
-            ...newMessages[index],
-            content: "申し訳ございません。エラーが発生しました。",
-          };
-        }
-        return newMessages;
-      });
+      // 中止された場合
+      if (error instanceof Error && error.name === "AbortError") {
+        setMessages((prev) => {
+          const newMessages = [...prev];
+          const index = streamingMessageIndexRef.current;
+          if (index !== null && newMessages[index]) {
+            newMessages[index] = {
+              ...newMessages[index],
+              content: "処理を中止しました。",
+            };
+          }
+          return newMessages;
+        });
+      } else {
+        // その他のエラー
+        setMessages((prev) => {
+          const newMessages = [...prev];
+          const index = streamingMessageIndexRef.current;
+          if (index !== null && newMessages[index]) {
+            newMessages[index] = {
+              ...newMessages[index],
+              content: "申し訳ございません。エラーが発生しました。",
+            };
+          }
+          return newMessages;
+        });
+      }
     } finally {
       setLoading(false);
       streamingMessageIndexRef.current = null;
+      abortControllerRef.current = null;
+    }
+  };
+
+  const handleAbort = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
     }
   };
 
@@ -130,16 +157,29 @@ export default function ChatContainer() {
         <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center gap-4">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400"
+            className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 transition-colors"
+            aria-label="チャット履歴を開く"
           >
-            ☰
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 6h16M4 12h16M4 18h16"
+              />
+            </svg>
           </button>
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
               F Assistant
             </h1>
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              医療・看護記録検索 & チャットアシスタント
+              フラクタル訪問看護のRAG検索ツール
             </p>
           </div>
         </div>
@@ -157,10 +197,20 @@ export default function ChatContainer() {
         {/* メッセージ入力 */}
         <MessageInput onSend={handleSendMessage} disabled={loading} />
 
-        {/* ローディング表示 */}
+        {/* ローディング表示と中止ボタン */}
         {loading && (
-          <div className="fixed bottom-20 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg">
-            応答を生成中...
+          <div className="fixed bottom-20 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+              <span>応答を生成中...</span>
+            </div>
+            <button
+              onClick={handleAbort}
+              className="px-3 py-1 bg-white text-blue-600 rounded-full hover:bg-gray-100 transition-colors font-medium text-sm"
+              aria-label="処理を中止"
+            >
+              中止
+            </button>
           </div>
         )}
       </div>
