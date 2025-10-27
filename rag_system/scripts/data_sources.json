@@ -41,7 +41,7 @@
   },
   "clients_basic": {
     "name": "利用者_基本情報",
-    "spreadsheet_id": "【AppSheetアプリのSpreadsheet IDを入力】",
+    "spreadsheet_id": "1S3Gsxu9kEa4M9uZpWuIRLvPVjpCOoj2lo7GhSIA5I0I",
     "sheet_name": "Clients",
     "domain": "clients",
     "source_type": "client_info",
@@ -49,24 +49,24 @@
   },
   "clients_qa": {
     "name": "利用者_質疑応答",
-    "spreadsheet_id": "【AppSheetアプリのSpreadsheet IDを入力】",
-    "sheet_name": "Client_QA",
+    "spreadsheet_id": "1S3Gsxu9kEa4M9uZpWuIRLvPVjpCOoj2lo7GhSIA5I0I",
+    "sheet_name": "Client_Requests",
     "domain": "clients",
     "source_type": "client_qa",
     "description": "利用者情報QA記録"
   },
   "clients_facesheet": {
     "name": "利用者_フェースシート",
-    "spreadsheet_id": "【AppSheetアプリのSpreadsheet IDを入力】",
-    "sheet_name": "FaceSheets",
+    "spreadsheet_id": "1S3Gsxu9kEa4M9uZpWuIRLvPVjpCOoj2lo7GhSIA5I0I",
+    "sheet_name": "Client_Face_Sheets",
     "domain": "clients",
     "source_type": "facesheet",
     "description": "フェースシート"
   },
   "clients_family": {
     "name": "利用者_家族情報",
-    "spreadsheet_id": "【AppSheetアプリのSpreadsheet IDを入力】",
-    "sheet_name": "Family_Info",
+    "spreadsheet_id": "1S3Gsxu9kEa4M9uZpWuIRLvPVjpCOoj2lo7GhSIA5I0I",
+    "sheet_name": "Client_Family_Members",
     "domain": "clients",
     "source_type": "family_info",
     "description": "家族情報"
