@@ -76,7 +76,42 @@ function processRequest(reportId, clientName, targetMonth, visitRecords, staffId
 
     return { success: true, reportId: reportId };
 
-  } catch (error) {
+  
+  // ============================================================
+  // Vector DB同期（RAGシステムへのデータ蓄積）
+  // ============================================================
+  try {
+    log('Vector DB同期開始');
+
+    // 同期データ準備
+    const syncData = {
+      domain: 'nursing',
+      sourceType: 'visit_report',
+      sourceTable: 'Visit_Reports',
+      sourceId: recordId,
+      userId: context.staffId || 'unknown',
+      title: `${context.documentType} - ${context.clientName}`,
+      content: result.reportContent,
+      structuredData: {},
+      metadata: {
+        driveFileId: context.driveFileId || '',
+        projectName: 'Appsheet_訪問看護_報告書'
+      },
+      tags: context.documentType,
+      date: new Date().toISOString().split('T')[0]
+    };
+
+    // Vector DB同期実行
+    syncToVectorDB(syncData);
+
+    log('✅ Vector DB同期完了');
+
+  } catch (syncError) {
+    log(`⚠️  Vector DB同期エラー（処理は継続）: ${syncError.toString()}`);
+    // Vector DB同期エラーはメイン処理に影響させない
+  }
+
+} catch (error) {
     logError(reportId || 'UNKNOWN', error, { params: params });
 
     if (reportId) {

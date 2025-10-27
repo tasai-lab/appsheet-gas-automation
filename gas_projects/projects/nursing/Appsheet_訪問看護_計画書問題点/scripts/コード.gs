@@ -270,7 +270,42 @@ function sendErrorEmail(problemId, errorMessage) {
 
     console.log(`エラー通知メールを ${ERROR_NOTIFICATION_EMAIL} へ送信しました。`);
 
-  } catch(e) {
+  
+  // ============================================================
+  // Vector DB同期（RAGシステムへのデータ蓄積）
+  // ============================================================
+  try {
+    log('Vector DB同期開始');
+
+    // 同期データ準備
+    const syncData = {
+      domain: 'nursing',
+      sourceType: 'care_plan_issues',
+      sourceTable: 'Care_Plan_Issues',
+      sourceId: recordId,
+      userId: context.staffId || 'unknown',
+      title: `${context.documentType} - ${context.clientName}`,
+      content: aiResponse.problems,
+      structuredData: {},
+      metadata: {
+        driveFileId: context.driveFileId || '',
+        projectName: 'Appsheet_訪問看護_計画書問題点'
+      },
+      tags: context.documentType,
+      date: new Date().toISOString().split('T')[0]
+    };
+
+    // Vector DB同期実行
+    syncToVectorDB(syncData);
+
+    log('✅ Vector DB同期完了');
+
+  } catch (syncError) {
+    log(`⚠️  Vector DB同期エラー（処理は継続）: ${syncError.toString()}`);
+    // Vector DB同期エラーはメイン処理に影響させない
+  }
+
+} catch(e) {
 
     console.error(`エラー通知メールの送信に失敗しました: ${e.toString()}`);
 

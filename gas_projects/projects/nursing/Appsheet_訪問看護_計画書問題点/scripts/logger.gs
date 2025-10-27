@@ -184,9 +184,6 @@ class GASLogger {
 
       sheet.appendRow(mainLogRow);
 
-      // 詳細ログをJSON形式で別シートに保存（オプション）
-      this._saveDetailedLogs();
-
     } catch (e) {
       console.error(`ログのスプレッドシート保存に失敗: ${e.toString()}`);
       // スプレッドシート保存に失敗してもメイン処理は継続
@@ -339,60 +336,6 @@ class GASLogger {
     }).join('\n---\n');
     
     return summary.length > 50000 ? summary.substring(0, 50000) + '...(省略)' : summary;
-  }
-
-  /**
-   * 詳細ログを別シートに保存
-   * @private
-   */
-  _saveDetailedLogs() {
-    try {
-      let spreadsheet;
-
-      try {
-        // 固定のスプレッドシートIDを使用
-        spreadsheet = SpreadsheetApp.openById(LOGGER_CONFIG.logSpreadsheetId);
-      } catch (e) {
-        // フォールバック
-        const folder = DriveApp.getFolderById(LOGGER_CONFIG.logFolderId);
-        const files = folder.getFilesByName(LOGGER_CONFIG.logSpreadsheetName);
-        if (files.hasNext()) {
-          spreadsheet = SpreadsheetApp.openById(files.next().getId());
-        } else {
-          console.error('詳細ログスプレッドシートが見つかりません');
-          return;
-        }
-      }
-
-      let sheet = spreadsheet.getSheetByName('詳細ログ');
-      if (!sheet) {
-        sheet = spreadsheet.insertSheet('詳細ログ');
-        const headers = ['リクエストID', 'タイムスタンプ', 'レベル', 'メッセージ', '詳細'];
-        sheet.appendRow(headers);
-
-        const headerRange = sheet.getRange(1, 1, 1, headers.length);
-        headerRange.setFontWeight('bold');
-        headerRange.setBackground('#4285f4');
-        headerRange.setFontColor('#ffffff');
-
-        sheet.setFrozenRows(1);
-      }
-
-      // 詳細ログを追加
-      this.logs.forEach(log => {
-        const row = [
-          this.requestId,
-          log.timestamp,
-          log.level,
-          log.message,
-          log.details ? JSON.stringify(log.details) : ''
-        ];
-        sheet.appendRow(row);
-      });
-
-    } catch (e) {
-      console.error(`詳細ログの保存に失敗: ${e.toString()}`);
-    }
   }
 
   /**

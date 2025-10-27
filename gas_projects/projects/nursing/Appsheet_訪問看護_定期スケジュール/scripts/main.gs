@@ -424,7 +424,42 @@ function updateMastersForNextMonth() {
       dateRange: { startDateStr, endDateStr }
     };
 
-  } catch (error) {
+  
+  // ============================================================
+  // Vector DB同期（RAGシステムへのデータ蓄積）
+  // ============================================================
+  try {
+    log('Vector DB同期開始');
+
+    // 同期データ準備
+    const syncData = {
+      domain: 'nursing',
+      sourceType: 'schedule',
+      sourceTable: 'Visit_Schedules',
+      sourceId: scheduleId,
+      userId: context.staffId || 'unknown',
+      title: `${context.documentType} - ${context.clientName}`,
+      content: scheduleData.description,
+      structuredData: {},
+      metadata: {
+        driveFileId: context.driveFileId || '',
+        projectName: 'Appsheet_訪問看護_定期スケジュール'
+      },
+      tags: context.documentType,
+      date: new Date().toISOString().split('T')[0]
+    };
+
+    // Vector DB同期実行
+    syncToVectorDB(syncData);
+
+    log('✅ Vector DB同期完了');
+
+  } catch (syncError) {
+    log(`⚠️  Vector DB同期エラー（処理は継続）: ${syncError.toString()}`);
+    // Vector DB同期エラーはメイン処理に影響させない
+  }
+
+} catch (error) {
     logger.error('バッチ処理中に致命的エラー', error);
     Logger.log('');
     Logger.log('='.repeat(80));

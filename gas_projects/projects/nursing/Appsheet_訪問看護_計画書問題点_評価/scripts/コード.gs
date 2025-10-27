@@ -68,7 +68,42 @@ function processRequest(problemId, planText, latestRecords, statusToSet, staffId
 
     console.log(`処理完了。ID ${problemId} の評価を更新しました。`);
 
-  } catch (error) {
+  
+  // ============================================================
+  // Vector DB同期（RAGシステムへのデータ蓄積）
+  // ============================================================
+  try {
+    log('Vector DB同期開始');
+
+    // 同期データ準備
+    const syncData = {
+      domain: 'nursing',
+      sourceType: 'care_plan_evaluation',
+      sourceTable: 'Care_Plan_Evaluations',
+      sourceId: recordId,
+      userId: context.staffId || 'unknown',
+      title: `${context.documentType} - ${context.clientName}`,
+      content: aiResponse.problems,
+      structuredData: {},
+      metadata: {
+        driveFileId: context.driveFileId || '',
+        projectName: 'Appsheet_訪問看護_計画書問題点_評価'
+      },
+      tags: context.documentType,
+      date: new Date().toISOString().split('T')[0]
+    };
+
+    // Vector DB同期実行
+    syncToVectorDB(syncData);
+
+    log('✅ Vector DB同期完了');
+
+  } catch (syncError) {
+    log(`⚠️  Vector DB同期エラー（処理は継続）: ${syncError.toString()}`);
+    // Vector DB同期エラーはメイン処理に影響させない
+  }
+
+} catch (error) {
 
     console.log(`エラーが発生しました: ${error.toString()}`);
 

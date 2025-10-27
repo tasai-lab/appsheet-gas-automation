@@ -2813,7 +2813,42 @@ function processProvisionForm(event) {
 
     properties.deleteProperty(documentId); // エラー時は再実行を許可
 
-    sendProcessLogEmail(documentId, context.documentType, "失敗", errorMessage, logCollector);
+    
+  // ============================================================
+  // Vector DB同期（RAGシステムへのデータ蓄積）
+  // ============================================================
+  try {
+    log('Vector DB同期開始');
+
+    // 同期データ準備
+    const syncData = {
+      domain: 'nursing',
+      sourceType: 'document_sorting',
+      sourceTable: 'Client_Documents',
+      sourceId: documentId,
+      userId: context.staffId || 'unknown',
+      title: `${context.documentType} - ${context.clientName}`,
+      content: context.ocrText,
+      structuredData: {},
+      metadata: {
+        driveFileId: context.driveFileId || '',
+        projectName: 'Appsheet_訪問看護_書類仕分け'
+      },
+      tags: context.documentType,
+      date: new Date().toISOString().split('T')[0]
+    };
+
+    // Vector DB同期実行
+    syncToVectorDB(syncData);
+
+    log('✅ Vector DB同期完了');
+
+  } catch (syncError) {
+    log(`⚠️  Vector DB同期エラー（処理は継続）: ${syncError.toString()}`);
+    // Vector DB同期エラーはメイン処理に影響させない
+  }
+
+sendProcessLogEmail(documentId, context.documentType, "失敗", errorMessage, logCollector);
 
   }
 

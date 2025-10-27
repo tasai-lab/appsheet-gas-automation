@@ -102,7 +102,9 @@
       "Bash(secretmanager.googleapis.com )",
       "Bash(cloudresourcemanager.googleapis.com)",
       "WebFetch(domain:arxiv.org)",
-      "WebFetch(domain:docs.cloud.google.com)"
+      "WebFetch(domain:docs.cloud.google.com)",
+      "Bash(test:*)",
+      "Bash(do echo \"=== $project ===\" ls -1 \"gas_projects/projects/nursing/$project/scripts/\")"
     ],
     "deny": [],
     "ask": []
