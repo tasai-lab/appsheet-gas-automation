@@ -42,53 +42,126 @@ const SHEET_SCHEMAS = {
   }
 };
 
-// 医療用語辞書初期データ
+// 医療用語辞書初期データ（100語完全版）
+// ソース: rag_system/data/medical_terms_100.json
 const INITIAL_MEDICAL_TERMS = [
-  {
-    term_id: 'TERM_00001',
-    canonical: '膀胱留置カテーテル',
-    synonyms: '["バルーン","尿道カテーテル","Foley","フォーリー"]',
-    category: '医療機器',
-    umls_cui: 'C0085678',
-    frequency: 0,
-    created_at: '2025-10-27'
-  },
-  {
-    term_id: 'TERM_00002',
-    canonical: '血圧',
-    synonyms: '["BP","ブラッドプレッシャー","血圧値"]',
-    category: 'バイタルサイン',
-    umls_cui: 'C0005823',
-    frequency: 0,
-    created_at: '2025-10-27'
-  },
-  {
-    term_id: 'TERM_00003',
-    canonical: '服薬',
-    synonyms: '["内服","薬剤服用","投薬","与薬"]',
-    category: '看護行為',
-    umls_cui: 'C0013227',
-    frequency: 0,
-    created_at: '2025-10-27'
-  },
-  {
-    term_id: 'TERM_00004',
-    canonical: '体温',
-    synonyms: '["BT","体温測定","検温"]',
-    category: 'バイタルサイン',
-    umls_cui: 'C0005903',
-    frequency: 0,
-    created_at: '2025-10-27'
-  },
-  {
-    term_id: 'TERM_00005',
-    canonical: '脈拍',
-    synonyms: '["PR","心拍数","脈拍数"]',
-    category: 'バイタルサイン',
-    umls_cui: 'C0232117',
-    frequency: 0,
-    created_at: '2025-10-27'
-  }
+  // 医療機器 (13語)
+  { term_id: 'TERM_00001', canonical: '膀胱留置カテーテル', synonyms: '["バルーン","尿道カテーテル","Foley","フォーリー","膀胱カテーテル"]', category: '医療機器', umls_cui: 'C0085678', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00024', canonical: '人工呼吸器', synonyms: '["ベンチレーター","ventilator","呼吸器","人工換気"]', category: '医療機器', umls_cui: 'C0087153', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00025', canonical: 'パルスオキシメーター', synonyms: '["サチュレーションモニター","SpO2モニター","pulse oximeter"]', category: '医療機器', umls_cui: 'C0182117', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00026', canonical: '血糖測定器', synonyms: '["血糖値測定器","glucometer","簡易血糖測定器","血糖計"]', category: '医療機器', umls_cui: 'C0337438', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00027', canonical: '車椅子', synonyms: '["車いす","wheelchair","車イス","ホイールチェア"]', category: '医療機器', umls_cui: 'C0043143', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00028', canonical: '歩行器', synonyms: '["walker","ウォーカー","歩行補助具"]', category: '医療機器', umls_cui: 'C0180609', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00029', canonical: '吸引器', synonyms: '["吸痰器","suction machine","吸引装置"]', category: '医療機器', umls_cui: 'C0183984', frequency: 0, created_at: '2025-10-27' },
+
+  // バイタルサイン (8語)
+  { term_id: 'TERM_00002', canonical: '血圧', synonyms: '["BP","ブラッドプレッシャー","血圧値","収縮期血圧","拡張期血圧"]', category: 'バイタルサイン', umls_cui: 'C0005823', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00004', canonical: '体温', synonyms: '["BT","体温測定","検温","体温計測"]', category: 'バイタルサイン', umls_cui: 'C0005903', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00005', canonical: '脈拍', synonyms: '["PR","心拍数","脈拍数","脈","パルス"]', category: 'バイタルサイン', umls_cui: 'C0232117', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00006', canonical: '酸素飽和度', synonyms: '["SpO2","サチュレーション","酸素飽和","経皮的酸素飽和度"]', category: 'バイタルサイン', umls_cui: 'C0523807', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00007', canonical: '呼吸数', synonyms: '["RR","呼吸回数","呼吸","respiration rate"]', category: 'バイタルサイン', umls_cui: 'C0231832', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00008', canonical: '意識レベル', synonyms: '["JCS","GCS","意識状態","覚醒度","意識清明度"]', category: 'バイタルサイン', umls_cui: 'C0234428', frequency: 0, created_at: '2025-10-27' },
+
+  // 症状 (20語)
+  { term_id: 'TERM_00009', canonical: '疼痛', synonyms: '["痛み","痛い","いたい","疼み","ペイン"]', category: '症状', umls_cui: 'C0030193', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00010', canonical: '浮腫', synonyms: '["むくみ","腫脹","はれ","腫れ","浮腫み"]', category: '症状', umls_cui: 'C0013604', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00011', canonical: '褥瘡', synonyms: '["床ずれ","褥創","圧迫創傷","pressure ulcer","デクビ"]', category: '症状', umls_cui: 'C0011127', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00012', canonical: '発熱', synonyms: '["熱","高体温","熱発","fever","発熱状態"]', category: '症状', umls_cui: 'C0015967', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00013', canonical: '呼吸困難', synonyms: '["息苦しさ","息切れ","呼吸苦","dyspnea","呼吸不全"]', category: '症状', umls_cui: 'C0013404', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00041', canonical: '便秘', synonyms: '["排便困難","constipation","便が出ない","お通じが悪い"]', category: '症状', umls_cui: 'C0009806', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00042', canonical: '下痢', synonyms: '["diarrhea","軟便","水様便","下り"]', category: '症状', umls_cui: 'C0011991', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00043', canonical: '嘔吐', synonyms: '["吐く","嘔気","悪心","nausea","吐き気"]', category: '症状', umls_cui: 'C0042963', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00044', canonical: '食欲不振', synonyms: '["食欲低下","食べられない","食欲がない","anorexia"]', category: '症状', umls_cui: 'C0003123', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00045', canonical: '倦怠感', synonyms: '["だるさ","疲労感","fatigue","倦怠","疲れ"]', category: '症状', umls_cui: 'C0015672', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00046', canonical: 'めまい', synonyms: '["眩暈","dizziness","目が回る","ふらつき"]', category: '症状', umls_cui: 'C0012833', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00047', canonical: '頭痛', synonyms: '["頭が痛い","headache","頭の痛み","偏頭痛"]', category: '症状', umls_cui: 'C0018681', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00048', canonical: '胸痛', synonyms: '["胸が痛い","chest pain","胸部痛","胸の痛み"]', category: '症状', umls_cui: 'C0008031', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00049', canonical: '腹痛', synonyms: '["お腹が痛い","abdominal pain","腹部痛","お腹の痛み"]', category: '症状', umls_cui: 'C0000737', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00050', canonical: '咳嗽', synonyms: '["咳","せき","cough","咳き込み"]', category: '症状', umls_cui: 'C0010200', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00051', canonical: '喀痰', synonyms: '["痰","たん","sputum","痰がらみ"]', category: '症状', umls_cui: 'C0038056', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00077', canonical: '誤嚥', synonyms: '["aspiration","気道誤嚥","誤飲"]', category: '症状', umls_cui: 'C0004056', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00078', canonical: '失禁', synonyms: '["尿失禁","incontinence","漏れ","尿漏れ"]', category: '症状', umls_cui: 'C0042024', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00079', canonical: '排尿障害', synonyms: '["尿が出ない","排尿困難","urinary retention","尿閉"]', category: '症状', umls_cui: 'C0042024', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00080', canonical: '麻痺', synonyms: '["まひ","paralysis","片麻痺","運動障害"]', category: '症状', umls_cui: 'C0522224', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00081', canonical: '拘縮', synonyms: '["関節拘縮","contracture","関節が固まる","関節硬直"]', category: '症状', umls_cui: 'C0009917', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00082', canonical: 'せん妄', synonyms: '["delirium","錯乱","急性錯乱状態","意識混濁"]', category: '症状', umls_cui: 'C0011206', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00083', canonical: '不穏', synonyms: '["agitation","落ち着かない","興奮","焦燥"]', category: '症状', umls_cui: 'C0085631', frequency: 0, created_at: '2025-10-27' },
+
+  // 疾患 (11語)
+  { term_id: 'TERM_00030', canonical: '糖尿病', synonyms: '["DM","diabetes mellitus","糖尿","diabetes"]', category: '疾患', umls_cui: 'C0011849', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00031', canonical: '高血圧', synonyms: '["HT","hypertension","高血圧症","血圧高値"]', category: '疾患', umls_cui: 'C0020538', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00032', canonical: '心不全', synonyms: '["HF","heart failure","心臓機能不全","うっ血性心不全"]', category: '疾患', umls_cui: 'C0018801', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00033', canonical: '脳梗塞', synonyms: '["cerebral infarction","脳卒中","脳血管障害","CVA"]', category: '疾患', umls_cui: 'C0007785', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00034', canonical: '認知症', synonyms: '["dementia","痴呆","認知障害","アルツハイマー"]', category: '疾患', umls_cui: 'C0011265', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00035', canonical: '肺炎', synonyms: '["pneumonia","誤嚥性肺炎","気管支肺炎"]', category: '疾患', umls_cui: 'C0032285', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00036', canonical: 'COPD', synonyms: '["慢性閉塞性肺疾患","肺気腫","chronic obstructive pulmonary disease"]', category: '疾患', umls_cui: 'C0024117', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00037', canonical: '骨折', synonyms: '["fracture","骨が折れる","骨が割れる","ひび"]', category: '疾患', umls_cui: 'C0016658', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00038', canonical: '関節リウマチ', synonyms: '["RA","rheumatoid arthritis","リウマチ","慢性関節リウマチ"]', category: '疾患', umls_cui: 'C0003873', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00039', canonical: 'パーキンソン病', synonyms: '["PD","Parkinson\'s disease","パーキンソン症候群"]', category: '疾患', umls_cui: 'C0030567', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00040', canonical: 'がん', synonyms: '["癌","悪性腫瘍","cancer","悪性新生物"]', category: '疾患', umls_cui: 'C0006826', frequency: 0, created_at: '2025-10-27' },
+
+  // 薬剤 (8語)
+  { term_id: 'TERM_00058', canonical: '抗生剤', synonyms: '["抗生物質","antibiotic","抗菌薬","抗菌剤"]', category: '薬剤', umls_cui: 'C0003232', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00059', canonical: '降圧剤', synonyms: '["降圧薬","血圧の薬","antihypertensive","血圧降下薬"]', category: '薬剤', umls_cui: 'C0003364', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00060', canonical: '利尿剤', synonyms: '["利尿薬","diuretic","尿を出す薬"]', category: '薬剤', umls_cui: 'C0012798', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00061', canonical: '鎮痛剤', synonyms: '["鎮痛薬","痛み止め","analgesic","疼痛管理薬"]', category: '薬剤', umls_cui: 'C0002771', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00062', canonical: '下剤', synonyms: '["緩下剤","便秘薬","laxative","排便促進剤"]', category: '薬剤', umls_cui: 'C0282090', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00063', canonical: '睡眠薬', synonyms: '["睡眠導入剤","眠剤","hypnotic","入眠剤"]', category: '薬剤', umls_cui: 'C0020591', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00064', canonical: 'ステロイド', synonyms: '["副腎皮質ホルモン","steroid","コルチゾール製剤"]', category: '薬剤', umls_cui: 'C0038317', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00065', canonical: '抗凝固剤', synonyms: '["抗凝固薬","血液をサラサラにする薬","anticoagulant","ワーファリン"]', category: '薬剤', umls_cui: 'C0003280', frequency: 0, created_at: '2025-10-27' },
+
+  // 看護行為 (25語)
+  { term_id: 'TERM_00003', canonical: '服薬', synonyms: '["内服","薬剤服用","投薬","与薬","経口投与"]', category: '看護行為', umls_cui: 'C0013227', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00014', canonical: '清拭', synonyms: '["体拭き","全身清拭","部分清拭","清潔ケア","身体清潔"]', category: '看護行為', umls_cui: 'C0150196', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00015', canonical: '入浴介助', synonyms: '["入浴ケア","入浴支援","浴槽介助","入浴サポート"]', category: '看護行為', umls_cui: 'C0150196', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00016', canonical: '排泄介助', synonyms: '["排泄ケア","排泄支援","トイレ介助","排泄サポート"]', category: '看護行為', umls_cui: 'C0150188', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00017', canonical: '体位変換', synonyms: '["体交","ポジショニング","姿勢変換","position change"]', category: '看護行為', umls_cui: 'C0184758', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00018', canonical: '吸引', synonyms: '["痰吸引","気道吸引","口腔内吸引","suction","吸痰"]', category: '看護行為', umls_cui: 'C0038638', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00069', canonical: 'リハビリテーション', synonyms: '["リハビリ","rehabilitation","機能訓練","理学療法"]', category: '看護行為', umls_cui: 'C0034991', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00070', canonical: '口腔ケア', synonyms: '["口腔内清拭","oral care","口腔衛生","歯磨き介助"]', category: '看護行為', umls_cui: 'C0029162', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00071', canonical: '栄養管理', synonyms: '["nutrition management","食事管理","栄養ケア"]', category: '看護行為', umls_cui: 'C0242895', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00072', canonical: '水分摂取', synonyms: '["水分補給","飲水","fluid intake","水分管理"]', category: '看護行為', umls_cui: 'C0013123', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00073', canonical: '転倒予防', synonyms: '["転倒防止","fall prevention","転倒リスク管理"]', category: '看護行為', umls_cui: 'C0150223', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00074', canonical: '褥瘡予防', synonyms: '["床ずれ予防","pressure ulcer prevention","褥瘡ケア"]', category: '看護行為', umls_cui: 'C0150223', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00075', canonical: '皮膚観察', synonyms: '["スキンチェック","skin assessment","皮膚状態確認"]', category: '看護行為', umls_cui: 'C0422866', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00084', canonical: '家族指導', synonyms: '["家族教育","family education","介護指導","家族ケア"]', category: '看護行為', umls_cui: 'C0150215', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00085', canonical: 'ターミナルケア', synonyms: '["終末期ケア","terminal care","看取り","緩和ケア"]', category: '看護行為', umls_cui: 'C0039548', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00086', canonical: '緊急時対応', synonyms: '["emergency care","救急対応","緊急処置"]', category: '看護行為', umls_cui: 'C0013961', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00087', canonical: '感染予防', synonyms: '["infection control","感染対策","infection prevention"]', category: '看護行為', umls_cui: 'C0085557', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00088', canonical: '手洗い', synonyms: '["hand washing","手指衛生","hand hygiene","手の消毒"]', category: '看護行為', umls_cui: 'C0018581', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00089', canonical: 'マスク着用', synonyms: '["mask wearing","マスク装着","感染防護"]', category: '看護行為', umls_cui: 'C0024861', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00090', canonical: 'バイタルサイン測定', synonyms: '["vital signs","VS測定","生命徴候確認"]', category: '看護行為', umls_cui: 'C0518766', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00091', canonical: '記録', synonyms: '["看護記録","nursing record","記録記載","カルテ記入"]', category: '看護行為', umls_cui: 'C0025102', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00092', canonical: '申し送り', synonyms: '["情報共有","handover","引き継ぎ","カンファレンス"]', category: '看護行為', umls_cui: 'C0085540', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00093', canonical: '安全確認', synonyms: '["safety check","安全管理","リスク管理"]', category: '看護行為', umls_cui: 'C0150755', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00094', canonical: '同意取得', synonyms: '["informed consent","説明と同意","承諾"]', category: '看護行為', umls_cui: 'C0021430', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00095', canonical: 'アセスメント', synonyms: '["assessment","評価","状態評価","情報収集"]', category: '看護行為', umls_cui: 'C0558038', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00096', canonical: 'ケアプラン', synonyms: '["care plan","介護計画","看護計画","ケア計画"]', category: '看護行為', umls_cui: 'C0178916', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00097', canonical: 'モニタリング', synonyms: '["monitoring","継続観察","経過観察","状態確認"]', category: '看護行為', umls_cui: 'C0150369', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00098', canonical: '精神的ケア', synonyms: '["mental care","心のケア","精神的サポート","emotional support"]', category: '看護行為', umls_cui: 'C0030671', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00099', canonical: 'コミュニケーション', synonyms: '["communication","意思疎通","会話","対話"]', category: '看護行為', umls_cui: 'C0009452', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00100', canonical: '多職種連携', synonyms: '["interprofessional collaboration","チーム医療","連携","協働"]', category: '看護行為', umls_cui: 'C2713543', frequency: 0, created_at: '2025-10-27' },
+
+  // 医療処置 (6語)
+  { term_id: 'TERM_00019', canonical: '経管栄養', synonyms: '["胃瘻","胃ろう","PEG","経鼻胃管","tube feeding"]', category: '医療処置', umls_cui: 'C0041281', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00020', canonical: 'インスリン注射', synonyms: '["インスリン投与","インスリン注入","insulin injection","皮下注射"]', category: '医療処置', umls_cui: 'C0199782', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00021', canonical: '創傷処置', synonyms: '["傷の処置","創部ケア","wound care","褥瘡処置","傷口処置"]', category: '医療処置', umls_cui: 'C0886052', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00022', canonical: '点滴', synonyms: '["輸液","静脈注射","IV","点滴静注","drip infusion"]', category: '医療処置', umls_cui: 'C0574032', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00023', canonical: '酸素療法', synonyms: '["酸素吸入","酸素投与","oxygen therapy","O2投与"]', category: '医療処置', umls_cui: 'C0184633', frequency: 0, created_at: '2025-10-27' },
+
+  // 検査値 (6語)
+  { term_id: 'TERM_00052', canonical: '血糖値', synonyms: '["BS","blood sugar","グルコース値","血糖"]', category: '検査値', umls_cui: 'C0005802', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00053', canonical: 'HbA1c', synonyms: '["ヘモグロビンA1c","糖化ヘモグロビン","エーワンシー"]', category: '検査値', umls_cui: 'C0019018', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00054', canonical: 'クレアチニン', synonyms: '["Cr","creatinine","血清クレアチニン"]', category: '検査値', umls_cui: 'C0010294', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00055', canonical: 'BUN', synonyms: '["尿素窒素","血中尿素窒素","blood urea nitrogen"]', category: '検査値', umls_cui: 'C0005845', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00056', canonical: '白血球', synonyms: '["WBC","white blood cell","白血球数","leukocyte"]', category: '検査値', umls_cui: 'C0023508', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00057', canonical: 'CRP', synonyms: '["C反応性蛋白","C-reactive protein","炎症マーカー"]', category: '検査値', umls_cui: 'C0006560', frequency: 0, created_at: '2025-10-27' },
+
+  // 評価指標 (15語)
+  { term_id: 'TERM_00066', canonical: 'ADL', synonyms: '["日常生活動作","activities of daily living","日常生活能力"]', category: '評価指標', umls_cui: 'C0001288', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00067', canonical: 'QOL', synonyms: '["生活の質","quality of life","生活品質"]', category: '評価指標', umls_cui: 'C0034380', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00068', canonical: '介護度', synonyms: '["要介護度","介護認定","要支援","要介護"]', category: '評価指標', umls_cui: 'C0562380', frequency: 0, created_at: '2025-10-27' },
+  { term_id: 'TERM_00076', canonical: '嚥下評価', synonyms: '["swallowing assessment","嚥下機能評価","飲み込み確認"]', category: '評価指標', umls_cui: 'C0422866', frequency: 0, created_at: '2025-10-27' }
 ];
 
 /**
@@ -142,10 +215,10 @@ function createVectorDBSpreadsheet() {
     });
     Logger.log('');
 
-    // 5. 医療用語辞書に初期データを追加
-    Logger.log('5. 医療用語辞書に初期データを追加中...');
+    // 5. 医療用語辞書に100語の初期データを追加
+    Logger.log('5. 医療用語辞書に100語の初期データを追加中...');
     addInitialMedicalTerms(sheets['MedicalTerms']);
-    Logger.log(`   ✅ 初期データ追加完了 (${INITIAL_MEDICAL_TERMS.length}件)`);
+    Logger.log(`   ✅ 初期データ追加完了 (${INITIAL_MEDICAL_TERMS.length}語)`);
     Logger.log('');
 
     // 6. 完了メッセージ

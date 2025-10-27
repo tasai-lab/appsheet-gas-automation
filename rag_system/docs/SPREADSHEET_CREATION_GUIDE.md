@@ -79,7 +79,7 @@ VECTOR_DB_SPREADSHEET_ID=【ここに取得したSpreadsheet IDを貼り付け�
 - カラム: kb_id, embedding, model, task_type, generated_at
 
 ### Sheet 3: MedicalTerms (黄)
-- 医療用語シノニム辞書（初期5件、最終100語）
+- 医療用語シノニム辞書（初期100語完全版）
 - カラム: term_id, canonical, synonyms, category, umls_cui, frequency
 
 ### Sheet 4: ChatHistory (赤)
@@ -102,7 +102,7 @@ https://docs.google.com/spreadsheets/d/【Spreadsheet ID】/edit
 - ✅ 4つのシートが存在する
 - ✅ 各シートにヘッダー行が設定されている
 - ✅ ヘッダー行がカラーリングされている
-- ✅ MedicalTermsシートに5件の初期データがある
+- ✅ MedicalTermsシートに100語の初期データがある
 
 ### 3. 権限を確認
 
@@ -141,8 +141,8 @@ Vector DB Spreadsheet テスト開始
       ✅ ヘッダー: 正常
 
 2. 医療用語辞書 初期データ確認:
-   データ件数: 5件
-   期待件数: 5件
+   データ件数: 100語
+   期待件数: 100語
 
 ✅ テスト完了
 ```
