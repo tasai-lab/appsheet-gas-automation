@@ -53,8 +53,8 @@ class Settings(BaseSettings):
     }
 
     # Vertex AI設定
-    vertex_ai_embeddings_model: str = "text-embedding-004"
-    vertex_ai_embeddings_dimension: int = 768  # 768 or 3072
+    vertex_ai_embeddings_model: str = "gemini-embedding-001"
+    vertex_ai_embeddings_dimension: int = 3072
     vertex_ai_embeddings_task_type: str = "RETRIEVAL_DOCUMENT"
     vertex_ai_generation_model: str = "gemini-2.5-flash"
     vertex_ai_temperature: float = 0.3
