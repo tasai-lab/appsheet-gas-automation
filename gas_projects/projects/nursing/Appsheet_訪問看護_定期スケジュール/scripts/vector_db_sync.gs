@@ -38,7 +38,7 @@
  * 注意: VECTOR_DB_SPREADSHEET_IDは実際のスプレッドシートID作成後に設定してください
  */
 const VECTOR_DB_CONFIG = {
-  spreadsheetId: '',  // TODO: 作成後にスプレッドシートIDを設定
+  spreadsheetId: '1roSp4WKubXVzZ6iWd6OY5lMU5OpvFsVNQHy11_Ym-wA',  // TODO: 作成後にスプレッドシートIDを設定
   sheets: {
     knowledgeBase: 'KnowledgeBase',
     embeddings: 'Embeddings',
