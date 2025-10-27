@@ -152,7 +152,7 @@ export default function ChatContainer() {
       />
 
       {/* メインコンテンツ */}
-      <div className="flex flex-col flex-1 max-w-6xl mx-auto w-full bg-white dark:bg-gray-900">
+      <div className="flex flex-col flex-1 max-w-6xl mx-auto w-full bg-white dark:bg-gray-900 relative">
         {/* ヘッダー */}
         <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center gap-4">
           <button
@@ -174,13 +174,21 @@ export default function ChatContainer() {
               />
             </svg>
           </button>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              F Assistant
-            </h1>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              フラクタル訪問看護のRAG検索ツール
-            </p>
+          <div className="flex items-center gap-3">
+            {/* FRACTALロゴ */}
+            <img
+              src="/fractal-logo.png"
+              alt="FRACTAL"
+              className="h-10 w-auto dark:invert"
+            />
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                F Assistant
+              </h1>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                フラクタル訪問看護のRAG検索ツール
+              </p>
+            </div>
           </div>
         </div>
 
@@ -197,9 +205,9 @@ export default function ChatContainer() {
         {/* メッセージ入力 */}
         <MessageInput onSend={handleSendMessage} disabled={loading} />
 
-        {/* ローディング表示と中止ボタン */}
+        {/* ローディング表示と中止ボタン（チャットエリア中央に配置） */}
         {loading && (
-          <div className="fixed bottom-20 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-4">
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-blue-600 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-4 z-10">
             <div className="flex items-center gap-2">
               <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
               <span>応答を生成中...</span>
