@@ -62,6 +62,7 @@ async def chat_stream(request: ChatRequest):
                 search_result = engine.search(
                     query=request.message,
                     domain=request.domain,
+                    client_id=request.client_id,
                     top_k=request.context_size or 5
                 )
 
@@ -173,6 +174,7 @@ async def chat(request: ChatRequest):
         search_result = engine.search(
             query=request.message,
             domain=request.domain,
+            client_id=request.client_id,
             top_k=request.context_size or 5
         )
 

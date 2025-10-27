@@ -153,15 +153,35 @@ curl -X POST http://localhost:8000/search \
 
 ## ドキュメント
 
-詳細な技術仕様は `docs/` ディレクトリを参照:
+### 📚 コアドキュメント
 
-- [プロジェクト概要](docs/01_PROJECT_OVERVIEW.md)
-- [アーキテクチャ設計](docs/02_ARCHITECTURE.md)
-- [Hybrid Search仕様 v2.0](docs/03_HYBRID_SEARCH_SPEC_V2.md)
-- [API仕様](docs/04_API_SPECIFICATION.md)
-- [デプロイメント手順](docs/06_DEPLOYMENT.md)
-- [セキュリティ設計](docs/07_SECURITY.md)
-- [統合レポート](docs/REF_INTEGRATION_REPORT.md)
+- [プロジェクト概要](docs/01_PROJECT_OVERVIEW.md) - システム全体像と主要機能
+- [アーキテクチャ設計](docs/02_ARCHITECTURE.md) - システムアーキテクチャとコンポーネント
+- [Hybrid Search仕様 v2.0](docs/03_HYBRID_SEARCH_SPEC_V2.md) - 検索エンジンの詳細仕様
+- [API仕様](docs/04_API_SPECIFICATION.md) - REST API エンドポイント
+- [デプロイメント手順](docs/06_DEPLOYMENT.md) - Cloud Run / Vercel デプロイ
+- [セキュリティ設計](docs/07_SECURITY.md) - 認証・認可とデータ保護
+
+### 🏗️ セットアップガイド
+
+- [GCPセットアップ](docs/GCP_SETUP.md) - Vertex AI, Cloud Run, API有効化
+- [Spreadsheet作成ガイド](docs/SPREADSHEET_CREATION_GUIDE.md) - Vector DB初期化
+- [Phase 2セットアップ](docs/PHASE2_SETUP_GUIDE.md) - GASプロジェクト統合
+
+### 🎯 技術決定記録 (ADR)
+
+- [技術決定記録](docs/DECISIONS.md) - 主要な技術選定と理由
+  - Vertex AI完全移行
+  - リランキングモデル選択
+  - ハイブリッド検索の採用
+  - ベクトルDB設計
+  - Gemini 2.5 Flashの採用
+  - 重大なバグと教訓
+
+### 📋 参照資料
+
+- [AIモデル仕様](docs/ref/AIモデル仕様.md) - Gemini/Vertex AIモデル詳細
+- [推奨アップデート2025](docs/ref/rag/推奨アップデート2025.md) - RAG最新トレンド
 
 ## ライセンス
 

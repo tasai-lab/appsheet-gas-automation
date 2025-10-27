@@ -297,6 +297,9 @@ scripts/
 │   ├── testFixCurrentMonthOutOfOfficeExecute() # 今月の不在イベント修正（実行）
 │   ├── testFixOutOfOfficeEndTime() # 指定年月の不在イベント修正
 │   └── testFixOutOfOfficeEndTimeExecute() # 指定年月の不在イベント修正（実行）
+├── auto_fix_helpers.js            # 自動修正ヘルパー
+│   ├── autoFixOutOfOfficeEventsFromSheet() # 勤怠管理スプレッドシートから自動修正
+│   └── openAttendanceSpreadsheet() # 勤怠管理スプレッドシートを開く
 ├── config.js                      # 設定
 ├── AuthService.js                 # OAuth2認証サービス
 ├── logger.js                      # 実行ログ記録
@@ -382,6 +385,43 @@ testFixCurrentMonthOutOfOfficeExecute()
 
 ⚠️ **注意**: 実行モード（`Execute`関数）は実際にイベントを更新します。必ず事前にドライランで確認してください。
 
+### 勤怠管理スプレッドシート連携（auto_fix_helpers.js）
+
+勤怠管理スプレッドシート（`1QDMA3DP4Y9XSFRWY9ewwP3Vih2NJEpq7NmNRRgASqRY`）の「**勤務_予定**」シートから不在イベントIDを読み取り、自動で修正します。
+
+```javascript
+// ドライラン（修正対象の確認のみ）
+autoFixOutOfOfficeEventsFromSheet(true)
+
+// 実際に修正を実行
+autoFixOutOfOfficeEventsFromSheet(false)
+
+// 勤怠管理スプレッドシートを開く
+openAttendanceSpreadsheet()
+```
+
+**動作:**
+
+1. 勤怠管理スプレッドシートから「不在イベントID」列が入力されているレコードを取得
+2. 各不在イベントの詳細をCalendar APIで取得
+3. 終了時刻が23:39以降の場合、翌日00:00:00に修正
+4. 実行ログスプレッドシートに結果を記録
+
+**トリガー設定推奨:**
+
+この関数は定期実行トリガーで自動実行することを推奨します。
+
+```javascript
+// トリガーから実行される関数（自動実行モード）
+function scheduledAutoFix() {
+  autoFixOutOfOfficeEventsFromSheet(false); // 実行モード
+}
+```
+
+トリガー設定例:
+- 頻度: 毎日午前3時
+- 実行する関数: `scheduledAutoFix`
+
 ## エラーハンドリング
 
 ### エラータイプ
@@ -434,6 +474,23 @@ clasp push --force
 ```
 
 ## バージョン履歴
+
+### v1.2.1 (2025-10-27) - デプロイメント @15
+- **シート名修正**
+  - 勤怠管理スプレッドシートのシート名を「シート1」から「勤務_予定」に修正
+
+### v1.2.1 (2025-10-27) - デプロイメント @14
+- **勤怠管理スプレッドシート連携**
+  - 新規ファイル: `auto_fix_helpers.js`
+  - 勤怠管理スプレッドシートから不在イベントIDを自動取得
+  - Calendar APIで各イベントの終了時刻を確認し、23:39以降の場合に修正
+  - トリガー設定による自動実行に対応
+  - ドライランモードで事前確認可能
+- **実装内容**
+  - `autoFixOutOfOfficeEventsFromSheet()`: 自動修正メイン関数
+  - `_getOutOfOfficeEventsFromAttendance()`: スプレッドシートからイベントID取得
+  - `_getEventDetails()`: Calendar APIでイベント詳細取得
+  - `openAttendanceSpreadsheet()`: スプレッドシートを開くヘルパー
 
 ### v1.2.0 (2025-10-27) - デプロイメント @13
 - **コード最適化**

@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.config import get_settings
-from app.routers import chat, health, search
+from app.routers import chat, clients, health, search
 
 # ロガー設定
 logging.basicConfig(
@@ -86,6 +86,7 @@ app.add_middleware(
 app.include_router(health.router, prefix="/health", tags=["Health"])
 app.include_router(search.router, prefix="/search", tags=["Search"])
 app.include_router(chat.router, prefix="/chat", tags=["Chat"])
+app.include_router(clients.router, prefix="/clients", tags=["Clients"])
 
 
 # ルートエンドポイント
@@ -105,7 +106,8 @@ async def root():
         "endpoints": {
             "health": "/health",
             "search": "/search",
-            "chat": "/chat/stream"
+            "chat": "/chat/stream",
+            "clients": "/clients"
         }
     }
 

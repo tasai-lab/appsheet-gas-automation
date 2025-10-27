@@ -36,6 +36,7 @@ class HybridSearchEngine:
         self,
         query: str,
         domain: Optional[str] = None,
+        client_id: Optional[str] = None,
         top_k: Optional[int] = None
     ) -> Dict[str, Any]:
         """
@@ -44,6 +45,7 @@ class HybridSearchEngine:
         Args:
             query: クエリテキスト
             domain: ドメインフィルタ（例: "nursing"）
+            client_id: 利用者IDフィルタ（指定された利用者のデータのみに絞り込む）
             top_k: 返す結果数
 
         Returns:
@@ -54,7 +56,7 @@ class HybridSearchEngine:
         if top_k is None:
             top_k = settings.search_final_top_k
 
-        logger.info(f"Starting Hybrid Search - Query: {query[:50]}..., Domain: {domain}, Top-K: {top_k}")
+        logger.info(f"Starting Hybrid Search - Query: {query[:50]}..., Domain: {domain}, Client ID: {client_id}, Top-K: {top_k}")
 
         try:
             # Stage 0: Query Preprocessing
@@ -63,7 +65,8 @@ class HybridSearchEngine:
             # Stage 1 & 2: Parallel Search (BM25 + Dense Retrieval)
             candidates = self._parallel_search(
                 preprocessed['enriched_query'],
-                domain=domain
+                domain=domain,
+                client_id=client_id
             )
 
             if not candidates:
@@ -146,7 +149,8 @@ class HybridSearchEngine:
     def _parallel_search(
         self,
         query: str,
-        domain: Optional[str] = None
+        domain: Optional[str] = None,
+        client_id: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """
         Stage 1 & 2: BM25 + Dense Retrieval (Parallel)
@@ -154,6 +158,7 @@ class HybridSearchEngine:
         Args:
             query: 拡張済みクエリ
             domain: ドメインフィルタ
+            client_id: 利用者IDフィルタ
 
         Returns:
             候補ドキュメントリスト（RRF統合済み）
@@ -166,6 +171,18 @@ class HybridSearchEngine:
         # ドメインフィルタ
         if domain:
             kb_records = [r for r in kb_records if r.get('domain') == domain]
+
+        # 利用者IDフィルタ
+        if client_id:
+            # kb_id, source_id, contentに利用者IDが含まれるレコードのみ抽出
+            kb_records = [
+                r for r in kb_records
+                if (client_id in str(r.get('id', '')) or
+                    client_id in str(r.get('source_id', '')) or
+                    client_id in str(r.get('title', '')) or
+                    client_id in str(r.get('content', '')))
+            ]
+            logger.info(f"Client ID filter applied - {len(kb_records)} records remaining")
 
         if not kb_records:
             logger.warning("No records in KnowledgeBase")

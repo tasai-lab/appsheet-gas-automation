@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { ChatSession } from "@/types/chat";
 import { useTheme } from "@/contexts/ThemeContext";
+import { fetchClients, type ClientInfo } from "@/lib/api";
+import ClientAutocomplete from "./ClientAutocomplete";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -10,6 +12,8 @@ interface SidebarProps {
   onSessionSelect: (sessionId: string) => void;
   currentSessionId: string | null;
 }
+
+type TabType = "history" | "test";
 
 export default function Sidebar({
   isOpen,
@@ -20,6 +24,33 @@ export default function Sidebar({
   const { theme, toggleTheme } = useTheme();
   const [displayCount, setDisplayCount] = useState(10);
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabType>("history");
+
+  // テストタブ用の状態
+  const [clients, setClients] = useState<ClientInfo[]>([]);
+  const [clientsLoading, setClientsLoading] = useState(true);
+  const [testClientId, setTestClientId] = useState<string | null>(null);
+  const [testQuery, setTestQuery] = useState("");
+  const [testStreaming, setTestStreaming] = useState(true);
+  const [testLoading, setTestLoading] = useState(false);
+  const [testResult, setTestResult] = useState<string>("");
+
+  // 利用者一覧を取得
+  useEffect(() => {
+    const loadClients = async () => {
+      try {
+        console.log("[Sidebar] 利用者一覧を取得中...");
+        const response = await fetchClients();
+        console.log(`[Sidebar] 利用者一覧取得成功: ${response.clients.length}件`, response.clients);
+        setClients(response.clients);
+      } catch (error) {
+        console.error("[Sidebar] 利用者一覧の取得に失敗しました:", error);
+      } finally {
+        setClientsLoading(false);
+      }
+    };
+    loadClients();
+  }, []);
 
   // 仮のセッションデータ（実際はAPIから取得）
   // 注: サーバー/クライアント間でハイドレーションエラーを防ぐため、決定的なデータを使用
@@ -41,6 +72,97 @@ export default function Sidebar({
       setDisplayCount((prev) => Math.min(prev + 5, mockSessions.length));
       setLoading(false);
     }, 300);
+  };
+
+  // テスト実行
+  const runTest = async () => {
+    if (!testQuery.trim()) {
+      alert("検索クエリを入力してください");
+      return;
+    }
+
+    setTestLoading(true);
+    setTestResult("");
+
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const endpoint = testStreaming ? "/chat/stream" : "/chat";
+      const url = `${API_URL}${endpoint}`;
+
+      const requestBody = {
+        message: testQuery,
+        client_id: testClientId || undefined,
+        context_size: 5,
+        stream: testStreaming,
+      };
+
+      if (testStreaming) {
+        // ストリーミング処理
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requestBody),
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+        let fullText = "";
+
+        if (reader) {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value);
+            const lines = chunk.split("\n");
+
+            for (const line of lines) {
+              if (line.startsWith("data: ")) {
+                try {
+                  const data = JSON.parse(line.slice(6));
+                  if (data.type === "text" && data.content) {
+                    fullText += data.content;
+                    setTestResult(fullText);
+                  } else if (data.type === "context") {
+                    fullText += `\n[コンテキスト: ${data.context?.length || 0}件]\n\n`;
+                    setTestResult(fullText);
+                  } else if (data.type === "done") {
+                    fullText += `\n\n[完了]`;
+                    setTestResult(fullText);
+                  }
+                } catch (e) {
+                  // JSON解析エラーは無視
+                }
+              }
+            }
+          }
+        }
+      } else {
+        // 非ストリーミング処理
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requestBody),
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const resultText = `[コンテキスト: ${data.context?.length || 0}件]\n\n${data.message?.content || ""}\n\n[完了]`;
+        setTestResult(resultText);
+      }
+    } catch (error) {
+      console.error("テスト実行エラー:", error);
+      setTestResult(`エラー: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      setTestLoading(false);
+    }
   };
 
   return (
@@ -82,46 +204,145 @@ export default function Sidebar({
           </div>
         </div>
 
-        {/* チャット履歴セクションタイトル */}
-        <div className="px-4 pt-4 pb-2">
-          <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+        {/* タブ切り替え */}
+        <div className="flex border-b border-gray-200 dark:border-gray-700">
+          <button
+            onClick={() => setActiveTab("history")}
+            className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
+              activeTab === "history"
+                ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400"
+                : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+            }`}
+          >
             チャット履歴
-          </h2>
+          </button>
+          <button
+            onClick={() => setActiveTab("test")}
+            className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
+              activeTab === "test"
+                ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400"
+                : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+            }`}
+          >
+            APIテスト
+          </button>
         </div>
 
-        {/* セッションリスト */}
+        {/* コンテンツエリア */}
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
-          {displayedSessions.map((session) => (
-            <button
-              key={session.id}
-              onClick={() => onSessionSelect(session.id)}
-              className={`w-full text-left p-3 rounded-lg transition-colors ${
-                currentSessionId === session.id
-                  ? "bg-blue-100 dark:bg-blue-900/30 border-blue-500"
-                  : "hover:bg-gray-100 dark:hover:bg-gray-800 border-transparent"
-              } border`}
-            >
-              <div className="font-semibold text-gray-900 dark:text-white truncate">
-                {session.title}
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400 truncate">
-                {session.preview}
-              </div>
-              <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                {new Date(session.created_at).toLocaleDateString("ja-JP")} · {session.message_count}件
-              </div>
-            </button>
-          ))}
+          {/* チャット履歴タブ */}
+          {activeTab === "history" && (
+            <>
+              {displayedSessions.map((session) => (
+                <button
+                  key={session.id}
+                  onClick={() => onSessionSelect(session.id)}
+                  className={`w-full text-left p-3 rounded-lg transition-colors ${
+                    currentSessionId === session.id
+                      ? "bg-blue-100 dark:bg-blue-900/30 border-blue-500"
+                      : "hover:bg-gray-100 dark:hover:bg-gray-800 border-transparent"
+                  } border`}
+                >
+                  <div className="font-semibold text-gray-900 dark:text-white truncate">
+                    {session.title}
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400 truncate">
+                    {session.preview}
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                    {new Date(session.created_at).toLocaleDateString("ja-JP")} · {session.message_count}件
+                  </div>
+                </button>
+              ))}
 
-          {/* もっと読み込むボタン */}
-          {hasMore && (
-            <button
-              onClick={loadMore}
-              disabled={loading}
-              className="w-full py-2 px-4 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
-            >
-              {loading ? "読み込み中..." : "さらに5件読み込む"}
-            </button>
+              {/* もっと読み込むボタン */}
+              {hasMore && (
+                <button
+                  onClick={loadMore}
+                  disabled={loading}
+                  className="w-full py-2 px-4 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+                >
+                  {loading ? "読み込み中..." : "さらに5件読み込む"}
+                </button>
+              )}
+            </>
+          )}
+
+          {/* APIテストタブ */}
+          {activeTab === "test" && (
+            <div className="space-y-4">
+              {/* 利用者選択 */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  検索対象利用者
+                </label>
+                <ClientAutocomplete
+                  clients={clients}
+                  selectedClientId={testClientId}
+                  onSelect={(clientId) => {
+                    console.log("[Sidebar] 利用者選択変更:", clientId);
+                    setTestClientId(clientId);
+                  }}
+                  loading={clientsLoading}
+                  placeholder="利用者名を入力（カナ・漢字可）"
+                  className="text-sm"
+                />
+                {!clientsLoading && clients.length === 0 && (
+                  <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+                    利用者データの取得に失敗しました
+                  </p>
+                )}
+              </div>
+
+              {/* 検索クエリ */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  検索クエリ
+                </label>
+                <textarea
+                  value={testQuery}
+                  onChange={(e) => setTestQuery(e.target.value)}
+                  placeholder="質問を入力してください..."
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                />
+              </div>
+
+              {/* ストリーミング切り替え */}
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="test-streaming"
+                  checked={testStreaming}
+                  onChange={(e) => setTestStreaming(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <label htmlFor="test-streaming" className="text-sm text-gray-700 dark:text-gray-300">
+                  ストリーミング有効
+                </label>
+              </div>
+
+              {/* 実行ボタン */}
+              <button
+                onClick={runTest}
+                disabled={testLoading}
+                className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {testLoading ? "実行中..." : "テスト実行"}
+              </button>
+
+              {/* 結果表示 */}
+              {testResult && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    実行結果
+                  </label>
+                  <div className="p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 text-sm text-gray-900 dark:text-white whitespace-pre-wrap max-h-96 overflow-y-auto">
+                    {testResult}
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </div>
 

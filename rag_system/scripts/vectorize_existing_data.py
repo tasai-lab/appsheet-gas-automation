@@ -171,40 +171,23 @@ class VectorizeExistingData:
             return None
 
     def build_full_text(self, record: Dict[str, Any], source_type: str) -> str:
-        """フルテキスト構築"""
-        # source_typeに応じてテキスト構築ロジックを変更
-        if source_type == "care_record":
-            # 看護記録の場合
-            parts = [
-                record.get("date", ""),
-                record.get("patient_name", ""),
-                record.get("care_content", ""),
-                record.get("observations", ""),
-                record.get("notes", ""),
-            ]
-        elif source_type == "client_info":
-            # 利用者情報の場合
-            parts = [
-                record.get("name", ""),
-                record.get("age", ""),
-                record.get("address", ""),
-                record.get("medical_history", ""),
-                record.get("care_plan", ""),
-            ]
-        elif source_type == "call_summary":
-            # 通話要約の場合
-            parts = [
-                record.get("date", ""),
-                record.get("caller", ""),
-                record.get("summary", ""),
-                record.get("action_items", ""),
-            ]
-        else:
-            # 汎用: 全カラムを連結
-            parts = list(record.values())
+        """フルテキスト構築（汎用・全カラム連結）"""
+        # 除外するフィールド（ID系、メタデータのみ）
+        exclude_fields = {'_id', 'id', 'key', 'created_at', 'updated_at', 'created_by', 'updated_by', 'sync_key'}
+
+        # 全カラムを連結（除外フィールド以外）
+        parts = []
+        for key, value in record.items():
+            # 除外フィールドをスキップ
+            if key.lower() in exclude_fields:
+                continue
+            # 空でない値のみ追加
+            if value and str(value).strip():
+                parts.append(str(value).strip())
 
         # 空文字を除去して結合
-        return " ".join([str(p).strip() for p in parts if p])
+        full_text = " ".join(parts)
+        return full_text
 
     def write_to_vector_db(
         self,
@@ -232,41 +215,54 @@ class VectorizeExistingData:
                 metadata.get("user_id", ""),  # user_id
                 title,  # title
                 content,  # content
-                json.dumps(metadata.get("structured_data", {})),  # structured_data
-                json.dumps(metadata),  # metadata
+                json.dumps(metadata.get("structured_data", {}), ensure_ascii=False),  # structured_data
+                json.dumps(metadata, ensure_ascii=False),  # metadata
                 ",".join(metadata.get("tags", [])),  # tags
                 metadata.get("date", ""),  # date
                 datetime.now().isoformat(),  # created_at
                 datetime.now().isoformat(),  # updated_at
             ]
 
+            # Embeddingを3分割（Google Sheetsの50,000文字制限対策）
+            part_size = 1024
+            emb_part1 = json.dumps(embedding[0:part_size])
+            emb_part2 = json.dumps(embedding[part_size:part_size*2])
+            emb_part3 = json.dumps(embedding[part_size*2:part_size*3])
+
             # Embeddingsシートに書き込み
             emb_row = [
                 record_id,  # kb_id
                 EMBEDDING_MODEL,  # model
                 EMBEDDING_DIMENSION,  # dimension
-                json.dumps(embedding),  # embedding (JSON配列)
+                emb_part1,  # embedding_part1 (0-1023)
+                emb_part2,  # embedding_part2 (1024-2047)
+                emb_part3,  # embedding_part3 (2048-3071)
                 datetime.now().isoformat(),  # created_at
             ]
 
-            # バッチ更新
-            requests = [
-                {
-                    'appendDimension': {
-                        'sheetId': 0,  # KnowledgeBase シートID（要確認）
-                        'dimension': 'ROWS',
-                        'length': 1,
-                    }
-                },
-            ]
+            # KnowledgeBaseシートに追加
+            kb_result = self.sheets_service.spreadsheets().values().append(
+                spreadsheetId=VECTOR_DB_SPREADSHEET_ID,
+                range="KnowledgeBase!A:N",
+                valueInputOption="USER_ENTERED",
+                insertDataOption="INSERT_ROWS",
+                body={"values": [kb_row]}
+            ).execute()
 
-            # TODO: 実際のシートID取得とbatchUpdate実装
-            # self.sheets_service.spreadsheets().batchUpdate(...).execute()
+            # Embeddingsシートに追加（カラム数変更: A:G）
+            emb_result = self.sheets_service.spreadsheets().values().append(
+                spreadsheetId=VECTOR_DB_SPREADSHEET_ID,
+                range="Embeddings!A:G",
+                valueInputOption="USER_ENTERED",
+                insertDataOption="INSERT_ROWS",
+                body={"values": [emb_row]}
+            ).execute()
 
+            logger.debug(f"✅ Vector DB書き込み成功: {record_id}")
             return True
 
         except Exception as e:
-            logger.error(f"Vector DB書き込みエラー: {e}")
+            logger.error(f"❌ Vector DB書き込みエラー: {record_id} - {e}")
             return False
 
     def process_data_source(self, source_key: str, source_config: Dict[str, Any]) -> int:
@@ -299,8 +295,8 @@ class VectorizeExistingData:
 
                     # フルテキスト構築
                     full_text = self.build_full_text(record, source_config["source_type"])
-                    if not full_text or len(full_text) < 10:
-                        logger.warning(f"⚠️ スキップ: テキストが短すぎる - {record_id}")
+                    if not full_text or len(full_text) < 50:
+                        logger.warning(f"⚠️ スキップ: テキストが短すぎる ({len(full_text)}文字) - {record_id}")
                         self.stats["skipped"] += 1
                         pbar.update(1)
                         continue

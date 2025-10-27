@@ -129,11 +129,13 @@ class SpreadsheetClient:
         """
         Embeddingsシートを読み込み
 
+        3分割されたembedding（embedding_part1, embedding_part2, embedding_part3）を統合します。
+
         Args:
             limit: 取得する最大行数（Noneの場合は全データ）
 
         Returns:
-            Embeddingsレコードリスト
+            Embeddingsレコードリスト（統合されたembeddingを含む）
         """
         sheet_name = self.sheets['embeddings']
         values = self.read_sheet(sheet_name)
@@ -149,13 +151,21 @@ class SpreadsheetClient:
             padded_row = row + [''] * (len(headers) - len(row))
             record = dict(zip(headers, padded_row))
 
-            # embedding ベクトルをJSONパース
-            if record.get('embedding'):
-                try:
-                    record['embedding'] = json.loads(record['embedding'])
-                except json.JSONDecodeError:
-                    logger.warning(f"Failed to parse embedding for kb_id: {record.get('kb_id')}")
-                    record['embedding'] = []
+            # 3分割されたembeddingベクトルを統合
+            try:
+                part1 = json.loads(record.get('embedding_part1', '[]'))
+                part2 = json.loads(record.get('embedding_part2', '[]'))
+                part3 = json.loads(record.get('embedding_part3', '[]'))
+
+                # 3つのパートを結合して完全なベクトルを作成
+                record['embedding'] = part1 + part2 + part3
+
+                if not record['embedding']:
+                    logger.warning(f"Empty embedding for kb_id: {record.get('kb_id')}")
+
+            except json.JSONDecodeError as e:
+                logger.warning(f"Failed to parse embedding parts for kb_id: {record.get('kb_id')} - {e}")
+                record['embedding'] = []
 
             records.append(record)
 

@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import MessageList from "./MessageList";
 import MessageInput from "./MessageInput";
 import Context from "./Context";
 import Sidebar from "./Sidebar";
+import ClientAutocomplete from "./ClientAutocomplete";
 import type { ChatMessage, KnowledgeItem } from "@/types/chat";
-import { streamChatMessage } from "@/lib/api";
+import { streamChatMessage, fetchClients, type ClientInfo } from "@/lib/api";
 
 export default function ChatContainer() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -14,8 +15,29 @@ export default function ChatContainer() {
   const [loading, setLoading] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [clients, setClients] = useState<ClientInfo[]>([]);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [clientsLoading, setClientsLoading] = useState(true);
   const streamingMessageIndexRef = useRef<number | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // 利用者一覧を取得
+  useEffect(() => {
+    const loadClients = async () => {
+      try {
+        console.log("利用者一覧を取得中...");
+        const response = await fetchClients();
+        console.log(`利用者一覧取得成功: ${response.clients.length}件`, response.clients);
+        setClients(response.clients);
+      } catch (error) {
+        console.error("利用者一覧の取得に失敗しました:", error);
+      } finally {
+        setClientsLoading(false);
+      }
+    };
+
+    loadClients();
+  }, []);
 
   const handleSendMessage = async (messageText: string) => {
     // ユーザーメッセージを追加
@@ -50,6 +72,7 @@ export default function ChatContainer() {
         message: messageText,
         session_id: sessionId || undefined,
         context_size: 5,
+        client_id: selectedClientId || undefined,
       }, abortController.signal);
 
       let accumulatedText = "";
@@ -153,11 +176,12 @@ export default function ChatContainer() {
 
       {/* メインコンテンツ */}
       <div className="flex flex-col flex-1 max-w-6xl mx-auto w-full bg-white dark:bg-gray-900 relative">
-        {/* ヘッダー（モバイルのみメニューボタン） */}
-        <div className="lg:hidden p-4 border-b border-gray-200 dark:border-gray-700">
+        {/* ヘッダー */}
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between gap-4">
+          {/* メニューボタン（モバイルのみ） */}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 transition-colors"
+            className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 transition-colors"
             aria-label="チャット履歴を開く"
           >
             <svg
@@ -174,6 +198,28 @@ export default function ChatContainer() {
               />
             </svg>
           </button>
+
+          {/* 利用者選択オートコンプリート */}
+          <div className="flex-1 max-w-xs">
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+              検索対象
+            </label>
+            <ClientAutocomplete
+              clients={clients}
+              selectedClientId={selectedClientId}
+              onSelect={(clientId) => {
+                console.log("利用者選択変更:", clientId);
+                setSelectedClientId(clientId);
+              }}
+              loading={clientsLoading}
+              placeholder="利用者名を入力（カナ・漢字可）"
+            />
+            {!clientsLoading && clients.length === 0 && (
+              <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+                利用者データの取得に失敗しました
+              </p>
+            )}
+          </div>
         </div>
 
         {/* コンテキスト */}
