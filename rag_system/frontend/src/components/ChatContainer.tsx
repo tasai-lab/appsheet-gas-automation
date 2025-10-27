@@ -153,11 +153,11 @@ export default function ChatContainer() {
 
       {/* メインコンテンツ */}
       <div className="flex flex-col flex-1 max-w-6xl mx-auto w-full bg-white dark:bg-gray-900 relative">
-        {/* ヘッダー */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center gap-4">
+        {/* ヘッダー（モバイルのみメニューボタン） */}
+        <div className="lg:hidden p-4 border-b border-gray-200 dark:border-gray-700">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 transition-colors"
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 transition-colors"
             aria-label="チャット履歴を開く"
           >
             <svg
@@ -174,22 +174,6 @@ export default function ChatContainer() {
               />
             </svg>
           </button>
-          <div className="flex items-center gap-3">
-            {/* F Assistantロゴ */}
-            <img
-              src="/f-assistant.png"
-              alt="F Assistant"
-              className="h-10 w-auto dark:invert"
-            />
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                F Assistant
-              </h1>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                フラクタルのRAG検索ツール
-              </p>
-            </div>
-          </div>
         </div>
 
         {/* コンテキスト */}
@@ -205,12 +189,12 @@ export default function ChatContainer() {
         {/* メッセージ入力 */}
         <MessageInput onSend={handleSendMessage} disabled={loading} />
 
-        {/* ローディング表示と中止ボタン（モバイル: 中央下部、デスクトップ: 中央） */}
+        {/* ローディング表示と中止ボタン（下部中央） */}
         {loading && (
-          <div className="absolute bottom-24 lg:top-1/2 lg:bottom-auto left-1/2 transform -translate-x-1/2 lg:-translate-y-1/2 bg-blue-600 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-4 z-10">
+          <div className="absolute bottom-24 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-4 z-10">
             <div className="flex items-center gap-2">
               <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-              <span className="text-sm lg:text-base">応答を生成中...</span>
+              <span className="text-sm">応答を生成中...</span>
             </div>
             <button
               onClick={handleAbort}
