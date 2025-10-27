@@ -1,0 +1,122 @@
+{
+  "nursing_regular": {
+    "name": "訪問看護_通常記録",
+    "spreadsheet_id": "【AppSheetアプリのSpreadsheet IDを入力】",
+    "sheet_name": "Care_Records",
+    "domain": "nursing",
+    "source_type": "care_record",
+    "description": "通常の訪問看護記録"
+  },
+  "nursing_mental": {
+    "name": "訪問看護_精神科記録",
+    "spreadsheet_id": "【AppSheetアプリのSpreadsheet IDを入力】",
+    "sheet_name": "Mental_Records",
+    "domain": "nursing",
+    "source_type": "mental_care",
+    "description": "精神科専門の訪問看護記録"
+  },
+  "nursing_plan": {
+    "name": "訪問看護_計画書問題点",
+    "spreadsheet_id": "【AppSheetアプリのSpreadsheet IDを入力】",
+    "sheet_name": "Care_Plans",
+    "domain": "nursing",
+    "source_type": "care_plan",
+    "description": "看護計画書と問題点"
+  },
+  "nursing_plan_eval": {
+    "name": "訪問看護_計画書問題点_評価",
+    "spreadsheet_id": "【AppSheetアプリのSpreadsheet IDを入力】",
+    "sheet_name": "Plan_Evaluations",
+    "domain": "nursing",
+    "source_type": "plan_evaluation",
+    "description": "計画評価記録"
+  },
+  "nursing_report": {
+    "name": "訪問看護_報告書",
+    "spreadsheet_id": "【AppSheetアプリのSpreadsheet IDを入力】",
+    "sheet_name": "Reports",
+    "domain": "nursing",
+    "source_type": "report",
+    "description": "訪問報告書"
+  },
+  "clients_basic": {
+    "name": "利用者_基本情報",
+    "spreadsheet_id": "【AppSheetアプリのSpreadsheet IDを入力】",
+    "sheet_name": "Clients",
+    "domain": "clients",
+    "source_type": "client_info",
+    "description": "利用者基本情報"
+  },
+  "clients_qa": {
+    "name": "利用者_質疑応答",
+    "spreadsheet_id": "【AppSheetアプリのSpreadsheet IDを入力】",
+    "sheet_name": "Client_QA",
+    "domain": "clients",
+    "source_type": "client_qa",
+    "description": "利用者情報QA記録"
+  },
+  "clients_facesheet": {
+    "name": "利用者_フェースシート",
+    "spreadsheet_id": "【AppSheetアプリのSpreadsheet IDを入力】",
+    "sheet_name": "FaceSheets",
+    "domain": "clients",
+    "source_type": "facesheet",
+    "description": "フェースシート"
+  },
+  "clients_family": {
+    "name": "利用者_家族情報",
+    "spreadsheet_id": "【AppSheetアプリのSpreadsheet IDを入力】",
+    "sheet_name": "Family_Info",
+    "domain": "clients",
+    "source_type": "family_info",
+    "description": "家族情報"
+  },
+  "calls_summary": {
+    "name": "通話_要約生成",
+    "spreadsheet_id": "【AppSheetアプリのSpreadsheet IDを入力】",
+    "sheet_name": "Call_Summaries",
+    "domain": "calls",
+    "source_type": "call_summary",
+    "description": "通話要約記録"
+  },
+  "calls_qa": {
+    "name": "通話_質疑応答",
+    "spreadsheet_id": "【AppSheetアプリのSpreadsheet IDを入力】",
+    "sheet_name": "Call_QA",
+    "domain": "calls",
+    "source_type": "call_qa",
+    "description": "通話記録QA"
+  },
+  "calls_threads": {
+    "name": "ALL_スレッド更新",
+    "spreadsheet_id": "【AppSheetアプリのSpreadsheet IDを入力】",
+    "sheet_name": "Threads",
+    "domain": "calls",
+    "source_type": "thread",
+    "description": "スレッド管理"
+  },
+  "sales_report": {
+    "name": "営業レポート",
+    "spreadsheet_id": "【AppSheetアプリのSpreadsheet IDを入力】",
+    "sheet_name": "Sales_Reports",
+    "domain": "sales",
+    "source_type": "sales_report",
+    "description": "営業活動記録"
+  },
+  "sales_card": {
+    "name": "名刺取り込み",
+    "spreadsheet_id": "【AppSheetアプリのSpreadsheet IDを入力】",
+    "sheet_name": "Business_Cards",
+    "domain": "sales",
+    "source_type": "business_card",
+    "description": "名刺OCR管理"
+  },
+  "automation_receipt": {
+    "name": "レシート",
+    "spreadsheet_id": "【AppSheetアプリのSpreadsheet IDを入力】",
+    "sheet_name": "Receipts",
+    "domain": "automation",
+    "source_type": "receipt",
+    "description": "経費管理レシート"
+  }
+}
