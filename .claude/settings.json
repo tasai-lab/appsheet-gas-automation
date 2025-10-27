@@ -1,0 +1,74 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m py_compile:*)",
+      "Bash(python:*)",
+      "Bash(python3:*)",
+      "Bash(clasp:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(npm:*)",
+      "Bash(node:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(mkdir:*)",
+      "Bash(mv:*)",
+      "Bash(cp:*)",
+      "Bash(chmod:*)",
+      "Bash(tree:*)",
+      "Bash(gcloud:*)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:developers.google.com)",
+      "WebFetch(domain:docs.claude.com)",
+      "WebFetch(domain:cloud.google.com)",
+      "WebFetch(domain:help.appsheet.com)",
+      "WebFetch(domain:support.google.com)",
+      "WebFetch(domain:community.appsheet.com)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./credentials.json)",
+      "Read(./token.pickle)",
+      "Read(./secrets/**)",
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Write(./.env)",
+      "Write(./.env.*)",
+      "Write(./credentials.json)",
+      "Write(./token.pickle)",
+      "Edit(./.env)",
+      "Edit(./.env.*)",
+      "Edit(./credentials.json)",
+      "Edit(./token.pickle)"
+    ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git rebase:*)",
+      "Bash(clasp push:*)",
+      "Bash(rm -rf:*)",
+      "Bash(gcloud deploy:*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": {
+      "Write(**.py)": "python -m py_compile \"$FILE_PATH\" 2>&1 || true",
+      "Edit(**.py)": "python -m py_compile \"$FILE_PATH\" 2>&1 || true"
+    }
+  },
+  "env": {
+    "PYTHONIOENCODING": "utf-8",
+    "CLAUDE_CODE_PROJECT_TYPE": "GAS_AUTOMATION"
+  },
+  "outputStyle": {
+    "codeReferences": true,
+    "markdown": true
+  }
+}
