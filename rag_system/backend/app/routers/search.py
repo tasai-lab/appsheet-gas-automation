@@ -41,20 +41,42 @@ async def search(request: SearchRequest):
     try:
         logger.info(f"Search query: {request.query}")
 
-        # TODO: Phase 3.3でHybrid Search実装
-        # 1. クエリから医療用語抽出
-        # 2. BM25検索
-        # 3. Dense Retrieval
-        # 4. Vertex AI Ranking APIでリランキング
+        # Hybrid Search エンジンを取得
+        from app.services.rag_engine import get_hybrid_search_engine
+        engine = get_hybrid_search_engine()
 
-        # Stub実装
+        # 検索実行
+        search_result = engine.search(
+            query=request.query,
+            domain=request.domain,
+            top_k=request.top_k
+        )
+
+        # レスポンスを構築
+        from app.models.response import KnowledgeItem
+
+        knowledge_items = [
+            KnowledgeItem(
+                id=result.get('id', ''),
+                domain=result.get('domain', ''),
+                title=result.get('title', ''),
+                content=result.get('content', ''),
+                score=result.get('rank_score', 0.0),
+                source_type=result.get('source_type'),
+                source_table=result.get('source_table'),
+                source_id=result.get('source_id'),
+                tags=result.get('tags', '').split(',') if result.get('tags') else []
+            )
+            for result in search_result.get('results', [])
+        ]
+
         return SearchResponse(
             query=request.query,
-            results=[],
-            total_count=0,
-            processing_time_ms=(time.time() - start_time) * 1000,
-            reranked=False,
-            suggested_terms=[]
+            results=knowledge_items,
+            total_count=search_result.get('total_count', 0),
+            processing_time_ms=search_result.get('processing_time_ms', 0.0),
+            reranked=search_result.get('reranked', False),
+            suggested_terms=search_result.get('suggested_terms', [])
         )
 
     except Exception as e:

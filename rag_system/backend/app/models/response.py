@@ -13,11 +13,14 @@ class KnowledgeItem(BaseModel):
 
     id: str = Field(..., description="KB ID")
     domain: str = Field(..., description="ドメイン")
-    source_type: str = Field(..., description="ソースタイプ")
+    source_type: Optional[str] = Field(None, description="ソースタイプ")
+    source_table: Optional[str] = Field(None, description="ソーステーブル")
+    source_id: Optional[str] = Field(None, description="ソースレコードID")
     title: str = Field(..., description="タイトル")
     content: str = Field(..., description="コンテンツ")
-    score: float = Field(..., description="関連度スコア", ge=0.0, le=1.0)
+    score: float = Field(..., description="関連度スコア", ge=0.0)
     date: Optional[str] = Field(None, description="日付")
+    tags: Optional[list[str]] = Field(None, description="タグ")
     metadata: Optional[dict[str, Any]] = Field(None, description="メタデータ")
     embedding: Optional[list[float]] = Field(None, description="埋め込みベクトル")
 
