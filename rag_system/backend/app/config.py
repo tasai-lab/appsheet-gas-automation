@@ -139,6 +139,49 @@ class Settings(BaseSettings):
     langchain_project: str = "RAG-Medical-Assistant"
     langsmith_sampling_rate: float = 1.0  # 0.0-1.0（1.0 = 全リクエストをトレース）
 
+    # ================================================================
+    # V3: Cloud SQL (MySQL) 設定
+    # ================================================================
+    # MySQL接続設定
+    mysql_host: str = ""  # Cloud SQL Private IP
+    mysql_port: int = 3306
+    mysql_database: str = "rag_system"
+    mysql_user: str = "rag_user"
+    mysql_password: str = ""  # 必須設定
+
+    # MySQL SSL設定（本番環境推奨）
+    mysql_ssl_ca: str = ""  # server-ca.pem パス
+    mysql_ssl_cert: str = ""  # client-cert.pem パス
+    mysql_ssl_key: str = ""  # client-key.pem パス
+    mysql_ssl_enabled: bool = False  # SSL接続有効化
+
+    # MySQL コネクションプール設定（ベストプラクティス）
+    mysql_pool_size: int = 20  # 最大接続数（推奨: 20-50、低レイテンシ要求時）
+    mysql_pool_max_overflow: int = 10  # オーバーフロー時の追加接続数
+    mysql_pool_timeout: int = 30  # プール待機タイムアウト（秒）
+    mysql_pool_recycle: int = 1800  # 接続再利用時間（秒、30分、Cloud SQL推奨）
+    mysql_pool_pre_ping: bool = True  # 接続前のヘルスチェック（推奨）
+    mysql_echo_pool: bool = False  # プールログ出力（開発時のみTrue）
+
+    # MySQL タイムアウト設定
+    mysql_connect_timeout: int = 10  # 接続タイムアウト（秒）
+    mysql_read_timeout: int = 30  # 読み取りタイムアウト（秒）
+    mysql_write_timeout: int = 30  # 書き込みタイムアウト（秒）
+
+    # V3機能フラグ
+    use_rag_engine_v3: bool = False  # RAG Engine V3使用フラグ（段階的移行）
+    prompt_optimizer_enabled: bool = False  # プロンプト最適化有効化
+
+    # プロンプト最適化設定
+    prompt_optimizer_model: str = "gemini-2.5-flash-lite"  # 軽量・高速モデル
+    prompt_optimizer_temperature: float = 0.2  # 低温度で安定した出力
+    prompt_optimizer_max_output_tokens: int = 500  # 最適化プロンプトの最大トークン数
+    prompt_optimizer_cache_ttl: int = 3600  # 類似プロンプトのキャッシュTTL（秒）
+
+    # V3検索設定
+    v3_vector_search_limit: int = 100  # Vector Searchで取得する候補数
+    v3_rerank_top_n: int = 20  # リランキング後の最終結果数（V2: 10件 → V3: 20件）
+
 
 @lru_cache()
 def get_settings() -> Settings:

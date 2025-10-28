@@ -6,10 +6,12 @@ import MessageInput from "./MessageInput";
 import Context from "./Context";
 import Sidebar from "./Sidebar";
 import NewChatModal from "./NewChatModal";
+import ProgressBar from "./ProgressBar";
 import type { ChatMessage, KnowledgeItem } from "@/types/chat";
 import { streamChatMessage } from "@/lib/api";
 import { useClients } from "@/contexts/ClientsContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useProgress } from "@/hooks/useProgress";
 
 export default function ChatContainer() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -24,38 +26,25 @@ export default function ChatContainer() {
   const streamingMessageIndexRef = useRef<number | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // ステータス表示用の状態
-  const [currentStatus, setCurrentStatus] = useState<"searching" | "reranking" | "generating" | null>(null);
-  const [statusMessage, setStatusMessage] = useState<string>("");
-  const [statusMetadata, setStatusMetadata] = useState<{ search_time_ms?: number; generation_time_ms?: number; total_time_ms?: number } | null>(null);
-  const [processingStartTime, setProcessingStartTime] = useState<number | null>(null);
-  const [elapsedTime, setElapsedTime] = useState<number>(0);
-
   // 認証コンテキストからトークン取得関数を取得
   const { getIdToken } = useAuth();
 
   // ClientsContextから利用者データを取得
   const { clients, loading: clientsLoading } = useClients();
 
-  // currentStatus変更を監視（デバッグ用）
-  useEffect(() => {
-    console.log("[ChatContainer] 🔄 currentStatus変更検知:", currentStatus, "statusMessage:", statusMessage);
-  }, [currentStatus, statusMessage]);
-
-  // リアルタイム経過時間の更新
-  useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
-
-    if (loading && processingStartTime) {
-      interval = setInterval(() => {
-        setElapsedTime(Date.now() - processingStartTime);
-      }, 100); // 100msごとに更新
-    }
-
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [loading, processingStartTime]);
+  // 進捗管理用Hook
+  const {
+    progress,
+    status,
+    message: statusMessage,
+    metadata: statusMetadata,
+    elapsedTime,
+    setStatus,
+    setProgress,
+    setMessage,
+    setMetadata,
+    reset: resetProgress,
+  } = useProgress({ autoIncrement: false });
 
   const handleSendMessage = async (messageText: string) => {
     // 初回メッセージ送信時にチャット開始フラグを立てる
@@ -73,12 +62,8 @@ export default function ChatContainer() {
     setMessages((prev) => [...prev, userMessage]);
     setLoading(true);
 
-    // ステータス初期化
-    setCurrentStatus(null);
-    setStatusMessage("");
-    setStatusMetadata(null);
-    setProcessingStartTime(Date.now());
-    setElapsedTime(0);
+    // 進捗リセット
+    resetProgress();
 
     // AbortControllerを作成
     const abortController = new AbortController();
@@ -123,35 +108,72 @@ export default function ChatContainer() {
         chunkProcessedCount++;
         console.log(`[ChatContainer] Chunk #${chunkProcessedCount} 処理:`, chunk.type);
 
-        if (chunk.type === "status" && chunk.status) {
-          // ステータス更新
-          console.log("[ChatContainer] ===== ステータス更新受信 =====");
+        // V3: progress イベント
+        if (chunk.type === "progress" && chunk.status) {
+          console.log("[ChatContainer] ===== V3進捗イベント受信 =====");
+          console.log("[ChatContainer] status:", chunk.status, "progress:", chunk.progress);
+
+          setStatus(chunk.status);
+          setProgress(chunk.progress || 0);
+          setMessage(chunk.metadata?.message || "");
+
+          if (chunk.metadata?.search_duration) {
+            setMetadata((prev: any) => ({
+              ...prev,
+              search_time_ms: chunk.metadata!.search_duration * 1000,
+            }));
+          }
+        }
+        // V2互換: status イベント
+        else if (chunk.type === "status" && chunk.status) {
+          console.log("[ChatContainer] ===== V2ステータス更新受信 =====");
           console.log("[ChatContainer] chunk.status:", chunk.status);
-          console.log("[ChatContainer] chunk.metadata:", chunk.metadata);
-          console.log("[ChatContainer] 現在のcurrentStatus:", currentStatus);
 
-          setCurrentStatus(chunk.status as "searching" | "reranking" | "generating");
-          setStatusMessage(chunk.metadata?.message || "");
+          setStatus(chunk.status);
+          setMessage(chunk.metadata?.message || "");
 
-          console.log("[ChatContainer] setCurrentStatus 呼び出し完了:", chunk.status);
+          // ステージ別進捗更新（V2）
+          const progressMap: Record<string, number> = {
+            optimizing: 10,
+            searching: 30,
+            reranking: 60,
+            generating: 80,
+          };
+          setProgress(progressMap[chunk.status] || 0);
 
           if (chunk.metadata?.search_time_ms) {
-            setStatusMetadata((prev) => ({
+            setMetadata((prev: any) => ({
               ...prev,
               search_time_ms: chunk.metadata!.search_time_ms,
             }));
-            console.log("[ChatContainer] search_time_ms 更新:", chunk.metadata.search_time_ms);
           }
         } else if (chunk.type === "context" && chunk.context) {
           // コンテキストを更新
           console.log("[ChatContainer] コンテキスト更新:", chunk.context.length, "件");
           setContext(chunk.context);
-        } else if (chunk.type === "text" && chunk.content) {
-          // テキストを蓄積
+        }
+        // V3: content イベント
+        else if (chunk.type === "content" && chunk.content) {
           accumulatedText += chunk.content;
-          console.log("[ChatContainer] テキスト蓄積:", accumulatedText.length, "文字");
+          console.log("[ChatContainer] V3テキスト蓄積:", accumulatedText.length, "文字");
 
-          // リアルタイムでメッセージを更新
+          setMessages((prev) => {
+            const newMessages = [...prev];
+            const index = streamingMessageIndexRef.current;
+            if (index !== null && newMessages[index]) {
+              newMessages[index] = {
+                ...newMessages[index],
+                content: accumulatedText,
+              };
+            }
+            return newMessages;
+          });
+        }
+        // V2互換: text イベント
+        else if (chunk.type === "text" && chunk.content) {
+          accumulatedText += chunk.content;
+          console.log("[ChatContainer] V2テキスト蓄積:", accumulatedText.length, "文字");
+
           setMessages((prev) => {
             const newMessages = [...prev];
             const index = streamingMessageIndexRef.current;
@@ -169,14 +191,15 @@ export default function ChatContainer() {
             totalChunksProcessed: chunkProcessedCount,
             finalTextLength: accumulatedText.length
           });
+          setProgress(100);
           if (chunk.suggested_terms) {
             console.log("Suggested terms:", chunk.suggested_terms);
           }
           if (chunk.metadata) {
-            setStatusMetadata({
-              search_time_ms: chunk.metadata.search_time_ms,
+            setMetadata({
+              search_time_ms: chunk.metadata.search_time_ms || chunk.metadata.search_duration * 1000,
               generation_time_ms: chunk.metadata.generation_time_ms,
-              total_time_ms: chunk.metadata.total_time_ms,
+              total_time_ms: chunk.metadata.total_time_ms || chunk.metadata.total_duration * 1000,
             });
           }
         } else if (chunk.type === "error") {
@@ -220,11 +243,8 @@ export default function ChatContainer() {
       setLoading(false);
       streamingMessageIndexRef.current = null;
       abortControllerRef.current = null;
-      // ステータスリセット
-      setCurrentStatus(null);
-      setStatusMessage("");
-      setProcessingStartTime(null);
-      setElapsedTime(0);
+      // 1秒後に進捗バーをリセット（アニメーション表示のため）
+      setTimeout(resetProgress, 1000);
     }
   };
 
@@ -273,7 +293,11 @@ export default function ChatContainer() {
       />
 
       {/* メインコンテンツ */}
-      <div className="flex flex-col flex-1 max-w-6xl mx-auto w-full bg-white dark:bg-gray-900 relative">
+      <main
+        role="main"
+        aria-label="チャットメインコンテンツ"
+        className="flex flex-col flex-1 max-w-6xl mx-auto w-full bg-white dark:bg-gray-900 relative"
+      >
         {/* 新規チャット作成モーダル */}
         <NewChatModal
           isOpen={isNewChatModalOpen}
@@ -283,13 +307,18 @@ export default function ChatContainer() {
           loading={clientsLoading}
         />
         {/* ヘッダー */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+        <header
+          role="banner"
+          className="p-4 border-b border-gray-200 dark:border-gray-700"
+        >
           <div className="flex items-center justify-between gap-4">
             {/* メニューボタン（モバイルのみ） */}
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 transition-colors"
-              aria-label="チャット履歴を開く"
+              className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              aria-label={sidebarOpen ? "チャット履歴を閉じる" : "チャット履歴を開く"}
+              aria-expanded={sidebarOpen}
+              aria-controls="sidebar"
             >
               <svg
                 className="w-6 h-6"
@@ -381,7 +410,7 @@ export default function ChatContainer() {
               )}
             </div>
           </div>
-        </div>
+        </header>
 
         {/* コンテキスト */}
         {context.length > 0 && (
@@ -396,92 +425,18 @@ export default function ChatContainer() {
         {/* メッセージ入力 */}
         <MessageInput onSend={handleSendMessage} disabled={loading} />
 
-        {/* ステータス表示と中止ボタン（下部中央） */}
+        {/* 進捗バー（V3対応） */}
         {loading && (
-          <div className="absolute bottom-24 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4 rounded-2xl shadow-2xl z-10 min-w-[400px]">
-            <div className="flex items-center justify-between gap-6">
-              <div className="flex-1">
-                {/* ステータスと経過時間 */}
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                  <div className="flex-1">
-                    <div className="text-sm font-semibold">
-                      {statusMessage || "処理中..."}
-                      {/* デバッグ用 */}
-                      <span className="text-xs opacity-75 ml-2">[{currentStatus || "null"}]</span>
-                    </div>
-                    <div className="text-xs opacity-90 mt-0.5">
-                      経過時間: {(elapsedTime / 1000).toFixed(1)}秒
-                    </div>
-                  </div>
-                </div>
-
-                {/* 処理ステージインジケーター */}
-                <div className="flex items-center gap-2 mt-3">
-                  <div className="flex items-center gap-1 flex-1">
-                    {/* 検索 */}
-                    <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs ${
-                      currentStatus === "searching"
-                        ? "bg-white text-blue-600 font-semibold"
-                        : currentStatus && ["reranking", "generating"].includes(currentStatus)
-                        ? "bg-blue-500 text-white opacity-75"
-                        : "bg-blue-500 text-white opacity-50"
-                    }`}>
-                      {currentStatus && ["reranking", "generating"].includes(currentStatus) ? "✓" : "1"}
-                      <span className="hidden sm:inline">検索</span>
-                    </div>
-                    <div className="h-0.5 flex-1 bg-blue-400"></div>
-
-                    {/* リランキング */}
-                    <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs ${
-                      currentStatus === "reranking"
-                        ? "bg-white text-blue-600 font-semibold"
-                        : currentStatus === "generating"
-                        ? "bg-blue-500 text-white opacity-75"
-                        : "bg-blue-500 text-white opacity-50"
-                    }`}>
-                      {currentStatus === "generating" ? "✓" : "2"}
-                      <span className="hidden sm:inline">最適化</span>
-                    </div>
-                    <div className="h-0.5 flex-1 bg-blue-400"></div>
-
-                    {/* 生成 */}
-                    <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs ${
-                      currentStatus === "generating"
-                        ? "bg-white text-blue-600 font-semibold"
-                        : "bg-blue-500 text-white opacity-50"
-                    }`}>
-                      3
-                      <span className="hidden sm:inline">生成</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* タイミング情報 */}
-                {statusMetadata && (statusMetadata.search_time_ms || statusMetadata.generation_time_ms) && (
-                  <div className="text-xs opacity-75 mt-2 flex gap-3">
-                    {statusMetadata.search_time_ms && (
-                      <span>検索: {(statusMetadata.search_time_ms / 1000).toFixed(2)}秒</span>
-                    )}
-                    {statusMetadata.generation_time_ms && (
-                      <span>生成: {(statusMetadata.generation_time_ms / 1000).toFixed(2)}秒</span>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* 中止ボタン */}
-              <button
-                onClick={handleAbort}
-                className="px-4 py-2 bg-white text-blue-600 rounded-full hover:bg-gray-100 transition-colors font-medium text-sm whitespace-nowrap shadow-md"
-                aria-label="処理を中止"
-              >
-                中止
-              </button>
-            </div>
-          </div>
+          <ProgressBar
+            status={status as "optimizing" | "searching" | "reranking" | "generating" | null}
+            progress={progress}
+            message={statusMessage || undefined}
+            metadata={statusMetadata || undefined}
+            elapsedTime={elapsedTime}
+            onCancel={handleAbort}
+          />
         )}
-      </div>
+      </main>
     </div>
   );
 }

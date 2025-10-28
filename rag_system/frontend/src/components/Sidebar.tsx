@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import type { ChatSession } from "@/types/chat";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -84,11 +85,23 @@ export default function Sidebar({
         <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
           onClick={onClose}
+          role="button"
+          aria-label="サイドバーを閉じる"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === "Escape" || e.key === "Enter") {
+              onClose();
+            }
+          }}
         />
       )}
 
       {/* サイドバー */}
       <aside
+        id="sidebar"
+        role="complementary"
+        aria-label="チャット履歴とナビゲーション"
+        aria-hidden={!isOpen && window.innerWidth < 1024}
         className={`fixed top-0 left-0 h-full w-80 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 z-50 transform transition-transform duration-300 ease-in-out ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         } lg:translate-x-0 lg:static flex flex-col`}
@@ -98,17 +111,21 @@ export default function Sidebar({
           {/* 閉じるボタン（モバイルのみ・右上） */}
           <button
             onClick={onClose}
-            className="lg:hidden absolute top-4 right-4 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400"
+            className="lg:hidden absolute top-4 right-4 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+            aria-label="サイドバーを閉じる"
           >
             ✕
           </button>
 
           {/* ロゴ（中央配置） */}
           <div className="flex flex-col items-center gap-3">
-            <img
+            <Image
               src="/f-assistant.png"
               alt="F Assistant"
+              width={64}
+              height={64}
               className="h-16 w-auto object-contain dark:invert"
+              priority
             />
             <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
               フラクタルのRAG検索ツール
@@ -133,20 +150,22 @@ export default function Sidebar({
                   <button
                     key={session.id}
                     onClick={() => onSessionSelect(session.id)}
-                    className={`w-full text-left p-3 rounded-lg transition-colors ${
+                    className={`w-full text-left p-3 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
                       currentSessionId === session.id
                         ? "bg-blue-100 dark:bg-blue-900/30 border-blue-500"
                         : "hover:bg-gray-100 dark:hover:bg-gray-800 border-transparent"
                     } border`}
+                    aria-label={`チャット: ${session.title || `ID ${session.id.slice(0, 8)}`}`}
+                    aria-current={currentSessionId === session.id ? "true" : undefined}
                   >
                     <div className="font-semibold text-gray-900 dark:text-white truncate">
-                      {session.title}
+                      {session.title || `チャット ${session.id.slice(0, 8)}`}
                     </div>
                     <div className="text-sm text-gray-600 dark:text-gray-400 truncate">
-                      {session.preview}
+                      {session.preview || session.last_message || "メッセージなし"}
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                      {new Date(session.created_at).toLocaleDateString("ja-JP")} · {session.message_count}件
+                      {new Date(session.created_at).toLocaleDateString("ja-JP")} · {session.message_count || 0}件
                     </div>
                   </button>
                 ))}
@@ -156,7 +175,8 @@ export default function Sidebar({
                   <button
                     onClick={loadMore}
                     disabled={loading}
-                    className="w-full py-2 px-4 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+                    className="w-full py-2 px-4 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    aria-label="さらに5件のチャット履歴を読み込む"
                   >
                     {loading ? "読み込み中..." : "さらに5件読み込む"}
                   </button>
@@ -181,7 +201,8 @@ export default function Sidebar({
           <div className="p-4 pb-3">
             <button
               onClick={() => onSessionSelect("new")}
-              className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              aria-label="新しいチャットを開始"
             >
               ＋ 新しいチャット
             </button>
@@ -193,9 +214,11 @@ export default function Sidebar({
             {user ? (
               <div className="flex items-center gap-2 flex-1 min-w-0">
                 {user.photoURL ? (
-                  <img
+                  <Image
                     src={user.photoURL}
                     alt={user.displayName || 'User'}
+                    width={32}
+                    height={32}
                     className="w-8 h-8 rounded-full"
                   />
                 ) : (
@@ -213,8 +236,9 @@ export default function Sidebar({
                 </div>
                 <button
                   onClick={handleSignOut}
-                  className="px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                  className="px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 rounded transition-colors"
                   title="ログアウト"
+                  aria-label="ログアウト"
                 >
                   ログアウト
                 </button>
@@ -241,8 +265,9 @@ export default function Sidebar({
             {/* テーマ切り替えボタン */}
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 transition-colors"
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
               title={theme === "light" ? "ダークモードに切り替え" : "ライトモードに切り替え"}
+              aria-label={theme === "light" ? "ダークモードに切り替え" : "ライトモードに切り替え"}
             >
               {theme === "light" ? (
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -23,7 +23,22 @@
       "Bash(vercel:*)",
       "Bash(git commit:*)",
       "Bash(firebase:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(cat:*)",
+      "Bash(PRODUCTION_AUTH_DIAGNOSIS_2025-10-27.md )",
+      "Bash(STREAMING_ISSUE_DIAGNOSIS_2025-10-27.md )",
+      "Bash(SSE_PARSER_BUG_DIAGNOSIS_2025-10-28.md )",
+      "Bash(DEBUG_IMPLEMENTATION_2025-10-28.md )",
+      "Bash(DEPLOYMENT_REPORT_SSE_FIX_2025-10-28.md )",
+      "Bash(PRODUCTION_ISSUES_ROOT_CAUSE_ANALYSIS_2025-10-27.md )",
+      "Bash(PRODUCTION_DEPLOYMENT_STATUS_2025-10-27.md )",
+      "Bash(CONSISTENCY_VERIFICATION_2025-10-27_FINAL.md )",
+      "Bash(API_FLOW_TIMELINE_2025-10-27.md )",
+      "Bash(DEPLOYMENT_LOG_2025-10-27.md )",
+      "Bash(API_CALL_OPTIMIZATION_2025-10-27.md )",
+      "Bash(SPREADSHEET_SHARING_GUIDE_2025-10-28.md )",
+      "Bash(IMPLEMENTATION_SUMMARY_2025-10-28.md)",
+      "Bash(test:*)"
     ],
     "deny": [],
     "ask": []

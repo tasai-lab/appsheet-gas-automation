@@ -13,7 +13,9 @@ from typing import Optional
 import vertexai
 from vertexai.generative_models import GenerativeModel, GenerationConfig
 
-from app.config import settings
+from app.config import get_settings
+
+settings = get_settings()
 
 logger = logging.getLogger(__name__)
 
@@ -32,8 +34,8 @@ class PromptOptimizer:
         """
         # Vertex AI 初期化
         vertexai.init(
-            project=settings.GCP_PROJECT_ID,
-            location=settings.GCP_LOCATION
+            project=settings.gcp_project_id,
+            location=settings.gcp_location
         )
 
         # gemini-2.5-flash-lite モデル

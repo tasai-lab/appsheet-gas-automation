@@ -13,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.config import get_settings
-from app.routers import chat, clients, health
+from app.routers import chat, chat_v3, clients, health
 from app.services.cache_service import get_cache_service
 
 # ロガー設定
@@ -75,6 +75,17 @@ async def lifespan(app: FastAPI):
     logger.info(f"Log Level: {settings.log_level}")
     logger.info(f"Authentication Required: {settings.require_authentication}")
     logger.info(f"LangSmith Tracing: {settings.langchain_tracing_v2}")
+
+    # V3: Cloud SQL (MySQL) 設定
+    if settings.mysql_host:
+        logger.info("=" * 60)
+        logger.info("🗄️  V3: Cloud SQL (MySQL) 設定")
+        logger.info(f"MySQL Host: {settings.mysql_host}")
+        logger.info(f"MySQL Database: {settings.mysql_database}")
+        logger.info(f"MySQL Pool Size: {settings.mysql_pool_size}")
+        logger.info(f"RAG Engine V3 Enabled: {settings.use_rag_engine_v3}")
+        logger.info(f"Prompt Optimizer Enabled: {settings.prompt_optimizer_enabled}")
+
     logger.info("=" * 60)
 
     # Firebase Admin SDK初期化
@@ -87,6 +98,19 @@ async def lifespan(app: FastAPI):
         if settings.require_authentication:
             raise
 
+    # V3: Cloud SQL (MySQL) 初期化
+    if settings.mysql_host and settings.use_rag_engine_v3:
+        try:
+            from app.database import init_db
+
+            logger.info("🔄 Initializing Cloud SQL (MySQL) connection...")
+            await init_db()
+            logger.info("✅ Cloud SQL (MySQL) connection initialized")
+        except Exception as e:
+            logger.error(f"❌ Cloud SQL (MySQL) initialization failed: {e}", exc_info=True)
+            # V3機能が無効な場合は続行（V2フォールバック）
+            logger.warning("⚠️  Falling back to V2 (Spreadsheet/Firestore)")
+
     # キャッシュクリーンアップタスクを開始
     if settings.cache_enabled:
         _cleanup_task = asyncio.create_task(cache_cleanup_task())
@@ -97,6 +121,17 @@ async def lifespan(app: FastAPI):
     logger.info("=" * 60)
     logger.info(f"🛑 {settings.app_name} 終了中...")
     logger.info("=" * 60)
+
+    # V3: Cloud SQL (MySQL) クローズ
+    if settings.mysql_host and settings.use_rag_engine_v3:
+        try:
+            from app.database import close_db
+
+            logger.info("🔄 Closing Cloud SQL (MySQL) connection...")
+            await close_db()
+            logger.info("✅ Cloud SQL (MySQL) connection closed")
+        except Exception as e:
+            logger.error(f"❌ Cloud SQL (MySQL) close failed: {e}", exc_info=True)
 
     # クリーンアップタスクを停止
     if _cleanup_task:
@@ -138,6 +173,7 @@ app.add_middleware(
 # ルーター登録
 app.include_router(health.router, prefix="/health", tags=["Health"])
 app.include_router(chat.router, prefix="/chat", tags=["Chat"])
+app.include_router(chat_v3.router, prefix="/chat/v3", tags=["Chat V3"])
 app.include_router(clients.router, prefix="/clients", tags=["Clients"])
 
 
@@ -158,6 +194,7 @@ async def root():
         "endpoints": {
             "health": "/health",
             "chat": "/chat/stream",
+            "chat_v3": "/chat/v3/stream/v3",
             "clients": "/clients"
         }
     }

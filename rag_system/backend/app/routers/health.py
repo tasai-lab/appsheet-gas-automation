@@ -4,6 +4,7 @@
 
 import logging
 from datetime import datetime
+from typing import Dict, Any
 
 from fastapi import APIRouter, status
 
@@ -30,13 +31,49 @@ async def health_check():
     Returns:
         HealthResponse: ヘルスチェック結果
     """
-    # TODO: 各コンポーネントのヘルスチェック実装
+    # 基本チェック
     checks = {
         "api": True,
         "vertex_ai": True,  # TODO: Vertex AI接続確認
         "vector_db": True,  # TODO: Spreadsheet接続確認
         "ranking_api": True,  # TODO: Ranking API確認
     }
+
+    # 詳細情報
+    details: Dict[str, Any] = {
+        "gcp_project": settings.gcp_project_id,
+        "gcp_location": settings.gcp_location,
+        "embeddings_model": settings.vertex_ai_embeddings_model,
+        "generation_model": settings.vertex_ai_generation_model,
+        "reranker": settings.reranker_model
+    }
+
+    # V3: MySQLヘルスチェック
+    if settings.mysql_host and settings.use_rag_engine_v3:
+        try:
+            from app.services.mysql_client import get_mysql_client
+
+            mysql_client = get_mysql_client()
+            mysql_health = await mysql_client.health_check()
+
+            checks["mysql"] = mysql_health["status"] == "healthy"
+            details["mysql"] = {
+                "status": mysql_health["status"],
+                "knowledge_base_count": mysql_health.get("knowledge_base_count", 0),
+                "embeddings_count": mysql_health.get("embeddings_count", 0),
+                "database": settings.mysql_database,
+                "host": settings.mysql_host[:20] + "***"  # マスキング
+            }
+
+            logger.info(f"✅ MySQL health check: {mysql_health['status']}")
+
+        except Exception as e:
+            checks["mysql"] = False
+            details["mysql"] = {
+                "status": "unhealthy",
+                "error": str(e)
+            }
+            logger.error(f"❌ MySQL health check failed: {e}", exc_info=True)
 
     all_healthy = all(checks.values())
 
@@ -45,13 +82,7 @@ async def health_check():
         version=settings.app_version,
         timestamp=datetime.utcnow(),
         checks=checks,
-        details={
-            "gcp_project": settings.gcp_project_id,
-            "gcp_location": settings.gcp_location,
-            "embeddings_model": settings.vertex_ai_embeddings_model,
-            "generation_model": settings.vertex_ai_generation_model,
-            "reranker": settings.reranker_model
-        }
+        details=details
     )
 
 

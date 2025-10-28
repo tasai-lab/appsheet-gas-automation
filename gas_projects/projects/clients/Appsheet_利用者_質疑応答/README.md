@@ -6,7 +6,7 @@
 
 **Modified:** 2025-10-20
 
-**Current Version:** v1.0.0
+**Current Version:** v1.2.0
 
 **Owners:** Fractal Group
 
@@ -15,11 +15,20 @@
 利用者の情報（フェースシート、看護記録など）に対するユーザーの質問に、Vertex AI Gemini APIで自動回答を生成するGASプロジェクトです。
 非同期タスクキュー方式により、長時間実行を安定して処理します。
 
+**✨ v1.2.0 新機能**: 2段階AI処理による高度な質疑応答システム
+- **モード1（参照資料ベース）**: 外部文章を参照した専門的な回答生成
+- **モード2（通常の質疑応答）**: 利用者IDと基本情報・参考資料から関連情報を抽出し、思考モデルで深い分析と回答を生成
+
 ## 主な機能
 
 ### AI駆動の質疑応答システム
 
-- ✅ **Vertex AI Gemini 2.5 Flash**: OAuth2認証による安全なAPI呼び出し
+- ✅ **Vertex AI Gemini 2.5 Pro**: OAuth2認証による安全なAPI呼び出し
+- ✅ **3つの処理モード**:
+  - **モード1（参照資料ベース）**: 外部文章（利用者情報等）を参照した専門的な回答
+  - **モード2（2段階AI処理）**: 
+    - 第1段階: gemini-2.5-flashで利用者基本情報・参考資料から関連情報を抽出
+    - 第2段階: gemini-2.5-flash-thinking-exp-01-21で深い分析と回答を生成
 - ✅ **非同期タスクキュー**: 6分の実行制限を回避する自動ワーカー起動
 - ✅ **コンテキスト理解**: 参照資料を深く分析し的確な回答を生成
 - ✅ **回答+要約**: 詳細回答と簡潔な要約を同時生成
@@ -35,10 +44,47 @@
 
 ### 使用モデル
 
-- **モデル**: Vertex AI Gemini 2.5 Flash
+#### モード1（参照資料ベース）
+
+- **モデル**: Vertex AI Gemini 2.5 Pro
 - **認証方式**: OAuth2（ScriptApp.getOAuthToken()）
 - **Temperature**: 0.2（一貫性重視）
 - **ResponseMimeType**: application/json
+
+#### モード2（2段階AI処理）
+
+**第1段階: 情報抽出**
+
+- **モデル**: gemini-2.5-flash
+- **役割**: 利用者基本情報と参考資料から質問に関連する情報を抽出
+- **Temperature**: 0.2
+- **ResponseMimeType**: application/json
+
+**第2段階: 回答生成**
+
+- **モデル**: gemini-2.5-flash-thinking-exp-01-21
+- **役割**: 抽出された情報を用いて深い分析と回答を生成
+- **Temperature**: 1.0（思考モデル推奨設定）
+- **レスポンス**: テキスト形式（思考過程を含む）
+
+### 処理モード
+
+このシステムは2つの処理モードをサポートしています:
+
+#### モード1: 参照資料ベースの回答
+
+- 利用者情報などの外部文章を参照して回答を生成
+- 専門的で具体的な回答が必要な場合に使用
+- **必須パラメータ**: `promptText`, `documentText`
+
+#### モード2: 通常の質疑応答（2段階AI処理）
+
+- 利用者IDと基本情報・参考資料から関連情報を抽出し、思考モデルで回答生成
+- 複雑な分析や深い洞察が必要な場合に使用
+- **必須パラメータ**: `promptText`, `userId`, `userBasicInfo`, `referenceData`
+- **処理フロー**:
+  1. gemini-2.5-flashで関連情報を抽出
+  2. 抽出された情報と質問をgemini-2.5-flash-thinkingに渡して回答生成
 
 ### 非同期タスクキュー
 
@@ -127,23 +173,75 @@ const CONFIG = {
 
 ### GASエディタでのテスト実行
 
-```javascript
-// webhook.gsのtestDoPost()関数を実行
-function testDoPost() {
-  const testEvent = {
-    postData: {
-      contents: JSON.stringify({
-        record_id: 'test_' + new Date().getTime(),
-        document_text: 'テスト用の参照資料',
-        prompt_text: 'テスト質問: この利用者の主な問題は何ですか？'
-      })
-    }
-  };
+#### 参照資料ベースの質疑応答をテスト
 
-  const result = doPost(testEvent);
-  Logger.log(result.getContent());
+```javascript
+// testProcessClientQA() を実行
+function testProcessClientQA() {
+  const result = processClientQA(
+    '転倒リスクを減らすために、どのような対策が必要ですか？',
+    `# 利用者基本情報
+氏名: 田中花子
+年齢: 82歳
+要介護度: 要介護3
+
+# 現在の状態
+・独居
+・歩行が不安定
+・血圧が高め（150/90）`
+  );
+  
+  Logger.log('回答: ' + result.answer);
+  Logger.log('要約: ' + result.summary);
 }
 ```
+
+#### 通常の質疑応答をテスト（新機能: モード2）
+
+```javascript
+// testNormalQAWithTwoStage() を実行
+function testNormalQAWithTwoStage() {
+  // サンプルの利用者データで2段階AI処理をテスト
+  // 結果には以下が含まれます:
+  // - answer: 最終回答
+  // - summary: 要約
+  // - extractedInfo: 抽出された関連情報
+  Logger.log(result.extractedInfo);  // 第1段階の抽出結果を確認
+}
+
+// カスタムデータでテスト
+testNormalQAWithTwoStageCustom(
+  '今後の支援について提案してください',
+  'USER001',
+  '氏名: 山田花子\n年齢: 82歳\n要介護度: 要介護3',
+  '訪問記録: 歩行が不安定、転倒リスクあり'
+);
+```
+
+### その他のテスト関数
+
+#### モード1（参照資料ベース）のテスト
+
+- `testVertexAIWithLog()` - 参照資料ベースのVertex AIテスト
+- `testProcessClientQAWithAppSheet()` - AppSheet更新込みのテスト
+- `testProcessClientQAErrorHandling()` - エラーハンドリングのテスト
+
+#### モード2（2段階AI処理）のテスト
+
+```javascript
+// testNormalQAWithTwoStage() を実行
+function testNormalQAWithTwoStage() {
+  // 利用者ID、基本情報、参考資料を使った2段階AI処理のテスト
+  // 抽出された関連情報と最終回答を確認できます
+}
+
+// カスタムデータでテスト
+function testNormalQAWithTwoStageCustom(promptText, userId, userBasicInfo, referenceData) {
+  // 任意のデータで2段階AI処理をテスト
+}
+```
+
+詳細は `scripts/test_functions.gs` を参照してください。
 
 ## ドキュメント
 

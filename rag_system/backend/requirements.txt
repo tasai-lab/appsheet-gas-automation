@@ -45,3 +45,18 @@ mypy==1.13.0
 
 # Types
 types-requests==2.32.0.20241016
+
+# ================================================================
+# V3: Cloud SQL (MySQL) 関連
+# ================================================================
+# SQLAlchemy - ORM
+sqlalchemy==2.0.35
+sqlalchemy[asyncio]==2.0.35
+
+# MySQL ドライバ（非同期）
+aiomysql==0.2.0
+pymysql==1.1.1
+cryptography==43.0.3  # PyMySQL SSL接続用
+
+# データベースマイグレーション
+alembic==1.13.3

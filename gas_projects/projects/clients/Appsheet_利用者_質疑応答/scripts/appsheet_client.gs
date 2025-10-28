@@ -143,8 +143,8 @@ function saveResultToAppSheet(result, analysisId, action = 'Edit') {
  * 質疑応答処理とAppSheet保存を一度に実行（便利関数）
  * processClientQA + saveResultToAppSheetを連続実行
  *
- * @param {string} documentText - 参照ドキュメント（必須）
  * @param {string} promptText - ユーザーの質問（必須）
+ * @param {string} documentText - 参照ドキュメント（オプション）
  * @param {string} analysisId - 分析ID（必須）
  * @param {string} action - AppSheetアクション（デフォルト: 'Edit'）
  *
@@ -155,23 +155,31 @@ function saveResultToAppSheet(result, analysisId, action = 'Edit') {
  * @return {string} return.analysisId - 分析ID
  *
  * @example
- * // 既存レコードを更新
+ * // 参照資料ベースで既存レコードを更新
  * const result = processClientQAAndSave(
- *   '利用者情報...',
  *   '質問内容...',
+ *   '利用者情報...',
+ *   'ANALYSIS-12345'
+ * );
+ *
+ * @example
+ * // 通常の質疑応答（参照資料なし）で既存レコードを更新
+ * const result = processClientQAAndSave(
+ *   'JavaScriptのデバウンス処理の実装方法は？',
+ *   null,
  *   'ANALYSIS-12345'
  * );
  *
  * @example
  * // 新規レコードとして追加
  * const result = processClientQAAndSave(
- *   '利用者情報...',
  *   '質問内容...',
+ *   '利用者情報...',
  *   'NEW-ANALYSIS-12345',
  *   'Add'
  * );
  */
-function processClientQAAndSave(documentText, promptText, analysisId, action = 'Edit') {
+function processClientQAAndSave(promptText, documentText = null, analysisId, action = 'Edit') {
   const logger = createLogger('Appsheet_利用者_質疑応答');
   let status = '成功';
 
@@ -179,7 +187,7 @@ function processClientQAAndSave(documentText, promptText, analysisId, action = '
     logger.info(`質疑応答処理とAppSheet保存を開始: ${analysisId}`);
 
     // 質疑応答処理（AppSheet更新なし）
-    const result = processClientQA(documentText, promptText, analysisId, false);
+    const result = processClientQA(promptText, documentText, analysisId, false);
 
     // AppSheetに保存
     saveResultToAppSheet(result, analysisId, action);

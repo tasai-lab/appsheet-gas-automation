@@ -72,8 +72,11 @@ function processTaskQueueWorker() {
  *
  * @param {string} analysisId - 分析ID
  * @param {Object} params - タスクパラメータ
- * @param {string} params.documentText - ドキュメントテキスト
- * @param {string} params.promptText - プロンプトテキスト
+ * @param {string} params.promptText - プロンプトテキスト（必須）
+ * @param {string} params.documentText - ドキュメントテキスト（モード1で使用）
+ * @param {string} params.userId - 利用者ID（モード2で使用）
+ * @param {string} params.userBasicInfo - 利用者の基本情報（モード2で使用）
+ * @param {string} params.referenceData - 参考資料（モード2で使用）
  */
 function executeTask(analysisId, params) {
   const startTime = new Date();
@@ -81,12 +84,30 @@ function executeTask(analysisId, params) {
   let status = '成功';
 
   try {
-    const { documentText, promptText } = params;
+    const { promptText, documentText, userId, userBasicInfo, referenceData } = params;
 
-    logger.info(`タスク開始: ${analysisId}`);
+    // モード判定
+    const isMode2 = userId && userBasicInfo && referenceData;
+    const mode = isMode2 ? '通常の質疑応答（2段階AI処理）' : '参照資料ベースの回答';
 
-    // Gemini API呼び出し
-    const aiResult = generateAnswerAndSummaryWithGemini(documentText, promptText);
+    logger.info(`タスク開始: ${analysisId} (${mode})`, {
+      hasDocument: !!documentText,
+      hasUserId: !!userId,
+      documentLength: documentText ? documentText.length : 0,
+      userBasicInfoLength: userBasicInfo ? userBasicInfo.length : 0,
+      referenceDataLength: referenceData ? referenceData.length : 0,
+      promptLength: promptText ? promptText.length : 0
+    });
+
+    let aiResult;
+
+    if (isMode2) {
+      // モード2: 通常の質疑応答（2段階AI処理）
+      aiResult = processNormalQAWithTwoStage(promptText, userId, userBasicInfo, referenceData);
+    } else {
+      // モード1: 参照資料ベースの回答
+      aiResult = generateAnswerAndSummaryWithGemini(promptText, documentText);
+    }
 
     // API使用量情報をloggerに記録
     if (aiResult.usageMetadata) {
@@ -98,7 +119,7 @@ function executeTask(analysisId, params) {
 
     const duration = (new Date() - startTime) / 1000;
     Logger.log(`[INFO][Worker] タスク正常完了: ${analysisId}, 処理時間 = ${duration}秒`);
-    logger.success(`タスク完了: 処理時間 ${duration}秒`);
+    logger.success(`タスク完了 (${mode}): 処理時間 ${duration}秒`);
 
   } catch (error) {
     status = 'エラー';

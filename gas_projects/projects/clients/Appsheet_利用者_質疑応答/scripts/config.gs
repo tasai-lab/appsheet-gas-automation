@@ -18,7 +18,14 @@ const CONFIG = {
     // API_KEY: '',  // ★削除済み - Vertex AIはOAuth2認証を使用
     // API_ENDPOINT: '',  // ★削除済み - Vertex AI専用エンドポイントを使用
 
+    // 参照資料ベースの質疑応答用モデル
     MODEL_NAME: 'gemini-2.5-pro',
+
+    // 通常の質疑応答用: 関連情報抽出モデル（高速・低コスト）
+    EXTRACTOR_MODEL_NAME: 'gemini-2.5-flash',
+
+    // 通常の質疑応答用: 最終回答生成モデル（思考モード）
+    THINKING_MODEL_NAME: 'gemini-2.5-flash-thinking-exp-01-21',
 
     GCP_PROJECT_ID: 'macro-shadow-458705-v8',
 
@@ -30,6 +37,13 @@ const CONFIG = {
 
       "temperature": 0.2
 
+    },
+
+    // 思考モデル用の設定（thinkingBudgetと思考要約を有効化）
+    THINKING_CONFIG: {
+      "temperature": 1.0,  // 思考モデルは高めの温度が推奨
+      "thinkingBudget": -1,  // 動的思考: モデルが思考のタイミングと量を決定
+      "includeThoughts": true  // 思考の要約を含める
     }
 
   },

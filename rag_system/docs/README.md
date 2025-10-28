@@ -1,227 +1,178 @@
-# RAG Medical Assistant ドキュメント
+# RAGシステム ドキュメント
 
 **最終更新**: 2025-10-28
-**現在のPhase**: Phase 3完了 → Phase 4準備中
+**バージョン**: V3（Cloud SQL移行）
+**総ドキュメント数**: 10個
 
 ---
 
 ## 🎉 最新情報 (2025-10-28)
 
-### ✅ Firestore Vector Search移植完了
-- **3,151件のナレッジベース**をFirestoreに移植
-- **PCA圧縮** (3072→2048次元) で情報保持率100%
-- **10〜15倍の検索速度向上**を期待 (45秒 → 3〜5秒)
-- 詳細: [FIRESTORE_VECTOR_MIGRATION_REPORT.md](FIRESTORE_VECTOR_MIGRATION_REPORT.md) ⭐ **NEW**
+### 🚀 V3プロジェクト開始
+- **Cloud SQL (MySQL)** への移行プロジェクト開始
+- **プロンプト最適化機能** 追加（Gemini 2.5 Flash-Lite）
+- **検索精度向上**: 類似度上位20件、利用者情報自動組み込み
+- **パフォーマンス目標**: 検索1-2秒、全体5-8秒以内
+- **期間**: 6週間（2025-10-28 〜 2025-12-09）
 
-### 📝 ロジックレビュー完了
-- 全コードベースの徹底的なレビュー実施
-- 1件のCRITICAL問題を発見・修正
-- コード品質スコア: 8.2/10
-- 詳細: [LOGIC_REVIEW_2025-10-28.md](LOGIC_REVIEW_2025-10-28.md) ⭐ **NEW**
+### 📝 ドキュメント整理完了
+- **32個 → 10個**（-69%）に最適化
+- V2関連ドキュメント・アーカイブ全削除
+- ファイル名を簡潔化（V3_SUMMARY、V3_ARCHITECTURE等）
 
 ---
 
 ## 📚 ドキュメント構成
 
-### メインドキュメント（必読）
+### 🚀 V3プロジェクト（5個）
 
-1. **[01_PROJECT_OVERVIEW.md](01_PROJECT_OVERVIEW.md)** - プロジェクト概要
-2. **[02_ARCHITECTURE.md](02_ARCHITECTURE.md)** - システムアーキテクチャ
-3. **[03_HYBRID_SEARCH_SPEC_V2.md](03_HYBRID_SEARCH_SPEC_V2.md)** - ハイブリッド検索仕様（BM25 + Dense）
-4. **[04_API_SPECIFICATION.md](04_API_SPECIFICATION.md)** - API仕様
-5. **[06_DEPLOYMENT.md](06_DEPLOYMENT.md)** - デプロイ手順
-6. **[07_SECURITY.md](07_SECURITY.md)** - セキュリティ設計
+1. **[V3_SUMMARY.md](V3_SUMMARY.md)** ⭐ **まずはこれを読む**
+   - V3プロジェクト総合サマリー
+   - 目標、スケジュール、期待される効果、コスト分析
 
----
+2. **[V3_ARCHITECTURE.md](V3_ARCHITECTURE.md)**
+   - V3アーキテクチャ設計書
+   - Cloud SQL、プロンプト最適化、進捗バー、データベーススキーマ
 
-## 🚀 Firestore Vector Search移植 (Phase 3完了)
+3. **[V3_ROADMAP.md](V3_ROADMAP.md)**
+   - V2 → V3 移行ロードマップ
+   - 6週間、38日、17タスク、Phase別詳細計画
 
-### 移植レポート
-- **[FIRESTORE_VECTOR_MIGRATION_REPORT.md](FIRESTORE_VECTOR_MIGRATION_REPORT.md)** ⭐ **最重要**
-  - 移植結果: 3,151件/3,193件 (98.7%成功)
-  - PCA圧縮: 情報保持率100%
-  - 期待効果: 10〜15倍の検索速度向上
+4. **[V3_TASKS.md](V3_TASKS.md)**
+   - V3タスクバックログ
+   - Phase別タスク詳細、優先度、見積もり
 
-### ロジックレビュー
-- **[LOGIC_REVIEW_2025-10-28.md](LOGIC_REVIEW_2025-10-28.md)** ⭐ **最重要**
-  - 発見された問題: 1件 (CRITICAL) → 修正済み
-  - コード品質評価: 8.2/10
-  - 改善提案: 3件 (オプション)
-
-### 技術ドキュメント
-- **Firestoreインデックス定義**: `firestore.indexes.json`
-- **移植スクリプト**: `scripts/migrate_spreadsheet_to_firestore.py`
-- **検証スクリプト**: `scripts/verify_firestore_migration.py`
+5. **[PROJECT_MANAGEMENT.md](PROJECT_MANAGEMENT.md)**
+   - プロジェクト管理ガイド
+   - 開発ワークフロー、タスク管理、ブランチ戦略
 
 ---
 
-## 🔗 RAG Engine統合 (Phase 4完了)
+### 📖 コアドキュメント（5個）
 
-### 統合レポート
-- **[PHASE4_FIRESTORE_INTEGRATION.md](PHASE4_FIRESTORE_INTEGRATION.md)** ⭐ **最重要**
-  - コード統合: RAG EngineにFirestore Vector Search統合完了
-  - 環境変数制御: `USE_FIRESTORE_VECTOR_SEARCH`で切り替え可能
-  - 後方互換性: デフォルトはSpreadsheet検索（既存機能保持）
-  - 構文チェック: エラーなし
-  - Backend起動: 正常動作確認
+6. **[01_PROJECT_OVERVIEW.md](01_PROJECT_OVERVIEW.md)**
+   - プロジェクト概要
+   - ビジョン、技術スタック、プロジェクトゴール
 
-### 実装ファイル
-- `backend/app/config.py` - Firestore設定追加
-- `backend/app/services/rag_engine.py` - 統合ロジック（async化）
-- `backend/app/routers/chat.py` - ルーター更新（await追加）
+7. **[04_API_SPECIFICATION.md](04_API_SPECIFICATION.md)**
+   - API仕様書
+   - エンドポイント、リクエスト/レスポンス形式、認証
 
-### 動作モード
-- **デフォルト（Spreadsheet）**: `USE_FIRESTORE_VECTOR_SEARCH=False` （約45秒）
-- **高速モード（Firestore）**: `USE_FIRESTORE_VECTOR_SEARCH=True` （約3-5秒、10-15倍高速化）
+8. **[07_SECURITY.md](07_SECURITY.md)**
+   - セキュリティ設計
+   - 認証、データ保護、個人情報マスキング、GDPR準拠
 
----
+9. **[ERROR_LOG.md](ERROR_LOG.md)** ⭐ **開発前に必ず確認**
+   - エラー記録・教訓
+   - 過去の失敗例と再発防止策（API呼び出しリトライループ等）
 
-## 🚀 セットアップガイド
-
-### 初期セットアップ
-- **[GCP_SETUP.md](GCP_SETUP.md)** - GCPプロジェクトの初期設定
-- **[SPREADSHEET_CREATION_GUIDE.md](SPREADSHEET_CREATION_GUIDE.md)** - Vector DBスプレッドシート作成手順
-- **[PHASE2_SETUP_GUIDE.md](PHASE2_SETUP_GUIDE.md)** - Phase 2機能（質疑応答）セットアップ
-
-### 本番環境構築
-- **[PRODUCTION_DEPLOYMENT.md](PRODUCTION_DEPLOYMENT.md)** - 本番環境デプロイ手順
-- **[PRODUCTION_READINESS_SUMMARY.md](PRODUCTION_READINESS_SUMMARY.md)** - 本番環境適正化サマリー ⭐ **最重要**
+10. **[DECISIONS.md](DECISIONS.md)**
+    - アーキテクチャ決定記録（ADR）
+    - 技術選定の理由と背景（Vertex AI、Reranker、Cloud SQL等）
 
 ---
 
-## 🔧 機能実装ガイド
+## 🗺️ ドキュメントナビゲーション
 
-### キャッシュシステム
-- **[CACHE_IMPLEMENTATION.md](CACHE_IMPLEMENTATION.md)** - キャッシュシステム実装詳細
-  - API呼び出し削減: 67.5%
-  - コスト削減: 76.1%（¥34,250/月節約）
+### 新規参加者向け
 
-### 認証統合（実装予定）
-- **[FIREBASE_AUTH_INTEGRATION.md](FIREBASE_AUTH_INTEGRATION.md)** - Firebase認証統合設計書
-- **[FIREBASE_SETUP_GUIDE.md](FIREBASE_SETUP_GUIDE.md)** - Firebase初期設定手順
+1. **[V3_SUMMARY.md](V3_SUMMARY.md)** - プロジェクト全体像を理解
+2. **[V3_ARCHITECTURE.md](V3_ARCHITECTURE.md)** - アーキテクチャを学習
+3. **[ERROR_LOG.md](ERROR_LOG.md)** - 過去の失敗例を確認
+4. **[PROJECT_MANAGEMENT.md](PROJECT_MANAGEMENT.md)** - 開発フロー理解
 
-### 監視統合（実装予定）
-- **[LANGSMITH_MONITORING_INTEGRATION.md](LANGSMITH_MONITORING_INTEGRATION.md)** - LangSmith監視統合設計書
+### 実装担当者向け
 
----
+**Backend開発者:**
+1. [V3_ARCHITECTURE.md](V3_ARCHITECTURE.md) - Section 3（データベース設計）
+2. [V3_ROADMAP.md](V3_ROADMAP.md) - Phase 1-2
+3. [V3_TASKS.md](V3_TASKS.md) - Backend タスク
+4. [04_API_SPECIFICATION.md](04_API_SPECIFICATION.md) - API仕様
 
-## 📊 アーキテクチャ分析
+**Frontend開発者:**
+1. [V3_ARCHITECTURE.md](V3_ARCHITECTURE.md) - Section 7（UI/UX改善）
+2. [V3_ROADMAP.md](V3_ROADMAP.md) - Phase 3
+3. [V3_TASKS.md](V3_TASKS.md) - Frontend タスク
+4. [04_API_SPECIFICATION.md](04_API_SPECIFICATION.md) - API統合
 
-### 最新分析（2025-10-28）
-- **[RAG_ARCHITECTURE_ANALYSIS_2025-10-28.md](RAG_ARCHITECTURE_ANALYSIS_2025-10-28.md)** - 業界ベストプラクティス比較分析
-  - 総合評価: ⭐⭐⭐⭐☆ (4/5)
-  - 準拠項目: 10項目
-  - 改善推奨: 5項目（最優先: 会話履歴コンテキスト化）
+**DevOps担当者:**
+1. [V3_ARCHITECTURE.md](V3_ARCHITECTURE.md) - Section 3.1（Cloud SQL）
+2. [V3_ROADMAP.md](V3_ROADMAP.md) - Phase 0, Phase 4
+3. [07_SECURITY.md](07_SECURITY.md) - セキュリティ設定
 
----
+### プロジェクトマネージャー向け
 
-## 📝 開発ログ・エラー記録
-
-### エラー記録
-- **[ERROR_LOG.md](ERROR_LOG.md)** ⭐ **最重要** - エラー記録と対処法・教訓
-  - Vertex AI API モック化問題（2025-10-27修正）
-  - Frontend API重複呼び出し問題（2025-10-27修正）
-
-### 設計判断
-- **[DECISIONS.md](DECISIONS.md)** - アーキテクチャ決定記録（ADR）
-  - Vertex AI完全移行
-  - リランキングモデル選択
-  - ハイブリッド検索の採用
+1. [V3_SUMMARY.md](V3_SUMMARY.md) - 全体概要
+2. [V3_ROADMAP.md](V3_ROADMAP.md) - スケジュール
+3. [PROJECT_MANAGEMENT.md](PROJECT_MANAGEMENT.md) - 管理フロー
+4. [V3_TASKS.md](V3_TASKS.md) - タスク詳細
 
 ---
 
-## 🔍 ドキュメントの使い方
+## 🔍 よくある質問（FAQ）
 
-### 新規メンバー向けスタートガイド
-
-1. **全体像把握**:
-   - [01_PROJECT_OVERVIEW.md](01_PROJECT_OVERVIEW.md)
-   - [02_ARCHITECTURE.md](02_ARCHITECTURE.md)
-
-2. **ローカル開発環境構築**:
-   - [GCP_SETUP.md](GCP_SETUP.md)
-   - [06_DEPLOYMENT.md](06_DEPLOYMENT.md) の "ローカル開発" セクション
-
-3. **機能実装**:
-   - [03_HYBRID_SEARCH_SPEC_V2.md](03_HYBRID_SEARCH_SPEC_V2.md) - 検索機能
-   - [04_API_SPECIFICATION.md](04_API_SPECIFICATION.md) - APIエンドポイント
-
-### 本番環境デプロイ担当者向け
-
-1. **事前準備**:
-   - [PRODUCTION_READINESS_SUMMARY.md](PRODUCTION_READINESS_SUMMARY.md) - 全体チェックリスト
-
-2. **デプロイ実施**:
-   - [PRODUCTION_DEPLOYMENT.md](PRODUCTION_DEPLOYMENT.md) - 詳細手順
-
-3. **機能統合**:
-   - [CACHE_IMPLEMENTATION.md](CACHE_IMPLEMENTATION.md) - キャッシュシステム
-   - [FIREBASE_AUTH_INTEGRATION.md](FIREBASE_AUTH_INTEGRATION.md) - 認証（実装予定）
-   - [LANGSMITH_MONITORING_INTEGRATION.md](LANGSMITH_MONITORING_INTEGRATION.md) - 監視（実装予定）
-
-### トラブルシューティング
-
-- [ERROR_LOG.md](ERROR_LOG.md) - 既知のエラーと対処法
-- [CONSISTENCY_VERIFICATION_2025-10-27_FINAL.md](CONSISTENCY_VERIFICATION_2025-10-27_FINAL.md) - 過去の不整合修正記録
+| 質問 | ドキュメント |
+|------|------------|
+| V3プロジェクトの目標は？ | [V3_SUMMARY.md](V3_SUMMARY.md) |
+| Cloud SQLのスキーマは？ | [V3_ARCHITECTURE.md](V3_ARCHITECTURE.md#31-cloud-sql-mysql-スキーマ) |
+| プロンプト最適化の仕様は？ | [V3_ARCHITECTURE.md](V3_ARCHITECTURE.md#4-プロンプト最適化機能) |
+| タスクの詳細は？ | [V3_TASKS.md](V3_TASKS.md) |
+| スケジュールは？ | [V3_ROADMAP.md](V3_ROADMAP.md) |
+| 過去のエラーは？ | [ERROR_LOG.md](ERROR_LOG.md) |
+| API仕様は？ | [04_API_SPECIFICATION.md](04_API_SPECIFICATION.md) |
+| セキュリティ設計は？ | [07_SECURITY.md](07_SECURITY.md) |
 
 ---
 
-## 📌 重要な注意事項
+## 📊 ドキュメント最適化統計
 
-### セキュリティ
-- `.env` ファイルは **絶対にコミットしない**
-- Firebase認証トークンは `localStorage` に保存（XSS対策済み）
-- Admin APIキーは Secret Manager で管理
-
-### コスト管理
-- キャッシュシステム実装により **76.1%のコスト削減**
-- サンプリングレート調整により LangSmith コスト管理
-
-### パフォーマンス
-- ストリーミング応答により初回応答を高速化
-- BM25フィルタリングにより検索範囲を1/10に削減
+| 項目 | 整理前 | 整理後 | 改善率 |
+|------|-------|--------|--------|
+| **総ドキュメント数** | 32個 | 10個 | **-69%** |
+| **V3プロジェクト** | 0個 | 5個 | **+∞** |
+| **コアドキュメント** | 6個 | 5個 | 変更なし |
+| **V2関連（削除）** | 15個 | 0個 | **-100%** |
+| **重複（削除）** | 5個 | 0個 | **-100%** |
+| **アーカイブ（削除）** | 8個 | 0個 | **-100%** |
 
 ---
 
-## 🔄 次のステップ
+## 🔄 次のステップ（V3プロジェクト）
 
-### ✅ 完了済み: 会話履歴コンテキスト化（2025-10-28）
-- **実装完了**: Backend + Frontend統合
-- **効果**: ユーザー体験の劇的向上（代名詞・前回の文脈を理解）
-- **詳細**: [RAG_ARCHITECTURE_ANALYSIS_2025-10-28.md](RAG_ARCHITECTURE_ANALYSIS_2025-10-28.md#最優先-会話履歴コンテキスト化)
+### 即座に着手すべきタスク
 
-### 優先度1: Firebase認証実装（1週間）
-- **設計完了**: 実装ガイド作成済み
-- **参照**: [FIREBASE_AUTH_INTEGRATION.md](FIREBASE_AUTH_INTEGRATION.md)
-- **参照**: [PRODUCTION_READINESS_SUMMARY.md](PRODUCTION_READINESS_SUMMARY.md#優先度1-firebase認証実装推奨)
+1. **[Task 0.1] 設計レビュー** 🔴 High
+   - V3_ARCHITECTURE.md のレビュー
+   - ステークホルダー承認
 
-### 優先度2: LangSmith監視実装（1週間）
-- **設計完了**: 統合ガイド作成済み
-- **参照**: [LANGSMITH_MONITORING_INTEGRATION.md](LANGSMITH_MONITORING_INTEGRATION.md)
-- **参照**: [PRODUCTION_READINESS_SUMMARY.md](PRODUCTION_READINESS_SUMMARY.md#優先度2-langsmith監視実装推奨)
+2. **[Task 0.2] 開発環境準備** 🔴 High
+   - GCP プロジェクト設定
+   - ローカル環境セットアップ
 
-### 優先度3: Firestore Vector Search本番切替（設定のみ）
-- **実装完了**: Phase 4完了
-- **現状**: デフォルトはSpreadsheet検索（後方互換性）
-- **切替方法**: 環境変数 `USE_FIRESTORE_VECTOR_SEARCH=True` に設定
-- **効果**: 10〜15倍の検索速度向上（45秒 → 3〜5秒）
-- **詳細**: [PHASE4_FIRESTORE_INTEGRATION.md](PHASE4_FIRESTORE_INTEGRATION.md)
+3. **[Task 0.3] Cloud SQL インスタンス作成** 🔴 High
+   - db-n1-standard-2 インスタンス作成
+   - 初期設定
 
----
+### 週次計画
 
-## 📞 サポート
+**Week 1（2025-10-28〜11-03）:**
+- Phase 0完了
+- Cloud SQL稼働開始
 
-### 開発チーム連絡先
-- プロジェクトオーナー: [記入してください]
-- 技術リード: [記入してください]
-
-### リソース
-- GCP Console: [医療特化型RAGプロジェクト](https://console.cloud.google.com/)
-- Firebase Console: [Firebase RAG Project](https://console.firebase.google.com/)
-- LangSmith Dashboard: [実装後に追加]
+**Week 2-6（2025-11-04〜12-09）:**
+- Phase 1-4実装
+- 詳細は [V3_ROADMAP.md](V3_ROADMAP.md) 参照
 
 ---
 
+## 🆘 サポート
+
+- **Slack**: `#rag-v3-project`
+- **GitHub**: Issues / Discussions
+- **Email**: rag-team@example.com
+
+---
+
+**管理者**: Claude (AI Assistant)
 **最終更新**: 2025-10-28
-**ドキュメント数**: 23個（36→23に最適化、2025-10-28）
-**メンテナンス**: このREADMEは新規ドキュメント追加時に更新してください
+**次回レビュー**: 毎週月曜日

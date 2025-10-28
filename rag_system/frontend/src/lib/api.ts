@@ -39,13 +39,25 @@ export async function sendChatMessage(
 
 /**
  * チャットAPI（SSEストリーミング）
+ *
+ * V2/V3エンドポイントを環境変数で切り替え可能
  */
 export async function* streamChatMessage(
   request: ChatRequest,
   signal?: AbortSignal,
   token?: string | null
 ): AsyncGenerator<StreamChunk, void, unknown> {
-  console.log("[API] streamChatMessage 開始", { request, apiUrl: API_URL, hasToken: !!token });
+  // V3エンドポイント使用フラグ（環境変数で制御）
+  const useV3 = process.env.NEXT_PUBLIC_USE_V3_API === 'true';
+  const endpoint = useV3 ? '/chat/v3/stream/v3' : '/chat/stream';
+
+  console.log("[API] streamChatMessage 開始", {
+    request,
+    apiUrl: API_URL,
+    endpoint,
+    useV3,
+    hasToken: !!token
+  });
 
   const headers: HeadersInit = {
     "Content-Type": "application/json",
@@ -59,7 +71,7 @@ export async function* streamChatMessage(
     console.warn("[API] ⚠️ No authentication token provided");
   }
 
-  const response = await fetch(`${API_URL}/chat/stream`, {
+  const response = await fetch(`${API_URL}${endpoint}`, {
     method: "POST",
     headers,
     body: JSON.stringify({ ...request, stream: true }),
@@ -192,10 +204,12 @@ export async function fetchClients(): Promise<ClientListResponse> {
 export interface ChatSessionItem {
   id: string;
   user_id: string;
+  title?: string;           // セッションタイトル（最初のメッセージから生成）
   created_at: string;
   updated_at: string;
   message_count?: number;
   last_message?: string;
+  preview?: string;         // プレビュー（最後のメッセージの一部）
 }
 
 export interface SessionsResponse {

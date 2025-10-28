@@ -24,7 +24,7 @@ function testVertexAIWithLog() {
     const testAnalysisId = 'test_analysis_' + new Date().getTime();
     recordId = testAnalysisId;
 
-    logger.info('[テスト] Vertex AI解析モード');
+    logger.info('[テスト] Vertex AI解析モード（参照資料あり）');
 
     // テストデータ
     const documentText = `
@@ -48,8 +48,8 @@ function testVertexAIWithLog() {
     logger.info(`ドキュメント長: ${documentText.length}文字`);
     logger.info(`質問: ${promptText}`);
 
-    // Vertex AI API呼び出し
-    const aiResult = generateAnswerAndSummaryWithGemini(documentText, promptText);
+    // Vertex AI API呼び出し（引数の順序を変更: promptText, documentText）
+    const aiResult = generateAnswerAndSummaryWithGemini(promptText, documentText);
 
     // API使用量情報をloggerに記録
     if (aiResult.usageMetadata) {
@@ -84,15 +84,244 @@ function testVertexAIWithLog() {
   }
 }
 
+
+/**
+ * テスト用関数: 通常の質疑応答（2段階AI処理）
+ * 利用者ID、基本情報、参考資料を使った新しい処理方式をテスト
+ *
+ * @return {Object} 処理結果
+ */
+function testNormalQAWithTwoStage() {
+  Logger.log('='.repeat(60));
+  Logger.log('🧪 通常の質疑応答（2段階AI処理）テスト');
+  Logger.log('='.repeat(60));
+
+  const promptText = "今後必要な支援内容を具体的に提案してください。";
+  const userId = 'USER001';
+  
+  const userBasicInfo = `
+# 利用者基本情報
+
+利用者ID: USER001
+氏名: 山田花子
+年齢: 82歳
+性別: 女性
+住所: 東京都渋谷区
+要介護度: 要介護3
+`;
+
+  const referenceData = `
+# 2024年10月20日 訪問記録
+
+・歩行が不安定になってきた
+・血圧: 150/90 (やや高め)
+・食事摂取量: 70%程度
+・認知機能: 軽度の低下あり
+・独居、週3回の訪問介護利用中
+
+# 2024年10月15日 訪問記録
+
+・室内での転倒リスクが高い
+・服薬管理に支援が必要
+・家族（娘）は月1回程度訪問
+・デイサービスの利用を検討中
+
+# 既往歴
+
+・高血圧
+・変形性膝関節症
+・骨粗鬆症
+`;
+
+  Logger.log(`質問: ${promptText}`);
+  Logger.log(`利用者ID: ${userId}`);
+  Logger.log(`基本情報: ${userBasicInfo.length}文字`);
+  Logger.log(`参考資料: ${referenceData.length}文字`);
+  Logger.log('');
+
+  try {
+    const result = processClientQA(
+      promptText,
+      null,  // documentTextはnull
+      userId,
+      userBasicInfo,
+      referenceData
+    );
+
+    Logger.log('✅ 処理成功');
+    Logger.log('');
+    Logger.log('📝 回答:');
+    Logger.log(result.answer);
+    Logger.log('');
+    Logger.log('📋 要約:');
+    Logger.log(result.summary);
+    Logger.log('');
+    Logger.log('🔍 抽出された関連情報:');
+    Logger.log(result.extractedInfo || '（なし）');
+    Logger.log('');
+
+    if (result.usageMetadata) {
+      Logger.log('💰 API使用量:');
+      Logger.log(`  モデル: ${result.usageMetadata.model}`);
+      Logger.log(`  Input Tokens: ${result.usageMetadata.inputTokens}`);
+      Logger.log(`  Output Tokens: ${result.usageMetadata.outputTokens}`);
+      Logger.log(`  Total Cost: ¥${result.usageMetadata.totalCostJPY.toFixed(4)}`);
+    }
+
+    Logger.log('='.repeat(60));
+    return result;
+
+  } catch (error) {
+    Logger.log('❌ テストエラー: ' + error.toString());
+    if (error.stack) {
+      Logger.log('スタックトレース: ' + error.stack);
+    }
+    throw error;
+  }
+}
+
+
+/**
+ * テスト用関数: 2段階AI処理（カスタムデータ）
+ * 
+ * @param {string} promptText - 質問
+ * @param {string} userId - 利用者ID
+ * @param {string} userBasicInfo - 利用者基本情報
+ * @param {string} referenceData - 参考資料
+ * @return {Object} 処理結果
+ */
+function testNormalQAWithTwoStageCustom(promptText, userId, userBasicInfo, referenceData) {
+  Logger.log('='.repeat(60));
+  Logger.log('🧪 通常の質疑応答（2段階AI処理・カスタムデータ）テスト');
+  Logger.log('='.repeat(60));
+
+  Logger.log(`質問: ${promptText}`);
+  Logger.log(`利用者ID: ${userId}`);
+  Logger.log(`基本情報: ${userBasicInfo.length}文字`);
+  Logger.log(`参考資料: ${referenceData.length}文字`);
+  Logger.log('');
+
+  try {
+    const result = processClientQA(
+      promptText,
+      null,  // documentTextはnull
+      userId,
+      userBasicInfo,
+      referenceData
+    );
+
+    Logger.log('✅ 処理成功');
+    Logger.log('');
+    Logger.log('📝 回答:');
+    Logger.log(result.answer.substring(0, 300) + '...');
+    Logger.log('');
+    Logger.log('📋 要約:');
+    Logger.log(result.summary);
+    Logger.log('');
+
+    if (result.extractedInfo) {
+      Logger.log('🔍 抽出された関連情報:');
+      Logger.log(result.extractedInfo);
+      Logger.log('');
+    }
+
+    if (result.usageMetadata) {
+      Logger.log('💰 API使用量:');
+      Logger.log(`  モデル: ${result.usageMetadata.model}`);
+      Logger.log(`  Input Tokens: ${result.usageMetadata.inputTokens}`);
+      Logger.log(`  Output Tokens: ${result.usageMetadata.outputTokens}`);
+      Logger.log(`  Total Cost: ¥${result.usageMetadata.totalCostJPY.toFixed(4)}`);
+    }
+
+    Logger.log('='.repeat(60));
+    return result;
+
+  } catch (error) {
+    Logger.log('❌ テストエラー: ' + error.toString());
+    if (error.stack) {
+      Logger.log('スタックトレース: ' + error.stack);
+    }
+    throw error;
+  }
+}
+
+
+/**
+ * テスト用関数: 通常の質疑応答（参照資料なし）
+ * 外部文章を使わない通常の質疑応答をテスト
+ *
+ * @return {Object} 処理結果
+ */
+function testNormalQA() {
+  const logger = createLogger('Appsheet_利用者_質疑応答');
+  let recordId = null;
+  let status = '成功';
+
+  try {
+    const testAnalysisId = 'test_normal_qa_' + new Date().getTime();
+    recordId = testAnalysisId;
+
+    logger.info('[テスト] 通常の質疑応答モード（参照資料なし）');
+
+    const promptText = "JavaScriptでデバウンス処理を実装する方法を教えてください。実装例も含めて説明してください。";
+
+    logger.info(`質問: ${promptText}`);
+
+    // Vertex AI API呼び出し（documentTextなし）
+    const aiResult = generateAnswerAndSummaryWithGemini(promptText, null);
+
+    // API使用量情報をloggerに記録
+    if (aiResult.usageMetadata) {
+      logger.setUsageMetadata(aiResult.usageMetadata);
+      logger.info('API使用量情報を記録しました');
+    }
+
+    logger.success(`回答生成成功（回答: ${aiResult.answer.length}文字、要約: ${aiResult.summary.length}文字）`);
+    logger.info('生成された回答:', { answer: aiResult.answer.substring(0, 200) + '...' });
+    logger.info('生成された要約:', { summary: aiResult.summary.substring(0, 200) + '...' });
+
+    // AppSheet APIはスキップ
+    logger.info('[テスト] AppSheet API更新はスキップしました');
+
+    Logger.log('='.repeat(60));
+    Logger.log('✅ 通常の質疑応答テスト完了');
+    Logger.log('');
+    Logger.log('📝 回答:');
+    Logger.log(aiResult.answer);
+    Logger.log('');
+    Logger.log('📋 要約:');
+    Logger.log(aiResult.summary);
+    Logger.log('='.repeat(60));
+
+    return {
+      success: true,
+      analysisId: testAnalysisId,
+      answer: aiResult.answer,
+      summary: aiResult.summary,
+      usageMetadata: aiResult.usageMetadata
+    };
+
+  } catch (error) {
+    status = 'エラー';
+    logger.error(`テストエラー: ${error.toString()}`, { stack: error.stack });
+    throw error;
+
+  } finally {
+    // ログをスプレッドシートに保存
+    logger.saveToSpreadsheet(status, recordId);
+    logger.info('実行ログをスプレッドシートに保存しました');
+  }
+}
+
 /**
  * テスト用関数: カスタムデータでテスト
  * ドキュメントと質問を引数で指定できるバージョン
  *
- * @param {string} documentText - ドキュメントテキスト
- * @param {string} promptText - 質問テキスト
+ * @param {string} promptText - 質問テキスト（必須）
+ * @param {string} documentText - ドキュメントテキスト（オプション）
  * @return {Object} 処理結果
  */
-function testVertexAIWithCustomData(documentText, promptText) {
+function testVertexAIWithCustomData(promptText, documentText = null) {
   const logger = createLogger('Appsheet_利用者_質疑応答');
   let recordId = null;
   let status = '成功';
@@ -102,11 +331,11 @@ function testVertexAIWithCustomData(documentText, promptText) {
     recordId = testAnalysisId;
 
     logger.info('[テスト] Vertex AI解析（カスタムデータ）');
-    logger.info(`ドキュメント長: ${documentText.length}文字`);
     logger.info(`質問: ${promptText}`);
+    logger.info(`ドキュメント: ${documentText ? documentText.length + '文字' : 'なし（通常の質疑応答モード）'}`);
 
-    // Vertex AI API呼び出し
-    const aiResult = generateAnswerAndSummaryWithGemini(documentText, promptText);
+    // Vertex AI API呼び出し（引数の順序を変更: promptText, documentText）
+    const aiResult = generateAnswerAndSummaryWithGemini(promptText, documentText);
 
     // API使用量情報をloggerに記録
     if (aiResult.usageMetadata) {
@@ -315,15 +544,17 @@ function testConfigValidation() {
 }
 
 /**
- * テスト用関数: processClientQA（個別引数）- 基本テスト
+ * テスト用関数: processClientQA（個別引数）- 基本テスト（参照資料あり）
  * 新しい個別引数関数のテスト（AppSheet更新なし）
  *
  * @return {Object} 処理結果
  */
 function testProcessClientQA() {
   Logger.log('='.repeat(60));
-  Logger.log('🧪 processClientQA() 基本テスト');
+  Logger.log('🧪 processClientQA() 基本テスト（参照資料あり）');
   Logger.log('='.repeat(60));
+
+  const promptText = "転倒リスクを減らすために、どのような対策が必要ですか？";
 
   const documentText = `
 # 利用者基本情報
@@ -341,14 +572,58 @@ function testProcessClientQA() {
 ・血圧が高め（150/90）
 `;
 
-  const promptText = "転倒リスクを減らすために、どのような対策が必要ですか？";
-
-  Logger.log(`ドキュメント長: ${documentText.length}文字`);
   Logger.log(`質問: ${promptText}`);
+  Logger.log(`ドキュメント長: ${documentText.length}文字`);
   Logger.log('');
 
   try {
-    const result = processClientQA(documentText, promptText);
+    const result = processClientQA(promptText, documentText);
+
+    Logger.log('✅ 処理成功');
+    Logger.log('');
+    Logger.log('📝 回答:');
+    Logger.log(result.answer.substring(0, 300) + '...');
+    Logger.log('');
+    Logger.log('📋 要約:');
+    Logger.log(result.summary);
+    Logger.log('');
+
+    if (result.usageMetadata) {
+      Logger.log('💰 API使用量:');
+      Logger.log(`  Input Tokens: ${result.usageMetadata.inputTokens}`);
+      Logger.log(`  Output Tokens: ${result.usageMetadata.outputTokens}`);
+      Logger.log(`  Total Cost: ¥${result.usageMetadata.totalCostJPY.toFixed(4)}`);
+    }
+
+    Logger.log('='.repeat(60));
+    return result;
+
+  } catch (error) {
+    Logger.log('❌ テストエラー: ' + error.toString());
+    throw error;
+  }
+}
+
+
+/**
+ * テスト用関数: processClientQA（通常の質疑応答）
+ * 参照資料なしの通常の質疑応答をテスト
+ *
+ * @return {Object} 処理結果
+ */
+function testProcessClientQANormal() {
+  Logger.log('='.repeat(60));
+  Logger.log('🧪 processClientQA() 通常の質疑応答テスト（参照資料なし）');
+  Logger.log('='.repeat(60));
+
+  const promptText = "Reactでカスタムフックを作成する際のベストプラクティスを教えてください。";
+
+  Logger.log(`質問: ${promptText}`);
+  Logger.log('参照資料: なし');
+  Logger.log('');
+
+  try {
+    const result = processClientQA(promptText, null);
 
     Logger.log('✅ 処理成功');
     Logger.log('');
@@ -389,6 +664,8 @@ function testProcessClientQAWithAppSheet() {
   Logger.log('⚠️  注意: 実際のAppSheet APIが呼ばれます！');
   Logger.log('='.repeat(60));
 
+  const promptText = "糖尿病管理のための食事指導のポイントは？";
+
   const documentText = `
 # 利用者基本情報
 
@@ -404,7 +681,6 @@ function testProcessClientQAWithAppSheet() {
 ・糖尿病の管理が必要
 `;
 
-  const promptText = "糖尿病管理のための食事指導のポイントは？";
   const testAnalysisId = 'TEST-' + new Date().getTime();
 
   Logger.log(`Analysis ID: ${testAnalysisId}`);
@@ -413,8 +689,8 @@ function testProcessClientQAWithAppSheet() {
 
   try {
     const result = processClientQA(
-      documentText,
       promptText,
+      documentText,
       testAnalysisId,
       true  // AppSheet更新を実行
     );
@@ -452,6 +728,8 @@ function testSaveResultToAppSheet() {
   Logger.log('⚠️  注意: 実際のAppSheet APIが呼ばれます！');
   Logger.log('='.repeat(60));
 
+  const promptText = "膝の痛みを和らげるための運動指導の方法は？";
+
   const documentText = `
 # 利用者基本情報
 
@@ -467,7 +745,6 @@ function testSaveResultToAppSheet() {
 ・膝の痛みがある
 `;
 
-  const promptText = "膝の痛みを和らげるための運動指導の方法は？";
   const testAnalysisId = 'TEST-SAVE-' + new Date().getTime();
 
   Logger.log(`Analysis ID: ${testAnalysisId}`);
@@ -476,7 +753,7 @@ function testSaveResultToAppSheet() {
   try {
     // ステップ1: 質疑応答処理（AppSheet更新なし）
     Logger.log('【ステップ1】質疑応答処理');
-    const result = processClientQA(documentText, promptText);
+    const result = processClientQA(promptText, documentText);
 
     Logger.log('✅ 質疑応答処理成功');
     Logger.log('回答の長さ: ' + result.answer.length + '文字');
@@ -519,6 +796,8 @@ function testProcessClientQAAndSave() {
   Logger.log('⚠️  注意: 実際のAppSheet APIが呼ばれます！');
   Logger.log('='.repeat(60));
 
+  const promptText = "食事量が減少している利用者への対応方法は？";
+
   const documentText = `
 # 利用者基本情報
 
@@ -535,7 +814,6 @@ function testProcessClientQAAndSave() {
 ・最近、食事量が減少
 `;
 
-  const promptText = "食事量が減少している利用者への対応方法は？";
   const testAnalysisId = 'TEST-ANDSAVE-' + new Date().getTime();
 
   Logger.log(`Analysis ID: ${testAnalysisId}`);
@@ -545,8 +823,8 @@ function testProcessClientQAAndSave() {
   try {
     // 処理と保存を一度に実行
     const result = processClientQAAndSave(
-      documentText,
       promptText,
+      documentText,
       testAnalysisId,
       'Edit'
     );
@@ -585,26 +863,10 @@ function testProcessClientQAErrorHandling() {
 
   const tests = [];
 
-  // テスト1: documentText不足
-  Logger.log('【テスト1】documentText不足');
+  // テスト1: promptText不足
+  Logger.log('【テスト1】promptText不足');
   try {
-    processClientQA('', '質問');
-    tests.push({ name: 'documentText不足', success: false, message: 'エラーが発生しませんでした' });
-  } catch (error) {
-    if (error.message.includes('documentText')) {
-      Logger.log('✅ 期待通りのエラー: ' + error.message);
-      tests.push({ name: 'documentText不足', success: true });
-    } else {
-      Logger.log('❌ 予期しないエラー: ' + error.message);
-      tests.push({ name: 'documentText不足', success: false, message: error.message });
-    }
-  }
-  Logger.log('');
-
-  // テスト2: promptText不足
-  Logger.log('【テスト2】promptText不足');
-  try {
-    processClientQA('ドキュメント', '');
+    processClientQA('', 'ドキュメント');
     tests.push({ name: 'promptText不足', success: false, message: 'エラーが発生しませんでした' });
   } catch (error) {
     if (error.message.includes('promptText')) {
@@ -614,6 +876,18 @@ function testProcessClientQAErrorHandling() {
       Logger.log('❌ 予期しないエラー: ' + error.message);
       tests.push({ name: 'promptText不足', success: false, message: error.message });
     }
+  }
+  Logger.log('');
+
+  // テスト2: documentTextなし（エラーにならないことを確認）
+  Logger.log('【テスト2】documentTextなし（通常の質疑応答として動作）');
+  try {
+    const result = processClientQA('JavaScriptのクロージャとは何ですか？', null);
+    Logger.log('✅ 通常の質疑応答として成功: ' + result.answer.substring(0, 100) + '...');
+    tests.push({ name: 'documentTextなし', success: true });
+  } catch (error) {
+    Logger.log('❌ 予期しないエラー: ' + error.message);
+    tests.push({ name: 'documentTextなし', success: false, message: error.message });
   }
   Logger.log('');
 

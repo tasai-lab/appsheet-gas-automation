@@ -2,9 +2,41 @@
 
 ## 目的
 
-このスクリプトは、AppSheetアプリケーションと連携し、データ処理、API呼び出し、スプレッドシート操作などの自動化タスクを実行します。
+このスクリプトは、AppSheetアプリケーションと連携し、AI駆動の質疑応答処理を実行します。
+
+**処理モード**:
+
+1. **モード1（参照資料ベース）**: 利用者情報などの外部文章を参照して専門的な回答を生成
+2. **モード2（2段階AI処理）**: 利用者ID、基本情報、参考資料から関連情報を抽出し、思考モデルで深い分析と回答を生成
+
+両方のモードで、Vertex AI Gemini APIを使用して詳細な回答と要約を生成します。
 
 ## システム構成
+
+### 使用モデル
+
+#### モード1（参照資料ベース）
+
+- **モデル**: gemini-2.5-pro
+- **用途**: 外部文章を参照した専門的な回答生成
+- **Temperature**: 0.2
+- **ResponseMimeType**: application/json
+
+#### モード2（2段階AI処理）
+
+**第1段階: 情報抽出**
+
+- **モデル**: gemini-2.5-flash
+- **用途**: 基本情報と参考資料から質問に関連する情報を抽出
+- **Temperature**: 0.2
+- **ResponseMimeType**: application/json
+
+**第2段階: 回答生成**
+
+- **モデル**: gemini-2.5-flash-thinking-exp-01-21
+- **用途**: 抽出された情報を用いて深い分析と回答を生成
+- **Temperature**: 1.0
+- **レスポンス形式**: テキスト（思考過程を含む）
 
 ### コンポーネント
 
@@ -76,14 +108,46 @@
 
 ## データフロー
 
-```
+### モード1: 参照資料ベース
+
+```text
 AppSheet Webhook
     ↓
 doPost(e)
     ↓
 重複チェック (DuplicationPrevention)
     ↓
-処理実行 (ビジネスロジック)
+processClientQA(promptText, documentText)
+    ↓
+generateAnswerAndSummaryWithGemini()
+    ↓
+Gemini 2.5 Pro API呼び出し
+    ↓
+結果記録 (ExecutionLogger)
+    ↓
+レスポンス返却
+```
+
+### モード2: 2段階AI処理
+
+```text
+AppSheet Webhook
+    ↓
+doPost(e)
+    ↓
+重複チェック (DuplicationPrevention)
+    ↓
+processClientQA(promptText, null, userId, userBasicInfo, referenceData)
+    ↓
+processNormalQAWithTwoStage()
+    ↓
+[第1段階] extractRelevantInfo()
+    ↓
+Gemini 2.5 Flash API呼び出し → 関連情報抽出
+    ↓
+[第2段階] generateAnswerWithThinkingModel()
+    ↓
+Gemini 2.5 Flash Thinking API呼び出し → 最終回答生成
     ↓
 結果記録 (ExecutionLogger)
     ↓
@@ -145,19 +209,49 @@ doPost(e)
 
 ## テスト
 
-### 単体テスト
+### processClientQA関数のテスト
+
+#### 参照資料ベースの質疑応答
 
 ```javascript
-function testDoPost() {
-  const testData = {
-    postData: {
-      contents: JSON.stringify({
-        // Test data here
-      })
-    }
-  };
+function testProcessClientQA() {
+  const result = processClientQA(
+    '転倒リスクを減らすための対策は？',  // promptText
+    `# 利用者情報
+氏名: 田中花子、82歳
+状態: 歩行不安定、血圧高め`  // documentText（参照資料）
+  );
   
-  const result = doPost(testData);
+  Logger.log('回答: ' + result.answer);
+  Logger.log('要約: ' + result.summary);
+}
+```
+
+#### 通常の質疑応答（参照資料なし）
+
+```javascript
+function testProcessClientQANormal() {
+  const result = processClientQA(
+    'JavaScriptのクロージャとは何ですか？',  // promptText
+    null  // documentTextをnullにすると通常の質疑応答
+  );
+  
+  Logger.log('回答: ' + result.answer);
+  Logger.log('要約: ' + result.summary);
+}
+```
+
+### AppSheet更新込みのテスト
+
+```javascript
+function testProcessClientQAWithAppSheet() {
+  const result = processClientQA(
+    '血圧管理のポイントは？',
+    '利用者: 佐藤一郎、78歳、高血圧',
+    'TEST-' + new Date().getTime(),  // analysisId
+    true  // AppSheet更新を実行
+  );
+  
   Logger.log(result);
 }
 ```
