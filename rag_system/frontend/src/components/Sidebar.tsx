@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { ChatSession } from "@/types/chat";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
+import { fetchChatSessions, type ChatSessionItem } from "@/lib/api";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -25,6 +26,11 @@ export default function Sidebar({
   const [displayCount, setDisplayCount] = useState(10);
   const [loading, setLoading] = useState(false);
 
+  // チャット履歴の状態管理
+  const [sessions, setSessions] = useState<ChatSessionItem[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(true);
+  const [sessionsError, setSessionsError] = useState<string | null>(null);
+
   const handleSignOut = async () => {
     try {
       await signOut();
@@ -34,9 +40,31 @@ export default function Sidebar({
     }
   };
 
-  // TODO: チャット履歴はバックエンドAPIから取得する実装を追加予定
-  // 現在はチャット履歴をSpreadsheetに保存しているが、表示機能は未実装
-  const sessions: ChatSession[] = [];
+  // チャット履歴をバックエンドAPIから取得
+  useEffect(() => {
+    const loadSessions = async () => {
+      if (!user) {
+        setSessions([]);
+        setSessionsLoading(false);
+        return;
+      }
+
+      try {
+        setSessionsLoading(true);
+        const token = await user.getIdToken();
+        const response = await fetchChatSessions(token, 20);
+        setSessions(response.sessions);
+        setSessionsError(null);
+      } catch (error) {
+        console.error('チャット履歴の取得エラー:', error);
+        setSessionsError(error instanceof Error ? error.message : '不明なエラー');
+      } finally {
+        setSessionsLoading(false);
+      }
+    };
+
+    loadSessions();
+  }, [user]);
 
   const displayedSessions = sessions.slice(0, displayCount);
   const hasMore = displayCount < sessions.length;

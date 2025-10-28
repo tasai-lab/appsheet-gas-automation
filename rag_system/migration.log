@@ -1,0 +1,183 @@
+2025-10-28 04:19:05,225 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-10-28 04:19:06,598 - __main__ - INFO - 
+============================================================
+2025-10-28 04:19:06,598 - __main__ - INFO - Firestore Vector Search 移行処理
+2025-10-28 04:19:06,599 - __main__ - INFO - ============================================================
+2025-10-28 04:19:06,600 - __main__ - INFO - Spreadsheet ID: 1roSp4WKubXVzZ6iWd6OY5lMU5OpvFsVNQHy11_Ym-wA
+2025-10-28 04:19:06,600 - __main__ - INFO - Firestore Collection: knowledge_base
+2025-10-28 04:19:06,600 - __main__ - INFO - Embedding Model: gemini-embedding-001
+2025-10-28 04:19:06,600 - __main__ - INFO - Embedding Dimension: 2048 (Firestore制約)
+2025-10-28 04:19:06,600 - __main__ - INFO - Batch Size: 50
+2025-10-28 04:19:06,600 - __main__ - INFO - Dry Run: True
+2025-10-28 04:19:06,600 - __main__ - INFO - Skip: 0, Limit: 5
+2025-10-28 04:19:06,600 - __main__ - INFO - ============================================================
+
+2025-10-28 04:19:06,600 - __main__ - INFO - === Spreadsheetデータ読み込み開始 ===
+2025-10-28 04:20:06,989 - __main__ - ERROR - 
+
+❌ 予期しないエラー: The read operation timed out
+Traceback (most recent call last):
+  File "/Users/t.asai/code/appsheet-gas-automation/rag_system/scripts/migrate_to_firestore_vectors.py", line 436, in main_async
+    await migration.migrate()
+  File "/Users/t.asai/code/appsheet-gas-automation/rag_system/scripts/migrate_to_firestore_vectors.py", line 346, in migrate
+    records = self.read_spreadsheet_data()
+  File "/Users/t.asai/code/appsheet-gas-automation/rag_system/scripts/migrate_to_firestore_vectors.py", line 146, in read_spreadsheet_data
+    ).execute()
+      ~~~~~~~^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/googleapiclient/_helpers.py", line 130, in positional_wrapper
+    return wrapped(*args, **kwargs)
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/googleapiclient/http.py", line 923, in execute
+    resp, content = _retry_request(
+                    ~~~~~~~~~~~~~~^
+        http,
+        ^^^^^
+    ...<7 lines>...
+        headers=self.headers,
+        ^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/googleapiclient/http.py", line 222, in _retry_request
+    raise exception
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/googleapiclient/http.py", line 191, in _retry_request
+    resp, content = http.request(uri, method, *args, **kwargs)
+                    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/google_auth_httplib2.py", line 218, in request
+    response, content = self.http.request(
+                        ~~~~~~~~~~~~~~~~~^
+        uri,
+        ^^^^
+    ...<5 lines>...
+        **kwargs
+        ^^^^^^^^
+    )
+    ^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/httplib2/__init__.py", line 1727, in request
+    (response, content) = self._request(
+                          ~~~~~~~~~~~~~^
+        conn, authority, uri, request_uri, method, body, headers, redirections, cachekey,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/httplib2/__init__.py", line 1447, in _request
+    (response, content) = self._conn_request(conn, request_uri, method, body, headers)
+                          ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/httplib2/__init__.py", line 1399, in _conn_request
+    response = conn.getresponse()
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py", line 1430, in getresponse
+    response.begin()
+    ~~~~~~~~~~~~~~^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py", line 331, in begin
+    version, status, reason = self._read_status()
+                              ~~~~~~~~~~~~~~~~~^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py", line 292, in _read_status
+    line = str(self.fp.readline(_MAXLINE + 1), "iso-8859-1")
+               ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/socket.py", line 719, in readinto
+    return self._sock.recv_into(b)
+           ~~~~~~~~~~~~~~~~~~~~^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/ssl.py", line 1304, in recv_into
+    return self.read(nbytes, buffer)
+           ~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/ssl.py", line 1138, in read
+    return self._sslobj.read(len, buffer)
+           ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+TimeoutError: The read operation timed out
+2025-10-28 04:20:07,000 - __main__ - INFO - 
+============================================================
+2025-10-28 04:20:07,000 - __main__ - INFO - 移行結果サマリー
+2025-10-28 04:20:07,000 - __main__ - INFO - ============================================================
+2025-10-28 04:20:07,000 - __main__ - INFO - 総件数: 0
+2025-10-28 04:20:07,001 - __main__ - INFO - 成功: 0 (0.0%)
+2025-10-28 04:20:07,001 - __main__ - INFO - スキップ: 0
+2025-10-28 04:20:07,001 - __main__ - INFO - エラー: 0
+2025-10-28 04:20:07,001 - __main__ - INFO - 実行時間: 60.4秒
+2025-10-28 04:20:07,001 - __main__ - INFO - 処理速度: 0.00件/秒
+2025-10-28 04:20:07,001 - __main__ - INFO - ============================================================
+
+2025-10-28 04:41:42,995 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-10-28 04:41:42,997 - __main__ - INFO - ============================================================
+2025-10-28 04:41:42,997 - __main__ - INFO - 🚀 Spreadsheet→Firestore移植開始
+2025-10-28 04:41:42,997 - __main__ - INFO - ============================================================
+2025-10-28 04:41:42,997 - __main__ - INFO - Spreadsheet ID: 1roSp4WKubXVzZ6iWd6OY5lMU5OpvFsVNQHy11_Ym-wA
+2025-10-28 04:41:42,997 - __main__ - INFO - GCP Project: fractal-ecosystem
+2025-10-28 04:41:42,997 - __main__ - INFO - Dry Run: True
+2025-10-28 04:41:42,997 - __main__ - INFO - 
+2025-10-28 04:41:42,997 - __main__ - INFO - 📖 KnowledgeBaseシート読み込み開始...
+2025-10-28 04:41:46,123 - __main__ - INFO - ✅ 3194件のKnowledgeBaseデータを読み込みました
+2025-10-28 04:41:46,123 - __main__ - INFO - 📖 Embeddingsシート読み込み開始...
+2025-10-28 04:42:11,533 - __main__ - INFO - ✅ 3151件のEmbeddingsを読み込みました
+2025-10-28 04:42:11,542 - __main__ - INFO - 🔧 PCAモデル学習開始...
+2025-10-28 04:42:11,710 - __main__ - INFO -    入力: 3151件 x 3072次元
+2025-10-28 04:42:16,199 - __main__ - INFO - ✅ PCA学習完了
+2025-10-28 04:42:16,199 - __main__ - INFO -    出力: 2048次元
+2025-10-28 04:42:16,199 - __main__ - INFO -    情報保持率: 100.00%
+2025-10-28 04:42:16,201 - __main__ - INFO - 🔍 DRY RUN モード: Firestoreへの書き込みはスキップします
+2025-10-28 04:42:16,201 - __main__ - INFO - 🚀 Firestore移植開始...
+2025-10-28 04:42:16,201 - __main__ - INFO -    プロジェクト: fractal-ecosystem
+2025-10-28 04:42:16,201 - __main__ - INFO -    コレクション: knowledge_base
+2025-10-28 04:42:16,201 - __main__ - INFO -    バッチサイズ: 100
+2025-10-28 04:42:16,202 - __main__ - INFO - ✅ Firestore移植完了
+2025-10-28 04:42:16,202 - __main__ - INFO - 
+2025-10-28 04:42:16,202 - __main__ - INFO - ============================================================
+2025-10-28 04:42:16,202 - __main__ - INFO - 📊 移植統計
+2025-10-28 04:42:16,202 - __main__ - INFO - ============================================================
+2025-10-28 04:42:16,202 - __main__ - INFO - 合計件数: 3194
+2025-10-28 04:42:16,202 - __main__ - INFO - 成功: 3193
+2025-10-28 04:42:16,202 - __main__ - INFO - スキップ: 1
+2025-10-28 04:42:16,202 - __main__ - INFO - エラー: 0
+2025-10-28 04:42:16,202 - __main__ - INFO - 実行時間: 33.2秒
+2025-10-28 04:42:16,202 - __main__ - INFO - 成功率: 100.0%
+2025-10-28 04:43:11,156 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-10-28 04:43:11,376 - __main__ - INFO - ============================================================
+2025-10-28 04:43:11,376 - __main__ - INFO - 🚀 Spreadsheet→Firestore移植開始
+2025-10-28 04:43:11,376 - __main__ - INFO - ============================================================
+2025-10-28 04:43:11,376 - __main__ - INFO - Spreadsheet ID: 1roSp4WKubXVzZ6iWd6OY5lMU5OpvFsVNQHy11_Ym-wA
+2025-10-28 04:43:11,376 - __main__ - INFO - GCP Project: fractal-ecosystem
+2025-10-28 04:43:11,376 - __main__ - INFO - Dry Run: False
+2025-10-28 04:43:11,376 - __main__ - INFO - 
+2025-10-28 04:43:11,376 - __main__ - INFO - 📖 KnowledgeBaseシート読み込み開始...
+2025-10-28 04:43:14,360 - __main__ - INFO - ✅ 3194件のKnowledgeBaseデータを読み込みました
+2025-10-28 04:43:14,360 - __main__ - INFO - 📖 Embeddingsシート読み込み開始...
+2025-10-28 04:43:38,806 - __main__ - INFO - ✅ 3151件のEmbeddingsを読み込みました
+2025-10-28 04:43:38,813 - __main__ - INFO - 🔧 PCAモデル学習開始...
+2025-10-28 04:43:38,977 - __main__ - INFO -    入力: 3151件 x 3072次元
+2025-10-28 04:43:43,272 - __main__ - INFO - ✅ PCA学習完了
+2025-10-28 04:43:43,273 - __main__ - INFO -    出力: 2048次元
+2025-10-28 04:43:43,273 - __main__ - INFO -    情報保持率: 100.00%
+2025-10-28 04:43:43,274 - __main__ - INFO - 🚀 Firestore移植開始...
+2025-10-28 04:43:43,274 - __main__ - INFO -    プロジェクト: fractal-ecosystem
+2025-10-28 04:43:43,274 - __main__ - INFO -    コレクション: knowledge_base
+2025-10-28 04:43:43,274 - __main__ - INFO -    バッチサイズ: 100
+2025-10-28 04:45:22,671 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-10-28 04:45:22,891 - __main__ - INFO - ============================================================
+2025-10-28 04:45:22,891 - __main__ - INFO - 🚀 Spreadsheet→Firestore移植開始
+2025-10-28 04:45:22,891 - __main__ - INFO - ============================================================
+2025-10-28 04:45:22,891 - __main__ - INFO - Spreadsheet ID: 1roSp4WKubXVzZ6iWd6OY5lMU5OpvFsVNQHy11_Ym-wA
+2025-10-28 04:45:22,891 - __main__ - INFO - GCP Project: fractal-ecosystem
+2025-10-28 04:45:22,891 - __main__ - INFO - Dry Run: False
+2025-10-28 04:45:22,891 - __main__ - INFO - 
+2025-10-28 04:45:22,891 - __main__ - INFO - 📖 KnowledgeBaseシート読み込み開始...
+2025-10-28 04:45:26,216 - __main__ - INFO - ✅ 3194件のKnowledgeBaseデータを読み込みました
+2025-10-28 04:45:26,216 - __main__ - INFO - 📖 Embeddingsシート読み込み開始...
+2025-10-28 04:45:51,106 - __main__ - INFO - ✅ 3151件のEmbeddingsを読み込みました
+2025-10-28 04:45:51,114 - __main__ - INFO - 🔧 PCAモデル学習開始...
+2025-10-28 04:45:51,280 - __main__ - INFO -    入力: 3151件 x 3072次元
+2025-10-28 04:45:55,694 - __main__ - INFO - ✅ PCA学習完了
+2025-10-28 04:45:55,695 - __main__ - INFO -    出力: 2048次元
+2025-10-28 04:45:55,695 - __main__ - INFO -    情報保持率: 100.00%
+2025-10-28 04:45:55,696 - __main__ - INFO - 🚀 Firestore移植開始...
+2025-10-28 04:45:55,696 - __main__ - INFO -    プロジェクト: fractal-ecosystem
+2025-10-28 04:45:55,696 - __main__ - INFO -    コレクション: knowledge_base
+2025-10-28 04:45:55,696 - __main__ - INFO -    バッチサイズ: 100
+2025-10-28 04:54:31,538 - __main__ - WARNING - ベクトルが見つかりません: calls_threads_CALLAC-d5eec5f2
+2025-10-28 04:54:42,094 - __main__ - INFO - ✅ Firestore移植完了
+2025-10-28 04:54:42,095 - __main__ - INFO - 
+2025-10-28 04:54:42,095 - __main__ - INFO - ============================================================
+2025-10-28 04:54:42,095 - __main__ - INFO - 📊 移植統計
+2025-10-28 04:54:42,095 - __main__ - INFO - ============================================================
+2025-10-28 04:54:42,095 - __main__ - INFO - 合計件数: 3193
+2025-10-28 04:54:42,095 - __main__ - INFO - 成功: 3193
+2025-10-28 04:54:42,095 - __main__ - INFO - スキップ: 1
+2025-10-28 04:54:42,095 - __main__ - INFO - エラー: 0
+2025-10-28 04:54:42,095 - __main__ - INFO - 実行時間: 559.2秒
+2025-10-28 04:54:42,095 - __main__ - INFO - 成功率: 100.0%

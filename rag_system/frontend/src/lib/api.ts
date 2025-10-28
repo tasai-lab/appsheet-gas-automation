@@ -185,3 +185,106 @@ export async function fetchClients(): Promise<ClientListResponse> {
 
   return response.json();
 }
+
+/**
+ * チャットセッション型
+ */
+export interface ChatSessionItem {
+  id: string;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+  message_count?: number;
+  last_message?: string;
+}
+
+export interface SessionsResponse {
+  sessions: ChatSessionItem[];
+  total: number;
+}
+
+/**
+ * セッションメッセージ型
+ */
+export interface SessionMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  timestamp: string;
+}
+
+export interface SessionMessagesResponse {
+  session_id: string;
+  messages: SessionMessage[];
+  total: number;
+}
+
+/**
+ * チャットセッション一覧取得API
+ */
+export async function fetchChatSessions(
+  token?: string | null,
+  limit: number = 20
+): Promise<SessionsResponse> {
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+  };
+
+  // 認証トークンがあればAuthorizationヘッダーを追加
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_URL}/chat/sessions?limit=${limit}`, {
+    method: "GET",
+    headers,
+  });
+
+  if (!response.ok) {
+    let errorDetail = response.statusText;
+    try {
+      const errorData = await response.json();
+      errorDetail = errorData.detail || errorDetail;
+    } catch {
+      // JSON parse error
+    }
+    throw new Error(`Sessions API error (${response.status}): ${errorDetail}`);
+  }
+
+  return response.json();
+}
+
+/**
+ * セッションメッセージ取得API
+ */
+export async function fetchSessionMessages(
+  sessionId: string,
+  token?: string | null,
+  limit: number = 100
+): Promise<SessionMessagesResponse> {
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+  };
+
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_URL}/chat/sessions/${sessionId}/messages?limit=${limit}`, {
+    method: "GET",
+    headers,
+  });
+
+  if (!response.ok) {
+    let errorDetail = response.statusText;
+    try {
+      const errorData = await response.json();
+      errorDetail = errorData.detail || errorDetail;
+    } catch {
+      // JSON parse error
+    }
+    throw new Error(`Session messages API error (${response.status}): ${errorDetail}`);
+  }
+
+  return response.json();
+}

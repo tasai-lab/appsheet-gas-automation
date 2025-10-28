@@ -182,3 +182,42 @@ def get_vertex_ai_client() -> VertexAIClient:
     if _vertex_ai_client is None:
         _vertex_ai_client = VertexAIClient()
     return _vertex_ai_client
+
+
+def compute_cosine_similarity(vec1: List[float], vec2: List[float]) -> float:
+    """
+    コサイン類似度を計算
+
+    Args:
+        vec1: ベクトル1
+        vec2: ベクトル2
+
+    Returns:
+        コサイン類似度（-1.0 ~ 1.0）
+
+    Example:
+        >>> vec1 = [1.0, 0.0, 0.0]
+        >>> vec2 = [1.0, 0.0, 0.0]
+        >>> compute_cosine_similarity(vec1, vec2)
+        1.0
+    """
+    import math
+
+    if len(vec1) != len(vec2):
+        raise ValueError(f"Vector dimensions must match: {len(vec1)} != {len(vec2)}")
+
+    # 内積
+    dot_product = sum(a * b for a, b in zip(vec1, vec2))
+
+    # ノルム
+    norm1 = math.sqrt(sum(a * a for a in vec1))
+    norm2 = math.sqrt(sum(b * b for b in vec2))
+
+    # ゼロベクトル対策
+    if norm1 == 0.0 or norm2 == 0.0:
+        return 0.0
+
+    # コサイン類似度
+    similarity = dot_product / (norm1 * norm2)
+
+    return similarity

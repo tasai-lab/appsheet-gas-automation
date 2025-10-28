@@ -64,7 +64,7 @@ class Settings(BaseSettings):
 
     # Vertex AI設定
     vertex_ai_embeddings_model: str = "gemini-embedding-001"
-    vertex_ai_embeddings_dimension: int = 3072
+    vertex_ai_embeddings_dimension: int = 2048  # Firestore Vector Search制約: 最大2048次元
     vertex_ai_embeddings_task_type: str = "RETRIEVAL_DOCUMENT"
     vertex_ai_generation_model: str = "gemini-2.5-flash"
     vertex_ai_temperature: float = 0.3
@@ -124,6 +124,13 @@ class Settings(BaseSettings):
 
     # チャット履歴設定
     use_firestore_chat_history: bool = True   # Firestoreを使用（False=Spreadsheet使用）
+
+    # Firestore Vector Search設定
+    use_firestore_vector_search: bool = False  # Firestore Vector Search使用フラグ（Phase 4実装）
+    firestore_vector_collection: str = "knowledge_base"  # Firestoreコレクション名
+    firestore_vector_field: str = "embedding"  # Embeddingフィールド名
+    firestore_vector_distance_measure: str = "COSINE"  # 距離計算方法
+    firestore_vector_max_results: int = 1000  # 最大結果数
 
     # LangSmith設定
     langchain_tracing_v2: bool = False  # LangSmithトレーシング有効化

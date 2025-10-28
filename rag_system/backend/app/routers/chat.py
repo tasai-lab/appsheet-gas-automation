@@ -118,7 +118,7 @@ async def chat_stream(
                         # 履歴取得失敗してもcontinue（graceful degradation）
 
                 # Hybrid Search実行
-                search_result = engine.search(
+                search_result = await engine.search(
                     query=request.message,
                     domain=request.domain,
                     client_id=request.client_id,
@@ -343,7 +343,7 @@ async def chat(request: ChatRequest):
         gemini_service = get_gemini_service()
 
         # Hybrid Search実行
-        search_result = engine.search(
+        search_result = await engine.search(
             query=request.message,
             domain=request.domain,
             client_id=request.client_id,
@@ -423,6 +423,122 @@ async def chat(request: ChatRequest):
 
     except Exception as e:
         logger.error(f"Chat error: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+@router.get(
+    "/sessions",
+    status_code=status.HTTP_200_OK,
+    summary="チャットセッション一覧取得",
+    description="認証ユーザーのチャットセッション一覧を取得"
+)
+async def get_sessions(
+    user: dict = Depends(verify_firebase_token),
+    limit: int = 20
+):
+    """
+    チャットセッション一覧を取得
+
+    Args:
+        user: Firebase認証ユーザー情報
+        limit: 取得件数上限
+
+    Returns:
+        セッション一覧
+
+    Raises:
+        HTTPException: 取得エラー時
+    """
+    try:
+        if not settings.use_firestore_chat_history:
+            raise HTTPException(
+                status_code=status.HTTP_501_NOT_IMPLEMENTED,
+                detail="Chat history feature is disabled"
+            )
+
+        user_uid = user.get("uid")
+        if not user_uid:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User ID not found"
+            )
+
+        firestore_history = get_firestore_chat_history_service()
+        sessions = firestore_history.get_user_sessions(user_uid, limit=limit)
+
+        return {
+            "sessions": sessions,
+            "total": len(sessions)
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get sessions: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+@router.get(
+    "/sessions/{session_id}/messages",
+    status_code=status.HTTP_200_OK,
+    summary="セッションメッセージ取得",
+    description="指定セッションの全メッセージを取得"
+)
+async def get_session_messages(
+    session_id: str,
+    user: dict = Depends(verify_firebase_token),
+    limit: int = 100
+):
+    """
+    セッションのメッセージ一覧を取得
+
+    Args:
+        session_id: セッションID
+        user: Firebase認証ユーザー情報
+        limit: 取得件数上限
+
+    Returns:
+        メッセージ一覧
+
+    Raises:
+        HTTPException: 取得エラー時
+    """
+    try:
+        if not settings.use_firestore_chat_history:
+            raise HTTPException(
+                status_code=status.HTTP_501_NOT_IMPLEMENTED,
+                detail="Chat history feature is disabled"
+            )
+
+        user_uid = user.get("uid")
+        if not user_uid:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User ID not found"
+            )
+
+        firestore_history = get_firestore_chat_history_service()
+        messages = firestore_history.get_session_history(session_id, limit=limit)
+
+        # セッション所有権確認（オプショナル - セキュリティ強化）
+        # TODO: セッション作成者のuser_idとリクエストユーザーのuidが一致するか確認
+
+        return {
+            "session_id": session_id,
+            "messages": messages,
+            "total": len(messages)
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get messages for session {session_id}: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)

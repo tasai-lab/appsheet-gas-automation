@@ -12,6 +12,7 @@ from app.config import get_settings
 from app.services.vertex_ai import get_vertex_ai_client
 from app.services.reranker import get_ranker
 from app.services.spreadsheet import get_spreadsheet_client
+from app.services.firestore_vector_service import get_firestore_vector_client
 from app.services.medical_terms import get_medical_terms_service
 from app.utils.cosine import calculate_cosine_similarity
 from app.utils.bm25 import simple_tokenize, score_documents_bm25
@@ -28,11 +29,15 @@ class HybridSearchEngine:
         self.vertex_ai_client = get_vertex_ai_client()
         self.ranker = get_ranker()
         self.spreadsheet_client = get_spreadsheet_client()
+        self.firestore_vector_client = get_firestore_vector_client() if settings.use_firestore_vector_search else None
         self.medical_terms_service = get_medical_terms_service()
 
-        logger.info("Hybrid Search Engine initialized")
+        if settings.use_firestore_vector_search:
+            logger.info("Hybrid Search Engine initialized (Firestore Vector Search enabled)")
+        else:
+            logger.info("Hybrid Search Engine initialized (Spreadsheet Vector Search)")
 
-    def search(
+    async def search(
         self,
         query: str,
         domain: Optional[str] = None,
@@ -63,7 +68,7 @@ class HybridSearchEngine:
             preprocessed = self._preprocess_query(query)
 
             # Stage 1 & 2: Parallel Search (BM25 + Dense Retrieval)
-            candidates = self._parallel_search(
+            candidates = await self._parallel_search(
                 preprocessed['enriched_query'],
                 domain=domain,
                 client_id=client_id
@@ -146,7 +151,7 @@ class HybridSearchEngine:
 
         return enriched
 
-    def _parallel_search(
+    async def _parallel_search(
         self,
         query: str,
         domain: Optional[str] = None,
@@ -163,38 +168,73 @@ class HybridSearchEngine:
         Returns:
             候補ドキュメントリスト（RRF統合済み）
         """
-        logger.debug("Stage 1 & 2: Parallel Search (BM25 + Dense Retrieval)")
+        if settings.use_firestore_vector_search:
+            logger.debug("Stage 1 & 2: Parallel Search (BM25 + Firestore Vector Search)")
 
-        # KnowledgeBaseを読み込み
-        kb_records = self.spreadsheet_client.read_knowledge_base()
+            # Firestore Vector Search使用時
+            # Stage 1: BM25はSpreadsheetから実行（全文検索が必要なため）
+            kb_records = self.spreadsheet_client.read_knowledge_base()
 
-        # ドメインフィルタ
-        if domain:
-            kb_records = [r for r in kb_records if r.get('domain') == domain]
+            # ドメインフィルタ
+            if domain:
+                kb_records = [r for r in kb_records if r.get('domain') == domain]
 
-        # 利用者IDフィルタ
-        if client_id:
-            # kb_id, source_id, contentに利用者IDが含まれるレコードのみ抽出
-            kb_records = [
-                r for r in kb_records
-                if (client_id in str(r.get('id', '')) or
-                    client_id in str(r.get('source_id', '')) or
-                    client_id in str(r.get('title', '')) or
-                    client_id in str(r.get('content', '')))
-            ]
-            logger.info(f"Client ID filter applied - {len(kb_records)} records remaining")
+            # 利用者IDフィルタ
+            if client_id:
+                kb_records = [
+                    r for r in kb_records
+                    if (client_id in str(r.get('id', '')) or
+                        client_id in str(r.get('source_id', '')) or
+                        client_id in str(r.get('title', '')) or
+                        client_id in str(r.get('content', '')))
+                ]
+                logger.info(f"Client ID filter applied - {len(kb_records)} records remaining")
 
-        if not kb_records:
-            logger.warning("No records in KnowledgeBase")
-            return []
+            if not kb_records:
+                logger.warning("No records in KnowledgeBase")
+                return []
 
-        logger.debug(f"Loaded {len(kb_records)} KB records")
+            logger.debug(f"Loaded {len(kb_records)} KB records for BM25")
 
-        # Stage 1: BM25 Search
-        bm25_results = self._bm25_search(query, kb_records)
+            # Stage 1: BM25 Search
+            bm25_results = self._bm25_search(query, kb_records)
 
-        # Stage 2: Dense Retrieval
-        dense_results = self._dense_retrieval(query, kb_records)
+            # Stage 2: Dense Retrieval (Firestore)
+            dense_results = await self._dense_retrieval_firestore(query, domain, client_id)
+
+        else:
+            logger.debug("Stage 1 & 2: Parallel Search (BM25 + Spreadsheet Dense Retrieval)")
+
+            # Spreadsheet使用時（従来のロジック）
+            # KnowledgeBaseを読み込み
+            kb_records = self.spreadsheet_client.read_knowledge_base()
+
+            # ドメインフィルタ
+            if domain:
+                kb_records = [r for r in kb_records if r.get('domain') == domain]
+
+            # 利用者IDフィルタ
+            if client_id:
+                kb_records = [
+                    r for r in kb_records
+                    if (client_id in str(r.get('id', '')) or
+                        client_id in str(r.get('source_id', '')) or
+                        client_id in str(r.get('title', '')) or
+                        client_id in str(r.get('content', '')))
+                ]
+                logger.info(f"Client ID filter applied - {len(kb_records)} records remaining")
+
+            if not kb_records:
+                logger.warning("No records in KnowledgeBase")
+                return []
+
+            logger.debug(f"Loaded {len(kb_records)} KB records")
+
+            # Stage 1: BM25 Search
+            bm25_results = self._bm25_search(query, kb_records)
+
+            # Stage 2: Dense Retrieval (Spreadsheet)
+            dense_results = self._dense_retrieval(query, kb_records)
 
         # Stage 3: RRF Fusion
         fused_results = self._rrf_fusion(bm25_results, dense_results)
@@ -296,6 +336,58 @@ class HybridSearchEngine:
 
         except Exception as e:
             logger.error(f"Dense Retrieval failed: {e}", exc_info=True)
+            return []
+
+    async def _dense_retrieval_firestore(
+        self,
+        query: str,
+        domain: Optional[str] = None,
+        client_id: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Stage 2: Dense Vector Retrieval (Firestore Vector Search)
+
+        Args:
+            query: クエリ
+            domain: ドメインフィルタ
+            client_id: 利用者IDフィルタ
+
+        Returns:
+            類似度スコア付きドキュメント（Top-K）
+        """
+        try:
+            # クエリEmbeddingを生成（2048次元）
+            query_embedding = self.vertex_ai_client.generate_query_embedding(
+                query=query,
+                output_dimensionality=settings.vertex_ai_embeddings_dimension
+            )
+
+            # フィルタ構築
+            filters = {}
+            if domain:
+                filters['domain'] = domain
+            if client_id:
+                filters['user_id'] = client_id
+
+            # Firestore Vector Search実行
+            top_k = settings.search_dense_top_k
+            results = await self.firestore_vector_client.vector_search(
+                query_vector=query_embedding,
+                limit=top_k,
+                filters=filters
+            )
+
+            # vector_scoreフィールドを追加（互換性のため）
+            for result in results:
+                # Firestoreから返される類似度スコア（_similarityフィールド）をvector_scoreに変換
+                result['vector_score'] = result.get('_similarity', 0.0)
+
+            logger.debug(f"Firestore Dense Retrieval completed - Top {len(results)} results")
+
+            return results
+
+        except Exception as e:
+            logger.error(f"Firestore Dense Retrieval failed: {e}", exc_info=True)
             return []
 
     def _rrf_fusion(
