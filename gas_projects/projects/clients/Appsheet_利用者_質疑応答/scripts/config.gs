@@ -15,11 +15,11 @@ const CONFIG = {
     // 参照資料ベースの質疑応答用モデル
     MODEL_NAME: 'gemini-2.5-pro',
 
-    // 通常の質疑応答用: 関連情報抽出モデル（高速・低コスト）
-    EXTRACTOR_MODEL_NAME: 'gemini-2.5-flash',
+    // 通常の質疑応答用: プロンプト最適化モデル（最速・最低コスト）
+    EXTRACTOR_MODEL_NAME: 'gemini-2.5-flash-lite',
 
-    // 通常の質疑応答用: 最終回答生成モデル（思考モード）
-    THINKING_MODEL_NAME: 'gemini-2.5-flash-thinking-exp-01-21',
+    // 通常の質疑応答用: 最終回答生成モデル（Pro - 思考モード常時有効）
+    THINKING_MODEL_NAME: 'gemini-2.5-pro',
 
     GCP_PROJECT_ID: 'macro-shadow-458705-v8',
 
@@ -30,11 +30,17 @@ const CONFIG = {
       "temperature": 0.2
     },
 
-    // 思考モデル用の設定（thinkingBudgetと思考要約を有効化）
-    THINKING_CONFIG: {
-      "temperature": 1.0,  // 思考モデルは高めの温度が推奨
-      "thinkingBudget": -1,  // 動的思考: モデルが思考のタイミングと量を決定
-      "includeThoughts": true  // 思考の要約を含める
+    // Pro用のgenerationConfig（thinkingConfigを含む）
+    // ✅ 公式ドキュメント準拠: thinkingConfigはgenerationConfig内に配置
+    // 📌 Pro: 思考モード常時有効（無効化不可）、thinkingBudget範囲: 128-32,768
+    // 🔧 v88: includeThoughts=false に変更 - 思考の要約がJSON出力と競合するため
+    THINKING_GENERATION_CONFIG: {
+      "temperature": 1.0,  // Pro推奨設定
+      "responseMimeType": "application/json",
+      "thinkingConfig": {
+        "thinkingBudget": -1,  // -1 = モデルが自動で思考量を決定（推奨）
+        "includeThoughts": false  // 思考の要約を含めない（JSON出力のため）
+      }
     }
 
   },

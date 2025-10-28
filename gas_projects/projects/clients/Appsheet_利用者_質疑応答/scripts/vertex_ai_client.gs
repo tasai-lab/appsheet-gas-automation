@@ -98,7 +98,7 @@ function generateAnswerAndSummaryWithGemini(promptText, documentText = null) {
 
     // レスポンスパース
     Logger.log(`[DEBUG][generateAnswerAndSummaryWithGemini] レスポンスパース開始...`);
-    const result = _parseGeminiResponse(responseText);
+    const result = _parseGeminiResponse(responseText, config.MODEL_NAME);
     Logger.log(`[DEBUG][generateAnswerAndSummaryWithGemini] ✅ レスポンスパース成功`);
     Logger.log(`[DEBUG][generateAnswerAndSummaryWithGemini] === 関数終了 ===`);
 
@@ -190,15 +190,17 @@ ${promptText}
  *
  * @private
  * @param {string} responseText - APIレスポンステキスト
+ * @param {string} modelName - 使用したモデル名（価格計算用、例: 'gemini-2.5-pro', 'gemini-2.5-flash-lite'）
  * @return {Object} パース結果
  * @return {string} return.answer - 詳細な回答
  * @return {string} return.summary - 回答の要約
  * @return {Object} return.usageMetadata - API使用量情報
  * @throws {Error} レスポンスのパースまたはバリデーションに失敗した場合
  */
-function _parseGeminiResponse(responseText) {
+function _parseGeminiResponse(responseText, modelName = null) {
   Logger.log(`[DEBUG][parseGeminiResponse] === 関数開始 ===`);
   Logger.log(`[DEBUG][parseGeminiResponse] レスポンステキスト長: ${responseText.length}文字`);
+  Logger.log(`[DEBUG][parseGeminiResponse] モデル名: ${modelName}`);
 
   let jsonResponse;
 
@@ -310,7 +312,7 @@ function _parseGeminiResponse(responseText) {
 
       // usageMetadataを抽出して追加
       Logger.log(`[DEBUG][_parseGeminiResponse] usageMetadata抽出開始...`);
-      const usageMetadata = _extractUsageMetadata(jsonResponse);
+      const usageMetadata = _extractUsageMetadata(jsonResponse, modelName, 'text');
 
       if (usageMetadata) {
         Logger.log(`[DEBUG][_parseGeminiResponse] usageMetadata:`);
@@ -334,7 +336,154 @@ function _parseGeminiResponse(responseText) {
 
   } catch (e) {
     Logger.log(`[DEBUG][parseGeminiResponse] ❌ コンテンツJSONパースエラー: ${e.message}`);
-    throw new Error(`AIが生成したコンテンツの解析に失敗しました: ${e.message}`);
+    Logger.log(`[DEBUG][parseGeminiResponse] ProモデルでJSON修正を試みます...`);
+
+    // フォールバック: ProモデルでJSON修正
+    try {
+      const repairedJson = _repairJsonWithPro(jsonString);
+      Logger.log(`[DEBUG][parseGeminiResponse] 修正されたJSON長: ${repairedJson.length}文字`);
+
+      // マークダウン記法除去（修正後のJSONにも適用）
+      let cleanedJson = repairedJson;
+      const jsonMatch2 = cleanedJson.match(/```json\s*([\s\S]*?)\s*```/m);
+      if (jsonMatch2 && jsonMatch2[1]) {
+        cleanedJson = jsonMatch2[1];
+        Logger.log(`[DEBUG][parseGeminiResponse] 修正JSON: マークダウン除去`);
+      }
+
+      // JSON抽出（修正後）
+      const startIndex2 = cleanedJson.indexOf('{');
+      const endIndex2 = cleanedJson.lastIndexOf('}');
+
+      if (startIndex2 === -1 || endIndex2 === -1) {
+        throw new Error("修正されたJSONからも有効な形式を抽出できませんでした");
+      }
+
+      const repairedJsonString = cleanedJson.substring(startIndex2, endIndex2 + 1);
+      Logger.log(`[DEBUG][parseGeminiResponse] 修正JSON文字列: ${repairedJsonString.length}文字`);
+
+      // 修正されたJSONをパース
+      const result = JSON.parse(repairedJsonString);
+      Logger.log(`[DEBUG][parseGeminiResponse] ✅ 修正JSONパース成功`);
+
+      if (result && typeof result.answer === 'string' && typeof result.summary === 'string') {
+        Logger.log(`[DEBUG][parseGeminiResponse] ✅ 修正JSON検証OK`);
+
+        // usageMetadataを抽出して追加
+        const usageMetadata = _extractUsageMetadata(jsonResponse, modelName, 'text');
+
+        Logger.log(`[DEBUG][parseGeminiResponse] === 関数終了（JSON修正経由） ===`);
+        return {
+          ...result,
+          usageMetadata: usageMetadata
+        };
+      } else {
+        throw new Error("修正されたJSONに必要なキーが含まれていません");
+      }
+
+    } catch (repairError) {
+      Logger.log(`[DEBUG][parseGeminiResponse] ❌ JSON修正も失敗: ${repairError.message}`);
+      throw new Error(`AIが生成したコンテンツの解析に失敗しました。オリジナルエラー: ${e.message}、修正エラー: ${repairError.message}`);
+    }
+  }
+}
+
+/**
+ * ProモデルでmalformedなJSONを修正
+ * 不正なJSON文字列をProモデルに送信して、正しいJSON形式に修正
+ *
+ * @private
+ * @param {string} malformedJson - 不正なJSON文字列
+ * @return {string} 修正されたJSON文字列
+ */
+function _repairJsonWithPro(malformedJson) {
+  Logger.log(`[DEBUG][repairJsonWithPro] === 関数開始 ===`);
+  Logger.log(`[DEBUG][repairJsonWithPro] 不正なJSON長: ${malformedJson.length}文字`);
+
+  const config = CONFIG.VERTEX_AI;
+
+  // JSON修正用のプロンプト
+  const prompt = `以下は、AIが生成した不正なJSON文字列です。このJSONを修正して、正しいJSON形式で出力してください。
+
+# 不正なJSON
+\`\`\`
+${malformedJson}
+\`\`\`
+
+# 指示
+1. 上記のテキストから、answerとsummaryの内容を抽出してください
+2. 以下の正しいJSON形式で出力してください
+3. マークダウン記法や説明文は不要です
+4. JSON文字列のみを出力してください
+
+# 出力形式
+{
+  "answer": "（抽出した詳細な回答）",
+  "summary": "（抽出した簡潔な要約）"
+}`;
+
+  Logger.log(`[DEBUG][repairJsonWithPro] 修正用プロンプト生成完了: ${prompt.length}文字`);
+
+  // リクエストボディ構築
+  const requestBody = {
+    contents: [{
+      role: "user",
+      parts: [{ text: prompt }]
+    }],
+    generationConfig: {
+      temperature: 0.2,  // JSON修正なので低めの温度
+      responseMimeType: "application/json"
+    }
+  };
+
+  // Vertex AI APIエンドポイント（Pro使用）
+  const url = `https://${config.GCP_LOCATION}-aiplatform.googleapis.com/v1/projects/${config.GCP_PROJECT_ID}/locations/${config.GCP_LOCATION}/publishers/google/models/${config.THINKING_MODEL_NAME}:generateContent`;
+
+  Logger.log(`[DEBUG][repairJsonWithPro] API URL: ${url}`);
+
+  // OAuth2トークン取得
+  const oauthToken = ScriptApp.getOAuthToken();
+
+  // リクエストオプション構築
+  const options = {
+    method: 'post',
+    contentType: 'application/json',
+    headers: { 'Authorization': `Bearer ${oauthToken}` },
+    payload: JSON.stringify(requestBody)
+  };
+
+  Logger.log(`[DEBUG][repairJsonWithPro] fetchWithRetry実行中...`);
+  const startTime = new Date();
+
+  try {
+    const response = fetchWithRetry(url, options, "Vertex AI Pro JSON Repair");
+    const duration = new Date() - startTime;
+
+    Logger.log(`[DEBUG][repairJsonWithPro] ✅ API呼び出し成功 (${duration}ms)`);
+
+    const responseText = response.getContentText();
+    const jsonResponse = JSON.parse(responseText);
+
+    // レスポンスからテキスト抽出
+    if (!jsonResponse.candidates || jsonResponse.candidates.length === 0) {
+      throw new Error("JSON修正に失敗しました（候補が空）");
+    }
+
+    const candidate = jsonResponse.candidates[0];
+    if (!candidate.content || !candidate.content.parts || !candidate.content.parts[0].text) {
+      throw new Error("JSON修正に失敗しました（テキストが空）");
+    }
+
+    const repairedJson = candidate.content.parts[0].text;
+    Logger.log(`[DEBUG][repairJsonWithPro] ✅ JSON修正成功: ${repairedJson.length}文字`);
+    Logger.log(`[DEBUG][repairJsonWithPro] === 関数終了 ===`);
+
+    return repairedJson;
+
+  } catch (error) {
+    const duration = new Date() - startTime;
+    Logger.log(`[DEBUG][repairJsonWithPro] ❌ エラー発生 (${duration}ms): ${error.message}`);
+    throw new Error(`ProモデルによるJSON修正に失敗しました: ${error.message}`);
   }
 }
 
@@ -398,7 +547,8 @@ function _extractUsageMetadata(jsonResponse, modelName = null, inputType = 'text
 function _normalizeModelName(modelName) {
   // 'gemini-2.5-flash-001' → 'gemini-2.5-flash'
   // 'publishers/google/models/gemini-2.5-flash' → 'gemini-2.5-flash'
-  const match = modelName.match(/(gemini-[\d.]+-(?:flash|pro|flash-lite))/i);
+  // 🔧 v88: flash-liteを先にマッチさせる（flashより長いパターンを優先）
+  const match = modelName.match(/(gemini-[\d.]+-(?:flash-lite|flash|pro))/i);
   return match ? match[1].toLowerCase() : modelName.toLowerCase();
 }
 
@@ -414,12 +564,12 @@ function _getVertexAIPricing(modelName, inputType = 'text') {
   // 実際の価格はGCPドキュメントを参照: https://cloud.google.com/vertex-ai/generative-ai/pricing
   const pricingTable = {
     'gemini-2.5-flash': {
-      text: { inputPer1M: 0.075, outputPer1M: 0.30 },
+      text: { inputPer1M: 0.30, outputPer1M: 2.50 },  // ✅ 公式ドキュメント準拠（2025-01-28確認）
       audio: { inputPer1M: 1.00, outputPer1M: 2.50 }  // 音声入力（GA版）
     },
     'gemini-2.5-flash-lite': {
-      text: { inputPer1M: 0.0188, outputPer1M: 0.075 },
-      audio: { inputPer1M: 0.0188, outputPer1M: 0.075 }
+      text: { inputPer1M: 0.10, outputPer1M: 0.40 },
+      audio: { inputPer1M: 0.10, outputPer1M: 0.40 }
     },
     'gemini-2.5-pro': {
       text: { inputPer1M: 1.25, outputPer1M: 10.00 },
@@ -492,28 +642,41 @@ function _extractThoughtsSummary(jsonResponse) {
 
 /**
  * 通常の質疑応答処理（2段階AI処理）
- * 1. flash-liteで利用者基本情報と参考資料から関連情報を抽出
- * 2. flash思考モデルで最終的な回答を生成
+ *
+ * **アーキテクチャ**:
+ * 1. Flash-Lite（gemini-2.5-flash-lite）でプロンプト最適化
+ *    - 提供情報を使ってPro用の最適化されたプロンプトを生成
+ *    - 冗長情報を削減し、重要情報を構造化
+ * 2. Pro（gemini-2.5-pro - 思考モード常時有効）で回答生成
+ *    - 最適化されたプロンプトを使用して深い推論により高品質な回答を生成
+ *    - 思考プロセスで情報を統合・分析
+ *
+ * **利点**:
+ * - Flash-Liteが最適なプロンプト構造を生成（高速・低コスト）
+ * - Proモデルで最高品質の推論と回答生成
+ * - 2つのモデルの長所を活かした最適な処理フロー
  *
  * @param {string} promptText - ユーザーの質問（必須）
  * @param {string} userId - 利用者ID（必須）
  * @param {string} userBasicInfo - 利用者の基本情報（必須）
- * @param {string} referenceData - 参考資料（必須）
+ * @param {string} documentText - 参照資料（必須）
  * @return {Object} 回答と要約を含むオブジェクト
  * @return {string} return.answer - 詳細な回答
  * @return {string} return.summary - 回答の要約
  * @return {Object} return.usageMetadata - API使用量情報（トークン数、料金）
- * @return {string} return.extractedInfo - 抽出された関連情報
+ * @return {string} return.optimizedPrompt - 最適化されたプロンプト（デバッグ用）
  */
-function processNormalQAWithTwoStage(promptText, userId, userBasicInfo, referenceData) {
+function processNormalQAWithTwoStage(promptText, userId, userBasicInfo, documentText) {
   Logger.log(`[DEBUG][processNormalQAWithTwoStage] === 関数開始 ===`);
   Logger.log(`[DEBUG][processNormalQAWithTwoStage] userId: ${userId}`);
   Logger.log(`[DEBUG][processNormalQAWithTwoStage] promptText: ${promptText.substring(0, 100)}...`);
   Logger.log(`[DEBUG][processNormalQAWithTwoStage] userBasicInfo長: ${userBasicInfo.length}文字`);
-  Logger.log(`[DEBUG][processNormalQAWithTwoStage] referenceData長: ${referenceData.length}文字`);
+  Logger.log(`[DEBUG][processNormalQAWithTwoStage] documentText長: ${documentText.length}文字`);
+
+  const config = CONFIG.VERTEX_AI;
 
   const totalUsageMetadata = {
-    model: 'gemini-2.5-flash + gemini-2.5-flash-thinking',
+    model: `${config.EXTRACTOR_MODEL_NAME} + ${config.THINKING_MODEL_NAME}`,
     inputTokens: 0,
     outputTokens: 0,
     inputCostJPY: 0,
@@ -522,36 +685,48 @@ function processNormalQAWithTwoStage(promptText, userId, userBasicInfo, referenc
   };
 
   try {
-    // ステップ1: flash-liteで関連情報抽出
-    Logger.log(`[DEBUG][processNormalQAWithTwoStage] === ステップ1: 関連情報抽出 ===`);
-    const extractedInfo = _extractRelevantInfo(promptText, userBasicInfo, referenceData);
-    
-    Logger.log(`[DEBUG][processNormalQAWithTwoStage] 抽出された情報長: ${extractedInfo.length}文字`);
-    Logger.log(`[DEBUG][processNormalQAWithTwoStage] 抽出された情報プレビュー: ${extractedInfo.substring(0, 200)}...`);
+    // ステップ1: flash-liteで思考モデル用のプロンプト最適化
+    Logger.log(`[DEBUG][processNormalQAWithTwoStage] === ステップ1: プロンプト最適化 ===`);
+    const optimizationResult = _optimizePromptWithFlashLite(promptText, userBasicInfo, documentText);
 
-    // ステップ2: flash思考モデルで最終回答生成
-    Logger.log(`[DEBUG][processNormalQAWithTwoStage] === ステップ2: 最終回答生成 ===`);
-    const finalResult = _generateAnswerWithThinkingModel(promptText, userId, extractedInfo);
+    Logger.log(`[DEBUG][processNormalQAWithTwoStage] 最適化プロンプト長: ${optimizationResult.optimizedPrompt.length}文字`);
+    Logger.log(`[DEBUG][processNormalQAWithTwoStage] 最適化プロンプトプレビュー: ${optimizationResult.optimizedPrompt.substring(0, 200)}...`);
+
+    // ステップ1のコストを統合
+    if (optimizationResult.usageMetadata) {
+      totalUsageMetadata.inputTokens += optimizationResult.usageMetadata.inputTokens || 0;
+      totalUsageMetadata.outputTokens += optimizationResult.usageMetadata.outputTokens || 0;
+      totalUsageMetadata.inputCostJPY += optimizationResult.usageMetadata.inputCostJPY || 0;
+      totalUsageMetadata.outputCostJPY += optimizationResult.usageMetadata.outputCostJPY || 0;
+      totalUsageMetadata.totalCostJPY += optimizationResult.usageMetadata.totalCostJPY || 0;
+      Logger.log(`[DEBUG][processNormalQAWithTwoStage] ステップ1コスト: ¥${optimizationResult.usageMetadata.totalCostJPY.toFixed(4)}`);
+    }
+
+    // ステップ2: Proモデルで最終回答生成
+    Logger.log(`[DEBUG][processNormalQAWithTwoStage] === ステップ2: Proモデルで回答生成 ===`);
+    const finalResult = _generateAnswerWithThinkingModel(optimizationResult.optimizedPrompt, userId);
 
     Logger.log(`[DEBUG][processNormalQAWithTwoStage] 最終回答長: ${finalResult.answer.length}文字`);
     Logger.log(`[DEBUG][processNormalQAWithTwoStage] 要約長: ${finalResult.summary.length}文字`);
 
-    // 使用量メタデータを統合
+    // ステップ2のコストを統合
     if (finalResult.usageMetadata) {
-      totalUsageMetadata.inputTokens = finalResult.usageMetadata.inputTokens || 0;
-      totalUsageMetadata.outputTokens = finalResult.usageMetadata.outputTokens || 0;
-      totalUsageMetadata.inputCostJPY = finalResult.usageMetadata.inputCostJPY || 0;
-      totalUsageMetadata.outputCostJPY = finalResult.usageMetadata.outputCostJPY || 0;
-      totalUsageMetadata.totalCostJPY = finalResult.usageMetadata.totalCostJPY || 0;
+      totalUsageMetadata.inputTokens += finalResult.usageMetadata.inputTokens || 0;
+      totalUsageMetadata.outputTokens += finalResult.usageMetadata.outputTokens || 0;
+      totalUsageMetadata.inputCostJPY += finalResult.usageMetadata.inputCostJPY || 0;
+      totalUsageMetadata.outputCostJPY += finalResult.usageMetadata.outputCostJPY || 0;
+      totalUsageMetadata.totalCostJPY += finalResult.usageMetadata.totalCostJPY || 0;
+      Logger.log(`[DEBUG][processNormalQAWithTwoStage] ステップ2コスト: ¥${finalResult.usageMetadata.totalCostJPY.toFixed(4)}`);
     }
 
+    Logger.log(`[DEBUG][processNormalQAWithTwoStage] 合計コスト: ¥${totalUsageMetadata.totalCostJPY.toFixed(4)}`);
     Logger.log(`[DEBUG][processNormalQAWithTwoStage] === 関数終了 ===`);
 
     return {
       answer: finalResult.answer,
       summary: finalResult.summary,
       usageMetadata: totalUsageMetadata,
-      extractedInfo: extractedInfo  // デバッグ用
+      optimizedPrompt: optimizationResult.optimizedPrompt  // デバッグ用
     };
 
   } catch (error) {
@@ -565,33 +740,34 @@ function processNormalQAWithTwoStage(promptText, userId, userBasicInfo, referenc
 
 
 /**
- * flash-liteで関連情報を抽出
- * 利用者基本情報と参考資料から、プロンプトに関連する要点を抽出
+ * flash-liteで思考モデル用のプロンプトを最適化
+ * 利用者基本情報と参照資料を使って、思考モデルが最適に推論できるプロンプトを生成
  *
  * @private
  * @param {string} promptText - ユーザーの質問
  * @param {string} userBasicInfo - 利用者の基本情報
- * @param {string} referenceData - 参考資料
- * @return {string} 抽出された関連情報
+ * @param {string} documentText - 参照資料
+ * @return {Object} 最適化結果 {optimizedPrompt, usageMetadata}
  */
-function _extractRelevantInfo(promptText, userBasicInfo, referenceData) {
-  Logger.log(`[DEBUG][extractRelevantInfo] === 関数開始 ===`);
+function _optimizePromptWithFlashLite(promptText, userBasicInfo, documentText) {
+  Logger.log(`[DEBUG][optimizePromptWithFlashLite] === 関数開始 ===`);
 
   const config = CONFIG.VERTEX_AI;
 
-  // プロンプト生成
+  // プロンプト生成（Flash-Lite用）
   const prompt = `
 # あなたの役割
 
-あなたは、大量のデータから質問に関連する重要な情報を抽出する専門家です。
+あなたは、AI思考モデル（gemini-2.5-pro）のためにプロンプトを最適化する専門家です。
+以下の情報を使用して、Proモデルが深い推論を行い、JSON形式で回答するための最適なプロンプトを生成してください。
 
 # 利用者基本情報
 
 ${userBasicInfo}
 
-# 参考資料
+# 参照資料
 
-${referenceData}
+${documentText}
 
 ---
 
@@ -603,17 +779,43 @@ ${promptText}
 
 # 指示
 
-上記の「利用者基本情報」と「参考資料」の中から、ユーザーの質問に回答するために**必要な情報だけ**を抽出してください。
+思考モデルが質問に回答するために最適化されたプロンプトを生成してください。
 
-- 質問に関連しない情報は除外してください
-- 重要な数値、日付、状態、症状などは必ず含めてください
-- 簡潔に要点をまとめてください
-- 箇条書きで出力してください
+**最適化の方針**:
+1. 質問に関連する重要な情報を特定し、構造化して提示
+2. 冗長な情報や無関係な情報を削除
+3. 日付、数値、状態変化などの重要データを明確に
+4. 思考モデルが推論しやすい論理的な構造で整理
+5. コンテキストと質問を明確に分離
+6. **必ずJSON形式での出力指示を含める**（最重要）
 
-出力形式はプレーンテキストで、説明文などは不要です。
+**出力形式** - 重要:
+- **プレーンテキストのみ**を出力してください
+- JSONでラップしないでください
+- マークダウンのコードブロックも不要です
+- Proモデルに直接渡すプロンプトテキストのみを出力してください
+
+**プロンプトに必ず含める要素**:
+- 利用者情報（構造化）
+- 関連する記録・データ（時系列順）
+- ユーザーの質問
+- **JSON形式での出力指示**（最終行に必ず含める）
+
+**プロンプト末尾に含めるJSON出力指示**（これをプロンプトの最後に記述）:
+
+---
+あなたの回答は以下のJSON形式で返してください：
+
+{
+  "answer": "質問に対する詳細な回答をここに記述",
+  "summary": "回答の要点を簡潔に要約"
+}
+
+マークダウン記法や追加の説明文は含めないでください。純粋なJSONのみを出力してください。
+---
 `;
 
-  Logger.log(`[DEBUG][extractRelevantInfo] プロンプト生成完了: ${prompt.length}文字`);
+  Logger.log(`[DEBUG][optimizePromptWithFlashLite] プロンプト生成完了: ${prompt.length}文字`);
 
   // リクエストボディ構築
   const requestBody = {
@@ -629,7 +831,7 @@ ${promptText}
   // Vertex AI APIエンドポイント（flash-lite使用）
   const url = `https://${config.GCP_LOCATION}-aiplatform.googleapis.com/v1/projects/${config.GCP_PROJECT_ID}/locations/${config.GCP_LOCATION}/publishers/google/models/${config.EXTRACTOR_MODEL_NAME}:generateContent`;
 
-  Logger.log(`[DEBUG][extractRelevantInfo] API URL: ${url}`);
+  Logger.log(`[DEBUG][optimizePromptWithFlashLite] API URL: ${url}`);
 
   // OAuth2トークン取得
   const oauthToken = ScriptApp.getOAuthToken();
@@ -642,118 +844,106 @@ ${promptText}
     payload: JSON.stringify(requestBody)
   };
 
-  Logger.log(`[DEBUG][extractRelevantInfo] fetchWithRetry実行中...`);
+  Logger.log(`[DEBUG][optimizePromptWithFlashLite] fetchWithRetry実行中...`);
   const startTime = new Date();
 
   try {
-    const response = fetchWithRetry(url, options, "Vertex AI Extractor");
+    const response = fetchWithRetry(url, options, "Vertex AI Flash-Lite Optimizer");
     const duration = new Date() - startTime;
 
-    Logger.log(`[DEBUG][extractRelevantInfo] ✅ API呼び出し成功 (${duration}ms)`);
+    Logger.log(`[DEBUG][optimizePromptWithFlashLite] ✅ API呼び出し成功 (${duration}ms)`);
 
     const responseText = response.getContentText();
     const jsonResponse = JSON.parse(responseText);
 
     // エラーチェック
     if (!jsonResponse.candidates || jsonResponse.candidates.length === 0) {
-      throw new Error("関連情報の抽出に失敗しました（候補が空）");
+      throw new Error("プロンプト最適化に失敗しました（候補が空）");
     }
 
     const candidate = jsonResponse.candidates[0];
-    
+
     if (!candidate.content || !candidate.content.parts || !candidate.content.parts[0].text) {
-      throw new Error("関連情報の抽出に失敗しました（テキストが空）");
+      throw new Error("プロンプト最適化に失敗しました（テキストが空）");
     }
 
-    const extractedText = candidate.content.parts[0].text;
-    
-    Logger.log(`[DEBUG][extractRelevantInfo] ✅ 抽出成功: ${extractedText.length}文字`);
-    Logger.log(`[DEBUG][extractRelevantInfo] === 関数終了 ===`);
+    const optimizedPrompt = candidate.content.parts[0].text;
 
-    return extractedText;
+    // usageMetadataを抽出
+    const usageMetadata = _extractUsageMetadata(jsonResponse, config.EXTRACTOR_MODEL_NAME, 'text');
+
+    Logger.log(`[DEBUG][optimizePromptWithFlashLite] ✅ 最適化成功: ${optimizedPrompt.length}文字`);
+    Logger.log(`[DEBUG][optimizePromptWithFlashLite] === 関数終了 ===`);
+
+    return {
+      optimizedPrompt: optimizedPrompt,
+      usageMetadata: usageMetadata
+    };
 
   } catch (error) {
     const duration = new Date() - startTime;
-    Logger.log(`[DEBUG][extractRelevantInfo] ❌ エラー発生 (${duration}ms): ${error.message}`);
-    throw new Error(`関連情報の抽出に失敗しました: ${error.message}`);
+    Logger.log(`[DEBUG][optimizePromptWithFlashLite] ❌ エラー発生 (${duration}ms): ${error.message}`);
+    throw new Error(`プロンプト最適化に失敗しました: ${error.message}`);
   }
 }
 
 
 /**
- * flash思考モデルで最終回答を生成
- * 抽出された関連情報と質問を使って、詳細な回答と要約を生成
+ * Proモデルで最終回答を生成
+ * 最適化されたプロンプトを使用して、深い推論により高品質な回答と要約を生成
  *
  * @private
- * @param {string} promptText - ユーザーの質問
+ * @param {string} optimizedPrompt - Flash-Liteで最適化されたプロンプト
  * @param {string} userId - 利用者ID
- * @param {string} extractedInfo - 抽出された関連情報
  * @return {Object} 回答と要約を含むオブジェクト
  * @return {string} return.answer - 詳細な回答
  * @return {string} return.summary - 回答の要約
  * @return {Object} return.usageMetadata - API使用量情報
  */
-function _generateAnswerWithThinkingModel(promptText, userId, extractedInfo) {
+function _generateAnswerWithThinkingModel(optimizedPrompt, userId) {
   Logger.log(`[DEBUG][generateAnswerWithThinkingModel] === 関数開始 ===`);
 
   const config = CONFIG.VERTEX_AI;
 
-  // プロンプト生成（思考モデル用）
-  const prompt = `
-# あなたの役割
-
-あなたは、利用者の質問に対して的確で丁寧な回答を提供する、優秀なAIアシスタントです。
-
-# 利用者ID
-
-${userId}
-
-# 関連情報
-
-以下は、質問に関連する利用者情報と参考資料から抽出された要点です。
-
-${extractedInfo}
+  // Flash-Liteで最適化されたプロンプトに、回答形式の指示を追加
+  const prompt = `${optimizedPrompt}
 
 ---
 
-# ユーザーからの質問
+# 回答生成指示
 
-${promptText}
-
----
-
-# 指示
-
-上記の関連情報を基に、ユーザーの質問に対する**詳細な回答**と、その**簡潔な要約**を生成してください。
+あなたは、利用者の質問に対して深い思考プロセスを使って分析し、的確で丁寧な回答を提供する優秀なAIアシスタントです。
 
 **重要な注意事項**:
-- 思考プロセスを使って、情報を深く分析してください
+- 思考モードを使って、上記の情報を深く分析してください
 - 回答は具体的で実用的な内容にしてください
-- 利用者IDを踏まえて、個別化された回答を心がけてください
-- 関連情報に含まれていない事項については、推測であることを明示してください
+- 利用者ID（${userId}）を踏まえて、個別化された回答を心がけてください
+- 提供された情報に基づいて回答し、情報にない事項は推測であることを明示してください
+- 時系列の変化や因果関係を論理的に説明してください
 
 **出力形式**:
 
 回答と要約を以下のJSON形式で返してください。マークダウン記法や説明文は含めないでください。
 
 {
-  "answer": "（ここに、質問に対する詳細な回答を記述）",
-  "summary": "（ここに、上記answerの内容を簡潔に要約したものを記述）"
+  "answer": "（ここに、質問に対する詳細な回答を記述。情報を統合し、深い洞察を提供してください）",
+  "summary": "（ここに、上記answerの要点を簡潔に要約したものを記述）"
 }
 `;
 
   Logger.log(`[DEBUG][generateAnswerWithThinkingModel] プロンプト生成完了: ${prompt.length}文字`);
 
   // リクエストボディ構築（思考モデル用設定）
+  // ✅ 公式ドキュメント準拠: thinkingConfigはgenerationConfig内に配置済み
   const requestBody = {
     contents: [{
       role: "user",
       parts: [{ text: prompt }]
     }],
-    generationConfig: config.THINKING_CONFIG
+    generationConfig: config.THINKING_GENERATION_CONFIG
   };
 
-  // Vertex AI APIエンドポイント（flash思考モデル使用）
+  // Vertex AI APIエンドポイント（Pro使用）
   const url = `https://${config.GCP_LOCATION}-aiplatform.googleapis.com/v1/projects/${config.GCP_PROJECT_ID}/locations/${config.GCP_LOCATION}/publishers/google/models/${config.THINKING_MODEL_NAME}:generateContent`;
 
   Logger.log(`[DEBUG][generateAnswerWithThinkingModel] API URL: ${url}`);
@@ -782,17 +972,18 @@ ${promptText}
     Logger.log(`[DEBUG][_generateAnswerWithThinkingModel] レスポンステキスト長: ${responseText.length}文字`);
 
     const jsonResponse = JSON.parse(responseText);
-    
+
     // 思考の要約を抽出（思考モデル専用）
+    // 注: v88で includeThoughts=false に変更したため、思考の要約は返されません
     const thoughtsSummary = _extractThoughtsSummary(jsonResponse);
     if (thoughtsSummary) {
       Logger.log(`[DEBUG][_generateAnswerWithThinkingModel] 思考の要約: ${thoughtsSummary.substring(0, 200)}...`);
     }
 
     // レスポンスパース（_parseGeminiResponseを再利用）
-    const result = _parseGeminiResponse(responseText);
-    
-    // 思考の要約を結果に追加
+    const result = _parseGeminiResponse(responseText, config.THINKING_MODEL_NAME);
+
+    // 思考の要約を結果に追加（v88以降は null のはず）
     if (thoughtsSummary) {
       result.thoughtsSummary = thoughtsSummary;
     }
