@@ -6,7 +6,7 @@
 
 **Modified:** 2025-10-20
 
-**Current Version:** v1.3.0
+**Current Version:** v1.4.0
 
 **Owners:** Fractal Group
 
@@ -203,109 +203,25 @@ const CONFIG = {
 };
 ```
 
-## テスト
+## Structure
 
-### GASエディタでのテスト実行
+### スクリプトファイル構成
 
-#### promptType='外部文章' での質疑応答テスト（最新・推奨）
+#### エントリーポイント
+- `webhook.gs`: Webhookリクエスト受信・タスクキュー登録
 
-```javascript
-// testPromptTypeDocument() を実行
-function testPromptTypeDocument() {
-  const result = processClientQA(
-    '転倒リスクを減らすために、どのような対策が必要ですか？',
-    {
-      promptType: '外部文章',
-      documentText: `# 利用者基本情報
-氏名: 田中花子
-年齢: 82歳
-要介護度: 要介護3
+#### コアモジュール
+- `task_queue.gs`: タスクキュー管理（ScriptProperties使用）
+- `task_worker.gs`: 非同期ワーカー処理
+- `vertex_ai_client.gs`: Vertex AI Gemini APIクライアント
+- `appsheet_client.gs`: AppSheet API連携（Client_Analyticsテーブル更新）
+- `duplication_prevention.gs`: 重複実行防止
+- `logger.gs`: 実行ログ記録
 
-# 現在の状態
-・独居
-・歩行が不安定
-・血圧が高め（150/90）`
-    }
-  );
-  
-  Logger.log('回答: ' + result.answer);
-  Logger.log('要約: ' + result.summary);
-}
-```
-
-#### promptType='通常' での質疑応答テスト（最新・推奨）
-
-```javascript
-// testPromptTypeNormal() を実行
-function testPromptTypeNormal() {
-  const result = processClientQA(
-    '今後必要な支援内容を具体的に提案してください。',
-    {
-      promptType: '通常',
-      userId: 'USER001',
-      userBasicInfo: `# 利用者基本情報
-利用者ID: USER001
-氏名: 山田花子
-年齢: 82歳`,
-      referenceData: `# 訪問記録
-・歩行が不安定になってきた
-・血圧: 150/90 (やや高め)`
-    }
-  );
-  
-  Logger.log('回答: ' + result.answer);
-  Logger.log('要約: ' + result.summary);
-  Logger.log('抽出された関連情報: ' + result.extractedInfo);
-}
-```
-
-#### mode指定での使用（英語版・引き続きサポート）
-
-```javascript
-// mode='document'
-const result1 = processClientQA(promptText, {
-  mode: 'document',
-  documentText: documentText
-});
-
-// mode='normal'
-const result2 = processClientQA(promptText, {
-  mode: 'normal',
-  userId: userId,
-  userBasicInfo: userBasicInfo,
-  referenceData: referenceData
-});
-```
-
-#### 従来形式での使用（下位互換）
-
-```javascript
-// 参照資料ベース
-const result1 = processClientQA(promptText, documentText);
-
-// 通常の質疑応答
-const result2 = processClientQA(promptText, null, userId, userBasicInfo, referenceData);
-```
-
-### その他のテスト関数
-
-#### promptType指定のテスト（最新）
-
-- `testPromptTypeNormal()` - promptType='通常' のテスト
-- `testPromptTypeDocument()` - promptType='外部文章' のテスト
-
-#### mode指定のテスト
-
-- `testNormalQAWithTwoStageNewFormat()` - mode='normal' のテスト
-- `testDocumentQANewFormat()` - mode='document' のテスト
-
-#### 従来形式のテスト
-
-- `testVertexAIWithLog()` - 参照資料ベースのVertex AIテスト
-- `testNormalQAWithTwoStage()` - 通常の質疑応答テスト
-- `testNormalQAWithTwoStageCustom()` - カスタムデータでのテスト
-- `testProcessClientQAWithAppSheet()` - AppSheet更新込みのテスト
-- `testProcessClientQAErrorHandling()` - エラーハンドリングのテスト
+#### ユーティリティ
+- `config.gs`: 設定管理
+- `utilities.gs`: 共通ユーティリティ関数
+- `script_properties_manager.gs`: スクリプトプロパティ管理
 function testNormalQAWithTwoStage() {
   // 利用者ID、基本情報、参考資料を使った2段階AI処理のテスト
   // 抽出された関連情報と最終回答を確認できます
