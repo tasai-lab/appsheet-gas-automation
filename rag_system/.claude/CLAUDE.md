@@ -1,141 +1,180 @@
 # RAGシステム - Claude Code プロジェクトガイド
 
-## クイックスタート
+**プロジェクト**: 医療特化型RAG（Retrieval-Augmented Generation）システム
+**技術スタック**: Next.js 14 + FastAPI + Vertex AI + Firestore
+**最終更新**: 2025-10-28
 
-このプロジェクトは**医療特化型RAGシステム**の開発プロジェクトです。
+---
+
+## 🚀 クイックスタート
 
 ### よく使うコマンド
 
-#### 開発環境管理
-
+**開発環境管理:**
 - `/start-dev` - Backend + Frontend 同時起動
 - `/kill-dev` - 全開発サーバー停止
 - `/restart-dev` - 開発サーバー再起動
 
-#### データ処理
-
-- `/vectorize-data` - 既存データのベクトル化
-
-#### テスト・検証
-
-- `/check-consistency` - 計画と実装の整合性チェック
+**テスト・検証:**
 - `/test-backend` - Backend単体テスト実行
 - `/test-frontend` - Frontend単体テスト実行
+- `/check-consistency` - 計画と実装の整合性チェック
 - `/check-api-calls` - API呼び出し回数確認
 
-#### デプロイ
+**データ管理:**
+- `/vectorize-data` - ナレッジベースのベクトル化
 
+**デプロイ:**
 - `/deploy-vercel` - Vercel デプロイ（Frontend）
 
-#### ドキュメント
-
+**ドキュメント:**
 - `/update-docs` - ドキュメント更新
 
-### 重要な制約
+---
 
-1. **API呼び出し: 絶対にリトライループを実装しない**
-   - 1処理 = 1API呼び出し厳守
-   - `docs/API_CALL_PREVENTION.md` を必読
+## ⚠️ 最重要な制約
 
-2. **エラー記録: 全てのエラーを記録**
-   - `docs/ERROR_LOG.md` に必ず記載
-   - 発生日時、原因、解決策、再発防止策を明記
+### 1. API呼び出し: リトライループ厳禁
 
-3. **セキュリティ: 個人情報保護**
-   - ログ出力時はマスキング必須
-   - `docs/07_SECURITY.md` 参照
+**絶対に禁止:**
+```python
+# ❌ 絶対に書かない
+for attempt in range(3):  # リトライループ
+    try:
+        result = api_call()
+        break
+    except:
+        continue
+```
 
-4. **テスト: 実装前にテスト関数作成**
-   - 全ての機能にテストを用意
-   - API呼び出し回数を必ず確認
+**正しいパターン:**
+```python
+# ✅ 1回のみ実行
+try:
+    result = await api_call()  # 1回のみ
+except Exception as e:
+    logger.error(f"API呼び出し失敗: {e}")
+    raise  # 即座にraise
+```
 
-## プロジェクト構造
+**理由**: 過去に200,000+ API呼び出し/日の事故発生（参照: `docs/ERROR_LOG.md`）
+
+### 2. エラー記録: 全てのエラーを docs/ERROR_LOG.md に記録
+
+必須項目:
+- 発生日時
+- 問題の内容（症状・根本原因・影響範囲）
+- 原因分析
+- 解決策
+- 再発防止策
+- 教訓
+
+### 3. セキュリティ: 個人情報保護
+
+- ログ出力時はマスキング必須
+- 医療情報・利用者名は絶対にログに出力しない
+- 詳細: `docs/07_SECURITY.md`
+
+---
+
+## 📁 プロジェクト構造
 
 ```
 rag_system/
-├── docs/              # 設計書・仕様書
-│   ├── 01_PROJECT_OVERVIEW.md
-│   ├── 02_ARCHITECTURE.md
-│   ├── 03_HYBRID_SEARCH_SPEC.md
-│   ├── 04_API_SPECIFICATION.md
-│   ├── 06_DEPLOYMENT.md
-│   ├── 07_SECURITY.md
-│   ├── ERROR_LOG.md          # エラーログ
-│   └── API_CALL_PREVENTION.md # API予防策
-├── backend/           # FastAPI Backend
-├── frontend/          # Next.js Frontend
-├── .claude/           # Claude Code設定
-└── README.md
+├── docs/                          # ドキュメント（23個に最適化済み）
+│   ├── README.md                  # ドキュメントインデックス
+│   ├── 01_PROJECT_OVERVIEW.md     # プロジェクト概要
+│   ├── 02_ARCHITECTURE.md         # アーキテクチャ
+│   ├── 03_HYBRID_SEARCH_SPEC_V2.md # ハイブリッド検索仕様
+│   ├── 04_API_SPECIFICATION.md    # API仕様
+│   ├── 06_DEPLOYMENT.md           # デプロイ手順
+│   ├── 07_SECURITY.md             # セキュリティ設計
+│   ├── ERROR_LOG.md               # ⭐ エラー記録（必読）
+│   ├── DECISIONS.md               # アーキテクチャ決定記録
+│   └── ...                        # その他セットアップガイド等
+├── backend/                       # FastAPI Backend
+│   ├── app/
+│   │   ├── routers/              # APIルーター
+│   │   ├── services/             # ビジネスロジック
+│   │   ├── middleware/           # 認証等
+│   │   └── config.py             # 設定
+│   ├── tests/                    # テスト
+│   └── requirements.txt
+├── frontend/                      # Next.js Frontend
+│   ├── src/
+│   │   ├── app/                  # App Router
+│   │   ├── components/           # UIコンポーネント
+│   │   ├── contexts/             # グローバル状態
+│   │   └── lib/                  # ユーティリティ
+│   └── package.json
+├── scripts/                       # データ移行スクリプト
+│   ├── migrate_to_firestore_vectors.py
+│   └── ...
+└── .claude/                       # Claude Code設定
+    ├── CLAUDE.md                 # このファイル
+    └── commands/                 # カスタムコマンド
 ```
 
-## 開発ワークフロー
+---
 
-### 1. 新機能開発
+## 📖 重要ドキュメント
 
-1. `docs/01_PROJECT_OVERVIEW.md` でスコープ確認
-2. 該当する仕様書確認 (`02_ARCHITECTURE.md`, `03_HYBRID_SEARCH_SPEC.md`等)
-3. テスト関数作成
-4. 実装
-5. API呼び出し回数確認 (`/check-api-calls`)
-6. ドキュメント更新 (`/update-docs`)
-7. コミット
+### 必読ドキュメント（開発前）
 
-### 2. エラー対応
+1. **[docs/README.md](../docs/README.md)** - ドキュメント全体の構成・最新情報
+2. **[docs/ERROR_LOG.md](../docs/ERROR_LOG.md)** - 過去のエラーと教訓（必読）
+3. **[docs/02_ARCHITECTURE.md](../docs/02_ARCHITECTURE.md)** - システムアーキテクチャ
+4. **[docs/04_API_SPECIFICATION.md](../docs/04_API_SPECIFICATION.md)** - APIエンドポイント仕様
 
-1. エラー内容を`docs/ERROR_LOG.md`に記録
-   - 発生日時
-   - エラーメッセージ
-   - 発生状況
-2. 原因調査
-3. 解決策実施
-4. `docs/ERROR_LOG.md`に結論・再発防止策を記載
-5. コミット
+### 機能別ドキュメント
 
-### 3. API呼び出し実装
+- **ハイブリッド検索**: [docs/03_HYBRID_SEARCH_SPEC_V2.md](../docs/03_HYBRID_SEARCH_SPEC_V2.md)
+- **キャッシュ実装**: [docs/CACHE_IMPLEMENTATION.md](../docs/CACHE_IMPLEMENTATION.md)
+- **Firestore Vector Search**: [docs/FIRESTORE_VECTOR_MIGRATION_REPORT.md](../docs/FIRESTORE_VECTOR_MIGRATION_REPORT.md)
+- **セキュリティ**: [docs/07_SECURITY.md](../docs/07_SECURITY.md)
 
-**必須チェック:**
-- [ ] リトライループがないこと
-- [ ] 1処理 = 1API呼び出しであること
-- [ ] エラー時は即座に`throw`/`raise`すること
+---
+
+## 🔄 開発ワークフロー
+
+### 新機能開発
+
+1. **スコープ確認**: `docs/README.md` → 該当する仕様書
+2. **設計**: アーキテクチャドキュメント確認
+3. **テスト関数作成**: 実装前にテストを書く
+4. **実装**: コーディング規約に従う
+5. **API呼び出し回数確認**: `/check-api-calls`
+6. **テスト実行**: `/test-backend` または `/test-frontend`
+7. **ドキュメント更新**: `/update-docs`
+8. **コミット**: 変更内容を明記
+
+### エラー対応フロー
+
+1. **エラー記録開始**: `docs/ERROR_LOG.md` にエントリー作成
+   - 発生日時、症状、影響範囲を記録
+2. **原因調査**: ログ分析、コードレビュー
+3. **解決策実施**: 修正コード実装
+4. **エラー記録完了**: 原因分析・解決策・再発防止策・教訓を記載
+5. **コミット**: `fix: ` プレフィックスでコミット
+
+### API呼び出し実装チェックリスト
+
+実装前に以下を確認:
+
+- [ ] リトライループがないこと（1回のみ実行）
+- [ ] エラー時は即座に `throw`/`raise` すること
 - [ ] API呼び出し前後にログ出力すること
-- [ ] カウンター増加すること
+- [ ] `docs/ERROR_LOG.md` の過去のAPI関連エラーを確認したこと
 
-**参考:**
-- `docs/API_CALL_PREVENTION.md`
-- `common_modules/embeddings_service.gs`
+---
 
-## コーディング規約
+## 💻 コーディング規約
 
-### GAS (Google Apps Script)
-
-```javascript
-/**
- * 関数説明
- *
- * @param {string} param1 - パラメータ説明
- * @returns {Object} 戻り値説明
- */
-function functionName(param1) {
-  const logger = createLogger('スクリプト名');
-
-  try {
-    // ★★★ API呼び出し: 1回のみ実行 ★★★
-    logger.info('API呼び出し開始');
-    const result = apiCall();
-    logger.info('API呼び出し成功');
-    return result;
-  } catch (error) {
-    logger.error(`エラー: ${error.toString()}`);
-    throw error;  // 即座にスロー
-  }
-}
-```
-
-### Python (FastAPI)
+### Python (FastAPI) - 推奨パターン
 
 ```python
-from typing import Optional
 import logging
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -159,11 +198,11 @@ async def function_name(param1: str) -> dict:
         logger.info("API呼び出し成功")
         return result
     except Exception as e:
-        logger.error(f"エラー: {e}")
-        raise  # 即座にraise
+        logger.error(f"API呼び出し失敗: {e}")
+        raise  # 即座にraise（リトライしない）
 ```
 
-### TypeScript (Next.js)
+### TypeScript (Next.js) - 推奨パターン
 
 ```typescript
 /**
@@ -174,139 +213,74 @@ async def function_name(param1: str) -> dict:
 export async function functionName(param1: string): Promise<Result> {
   try {
     // ★★★ API呼び出し: 1回のみ実行 ★★★
-    console.log('API呼び出し開始');
+    console.log('[API] 呼び出し開始');
     const result = await apiCall();
-    console.log('API呼び出し成功');
+    console.log('[API] 呼び出し成功');
     return result;
   } catch (error) {
-    console.error('エラー:', error);
-    throw error;  // 即座にthrow
+    console.error('[API] 呼び出し失敗:', error);
+    throw error;  // 即座にthrow（リトライしない）
   }
 }
 ```
 
-## Mermaid図の作成ガイドライン
+---
 
-### ダークモード対応配色
+## ✅ デプロイ前チェックリスト
 
-```mermaid
-%%{init: {'theme':'dark', 'themeVariables': { 'primaryColor':'#4A90E2','secondaryColor':'#7B68EE','tertiaryColor':'#50C878','primaryBorderColor':'#4A90E2','secondaryBorderColor':'#7B68EE','tertiaryBorderColor':'#50C878'}}}%%
-```
+必ず全項目をチェックすること:
 
-**カラーパレット:**
-- Primary (青): `#4A90E2` - メインフロー
-- Secondary (紫): `#7B68EE` - サブフロー
-- Success (緑): `#50C878` - 成功パス
-- Error (赤): `#E74C3C` - エラーパス
-- Warning (黄): `#F39C12` - 警告
-- Gray (灰): `#95A5A6` - 背景・補助
-
-### フローチャート例
-
-```mermaid
-%%{init: {'theme':'dark'}}%%
-flowchart TB
-    Start([ユーザークエリ]) --> Preprocess[Query Preprocessing]
-    Preprocess --> BM25[Stage 1: BM25 Filtering]
-    BM25 --> Dense[Stage 2: Dense Retrieval]
-    Dense --> Rerank[Stage 3: Reranking]
-    Rerank --> Check{結果数 >= 2?}
-    Check -->|Yes| Success([検索成功])
-    Check -->|No| Suggest[用語提案]
-    Suggest --> Confirm{ユーザー確認}
-    Confirm -->|Yes| BM25
-    Confirm -->|No| End([終了])
-
-    style Start fill:#4A90E2
-    style Success fill:#50C878
-    style Suggest fill:#F39C12
-    style End fill:#95A5A6
-```
-
-### シーケンス図例
-
-```mermaid
-%%{init: {'theme':'dark'}}%%
-sequenceDiagram
-    participant User as ユーザー
-    participant Frontend as Next.js
-    participant Backend as FastAPI
-    participant VectorDB as Spreadsheet
-    participant VertexAI as Vertex AI
-
-    User->>Frontend: 検索クエリ入力
-    Frontend->>Backend: POST /search
-    Backend->>VectorDB: BM25フィルタリング (500件)
-    VectorDB-->>Backend: 候補返却
-    Backend->>VertexAI: Embedding生成
-    Note over Backend,VertexAI: ★★★ 1回のみ実行 ★★★
-    VertexAI-->>Backend: 埋め込みベクトル (3072次元)
-    Backend->>Backend: コサイン類似度計算
-    Backend->>Backend: Reranking (Top 10)
-    Backend-->>Frontend: 検索結果
-    Frontend-->>User: 結果表示
-```
-
-## ドキュメント更新時の注意
-
-1. **常に最新状態を保つ**
-   - 実装変更時は必ず対応ドキュメントを更新
-   - Mermaid図も更新
-
-2. **エラーログは必ず記録**
-   - `docs/ERROR_LOG.md` に追記
-
-3. **API変更時はAPI仕様書更新**
-   - `docs/04_API_SPECIFICATION.md`
-
-4. **セキュリティ変更時は設計書更新**
-   - `docs/07_SECURITY.md`
-
-## テスト実行
-
-### Backend
-
-```bash
-cd backend
-pytest tests/ -v
-```
-
-### Frontend
-
-```bash
-cd frontend
-npm test
-npm run e2e
-```
-
-### API呼び出し回数確認
-
-```bash
-# GAS
-# testAllRAGModules() を実行してログ確認
-
-# Backend
-curl http://localhost:8000/metrics | grep api_call_count
-```
-
-## デプロイ前チェックリスト
-
-- [ ] 全テスト成功
-- [ ] API呼び出し回数確認（異常な増加なし）
-- [ ] エラーログ更新
-- [ ] ドキュメント更新
-- [ ] セキュリティチェック
-- [ ] Mermaid図の更新
+- [ ] `/test-backend` 成功
+- [ ] `/test-frontend` 成功
+- [ ] `/check-api-calls` で異常な増加なし
+- [ ] `docs/ERROR_LOG.md` 更新（新規エラーがある場合）
+- [ ] `/update-docs` 実行済み
+- [ ] セキュリティチェック（個人情報マスキング確認）
 - [ ] コミットメッセージに変更内容明記
-
-## 追加リソース
-
-- [Vertex AI Embeddings API](https://cloud.google.com/vertex-ai/generative-ai/docs/embeddings/get-text-embeddings)
-- [FastAPI Documentation](https://fastapi.tiangolo.com/)
-- [Next.js Documentation](https://nextjs.org/docs)
-- [Mermaid Documentation](https://mermaid.js.org/)
 
 ---
 
-**最終更新**: 2025-10-27
-**レビュー**: 毎週月曜日
+## 🎯 現在のシステム状態（2025-10-28）
+
+### ✅ 実装完了済み
+
+- **Phase 3**: Firestore Vector Search移植（3,151件、10-15倍高速化）
+- **Phase 4**: RAG Engine統合（環境変数で切替可能）
+- **会話履歴コンテキスト化**: Backend + Frontend統合完了
+- **SSEストリーミング問題**: 修正完了（2025-10-28）
+- **API重複呼び出し問題**: 修正完了（ClientsContext導入）
+
+### 🔄 次のステップ（優先度順）
+
+1. **Firestore Vector Search本番切替** - 環境変数設定のみ（10-15倍高速化）
+2. **Firebase認証実装** - 設計完了、実装ガイドあり（1週間）
+3. **LangSmith監視実装** - 設計完了、統合ガイドあり（1週間）
+
+### 📊 パフォーマンス
+
+- **検索速度**: 約45秒（Spreadsheet）→ 3-5秒に短縮可能（Firestore）
+- **キャッシュ効果**: API呼び出し67.5%削減、コスト76.1%削減
+- **検索精度**: NDCG@10 = 0.85（ハイブリッド検索 + Reranking）
+
+---
+
+## 📚 関連リソース
+
+### 公式ドキュメント
+
+- [Vertex AI Generative AI](https://cloud.google.com/vertex-ai/docs/generative-ai/model-reference/gemini)
+- [Firestore Vector Search](https://firebase.google.com/docs/firestore/vector-search)
+- [FastAPI Documentation](https://fastapi.tiangolo.com/)
+- [Next.js 14 Documentation](https://nextjs.org/docs)
+
+### 内部ドキュメント
+
+- **全体構成**: [docs/README.md](../docs/README.md)
+- **過去のエラー**: [docs/ERROR_LOG.md](../docs/ERROR_LOG.md) ⭐ **必読**
+- **アーキテクチャ分析**: [docs/RAG_ARCHITECTURE_ANALYSIS_2025-10-28.md](../docs/RAG_ARCHITECTURE_ANALYSIS_2025-10-28.md)
+
+---
+
+**最終更新**: 2025-10-28
+**ドキュメント最適化**: 36個 → 23個（2025-10-28）
+**次回レビュー**: 毎週月曜日

@@ -109,6 +109,50 @@ https://docs.google.com/spreadsheets/d/【Spreadsheet ID】/edit
 - 保存先フォルダ: `16swPUizvdlyPxUjbDpVl9-VBDJZO91kX`
 - 編集権限: 自分のアカウント + GASサービスアカウント
 
+### 4. 🚨 Cloud Runサービスアカウントと共有（本番環境必須）
+
+**重要**: 本番環境のBackend（Cloud Run）がSpreadsheetにアクセスするには、サービスアカウントと共有する必要があります。
+
+#### 手順（所要時間: 1分）
+
+1. **Spreadsheetを開く**
+   ```
+   https://docs.google.com/spreadsheets/d/【Spreadsheet ID】/edit
+   ```
+
+2. **共有ボタンをクリック**
+   - 右上の「共有」ボタン（人のアイコン）をクリック
+
+3. **サービスアカウントを追加**
+   - 「ユーザーやグループを追加」フィールドに以下を**正確に**貼り付け：
+   ```
+   411046620715-compute@developer.gserviceaccount.com
+   ```
+   - Enter キーを押す
+
+4. **権限を設定**
+   - プルダウンメニューから「**編集者**」を選択
+   - 「通知を送信」のチェックを**外す**（サービスアカウントには通知不要）
+
+5. **完了をクリック**
+
+#### 確認方法
+
+- 共有設定画面で以下が表示されればOK：
+  ```
+  411046620715-compute@developer.gserviceaccount.com - 編集者
+  ```
+
+#### トラブルシューティング
+
+**エラー: Google Sheets API 403 Forbidden**
+- **原因**: サービスアカウントが共有されていない
+- **解決策**: 上記の手順を再度実施
+
+**エラー: Permission denied on resource**
+- **原因**: 権限レベルが「閲覧者」になっている
+- **解決策**: 権限を「編集者」に変更
+
 ---
 
 ## 🧪 動作テスト

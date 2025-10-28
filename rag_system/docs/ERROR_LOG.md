@@ -145,6 +145,135 @@ except asyncio.TimeoutError:
 
 ---
 
+### 🟡 **[2025-10-27] Frontend API重複呼び出し問題**
+
+#### 発生日時
+2025-10-27（発見日）
+
+#### 問題の内容
+
+**症状:**
+- `fetchClients()` API呼び出しが複数コンポーネントで重複実行されていた
+- 不要なAPI呼び出しによるパフォーマンス低下の可能性
+
+**根本原因:**
+`ChatContainer.tsx` と `Sidebar.tsx` の両方で `useEffect` 内で `fetchClients()` を独立に呼び出していた。
+
+```tsx
+// ChatContainer.tsx (Line 25-39)
+useEffect(() => {
+  const loadClients = async () => {
+    const response = await fetchClients();  // ❌ API呼び出し1回目
+    setClients(response.clients);
+  };
+  loadClients();
+}, []);
+
+// Sidebar.tsx (Line 39-51)
+useEffect(() => {
+  const loadClients = async () => {
+    const response = await fetchClients();  // ❌ API呼び出し2回目（重複）
+    setClients(response.clients);
+  };
+  loadClients();
+}, []);
+```
+
+**影響範囲:**
+- ページロード時に同じAPIが2回呼ばれる
+- 軽微なパフォーマンス低下（利用者一覧取得は軽量なため、実害は小さい）
+
+#### 原因分析
+
+**なぜ発生したのか:**
+- コンポーネント間でのstate共有が不十分
+- ClientsContextが存在するにも関わらず、各コンポーネントで独立してデータ取得していた
+
+**なぜ問題が発覚しなかったのか:**
+1. API呼び出しは成功していた
+2. レスポンスは同じなので、動作に影響がなかった
+3. パフォーマンス低下が体感できるほどではなかった
+
+#### 解決策
+
+**実施した修正:**
+
+1. **ClientsContextでグローバル状態管理** (`frontend/src/contexts/ClientsContext.tsx`)
+   - 利用者一覧をContextで一元管理
+   - 1回のAPI呼び出しで全コンポーネントに配布
+
+2. **ChatContainer.tsxからfetchClients削除**
+   - `useClients()` hookを使用してContextから取得
+   - API呼び出しを削除
+
+3. **Sidebarでのみデータ取得**
+   - Sidebarコンポーネントが表示されるタイミングで1回のみ取得
+   - 他のコンポーネントはContextから参照
+
+**修正後のコード:**
+
+```tsx
+// ClientsContext.tsx (新規作成)
+export const ClientsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadClients();
+  }, []);
+
+  const loadClients = async () => {
+    try {
+      const response = await fetchClients();  // ✅ 1回のみ
+      setClients(response.clients);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <ClientsContext.Provider value={{ clients, loading, refreshClients: loadClients }}>
+      {children}
+    </ClientsContext.Provider>
+  );
+};
+
+// ChatContainer.tsx (修正後)
+const { clients, loading } = useClients();  // ✅ Contextから取得（API呼び出しなし）
+```
+
+#### 再発防止策
+
+1. **Contextパターンの徹底**
+   - グローバルなデータ（利用者一覧、認証情報等）は必ずContextで管理
+   - 各コンポーネントで独立してAPI呼び出しをしない
+
+2. **コードレビュー強化**
+   - `useEffect` 内のAPI呼び出しを定期的にチェック
+   - 重複呼び出しの可能性を検出
+
+3. **開発者ツール活用**
+   - Network タブで重複リクエストを監視
+   - React DevTools Profilerでパフォーマンス測定
+
+#### 教訓
+
+- ✅ **グローバルデータはContextで管理**: コンポーネント間で共有するデータは必ずContext化
+- ✅ **DRY原則（Don't Repeat Yourself）**: 同じAPIを複数箇所で呼ばない
+- ✅ **小さな問題も記録**: 軽微な問題でも、将来的にスケールした際に影響が大きくなる可能性
+
+#### 関連ファイル
+
+- `frontend/src/contexts/ClientsContext.tsx` (新規作成)
+- `frontend/src/components/ChatContainer.tsx` (修正)
+- `frontend/src/components/Sidebar.tsx` (修正)
+
+#### ステータス
+
+**✅ 修正済み** (2025-10-27)
+
+---
+
 ## 今後のエラー記録テンプレート
 
 ### 🔴/🟡/🟢 **[日付] エラータイトル**
