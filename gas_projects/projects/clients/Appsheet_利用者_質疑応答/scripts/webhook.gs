@@ -12,16 +12,17 @@
  * プロンプトテキストを受け取り、Gemini APIで回答と要約を生成
  * 
  * 処理モード:
- * 1. 参照資料ベースの回答: mode='document'（従来の使い方）
- * 2. 通常の質疑応答（2段階AI処理）: mode='normal'（新機能）
+ * 1. 外部文章: promptType='外部文章' または mode='document'
+ * 2. 通常: promptType='通常' または mode='normal'（2段階AI処理）
  *
  * @param {string} promptText - ユーザーの質問（必須）
  * @param {Object} options - オプションパラメータ
- * @param {string} options.mode - 処理モード ('document' | 'normal')（オプション、自動判定）
- * @param {string} options.documentText - 参照ドキュメント（mode='document'で使用）
- * @param {string} options.userId - 利用者ID（mode='normal'で使用）
- * @param {string} options.userBasicInfo - 利用者の基本情報（mode='normal'で使用）
- * @param {string} options.referenceData - 参考資料（mode='normal'で使用）
+ * @param {string} options.promptType - プロンプトタイプ ('通常' | '外部文章')（推奨）
+ * @param {string} options.mode - 処理モード ('normal' | 'document')（promptTypeの英語版）
+ * @param {string} options.documentText - 参照ドキュメント（promptType='外部文章'で使用）
+ * @param {string} options.userId - 利用者ID（promptType='通常'で使用）
+ * @param {string} options.userBasicInfo - 利用者の基本情報（promptType='通常'で使用）
+ * @param {string} options.referenceData - 参考資料（promptType='通常'で使用）
  * @param {string} options.analysisId - 分析ID（AppSheet更新する場合は必須）
  * @param {boolean} options.updateAppSheet - AppSheetを更新するか（デフォルト: false）
  *
@@ -32,25 +33,32 @@
  * @return {string} return.analysisId - 分析ID（指定された場合）
  *
  * @example
- * // モード1: 参照資料ベースの質疑応答（従来の使い方）
+ * // promptType='外部文章': 参照資料ベースの質疑応答（推奨形式）
  * const result = processClientQA('血圧が高い場合の対応方法は？', {
- *   mode: 'document',
+ *   promptType: '外部文章',
  *   documentText: '利用者情報: 田中太郎さん、70歳、...'
  * });
  *
  * @example
- * // モード2: 通常の質疑応答（2段階AI処理）
+ * // promptType='通常': 通常の質疑応答（2段階AI処理）
  * const result = processClientQA('今後の支援内容を提案してください', {
- *   mode: 'normal',
+ *   promptType: '通常',
  *   userId: 'USER001',
  *   userBasicInfo: '氏名: 山田花子、年齢: 82歳、要介護3',
  *   referenceData: '2024-10-20: 歩行不安定、血圧150/90...'
  * });
  *
  * @example
- * // AppSheet更新付き
+ * // mode指定（英語版）も引き続き使用可能
  * const result = processClientQA('血圧が高い場合の対応方法は？', {
  *   mode: 'document',
+ *   documentText: '利用者情報: 田中太郎さん、70歳、...'
+ * });
+ *
+ * @example
+ * // AppSheet更新付き
+ * const result = processClientQA('血圧が高い場合の対応方法は？', {
+ *   promptType: '外部文章',
  *   documentText: '利用者情報: 田中太郎さん、70歳、...',
  *   analysisId: 'ANALYSIS-12345',
  *   updateAppSheet: true
@@ -98,7 +106,8 @@ function processClientQA(promptText, ...args) {
 
     // デフォルト値の設定
     const {
-      mode = null,  // 自動判定
+      promptType = null,  // '通常' | '外部文章'
+      mode = null,  // 'normal' | 'document'（promptTypeの英語版）
       documentText = null,
       userId = null,
       userBasicInfo = null,
@@ -110,8 +119,25 @@ function processClientQA(promptText, ...args) {
     // 処理モードの決定
     let actualMode;
     
-    if (mode) {
-      // モードが明示的に指定されている場合
+    // promptType（日本語）を優先的に処理
+    if (promptType) {
+      if (promptType === '通常') {
+        actualMode = 'normal';
+      } else if (promptType === '外部文章') {
+        actualMode = 'document';
+      } else {
+        throw new Error(`無効なpromptType: ${promptType}。'通常' または '外部文章' を指定してください`);
+      }
+      
+      // 指定されたタイプに必要なパラメータをチェック
+      if (actualMode === 'document' && !documentText) {
+        throw new Error('promptType="外部文章"の場合、documentTextは必須です');
+      }
+      if (actualMode === 'normal' && (!userId || !userBasicInfo || !referenceData)) {
+        throw new Error('promptType="通常"の場合、userId、userBasicInfo、referenceDataは必須です');
+      }
+    } else if (mode) {
+      // modeが明示的に指定されている場合（promptTypeが未指定の場合）
       if (mode !== 'document' && mode !== 'normal') {
         throw new Error(`無効なモード: ${mode}。'document' または 'normal' を指定してください`);
       }
@@ -125,21 +151,23 @@ function processClientQA(promptText, ...args) {
         throw new Error('mode="normal"の場合、userId、userBasicInfo、referenceDataは必須です');
       }
     } else {
-      // モード自動判定（後方互換性のため）
+      // promptTypeもmodeも未指定の場合、パラメータから自動判定（後方互換性のため）
       const isMode2 = userId && userBasicInfo && referenceData;
       const isMode1 = documentText && !isMode2;
 
       if (!isMode1 && !isMode2) {
-        throw new Error('処理モードが不明です。mode="document"またはmode="normal"を指定するか、必要なパラメータを指定してください');
+        throw new Error('処理モードが不明です。promptType="通常"/"外部文章" または mode="normal"/"document"を指定するか、必要なパラメータを指定してください');
       }
 
       actualMode = isMode2 ? 'normal' : 'document';
     }
 
-    const modeLabel = actualMode === 'normal' ? '通常の質疑応答（2段階AI処理）' : '参照資料ベースの回答';
+    const modeLabel = actualMode === 'normal' ? '通常の質疑応答（2段階AI処理）' : '外部文章の参照資料ベースの回答';
+    const promptTypeLabel = actualMode === 'normal' ? '通常' : '外部文章';
 
     logger.info(`質疑応答処理開始: ${modeLabel}`, {
       analysisId: analysisId || 'なし',
+      promptType: promptTypeLabel,
       mode: actualMode,
       userId: userId || 'なし',
       hasDocument: !!documentText,

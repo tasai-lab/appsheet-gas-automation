@@ -6,7 +6,7 @@
 
 **Modified:** 2025-10-20
 
-**Current Version:** v1.2.2
+**Current Version:** v1.3.0
 
 **Owners:** Fractal Group
 
@@ -71,25 +71,21 @@
 
 このシステムは2つの処理モードをサポートしています:
 
-#### モード1: 参照資料ベースの回答 (mode='document')
-
-- 利用者情報などの外部文章を参照して回答を生成
-- 専門的で具体的な回答が必要な場合に使用
-- **必須パラメータ**: `promptText`, `documentText`
-- **新形式**: 
-  ```javascript
-  processClientQA(promptText, {
-    mode: 'document',
-    documentText: documentText
-  })
-  ```
-
-#### モード2: 通常の質疑応答 (mode='normal') - 2段階AI処理
+#### promptType='通常' - 通常の質疑応答（2段階AI処理）
 
 - 利用者IDと基本情報・参考資料から関連情報を抽出し、思考モデルで回答生成
 - 複雑な分析や深い洞察が必要な場合に使用
 - **必須パラメータ**: `promptText`, `userId`, `userBasicInfo`, `referenceData`
-- **新形式**: 
+- **推奨形式（promptType使用）**: 
+  ```javascript
+  processClientQA(promptText, {
+    promptType: '通常',
+    userId: userId,
+    userBasicInfo: userBasicInfo,
+    referenceData: referenceData
+  })
+  ```
+- **英語版（mode使用）**: 
   ```javascript
   processClientQA(promptText, {
     mode: 'normal',
@@ -102,7 +98,27 @@
   1. gemini-2.5-flashで関連情報を抽出
   2. 抽出された情報と質問をgemini-2.5-flash-thinkingに渡して回答生成
 
-**下位互換性**: 従来の位置引数形式もサポートしています。modeパラメータを省略した場合は、提供されたパラメータから自動判別されます。
+#### promptType='外部文章' - 参照資料ベースの回答
+
+- 利用者情報などの外部文章を参照して回答を生成
+- 専門的で具体的な回答が必要な場合に使用
+- **必須パラメータ**: `promptText`, `documentText`
+- **推奨形式（promptType使用）**: 
+  ```javascript
+  processClientQA(promptText, {
+    promptType: '外部文章',
+    documentText: documentText
+  })
+  ```
+- **英語版（mode使用）**: 
+  ```javascript
+  processClientQA(promptText, {
+    mode: 'document',
+    documentText: documentText
+  })
+  ```
+
+**下位互換性**: 従来の位置引数形式もサポートしています。promptTypeやmodeパラメータを省略した場合は、提供されたパラメータから自動判別されます。
 
 ### 非同期タスクキュー
 
@@ -191,15 +207,15 @@ const CONFIG = {
 
 ### GASエディタでのテスト実行
 
-#### 参照資料ベースの質疑応答をテスト（新形式）
+#### promptType='外部文章' での質疑応答テスト（最新・推奨）
 
 ```javascript
-// testDocumentQANewFormat() を実行
-function testDocumentQANewFormat() {
+// testPromptTypeDocument() を実行
+function testPromptTypeDocument() {
   const result = processClientQA(
     '転倒リスクを減らすために、どのような対策が必要ですか？',
     {
-      mode: 'document',
+      promptType: '外部文章',
       documentText: `# 利用者基本情報
 氏名: 田中花子
 年齢: 82歳
@@ -217,15 +233,15 @@ function testDocumentQANewFormat() {
 }
 ```
 
-#### 通常の質疑応答をテスト（新形式・2段階AI処理）
+#### promptType='通常' での質疑応答テスト（最新・推奨）
 
 ```javascript
-// testNormalQAWithTwoStageNewFormat() を実行
-function testNormalQAWithTwoStageNewFormat() {
+// testPromptTypeNormal() を実行
+function testPromptTypeNormal() {
   const result = processClientQA(
     '今後必要な支援内容を具体的に提案してください。',
     {
-      mode: 'normal',
+      promptType: '通常',
       userId: 'USER001',
       userBasicInfo: `# 利用者基本情報
 利用者ID: USER001
@@ -243,6 +259,24 @@ function testNormalQAWithTwoStageNewFormat() {
 }
 ```
 
+#### mode指定での使用（英語版・引き続きサポート）
+
+```javascript
+// mode='document'
+const result1 = processClientQA(promptText, {
+  mode: 'document',
+  documentText: documentText
+});
+
+// mode='normal'
+const result2 = processClientQA(promptText, {
+  mode: 'normal',
+  userId: userId,
+  userBasicInfo: userBasicInfo,
+  referenceData: referenceData
+});
+```
+
 #### 従来形式での使用（下位互換）
 
 ```javascript
@@ -255,18 +289,23 @@ const result2 = processClientQA(promptText, null, userId, userBasicInfo, referen
 
 ### その他のテスト関数
 
-#### モード1（参照資料ベース）のテスト
+#### promptType指定のテスト（最新）
+
+- `testPromptTypeNormal()` - promptType='通常' のテスト
+- `testPromptTypeDocument()` - promptType='外部文章' のテスト
+
+#### mode指定のテスト
+
+- `testNormalQAWithTwoStageNewFormat()` - mode='normal' のテスト
+- `testDocumentQANewFormat()` - mode='document' のテスト
+
+#### 従来形式のテスト
 
 - `testVertexAIWithLog()` - 参照資料ベースのVertex AIテスト
-- `testDocumentQANewFormat()` - 新形式APIのテスト
+- `testNormalQAWithTwoStage()` - 通常の質疑応答テスト
+- `testNormalQAWithTwoStageCustom()` - カスタムデータでのテスト
 - `testProcessClientQAWithAppSheet()` - AppSheet更新込みのテスト
 - `testProcessClientQAErrorHandling()` - エラーハンドリングのテスト
-
-#### モード2（2段階AI処理）のテスト
-
-- `testNormalQAWithTwoStage()` - 従来形式でのテスト
-- `testNormalQAWithTwoStageNewFormat()` - 新形式APIのテスト
-- `testNormalQAWithTwoStageCustom()` - カスタムデータでのテスト
 function testNormalQAWithTwoStage() {
   // 利用者ID、基本情報、参考資料を使った2段階AI処理のテスト
   // 抽出された関連情報と最終回答を確認できます

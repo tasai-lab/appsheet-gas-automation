@@ -1,5 +1,98 @@
 # 変更履歴
 
+## v1.3.0 (2025-01-21)
+
+### 🎯 メジャー機能追加: promptType引数による日本語モード指定
+
+#### promptType引数の追加（webhook.gs）
+
+より直感的で分かりやすい日本語パラメータ`promptType`を追加:
+
+**新しい推奨形式**:
+```javascript
+// promptType='通常': 通常の質疑応答（2段階AI処理）
+processClientQA(promptText, {
+  promptType: '通常',
+  userId: userId,
+  userBasicInfo: userBasicInfo,
+  referenceData: referenceData
+});
+
+// promptType='外部文章': 参照資料ベースの回答
+processClientQA(promptText, {
+  promptType: '外部文章',
+  documentText: documentText
+});
+```
+
+**既存のmode指定も引き続き使用可能**:
+```javascript
+// mode='normal' (promptType='通常'と同じ)
+processClientQA(promptText, {
+  mode: 'normal',
+  userId: userId,
+  userBasicInfo: userBasicInfo,
+  referenceData: referenceData
+});
+
+// mode='document' (promptType='外部文章'と同じ)
+processClientQA(promptText, {
+  mode: 'document',
+  documentText: documentText
+});
+```
+
+**主な改善点**:
+- 日本語での直感的なモード指定が可能
+- `promptType`を優先的に処理（指定されていれば`mode`より優先）
+- エラーメッセージも日本語で明確に
+- 完全な下位互換性を維持
+
+#### 処理モード決定ロジックの改善
+
+1. **promptType指定がある場合**: promptTypeを優先
+   - '通常' → mode='normal'として処理
+   - '外部文章' → mode='document'として処理
+
+2. **modeのみ指定の場合**: 従来通りmodeを使用
+   - 'normal' / 'document'
+
+3. **どちらも未指定の場合**: パラメータから自動判定（後方互換性）
+
+#### 新しいテスト関数（test_functions.gs）
+
+##### `testPromptTypeNormal()`
+
+promptType='通常'での質疑応答をテスト（最新・推奨形式）:
+
+```javascript
+const result = processClientQA(promptText, {
+  promptType: '通常',
+  userId: 'USER001',
+  userBasicInfo: userBasicInfo,
+  referenceData: referenceData
+});
+```
+
+##### `testPromptTypeDocument()`
+
+promptType='外部文章'での質疑応答をテスト（最新・推奨形式）:
+
+```javascript
+const result = processClientQA(promptText, {
+  promptType: '外部文章',
+  documentText: documentText
+});
+```
+
+#### ドキュメント更新
+
+- **README.md**: promptType使用例を最優先で記載、テストセクションも更新
+- **CHANGELOG.md**: v1.3.0の詳細な変更内容を記載
+- **関数JSDoc**: promptType引数の説明を追加
+
+---
+
 ## v1.2.2 (2025-01-21)
 
 ### 🎨 API改善: 明示的なmode指定をサポート
