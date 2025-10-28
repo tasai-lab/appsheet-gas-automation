@@ -279,20 +279,3 @@ function getGCPConfig() {
   };
 }
 
-/**
- * Google AI Studio APIキーを設定
- * @param {string} apiKey - APIキー
- */
-function setGoogleAIApiKey(apiKey) {
-  setScriptProperty('GOOGLE_AI_API_KEY', apiKey);
-  Logger.log('[Google AI] APIキーを設定しました');
-}
-
-/**
- * Google AI Studio APIキーを取得
- * @return {string} APIキー
- */
-function getGoogleAIApiKey() {
-  return getScriptProperty('GOOGLE_AI_API_KEY');
-}
-

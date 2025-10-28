@@ -1,5 +1,60 @@
 # 変更履歴
 
+## v1.5.0 (2025-01-21)
+
+### 🗑️ Gemini API完全削除: Vertex AI標準化
+
+#### 削除されたファイル
+
+- `gemini_client.gs` - Google AI Studio API関連のクライアント（完全削除）
+
+#### 削除された機能（script_properties_manager.gs）
+
+- `setGoogleAIApiKey()` - Google AI Studio APIキー設定関数
+- `getGoogleAIApiKey()` - Google AI Studio APIキー取得関数
+
+#### 設定の変更（config.gs）
+
+**BEFORE:**
+```javascript
+const CONFIG = {
+  GEMINI: {
+    MODEL_NAME: 'gemini-2.5-pro',
+    // ...
+  }
+};
+```
+
+**AFTER:**
+```javascript
+const CONFIG = {
+  VERTEX_AI: {
+    MODEL_NAME: 'gemini-2.5-pro',
+    EXTRACTOR_MODEL_NAME: 'gemini-2.5-flash',
+    THINKING_MODEL_NAME: 'gemini-2.5-flash-thinking-exp-01-21',
+    // ...
+  }
+};
+```
+
+#### コード修正
+
+- `vertex_ai_client.gs`: `CONFIG.GEMINI` → `CONFIG.VERTEX_AI`に全置換
+- すべてのファイルでVertex AI（OAuth2認証）のみ使用
+
+**理由**:
+- Vertex AIがプロジェクトの標準
+- APIキー管理が不要（OAuth2認証）
+- セキュリティ向上
+- コードの一貫性向上
+
+**影響**:
+- Google AI Studio APIは完全に使用不可
+- Vertex AI APIのみサポート
+- 本番機能には一切影響なし
+
+---
+
 ## v1.4.0 (2025-01-21)
 
 ### 🧹 コードクリーンアップ: テスト関数の削除と整理

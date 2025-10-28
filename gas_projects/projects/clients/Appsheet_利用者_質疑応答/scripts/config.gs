@@ -9,14 +9,8 @@
 
 const CONFIG = {
 
-  // ★★★ Google AI Studio API完全廃止 ★★★
-  // 修正日: 2025-10-18
-  // 理由: ユーザー指示「今後gemini apiを使用することが無いようにお願いします。今後、全てvertex apiを使用すること。」
-  // Vertex AI（OAuth2認証）を使用するため、APIキー不要
-  GEMINI: {
-
-    // API_KEY: '',  // ★削除済み - Vertex AIはOAuth2認証を使用
-    // API_ENDPOINT: '',  // ★削除済み - Vertex AI専用エンドポイントを使用
+  // Vertex AI設定（OAuth2認証）
+  VERTEX_AI: {
 
     // 参照資料ベースの質疑応答用モデル
     MODEL_NAME: 'gemini-2.5-pro',
@@ -32,11 +26,8 @@ const CONFIG = {
     GCP_LOCATION: 'us-central1',
 
     GENERATION_CONFIG: {
-
       "responseMimeType": "application/json",
-
       "temperature": 0.2
-
     },
 
     // 思考モデル用の設定（thinkingBudgetと思考要約を有効化）

@@ -6,7 +6,7 @@
 
 **Modified:** 2025-10-20
 
-**Current Version:** v1.4.0
+**Current Version:** v1.5.0
 
 **Owners:** Fractal Group
 
@@ -186,13 +186,20 @@ python deploy_unified.py Appsheet_利用者_質疑応答 "v1.x: 説明"
 
 ```javascript
 const CONFIG = {
-  GEMINI: {
-    MODEL_NAME: 'gemini-2.5-flash',
+  VERTEX_AI: {
+    MODEL_NAME: 'gemini-2.5-pro',
+    EXTRACTOR_MODEL_NAME: 'gemini-2.5-flash',
+    THINKING_MODEL_NAME: 'gemini-2.5-flash-thinking-exp-01-21',
     GCP_PROJECT_ID: 'macro-shadow-458705-v8',
     GCP_LOCATION: 'us-central1',
     GENERATION_CONFIG: {
       "responseMimeType": "application/json",
       "temperature": 0.2
+    },
+    THINKING_CONFIG: {
+      "temperature": 1.0,
+      "thinkingBudget": -1,
+      "includeThoughts": true
     }
   },
   APPSHEET: {

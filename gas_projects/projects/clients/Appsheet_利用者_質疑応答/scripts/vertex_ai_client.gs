@@ -38,7 +38,7 @@ function generateAnswerAndSummaryWithGemini(promptText, documentText = null) {
   const prompt = _createGeminiPrompt(promptText, documentText);
   Logger.log(`[DEBUG][generateAnswerAndSummaryWithGemini] プロンプト生成完了: ${prompt.length}文字`);
 
-  const config = CONFIG.GEMINI;
+  const config = CONFIG.VERTEX_AI;
 
   // リクエストボディ構築
   Logger.log(`[DEBUG][generateAnswerAndSummaryWithGemini] リクエストボディ構築中...`);
@@ -344,7 +344,7 @@ function _parseGeminiResponse(responseText) {
  *
  * @private
  * @param {Object} jsonResponse - Vertex AIのAPIレスポンス
- * @param {string} modelName - 使用したモデル名（デフォルト: CONFIG.GEMINI.MODEL_NAME）
+ * @param {string} modelName - 使用したモデル名（デフォルト: CONFIG.VERTEX_AI.MODEL_NAME）
  * @param {string} inputType - 入力タイプ ('audio' | 'text')
  * @return {Object|null} usageMetadata情報
  * @return {string} return.model - モデル名
@@ -361,7 +361,7 @@ function _extractUsageMetadata(jsonResponse, modelName = null, inputType = 'text
 
   // モデル名が指定されていない場合はCONFIGから取得
   if (!modelName) {
-    modelName = CONFIG.GEMINI.MODEL_NAME || 'gemini-2.5-flash';
+    modelName = CONFIG.VERTEX_AI.MODEL_NAME || 'gemini-2.5-flash';
   }
 
   const usage = jsonResponse.usageMetadata;
@@ -577,7 +577,7 @@ function processNormalQAWithTwoStage(promptText, userId, userBasicInfo, referenc
 function _extractRelevantInfo(promptText, userBasicInfo, referenceData) {
   Logger.log(`[DEBUG][extractRelevantInfo] === 関数開始 ===`);
 
-  const config = CONFIG.GEMINI;
+  const config = CONFIG.VERTEX_AI;
 
   // プロンプト生成
   const prompt = `
@@ -696,7 +696,7 @@ ${promptText}
 function _generateAnswerWithThinkingModel(promptText, userId, extractedInfo) {
   Logger.log(`[DEBUG][generateAnswerWithThinkingModel] === 関数開始 ===`);
 
-  const config = CONFIG.GEMINI;
+  const config = CONFIG.VERTEX_AI;
 
   // プロンプト生成（思考モデル用）
   const prompt = `
