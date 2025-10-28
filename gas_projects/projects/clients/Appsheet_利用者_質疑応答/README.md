@@ -6,7 +6,7 @@
 
 **Modified:** 2025-10-20
 
-**Current Version:** v1.5.0
+**Current Version:** v1.6.0
 
 **Owners:** Fractal Group
 
@@ -73,26 +73,19 @@
 
 #### promptType='通常' - 通常の質疑応答（2段階AI処理）
 
-- 利用者IDと基本情報・参考資料から関連情報を抽出し、思考モデルで回答生成
-- 複雑な分析や深い洞察が必要な場合に使用
-- **必須パラメータ**: `promptText`, `userId`, `userBasicInfo`, `referenceData`
-- **推奨形式（promptType使用）**: 
+利用者IDと基本情報・参考資料から関連情報を抽出し、思考モデルで回答生成。複雑な分析や深い洞察が必要な場合に使用。
+
+- **必須パラメータ**: `promptType`, `promptText`, `userId`, `userBasicInfo`, `referenceData`
+- **使用例**: 
   ```javascript
-  processClientQA(promptText, {
-    promptType: '通常',
-    userId: userId,
-    userBasicInfo: userBasicInfo,
-    referenceData: referenceData
-  })
-  ```
-- **英語版（mode使用）**: 
-  ```javascript
-  processClientQA(promptText, {
-    mode: 'normal',
-    userId: userId,
-    userBasicInfo: userBasicInfo,
-    referenceData: referenceData
-  })
+  processClientQA(
+    '通常',  // promptType
+    '今後の支援内容を提案してください',  // promptText
+    null,  // documentText（通常モードでは不要）
+    'USER001',  // userId
+    '氏名: 山田花子、年齢: 82歳、要介護3',  // userBasicInfo
+    '2024-10-20: 歩行不安定、血圧150/90...'  // referenceData
+  )
   ```
 - **処理フロー**:
   1. gemini-2.5-flashで関連情報を抽出
@@ -100,25 +93,17 @@
 
 #### promptType='外部文章' - 参照資料ベースの回答
 
-- 利用者情報などの外部文章を参照して回答を生成
-- 専門的で具体的な回答が必要な場合に使用
-- **必須パラメータ**: `promptText`, `documentText`
-- **推奨形式（promptType使用）**: 
-  ```javascript
-  processClientQA(promptText, {
-    promptType: '外部文章',
-    documentText: documentText
-  })
-  ```
-- **英語版（mode使用）**: 
-  ```javascript
-  processClientQA(promptText, {
-    mode: 'document',
-    documentText: documentText
-  })
-  ```
+利用者情報などの外部文章を参照して回答を生成。専門的で具体的な回答が必要な場合に使用。
 
-**下位互換性**: 従来の位置引数形式もサポートしています。promptTypeやmodeパラメータを省略した場合は、提供されたパラメータから自動判別されます。
+- **必須パラメータ**: `promptType`, `promptText`, `documentText`
+- **使用例**: 
+  ```javascript
+  processClientQA(
+    '外部文章',  // promptType
+    '血圧が高い場合の対応方法は？',  // promptText
+    '利用者情報: 田中太郎さん、70歳、...'  // documentText
+  )
+  ```
 
 ### 非同期タスクキュー
 

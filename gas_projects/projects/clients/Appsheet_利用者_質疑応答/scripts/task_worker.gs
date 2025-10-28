@@ -72,68 +72,35 @@ function processTaskQueueWorker() {
  *
  * @param {string} analysisId - 分析ID
  * @param {Object} params - タスクパラメータ
+ * @param {string} params.promptType - プロンプトタイプ ('通常' | '外部文章')（必須）
  * @param {string} params.promptText - プロンプトテキスト（必須）
- * @param {string} params.documentText - ドキュメントテキスト（モード1で使用）
- * @param {string} params.userId - 利用者ID（モード2で使用）
- * @param {string} params.userBasicInfo - 利用者の基本情報（モード2で使用）
- * @param {string} params.referenceData - 参考資料（モード2で使用）
+ * @param {string} params.documentText - ドキュメントテキスト（promptType='外部文章'で使用）
+ * @param {string} params.userId - 利用者ID（promptType='通常'で使用）
+ * @param {string} params.userBasicInfo - 利用者の基本情報（promptType='通常'で使用）
+ * @param {string} params.referenceData - 参考資料（promptType='通常'で使用）
  */
 function executeTask(analysisId, params) {
-  const startTime = new Date();
-  const logger = createLogger('Appsheet_利用者_質疑応答');
-  let status = '成功';
-
   try {
-    const { promptText, documentText, userId, userBasicInfo, referenceData } = params;
+    const { promptType, promptText, documentText, userId, userBasicInfo, referenceData } = params;
 
-    // モード判定
-    const isMode2 = userId && userBasicInfo && referenceData;
-    const mode = isMode2 ? '通常の質疑応答（2段階AI処理）' : '参照資料ベースの回答';
+    Logger.log(`[INFO][Worker] タスク開始: ${analysisId} (promptType=${promptType})`);
 
-    logger.info(`タスク開始: ${analysisId} (${mode})`, {
-      hasDocument: !!documentText,
-      hasUserId: !!userId,
-      documentLength: documentText ? documentText.length : 0,
-      userBasicInfoLength: userBasicInfo ? userBasicInfo.length : 0,
-      referenceDataLength: referenceData ? referenceData.length : 0,
-      promptLength: promptText ? promptText.length : 0
-    });
+    // processClientQA関数を呼び出し（updateAppSheet=trueで自動更新）
+    const result = processClientQA(
+      promptType,
+      promptText,
+      documentText,
+      userId,
+      userBasicInfo,
+      referenceData,
+      analysisId,
+      true  // updateAppSheet=true
+    );
 
-    let aiResult;
-
-    if (isMode2) {
-      // モード2: 通常の質疑応答（2段階AI処理）
-      aiResult = processNormalQAWithTwoStage(promptText, userId, userBasicInfo, referenceData);
-    } else {
-      // モード1: 参照資料ベースの回答
-      aiResult = generateAnswerAndSummaryWithGemini(promptText, documentText);
-    }
-
-    // API使用量情報をloggerに記録
-    if (aiResult.usageMetadata) {
-      logger.setUsageMetadata(aiResult.usageMetadata);
-    }
-
-    // AppSheet更新
-    updateOnSuccess(analysisId, aiResult.answer, aiResult.summary);
-
-    const duration = (new Date() - startTime) / 1000;
-    Logger.log(`[INFO][Worker] タスク正常完了: ${analysisId}, 処理時間 = ${duration}秒`);
-    logger.success(`タスク完了 (${mode}): 処理時間 ${duration}秒`);
+    Logger.log(`[INFO][Worker] タスク正常完了: ${analysisId}`);
 
   } catch (error) {
-    status = 'エラー';
     Logger.log(`[FATAL ERROR][Worker] タスク失敗: ${analysisId} - ${error.toString()}\nスタックトレース: ${error.stack}`);
-    logger.error(`タスク失敗: ${error.toString()}`, { stack: error.stack });
-
-    try {
-      updateOnError(analysisId, error.toString());
-    } catch (updateError) {
-      Logger.log(`[ERROR][Worker] AppSheetへのエラー状態の更新にも失敗しました: ${updateError.toString()}`);
-    }
-
-  } finally {
-    // ログをスプレッドシートに保存
-    logger.saveToSpreadsheet(status, analysisId);
+    throw error;  // processClientQA内でエラー処理とログ記録が行われる
   }
 }

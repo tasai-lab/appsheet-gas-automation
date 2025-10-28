@@ -1,5 +1,75 @@
 # 変更履歴
 
+## v1.6.0 (2025-01-21)
+
+### 🔧 API改善: promptType引数の明示化 - 個別引数で直接実行可能に
+
+#### 関数シグネチャの変更
+
+**BEFORE（可変長引数）:**
+```javascript
+function processClientQA(promptText, ...args)
+```
+
+**AFTER（明示的な個別引数）:**
+```javascript
+function processClientQA(
+  promptType,      // '通常' | '外部文章'（必須）
+  promptText,      // 質問テキスト（必須）
+  documentText = null,
+  userId = null,
+  userBasicInfo = null,
+  referenceData = null,
+  analysisId = null,
+  updateAppSheet = false
+)
+```
+
+#### 主な変更点
+
+1. **promptType引数を第1引数として明示化**
+   - オブジェクト形式ではなく、個別の位置引数として直接指定
+   - GASエディタから直接実行しやすい形式
+
+2. **使用例の簡素化**
+
+**外部文章モード:**
+```javascript
+processClientQA(
+  '外部文章',
+  '血圧が高い場合の対応方法は？',
+  '利用者情報: 田中太郎さん、70歳、...'
+)
+```
+
+**通常モード:**
+```javascript
+processClientQA(
+  '通常',
+  '今後の支援内容を提案してください',
+  null,  // documentTextは不要
+  'USER001',
+  '氏名: 山田花子、年齢: 82歳、要介護3',
+  '2024-10-20: 歩行不安定、血圧150/90...'
+)
+```
+
+3. **パラメータバリデーションの強化**
+   - `promptType`の必須チェック
+   - promptTypeに応じた必要パラメータの検証
+
+4. **task_worker.gsの簡素化**
+   - executeTask関数からprocessClientQA関数を直接呼び出し
+   - 重複したロジックを削除
+
+#### 影響
+
+- **互換性**: AppSheetからのWebhook呼び出しには影響なし（doPost内でparamsからprompTypeを取得）
+- **直接実行**: GASエディタから関数を直接実行する場合、promptTypeを明示的に指定する必要あり
+- **コードの明確化**: 引数の役割が一目で分かるようになり、保守性が向上
+
+---
+
 ## v1.5.0 (2025-01-21)
 
 ### 🗑️ Gemini API完全削除: Vertex AI標準化

@@ -12,158 +12,113 @@
  * プロンプトテキストを受け取り、Gemini APIで回答と要約を生成
  * 
  * 処理モード:
- * 1. 外部文章: promptType='外部文章' または mode='document'
- * 2. 通常: promptType='通常' または mode='normal'（2段階AI処理）
+ * 1. promptType='外部文章': 参照資料ベースの質疑応答（1段階AI処理）
+ * 2. promptType='通常': 通常の質疑応答（2段階AI処理）
  *
+ * @param {string} promptType - プロンプトタイプ ('通常' | '外部文章')（必須）
  * @param {string} promptText - ユーザーの質問（必須）
- * @param {Object} options - オプションパラメータ
- * @param {string} options.promptType - プロンプトタイプ ('通常' | '外部文章')（推奨）
- * @param {string} options.mode - 処理モード ('normal' | 'document')（promptTypeの英語版）
- * @param {string} options.documentText - 参照ドキュメント（promptType='外部文章'で使用）
- * @param {string} options.userId - 利用者ID（promptType='通常'で使用）
- * @param {string} options.userBasicInfo - 利用者の基本情報（promptType='通常'で使用）
- * @param {string} options.referenceData - 参考資料（promptType='通常'で使用）
- * @param {string} options.analysisId - 分析ID（AppSheet更新する場合は必須）
- * @param {boolean} options.updateAppSheet - AppSheetを更新するか（デフォルト: false）
+ * @param {string} documentText - 参照ドキュメント（promptType='外部文章'の場合は必須）
+ * @param {string} userId - 利用者ID（promptType='通常'の場合は必須）
+ * @param {string} userBasicInfo - 利用者の基本情報（promptType='通常'の場合は必須）
+ * @param {string} referenceData - 参考資料（promptType='通常'の場合は必須）
+ * @param {string} analysisId - 分析ID（AppSheet更新する場合は必須、デフォルト: null）
+ * @param {boolean} updateAppSheet - AppSheetを更新するか（デフォルト: false）
  *
  * @return {Object} 処理結果
  * @return {string} return.answer - 詳細な回答
  * @return {string} return.summary - 回答の要約
  * @return {Object} return.usageMetadata - API使用量情報
  * @return {string} return.analysisId - 分析ID（指定された場合）
+ * @return {string} return.promptType - 使用したプロンプトタイプ
  *
  * @example
- * // promptType='外部文章': 参照資料ベースの質疑応答（推奨形式）
- * const result = processClientQA('血圧が高い場合の対応方法は？', {
- *   promptType: '外部文章',
- *   documentText: '利用者情報: 田中太郎さん、70歳、...'
- * });
+ * // promptType='外部文章': 参照資料ベースの質疑応答
+ * const result = processClientQA(
+ *   '外部文章',
+ *   '血圧が高い場合の対応方法は？',
+ *   '利用者情報: 田中太郎さん、70歳、...'
+ * );
  *
  * @example
  * // promptType='通常': 通常の質疑応答（2段階AI処理）
- * const result = processClientQA('今後の支援内容を提案してください', {
- *   promptType: '通常',
- *   userId: 'USER001',
- *   userBasicInfo: '氏名: 山田花子、年齢: 82歳、要介護3',
- *   referenceData: '2024-10-20: 歩行不安定、血圧150/90...'
- * });
- *
- * @example
- * // mode指定（英語版）も引き続き使用可能
- * const result = processClientQA('血圧が高い場合の対応方法は？', {
- *   mode: 'document',
- *   documentText: '利用者情報: 田中太郎さん、70歳、...'
- * });
- *
- * @example
- * // AppSheet更新付き
- * const result = processClientQA('血圧が高い場合の対応方法は？', {
- *   promptType: '外部文章',
- *   documentText: '利用者情報: 田中太郎さん、70歳、...',
- *   analysisId: 'ANALYSIS-12345',
- *   updateAppSheet: true
- * });
- *
- * @example
- * // 旧形式（後方互換性のため維持）
  * const result = processClientQA(
- *   '質問',
- *   '参照資料',  // 第2引数が文字列の場合、documentTextとして扱う
- *   null, null, null,
+ *   '通常',
+ *   '今後の支援内容を提案してください',
+ *   null,  // documentTextは不要
+ *   'USER001',
+ *   '氏名: 山田花子、年齢: 82歳、要介護3',
+ *   '2024-10-20: 歩行不安定、血圧150/90...'
+ * );
+ *
+ * @example
+ * // AppSheet更新付き（外部文章モード）
+ * const result = processClientQA(
+ *   '外部文章',
+ *   '血圧が高い場合の対応方法は？',
+ *   '利用者情報: 田中太郎さん、70歳、...',
+ *   null, null, null,  // 通常モード用の引数は不要
+ *   'ANALYSIS-12345',
+ *   true
+ * );
+ *
+ * @example
+ * // AppSheet更新付き（通常モード）
+ * const result = processClientQA(
+ *   '通常',
+ *   '今後の支援内容を提案してください',
+ *   null,
+ *   'USER001',
+ *   '氏名: 山田花子、年齢: 82歳、要介護3',
+ *   '2024-10-20: 歩行不安定、血圧150/90...',
  *   'ANALYSIS-12345',
  *   true
  * );
  */
-function processClientQA(promptText, ...args) {
+function processClientQA(
+  promptType,
+  promptText,
+  documentText = null,
+  userId = null,
+  userBasicInfo = null,
+  referenceData = null,
+  analysisId = null,
+  updateAppSheet = false
+) {
   const logger = createLogger('Appsheet_利用者_質疑応答');
   let status = '成功';
   const startTime = new Date();
 
   try {
     // 必須パラメータのチェック
+    if (!promptType || (promptType !== '通常' && promptType !== '外部文章')) {
+      throw new Error('promptTypeは必須です。"通常" または "外部文章" を指定してください');
+    }
+
     if (!promptText || promptText.trim() === '') {
       throw new Error('promptTextは必須です');
     }
 
-    // 引数の解析（新形式 vs 旧形式）
-    let options = {};
-    
-    if (args.length === 1 && typeof args[0] === 'object' && args[0] !== null) {
-      // 新形式: processClientQA(promptText, {mode: 'document', ...})
-      options = args[0];
-    } else {
-      // 旧形式: processClientQA(promptText, documentText, userId, userBasicInfo, referenceData, analysisId, updateAppSheet)
-      const [documentText, userId, userBasicInfo, referenceData, analysisId, updateAppSheet] = args;
-      options = {
-        documentText: documentText || null,
-        userId: userId || null,
-        userBasicInfo: userBasicInfo || null,
-        referenceData: referenceData || null,
-        analysisId: analysisId || null,
-        updateAppSheet: updateAppSheet || false
-      };
-    }
-
-    // デフォルト値の設定
-    const {
-      promptType = null,  // '通常' | '外部文章'
-      mode = null,  // 'normal' | 'document'（promptTypeの英語版）
-      documentText = null,
-      userId = null,
-      userBasicInfo = null,
-      referenceData = null,
-      analysisId = null,
-      updateAppSheet = false
-    } = options;
-
-    // 処理モードの決定
-    let actualMode;
-    
-    // promptType（日本語）を優先的に処理
-    if (promptType) {
-      if (promptType === '通常') {
-        actualMode = 'normal';
-      } else if (promptType === '外部文章') {
-        actualMode = 'document';
-      } else {
-        throw new Error(`無効なpromptType: ${promptType}。'通常' または '外部文章' を指定してください`);
-      }
-      
-      // 指定されたタイプに必要なパラメータをチェック
-      if (actualMode === 'document' && !documentText) {
+    // promptTypeに応じた必須パラメータのチェック
+    if (promptType === '外部文章') {
+      if (!documentText || documentText.trim() === '') {
         throw new Error('promptType="外部文章"の場合、documentTextは必須です');
       }
-      if (actualMode === 'normal' && (!userId || !userBasicInfo || !referenceData)) {
-        throw new Error('promptType="通常"の場合、userId、userBasicInfo、referenceDataは必須です');
+    } else if (promptType === '通常') {
+      if (!userId || userId.trim() === '') {
+        throw new Error('promptType="通常"の場合、userIdは必須です');
       }
-    } else if (mode) {
-      // modeが明示的に指定されている場合（promptTypeが未指定の場合）
-      if (mode !== 'document' && mode !== 'normal') {
-        throw new Error(`無効なモード: ${mode}。'document' または 'normal' を指定してください`);
+      if (!userBasicInfo || userBasicInfo.trim() === '') {
+        throw new Error('promptType="通常"の場合、userBasicInfoは必須です');
       }
-      actualMode = mode;
-      
-      // 指定されたモードに必要なパラメータをチェック
-      if (mode === 'document' && !documentText) {
-        throw new Error('mode="document"の場合、documentTextは必須です');
+      if (!referenceData || referenceData.trim() === '') {
+        throw new Error('promptType="通常"の場合、referenceDataは必須です');
       }
-      if (mode === 'normal' && (!userId || !userBasicInfo || !referenceData)) {
-        throw new Error('mode="normal"の場合、userId、userBasicInfo、referenceDataは必須です');
-      }
-    } else {
-      // promptTypeもmodeも未指定の場合、パラメータから自動判定（後方互換性のため）
-      const isMode2 = userId && userBasicInfo && referenceData;
-      const isMode1 = documentText && !isMode2;
-
-      if (!isMode1 && !isMode2) {
-        throw new Error('処理モードが不明です。promptType="通常"/"外部文章" または mode="normal"/"document"を指定するか、必要なパラメータを指定してください');
-      }
-
-      actualMode = isMode2 ? 'normal' : 'document';
     }
 
+    // 処理モードの決定
+    const actualMode = promptType === '通常' ? 'normal' : 'document';
     const modeLabel = actualMode === 'normal' ? '通常の質疑応答（2段階AI処理）' : '外部文章の参照資料ベースの回答';
-    const promptTypeLabel = actualMode === 'normal' ? '通常' : '外部文章';
+    const promptTypeLabel = promptType;
 
     logger.info(`質疑応答処理開始: ${modeLabel}`, {
       analysisId: analysisId || 'なし',
@@ -213,8 +168,8 @@ function processClientQA(promptText, ...args) {
       summary: aiResult.summary,
       usageMetadata: aiResult.usageMetadata,
       analysisId: analysisId,
-      mode: mode,
-      extractedInfo: aiResult.extractedInfo  // モード2の場合のみ存在
+      promptType: promptType,
+      extractedInfo: aiResult.extractedInfo  // 通常モードの場合のみ存在
     };
 
   } catch (error) {
@@ -290,8 +245,12 @@ function doPost(e) {
  * @private
  * @param {Object} params - リクエストパラメータ
  * @param {string} params.analysisId - 分析ID（必須）
- * @param {string} params.documentText - ドキュメントテキスト（必須）
+ * @param {string} params.promptType - プロンプトタイプ ('通常' | '外部文章')（必須）
  * @param {string} params.promptText - プロンプトテキスト（必須）
+ * @param {string} params.documentText - ドキュメントテキスト（promptType='外部文章'で必須）
+ * @param {string} params.userId - 利用者ID（promptType='通常'で必須）
+ * @param {string} params.userBasicInfo - 利用者の基本情報（promptType='通常'で必須）
+ * @param {string} params.referenceData - 参考資料（promptType='通常'で必須）
  * @param {Date} startTime - リクエスト受信時刻
  * @return {GoogleAppsScript.Content.TextOutput} JSON応答
  */
@@ -353,41 +312,41 @@ function _processRequest(params, startTime) {
  * パラメータ検証関数
  * 必須パラメータの存在をチェック
  * 
- * モード1（参照資料ベース）: promptText + documentText
- * モード2（通常の質疑応答）: promptText + userId + userBasicInfo + referenceData
+ * promptType='外部文章': promptText + documentText
+ * promptType='通常': promptText + userId + userBasicInfo + referenceData
  *
  * @private
  * @param {Object} params - リクエストパラメータ
  * @throws {Error} 必須パラメータが不足している場合
  */
 function _validateParameters(params) {
+  // promptTypeのチェック
+  if (!params.promptType) {
+    throw new Error("Missing promptType. Specify '通常' or '外部文章'");
+  }
+
+  if (params.promptType !== '通常' && params.promptType !== '外部文章') {
+    throw new Error(`Invalid promptType: ${params.promptType}. Use '通常' or '外部文章'`);
+  }
+
   if (!params.promptText) {
     throw new Error("Missing promptText");
   }
 
-  // モード判定
-  const hasMode2Params = params.userId || params.userBasicInfo || params.referenceData;
-  const hasMode1Params = params.documentText;
-
-  if (hasMode2Params) {
-    // モード2の場合、すべてのパラメータが必要
+  // promptTypeに応じたパラメータ検証
+  if (params.promptType === '外部文章') {
+    if (!params.documentText || params.documentText.trim() === '') {
+      throw new Error("Missing or empty documentText for promptType='外部文章'");
+    }
+  } else if (params.promptType === '通常') {
     if (!params.userId) {
-      throw new Error("Missing userId for mode 2");
+      throw new Error("Missing userId for promptType='通常'");
     }
     if (!params.userBasicInfo) {
-      throw new Error("Missing userBasicInfo for mode 2");
+      throw new Error("Missing userBasicInfo for promptType='通常'");
     }
     if (!params.referenceData) {
-      throw new Error("Missing referenceData for mode 2");
+      throw new Error("Missing referenceData for promptType='通常'");
     }
-  } else if (hasMode1Params) {
-    // モード1の場合、documentTextのみ必要
-    if (params.documentText.trim() === '') {
-      Logger.log('[WARN][validateParameters] documentTextが空文字列です。');
-      params.documentText = null;
-    }
-  } else {
-    // どちらのモードでもない場合はエラー
-    throw new Error("Missing required parameters. Provide either documentText (mode 1) or userId+userBasicInfo+referenceData (mode 2)");
   }
 }
