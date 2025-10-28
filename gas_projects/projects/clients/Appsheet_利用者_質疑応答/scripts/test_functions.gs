@@ -86,6 +86,167 @@ function testVertexAIWithLog() {
 
 
 /**
+ * テスト用関数: 通常の質疑応答（2段階AI処理）新形式
+ * 利用者ID、基本情報、参考資料を使った新しい処理方式をテスト
+ * mode='normal'を明示的に指定
+ *
+ * @return {Object} 処理結果
+ */
+function testNormalQAWithTwoStageNewFormat() {
+  Logger.log('='.repeat(60));
+  Logger.log('🧪 通常の質疑応答（2段階AI処理）テスト - 新形式');
+  Logger.log('='.repeat(60));
+
+  const promptText = "今後必要な支援内容を具体的に提案してください。";
+  
+  const userBasicInfo = `
+# 利用者基本情報
+
+利用者ID: USER001
+氏名: 山田花子
+年齢: 82歳
+性別: 女性
+住所: 東京都渋谷区
+要介護度: 要介護3
+`;
+
+  const referenceData = `
+# 2024年10月20日 訪問記録
+
+・歩行が不安定になってきた
+・血圧: 150/90 (やや高め)
+・食事摂取量: 70%程度
+・認知機能: 軽度の低下あり
+・独居、週3回の訪問介護利用中
+
+# 2024年10月15日 訪問記録
+
+・室内での転倒リスクが高い
+・服薬管理に支援が必要
+・家族（娘）は月1回程度訪問
+・デイサービスの利用を検討中
+
+# 既往歴
+
+・高血圧
+・変形性膝関節症
+・骨粗鬆症
+`;
+
+  Logger.log(`質問: ${promptText}`);
+  Logger.log('');
+
+  try {
+    // 新形式: optionsオブジェクトで指定
+    const result = processClientQA(promptText, {
+      mode: 'normal',  // モードを明示的に指定
+      userId: 'USER001',
+      userBasicInfo: userBasicInfo,
+      referenceData: referenceData
+    });
+
+    Logger.log('✅ 処理成功');
+    Logger.log('');
+    Logger.log('📝 回答:');
+    Logger.log(result.answer);
+    Logger.log('');
+    Logger.log('📋 要約:');
+    Logger.log(result.summary);
+    Logger.log('');
+    Logger.log('🔍 抽出された関連情報:');
+    Logger.log(result.extractedInfo || '（なし）');
+    Logger.log('');
+
+    if (result.usageMetadata) {
+      Logger.log('💰 API使用量:');
+      Logger.log(`  モデル: ${result.usageMetadata.model}`);
+      Logger.log(`  Input Tokens: ${result.usageMetadata.inputTokens}`);
+      Logger.log(`  Output Tokens: ${result.usageMetadata.outputTokens}`);
+      Logger.log(`  Total Cost: ¥${result.usageMetadata.totalCostJPY.toFixed(4)}`);
+    }
+
+    Logger.log('='.repeat(60));
+    return result;
+
+  } catch (error) {
+    Logger.log('❌ テストエラー: ' + error.toString());
+    if (error.stack) {
+      Logger.log('スタックトレース: ' + error.stack);
+    }
+    throw error;
+  }
+}
+
+
+/**
+ * テスト用関数: 参照資料ベース新形式
+ * mode='document'を明示的に指定
+ *
+ * @return {Object} 処理結果
+ */
+function testDocumentQANewFormat() {
+  Logger.log('='.repeat(60));
+  Logger.log('🧪 参照資料ベースの質疑応答テスト - 新形式');
+  Logger.log('='.repeat(60));
+
+  const promptText = "転倒リスクを減らすために、どのような対策が必要ですか？";
+  
+  const documentText = `
+# 利用者基本情報
+
+氏名: 田中花子
+年齢: 82歳
+要介護度: 要介護3
+
+# 現在の状態
+
+・独居
+・歩行が不安定
+・血圧が高め（150/90）
+・軽度の認知症あり
+`;
+
+  Logger.log(`質問: ${promptText}`);
+  Logger.log('');
+
+  try {
+    // 新形式: optionsオブジェクトで指定
+    const result = processClientQA(promptText, {
+      mode: 'document',  // モードを明示的に指定
+      documentText: documentText
+    });
+
+    Logger.log('✅ 処理成功');
+    Logger.log('');
+    Logger.log('📝 回答:');
+    Logger.log(result.answer);
+    Logger.log('');
+    Logger.log('📋 要約:');
+    Logger.log(result.summary);
+    Logger.log('');
+
+    if (result.usageMetadata) {
+      Logger.log('💰 API使用量:');
+      Logger.log(`  モデル: ${result.usageMetadata.model}`);
+      Logger.log(`  Input Tokens: ${result.usageMetadata.inputTokens}`);
+      Logger.log(`  Output Tokens: ${result.usageMetadata.outputTokens}`);
+      Logger.log(`  Total Cost: ¥${result.usageMetadata.totalCostJPY.toFixed(4)}`);
+    }
+
+    Logger.log('='.repeat(60));
+    return result;
+
+  } catch (error) {
+    Logger.log('❌ テストエラー: ' + error.toString());
+    if (error.stack) {
+      Logger.log('スタックトレース: ' + error.stack);
+    }
+    throw error;
+  }
+}
+
+
+/**
  * テスト用関数: 通常の質疑応答（2段階AI処理）
  * 利用者ID、基本情報、参考資料を使った新しい処理方式をテスト
  *

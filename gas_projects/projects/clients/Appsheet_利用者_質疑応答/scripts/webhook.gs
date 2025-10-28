@@ -12,16 +12,18 @@
  * プロンプトテキストを受け取り、Gemini APIで回答と要約を生成
  * 
  * 処理モード:
- * 1. 参照資料ベースの回答: documentTextを指定（従来の使い方）
- * 2. 通常の質疑応答（2段階AI処理）: userId、userBasicInfo、referenceDataを指定（新機能）
+ * 1. 参照資料ベースの回答: mode='document'（従来の使い方）
+ * 2. 通常の質疑応答（2段階AI処理）: mode='normal'（新機能）
  *
  * @param {string} promptText - ユーザーの質問（必須）
- * @param {string} documentText - 参照ドキュメント（オプション、モード1で使用）
- * @param {string} userId - 利用者ID（オプション、モード2で使用）
- * @param {string} userBasicInfo - 利用者の基本情報（オプション、モード2で使用）
- * @param {string} referenceData - 参考資料（オプション、モード2で使用）
- * @param {string} analysisId - 分析ID（オプション、AppSheet更新する場合は必須）
- * @param {boolean} updateAppSheet - AppSheetを更新するか（デフォルト: false）
+ * @param {Object} options - オプションパラメータ
+ * @param {string} options.mode - 処理モード ('document' | 'normal')（オプション、自動判定）
+ * @param {string} options.documentText - 参照ドキュメント（mode='document'で使用）
+ * @param {string} options.userId - 利用者ID（mode='normal'で使用）
+ * @param {string} options.userBasicInfo - 利用者の基本情報（mode='normal'で使用）
+ * @param {string} options.referenceData - 参考資料（mode='normal'で使用）
+ * @param {string} options.analysisId - 分析ID（AppSheet更新する場合は必須）
+ * @param {boolean} options.updateAppSheet - AppSheetを更新するか（デフォルト: false）
  *
  * @return {Object} 処理結果
  * @return {string} return.answer - 詳細な回答
@@ -31,40 +33,40 @@
  *
  * @example
  * // モード1: 参照資料ベースの質疑応答（従来の使い方）
- * const result = processClientQA(
- *   '血圧が高い場合の対応方法は？',
- *   '利用者情報: 田中太郎さん、70歳、...'
- * );
+ * const result = processClientQA('血圧が高い場合の対応方法は？', {
+ *   mode: 'document',
+ *   documentText: '利用者情報: 田中太郎さん、70歳、...'
+ * });
  *
  * @example
  * // モード2: 通常の質疑応答（2段階AI処理）
- * const result = processClientQA(
- *   '今後の支援内容を提案してください',
- *   null,  // documentTextはnull
- *   'USER001',  // userId
- *   '氏名: 山田花子、年齢: 82歳、要介護3',  // userBasicInfo
- *   '2024-10-20: 歩行不安定、血圧150/90...'  // referenceData
- * );
+ * const result = processClientQA('今後の支援内容を提案してください', {
+ *   mode: 'normal',
+ *   userId: 'USER001',
+ *   userBasicInfo: '氏名: 山田花子、年齢: 82歳、要介護3',
+ *   referenceData: '2024-10-20: 歩行不安定、血圧150/90...'
+ * });
  *
  * @example
  * // AppSheet更新付き
+ * const result = processClientQA('血圧が高い場合の対応方法は？', {
+ *   mode: 'document',
+ *   documentText: '利用者情報: 田中太郎さん、70歳、...',
+ *   analysisId: 'ANALYSIS-12345',
+ *   updateAppSheet: true
+ * });
+ *
+ * @example
+ * // 旧形式（後方互換性のため維持）
  * const result = processClientQA(
- *   '血圧が高い場合の対応方法は？',
- *   '利用者情報: 田中太郎さん、70歳、...',
- *   null, null, null,  // モード2のパラメータは使わない
+ *   '質問',
+ *   '参照資料',  // 第2引数が文字列の場合、documentTextとして扱う
+ *   null, null, null,
  *   'ANALYSIS-12345',
  *   true
  * );
  */
-function processClientQA(
-  promptText,
-  documentText = null,
-  userId = null,
-  userBasicInfo = null,
-  referenceData = null,
-  analysisId = null,
-  updateAppSheet = false
-) {
+function processClientQA(promptText, ...args) {
   const logger = createLogger('Appsheet_利用者_質疑応答');
   let status = '成功';
   const startTime = new Date();
@@ -75,19 +77,70 @@ function processClientQA(
       throw new Error('promptTextは必須です');
     }
 
-    // 処理モードの判定
-    const isMode2 = userId && userBasicInfo && referenceData;
-    const isMode1 = documentText && !isMode2;
-
-    if (!isMode1 && !isMode2) {
-      throw new Error('処理モードが不明です。documentText（モード1）または userId+userBasicInfo+referenceData（モード2）を指定してください');
+    // 引数の解析（新形式 vs 旧形式）
+    let options = {};
+    
+    if (args.length === 1 && typeof args[0] === 'object' && args[0] !== null) {
+      // 新形式: processClientQA(promptText, {mode: 'document', ...})
+      options = args[0];
+    } else {
+      // 旧形式: processClientQA(promptText, documentText, userId, userBasicInfo, referenceData, analysisId, updateAppSheet)
+      const [documentText, userId, userBasicInfo, referenceData, analysisId, updateAppSheet] = args;
+      options = {
+        documentText: documentText || null,
+        userId: userId || null,
+        userBasicInfo: userBasicInfo || null,
+        referenceData: referenceData || null,
+        analysisId: analysisId || null,
+        updateAppSheet: updateAppSheet || false
+      };
     }
 
-    const mode = isMode2 ? '通常の質疑応答（2段階AI処理）' : '参照資料ベースの回答';
+    // デフォルト値の設定
+    const {
+      mode = null,  // 自動判定
+      documentText = null,
+      userId = null,
+      userBasicInfo = null,
+      referenceData = null,
+      analysisId = null,
+      updateAppSheet = false
+    } = options;
 
-    logger.info(`質疑応答処理開始: ${mode}`, {
+    // 処理モードの決定
+    let actualMode;
+    
+    if (mode) {
+      // モードが明示的に指定されている場合
+      if (mode !== 'document' && mode !== 'normal') {
+        throw new Error(`無効なモード: ${mode}。'document' または 'normal' を指定してください`);
+      }
+      actualMode = mode;
+      
+      // 指定されたモードに必要なパラメータをチェック
+      if (mode === 'document' && !documentText) {
+        throw new Error('mode="document"の場合、documentTextは必須です');
+      }
+      if (mode === 'normal' && (!userId || !userBasicInfo || !referenceData)) {
+        throw new Error('mode="normal"の場合、userId、userBasicInfo、referenceDataは必須です');
+      }
+    } else {
+      // モード自動判定（後方互換性のため）
+      const isMode2 = userId && userBasicInfo && referenceData;
+      const isMode1 = documentText && !isMode2;
+
+      if (!isMode1 && !isMode2) {
+        throw new Error('処理モードが不明です。mode="document"またはmode="normal"を指定するか、必要なパラメータを指定してください');
+      }
+
+      actualMode = isMode2 ? 'normal' : 'document';
+    }
+
+    const modeLabel = actualMode === 'normal' ? '通常の質疑応答（2段階AI処理）' : '参照資料ベースの回答';
+
+    logger.info(`質疑応答処理開始: ${modeLabel}`, {
       analysisId: analysisId || 'なし',
-      mode: mode,
+      mode: actualMode,
       userId: userId || 'なし',
       hasDocument: !!documentText,
       documentLength: documentText ? documentText.length : 0,
@@ -99,7 +152,7 @@ function processClientQA(
 
     let aiResult;
 
-    if (isMode2) {
+    if (actualMode === 'normal') {
       // モード2: 通常の質疑応答（2段階AI処理）
       logger.info('モード2: 2段階AI処理を開始');
       aiResult = processNormalQAWithTwoStage(promptText, userId, userBasicInfo, referenceData);

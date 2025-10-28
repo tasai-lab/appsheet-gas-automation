@@ -6,7 +6,7 @@
 
 **Modified:** 2025-10-20
 
-**Current Version:** v1.2.0
+**Current Version:** v1.2.2
 
 **Owners:** Fractal Group
 
@@ -71,20 +71,38 @@
 
 このシステムは2つの処理モードをサポートしています:
 
-#### モード1: 参照資料ベースの回答
+#### モード1: 参照資料ベースの回答 (mode='document')
 
 - 利用者情報などの外部文章を参照して回答を生成
 - 専門的で具体的な回答が必要な場合に使用
 - **必須パラメータ**: `promptText`, `documentText`
+- **新形式**: 
+  ```javascript
+  processClientQA(promptText, {
+    mode: 'document',
+    documentText: documentText
+  })
+  ```
 
-#### モード2: 通常の質疑応答（2段階AI処理）
+#### モード2: 通常の質疑応答 (mode='normal') - 2段階AI処理
 
 - 利用者IDと基本情報・参考資料から関連情報を抽出し、思考モデルで回答生成
 - 複雑な分析や深い洞察が必要な場合に使用
 - **必須パラメータ**: `promptText`, `userId`, `userBasicInfo`, `referenceData`
+- **新形式**: 
+  ```javascript
+  processClientQA(promptText, {
+    mode: 'normal',
+    userId: userId,
+    userBasicInfo: userBasicInfo,
+    referenceData: referenceData
+  })
+  ```
 - **処理フロー**:
   1. gemini-2.5-flashで関連情報を抽出
   2. 抽出された情報と質問をgemini-2.5-flash-thinkingに渡して回答生成
+
+**下位互換性**: 従来の位置引数形式もサポートしています。modeパラメータを省略した場合は、提供されたパラメータから自動判別されます。
 
 ### 非同期タスクキュー
 
@@ -173,14 +191,16 @@ const CONFIG = {
 
 ### GASエディタでのテスト実行
 
-#### 参照資料ベースの質疑応答をテスト
+#### 参照資料ベースの質疑応答をテスト（新形式）
 
 ```javascript
-// testProcessClientQA() を実行
-function testProcessClientQA() {
+// testDocumentQANewFormat() を実行
+function testDocumentQANewFormat() {
   const result = processClientQA(
     '転倒リスクを減らすために、どのような対策が必要ですか？',
-    `# 利用者基本情報
+    {
+      mode: 'document',
+      documentText: `# 利用者基本情報
 氏名: 田中花子
 年齢: 82歳
 要介護度: 要介護3
@@ -189,6 +209,7 @@ function testProcessClientQA() {
 ・独居
 ・歩行が不安定
 ・血圧が高め（150/90）`
+    }
   );
   
   Logger.log('回答: ' + result.answer);
@@ -196,26 +217,40 @@ function testProcessClientQA() {
 }
 ```
 
-#### 通常の質疑応答をテスト（新機能: モード2）
+#### 通常の質疑応答をテスト（新形式・2段階AI処理）
 
 ```javascript
-// testNormalQAWithTwoStage() を実行
-function testNormalQAWithTwoStage() {
-  // サンプルの利用者データで2段階AI処理をテスト
-  // 結果には以下が含まれます:
-  // - answer: 最終回答
-  // - summary: 要約
-  // - extractedInfo: 抽出された関連情報
-  Logger.log(result.extractedInfo);  // 第1段階の抽出結果を確認
+// testNormalQAWithTwoStageNewFormat() を実行
+function testNormalQAWithTwoStageNewFormat() {
+  const result = processClientQA(
+    '今後必要な支援内容を具体的に提案してください。',
+    {
+      mode: 'normal',
+      userId: 'USER001',
+      userBasicInfo: `# 利用者基本情報
+利用者ID: USER001
+氏名: 山田花子
+年齢: 82歳`,
+      referenceData: `# 訪問記録
+・歩行が不安定になってきた
+・血圧: 150/90 (やや高め)`
+    }
+  );
+  
+  Logger.log('回答: ' + result.answer);
+  Logger.log('要約: ' + result.summary);
+  Logger.log('抽出された関連情報: ' + result.extractedInfo);
 }
+```
 
-// カスタムデータでテスト
-testNormalQAWithTwoStageCustom(
-  '今後の支援について提案してください',
-  'USER001',
-  '氏名: 山田花子\n年齢: 82歳\n要介護度: 要介護3',
-  '訪問記録: 歩行が不安定、転倒リスクあり'
-);
+#### 従来形式での使用（下位互換）
+
+```javascript
+// 参照資料ベース
+const result1 = processClientQA(promptText, documentText);
+
+// 通常の質疑応答
+const result2 = processClientQA(promptText, null, userId, userBasicInfo, referenceData);
 ```
 
 ### その他のテスト関数
@@ -223,13 +258,15 @@ testNormalQAWithTwoStageCustom(
 #### モード1（参照資料ベース）のテスト
 
 - `testVertexAIWithLog()` - 参照資料ベースのVertex AIテスト
+- `testDocumentQANewFormat()` - 新形式APIのテスト
 - `testProcessClientQAWithAppSheet()` - AppSheet更新込みのテスト
 - `testProcessClientQAErrorHandling()` - エラーハンドリングのテスト
 
 #### モード2（2段階AI処理）のテスト
 
-```javascript
-// testNormalQAWithTwoStage() を実行
+- `testNormalQAWithTwoStage()` - 従来形式でのテスト
+- `testNormalQAWithTwoStageNewFormat()` - 新形式APIのテスト
+- `testNormalQAWithTwoStageCustom()` - カスタムデータでのテスト
 function testNormalQAWithTwoStage() {
   // 利用者ID、基本情報、参考資料を使った2段階AI処理のテスト
   // 抽出された関連情報と最終回答を確認できます

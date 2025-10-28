@@ -1,5 +1,76 @@
 # 変更履歴
 
+## v1.2.2 (2025-01-21)
+
+### 🎨 API改善: 明示的なmode指定をサポート
+
+#### API変更（webhook.gs）
+
+##### `processClientQA()` 関数の改善
+
+**新しいAPI（推奨）**:
+```javascript
+// モード1: 参照資料ベース
+processClientQA(promptText, {
+  mode: 'document',
+  documentText: documentText
+});
+
+// モード2: 通常の質疑応答（2段階AI処理）
+processClientQA(promptText, {
+  mode: 'normal',
+  userId: userId,
+  userBasicInfo: userBasicInfo,
+  referenceData: referenceData
+});
+```
+
+**従来のAPI（下位互換）**:
+```javascript
+// 位置引数形式も引き続きサポート
+processClientQA(promptText, documentText);
+processClientQA(promptText, null, userId, userBasicInfo, referenceData);
+```
+
+**主な改善点**:
+- モード指定が明示的になり、コードの可読性が向上
+- オプションオブジェクト形式でパラメータの意味が明確に
+- 下位互換性を維持したまま新APIを提供
+- modeパラメータを省略した場合は自動判別
+
+#### 新しいテスト関数（test_functions.gs）
+
+##### `testNormalQAWithTwoStageNewFormat()`
+
+新しいAPI形式で通常の質疑応答（2段階AI処理）をテスト:
+
+```javascript
+const result = processClientQA(promptText, {
+  mode: 'normal',
+  userId: 'USER001',
+  userBasicInfo: userBasicInfo,
+  referenceData: referenceData
+});
+```
+
+##### `testDocumentQANewFormat()`
+
+新しいAPI形式で参照資料ベースの質疑応答をテスト:
+
+```javascript
+const result = processClientQA(promptText, {
+  mode: 'document',
+  documentText: documentText
+});
+```
+
+#### ドキュメント更新
+
+- **README.md**: 新しいAPI形式の使用例を追加
+- **SPECIFICATIONS.md**: API仕様セクションを更新
+
+---
+
 ## v1.2.1 (2025-01-21)
 
 ### 🔧 重要な修正: 思考モデルの適切な実装
