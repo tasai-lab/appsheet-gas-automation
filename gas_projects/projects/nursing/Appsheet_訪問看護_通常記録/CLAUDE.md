@@ -408,7 +408,110 @@ API呼び出し制限超過: 4回 (上限: 3回)
 
 ---
 
-**最終更新**: 2025-10-18
-**ステータス**: ✅ **Production Ready（Google AI Studio API完全廃止、リトライループ削除済み）**
+## 📋 プロジェクト履歴（続き）
+
+### 2025-10-29: responseSchema動的生成 + temperature調整 ✅
+
+#### 背景
+
+**整合性チェックで発見された問題**:
+1. responseSchemaが通常記録用のみハードコードされており、精神科記録に対応していなかった
+2. callVertexAIWithPromptInternal()でparseGeneratedJSON()にrecordTypeを渡していなかった
+3. temperature設定が0.2のままで、より創造的な出力が必要だった
+4. README.mdにGemini 2.5-Flashと誤記載されていた（実際は2.5-Pro使用）
+
+#### 実施した修正
+
+##### 1. **buildResponseSchema()関数の新規作成** ✅
+
+**修正ファイル**: `modules_aiProcessor.gs` (lines 216-283)
+
+**新規作成した関数**:
+```javascript
+function buildResponseSchema(recordType = 'normal') {
+  if (recordType === 'psychiatry') {
+    // 精神科記録用スキーマ
+    return {
+      type: 'object',
+      properties: {
+        clientCondition: { type: 'string' },
+        dailyLivingObservation: { type: 'string' },
+        mentalStateObservation: { type: 'string' },
+        medicationAdherence: { type: 'string' },
+        socialFunctionalObservation: { type: 'string' },
+        careProvided: { type: 'array', items: { type: 'string' } },
+        guidanceAndAdvice: { type: 'string' },
+        remarks: { type: 'string' },
+        summaryForNextVisit: { type: 'string' }
+      },
+      required: [...]
+    };
+  } else {
+    // 通常記録用スキーマ（デフォルト）
+    return { ... };
+  }
+}
+```
+
+**利点**:
+- 記録タイプに応じて正しいJSONスキーマを動的生成
+- REQUIRED_FIELDSとの完全な整合性
+- コードの重複削減
+
+##### 2. **callVertexAIWithPromptInternal()の修正** ✅
+
+**変更内容**:
+- ハードコードされたresponseSchemaを`buildResponseSchema(recordType)`呼び出しに変更
+- parseGeneratedJSON()にrecordTypeを渡すように修正
+
+**修正前**:
+```javascript
+const responseSchema = { /* 通常記録用の固定値 */ };
+const result = parseGeneratedJSON(generatedText);
+```
+
+**修正後**:
+```javascript
+const responseSchema = buildResponseSchema(recordType);
+const result = parseGeneratedJSON(generatedText, recordType);
+```
+
+##### 3. **callVertexAIWithInlineData()の修正** ✅
+
+**変更内容**:
+- ハードコードされたresponseSchemaを`buildResponseSchema(recordType)`呼び出しに変更
+
+##### 4. **temperature設定の変更** ✅
+
+**修正ファイル**: `config_settings.gs` (line 37)
+
+**変更内容**:
+- temperature: 0.2 → 0.3
+- より自然で創造的な看護記録生成を実現
+
+##### 5. **ドキュメントの整合性修正** ✅
+
+**修正ファイル**: `README.md`
+
+**修正内容**:
+- "Gemini 2.5-Flash" → "Gemini 2.5-Pro" に修正（3箇所）
+- temperature: 0.2 → 0.3 に更新
+- コメント: "コスト最適化" → "高精度な医療文書処理に最適" に変更
+
+#### 効果
+
+**整合性の向上**:
+- ✅ 通常記録・精神科記録の両方で正しいresponseSchemaを使用
+- ✅ REQUIRED_FIELDSとresponseSchemaの完全一致
+- ✅ ドキュメントとコードの整合性確保
+
+**品質の向上**:
+- 精神科記録のJSON生成が正確になった
+- より自然で人間らしい看護記録の生成
+
+---
+
+**最終更新**: 2025-10-29
+**ステータス**: ✅ **Production Ready（responseSchema動的生成、整合性確保済み）**
 
 **重要**: このプロジェクトはユーザーの厳格な指示に基づき、Google AI Studio APIを一切使用しない設計になっています。今後もVertex AI APIのみを使用し、絶対にリトライループを実装しないでください。

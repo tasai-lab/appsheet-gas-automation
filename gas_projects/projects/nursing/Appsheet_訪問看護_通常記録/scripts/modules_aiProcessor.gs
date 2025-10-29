@@ -62,24 +62,8 @@ function callVertexAIWithPromptInternal(gsUri, mimeType, prompt, recordType = 'n
 
     const url = `https://${GCP_CONFIG.location}-aiplatform.googleapis.com/v1/projects/${GCP_CONFIG.projectId}/locations/${GCP_CONFIG.location}/publishers/google/models/${GCP_CONFIG.vertexAI.model}:generateContent`;
 
-    // 看護記録のJSONスキーマ定義（responseMimeType: "application/json" 使用時は必須）
-    const responseSchema = {
-      type: 'object',
-      properties: {
-        processedAudioText: { type: 'string' },
-        vitalSigns: { type: 'object' },
-        subjectiveInformation: { type: 'string' },
-        userCondition: { type: 'string' },
-        guidanceAndAdvice: { type: 'string' },
-        nursingAndRehabilitationItems: {
-          type: 'array',
-          items: { type: 'string' }
-        },
-        specialNotes: { type: 'string' },
-        summaryForNextVisit: { type: 'string' }
-      },
-      required: ['processedAudioText', 'vitalSigns', 'subjectiveInformation', 'userCondition', 'guidanceAndAdvice', 'nursingAndRehabilitationItems', 'specialNotes', 'summaryForNextVisit']
-    };
+    // 記録タイプに応じたresponseSchemaを生成（responseMimeType: "application/json" 使用時は必須）
+    const responseSchema = buildResponseSchema(recordType);
 
     const generationConfig = {
 
@@ -189,7 +173,7 @@ function callVertexAIWithPromptInternal(gsUri, mimeType, prompt, recordType = 'n
 
     // JSONパース
 
-    const result = parseGeneratedJSON(generatedText);
+    const result = parseGeneratedJSON(generatedText, recordType);
 
     // API使用量メタデータを追加（モデル名と入力タイプを渡す）
     const usageMetadata = extractUsageMetadata(jsonResponse, GCP_CONFIG.vertexAI.model, 'audio');
@@ -210,6 +194,76 @@ function callVertexAIWithPromptInternal(gsUri, mimeType, prompt, recordType = 'n
 
   }
 
+}
+
+
+/**
+ * 記録タイプに応じたresponseSchemaを生成
+ * responseMimeType: "application/json" 使用時は必須
+ *
+ * @param {string} recordType - 記録タイプ ('normal' or 'psychiatry')
+ * @return {Object} responseSchema
+ */
+function buildResponseSchema(recordType = 'normal') {
+  if (recordType === 'psychiatry') {
+    // 精神科記録用スキーマ
+    return {
+      type: 'object',
+      properties: {
+        clientCondition: { type: 'string' },
+        dailyLivingObservation: { type: 'string' },
+        mentalStateObservation: { type: 'string' },
+        medicationAdherence: { type: 'string' },
+        socialFunctionalObservation: { type: 'string' },
+        careProvided: {
+          type: 'array',
+          items: { type: 'string' }
+        },
+        guidanceAndAdvice: { type: 'string' },
+        remarks: { type: 'string' },
+        summaryForNextVisit: { type: 'string' }
+      },
+      required: [
+        'clientCondition',
+        'dailyLivingObservation',
+        'mentalStateObservation',
+        'medicationAdherence',
+        'socialFunctionalObservation',
+        'careProvided',
+        'guidanceAndAdvice',
+        'remarks',
+        'summaryForNextVisit'
+      ]
+    };
+  } else {
+    // 通常記録用スキーマ（デフォルト）
+    return {
+      type: 'object',
+      properties: {
+        processedAudioText: { type: 'string' },
+        vitalSigns: { type: 'object' },
+        subjectiveInformation: { type: 'string' },
+        userCondition: { type: 'string' },
+        guidanceAndAdvice: { type: 'string' },
+        nursingAndRehabilitationItems: {
+          type: 'array',
+          items: { type: 'string' }
+        },
+        specialNotes: { type: 'string' },
+        summaryForNextVisit: { type: 'string' }
+      },
+      required: [
+        'processedAudioText',
+        'vitalSigns',
+        'subjectiveInformation',
+        'userCondition',
+        'guidanceAndAdvice',
+        'nursingAndRehabilitationItems',
+        'specialNotes',
+        'summaryForNextVisit'
+      ]
+    };
+  }
 }
 
 
@@ -384,24 +438,8 @@ function callVertexAIWithInlineData(fileData, prompt, recordType = 'normal') {
       Logger.log(`  ファイルサイズ: ${(fileData.blob.getBytes().length / (1024 * 1024)).toFixed(2)} MB`);
     }
 
-    // 看護記録のJSONスキーマ定義（responseMimeType: "application/json" 使用時は必須）
-    const responseSchema = {
-      type: 'object',
-      properties: {
-        processedAudioText: { type: 'string' },
-        vitalSigns: { type: 'object' },
-        subjectiveInformation: { type: 'string' },
-        userCondition: { type: 'string' },
-        guidanceAndAdvice: { type: 'string' },
-        nursingAndRehabilitationItems: {
-          type: 'array',
-          items: { type: 'string' }
-        },
-        specialNotes: { type: 'string' },
-        summaryForNextVisit: { type: 'string' }
-      },
-      required: ['processedAudioText', 'vitalSigns', 'subjectiveInformation', 'userCondition', 'guidanceAndAdvice', 'nursingAndRehabilitationItems', 'specialNotes', 'summaryForNextVisit']
-    };
+    // 記録タイプに応じたresponseSchemaを生成（responseMimeType: "application/json" 使用時は必須）
+    const responseSchema = buildResponseSchema(recordType);
 
     const generationConfig = {
       temperature: GCP_CONFIG.vertexAI.temperature,

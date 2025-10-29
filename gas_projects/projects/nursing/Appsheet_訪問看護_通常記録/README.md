@@ -25,7 +25,7 @@ AppSheetからのWebhookリクエストを受け取り、Google Vertex AI（Gemi
   - 音声ファイル（m4a/mp3/wav/ogg）からの記録生成（インラインデータ方式）
 
 - **高度なAI統合**
-  - ✅ **Vertex AI（Gemini 2.5-Flash）専用** - コスト最適化
+  - ✅ **Vertex AI（Gemini 2.5-Pro）専用** - 高精度な医療文書処理
   - ✅ **OAuth2認証** - APIキー不要の安全な認証
   - ✅ **1回のみのAPI呼び出し** - リトライループ完全削除、API爆発防止
   - ⚠️ **Google AI Studio API完全廃止** - 2025年10月18日以降使用不可
@@ -132,8 +132,8 @@ const GCP_CONFIG = {
   location: 'us-central1',  // gemini-2.5対応リージョン
   bucketName: 'your-bucket-name',  // ⚠️ 未使用（互換性のため残存）
   vertexAI: {
-    model: 'gemini-2.5-flash',  // ★コスト最適化: Flash推奨
-    temperature: 0.2,
+    model: 'gemini-2.5-pro',  // ★高精度モデル: 医療文書処理に最適
+    temperature: 0.3,
     maxOutputTokens: 8192
   }
 };
@@ -431,7 +431,7 @@ testCustomRecord(
 3. ✅ Vertex AI インラインデータ方式の実装（Cloud Storage不要）
 4. ✅ API呼び出し制限機能の追加（1処理あたり最大3回）
 5. ✅ API使用量メタデータの自動記録（コスト追跡）
-6. ✅ Gemini 2.5-Flash採用（コスト最適化: Pro → Flash）
+6. ✅ Gemini 2.5-Pro採用（高精度な医療文書処理に最適）
 
 **効果:**
 
