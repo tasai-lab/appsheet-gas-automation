@@ -34,7 +34,7 @@ const GCP_CONFIG = {
 
     model: 'gemini-2.5-pro',  // 高精度モデル（思考モードはデフォルト有効）
 
-    temperature: 0.2,
+    temperature: 0.3,
 
     maxOutputTokens: 8192,
 
