@@ -74,14 +74,13 @@ function processTaskQueueWorker() {
  * @param {Object} params - タスクパラメータ
  * @param {string} params.promptType - プロンプトタイプ ('通常' | '外部文章')（必須）
  * @param {string} params.promptText - プロンプトテキスト（必須）
- * @param {string} params.documentText - ドキュメントテキスト（promptType='外部文章'で使用）
+ * @param {string} params.documentText - ドキュメントテキスト（両モードで必須）
  * @param {string} params.userId - 利用者ID（promptType='通常'で使用）
  * @param {string} params.userBasicInfo - 利用者の基本情報（promptType='通常'で使用）
- * @param {string} params.referenceData - 参考資料（promptType='通常'で使用）
  */
 function executeTask(analysisId, params) {
   try {
-    const { promptType, promptText, documentText, userId, userBasicInfo, referenceData } = params;
+    const { promptType, promptText, documentText, userId, userBasicInfo } = params;
 
     Logger.log(`[INFO][Worker] タスク開始: ${analysisId} (promptType=${promptType})`);
 
@@ -92,7 +91,6 @@ function executeTask(analysisId, params) {
       documentText,
       userId,
       userBasicInfo,
-      referenceData,
       analysisId,
       true  // updateAppSheet=true
     );
