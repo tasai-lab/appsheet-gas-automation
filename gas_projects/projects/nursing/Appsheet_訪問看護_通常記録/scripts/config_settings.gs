@@ -1,17 +1,15 @@
 /**
-
- * 設定ファイル  // Vertex AI設定
-
-  vertexAI: {
-
-    model: 'gemini-2.5-pro',  // ★更新済み: gemini-1.5→2.5
-
-    temperature: 0.3,
-
-    maxOutputTokens: 8192
-
-  }に応じて値を変更してください
-
+ * 設定ファイル
+ *
+ * Vertex AI設定:
+ *   model: 'gemini-2.5-pro'
+ *   temperature: 0.2
+ *   maxOutputTokens: 8192
+ *   topP: 1.0
+ *   topK: 固定値64（設定不可）
+ *
+ * 注意: gemini-2.5-proでは topK パラメータは固定値64です。
+ *       ユーザーが設定すると400 INVALID_ARGUMENTエラーが発生します。
  */
 
 
@@ -34,11 +32,16 @@ const GCP_CONFIG = {
 
   vertexAI: {
 
-    model: 'gemini-2.5-pro',  // ★変更: gemini-2.5-pro → gemini-2.5-flash（コスト最適化）
+    model: 'gemini-2.5-pro',  // 高精度モデル（思考モードはデフォルト有効）
 
     temperature: 0.2,
 
-    maxOutputTokens: 8192
+    maxOutputTokens: 8192,
+
+    topP: 1.0  // Top-P サンプリング（公式ドキュメント: 0.0-1.0, デフォルト0.95）
+
+    // topK: gemini-2.5-proでは固定値64のため設定不可（公式ドキュメント確認済み）
+    // thinkingConfigは設定しない（Proはデフォルトで思考モード有効）
 
   }
 

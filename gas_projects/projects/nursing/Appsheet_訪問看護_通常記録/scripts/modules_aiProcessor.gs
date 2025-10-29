@@ -62,6 +62,41 @@ function callVertexAIWithPromptInternal(gsUri, mimeType, prompt, recordType = 'n
 
     const url = `https://${GCP_CONFIG.location}-aiplatform.googleapis.com/v1/projects/${GCP_CONFIG.projectId}/locations/${GCP_CONFIG.location}/publishers/google/models/${GCP_CONFIG.vertexAI.model}:generateContent`;
 
+    // 看護記録のJSONスキーマ定義（responseMimeType: "application/json" 使用時は必須）
+    const responseSchema = {
+      type: 'object',
+      properties: {
+        processedAudioText: { type: 'string' },
+        vitalSigns: { type: 'object' },
+        subjectiveInformation: { type: 'string' },
+        userCondition: { type: 'string' },
+        guidanceAndAdvice: { type: 'string' },
+        nursingAndRehabilitationItems: {
+          type: 'array',
+          items: { type: 'string' }
+        },
+        specialNotes: { type: 'string' },
+        summaryForNextVisit: { type: 'string' }
+      },
+      required: ['processedAudioText', 'vitalSigns', 'subjectiveInformation', 'userCondition', 'guidanceAndAdvice', 'nursingAndRehabilitationItems', 'specialNotes', 'summaryForNextVisit']
+    };
+
+    const generationConfig = {
+
+      temperature: GCP_CONFIG.vertexAI.temperature,
+
+      maxOutputTokens: GCP_CONFIG.vertexAI.maxOutputTokens,
+
+      topP: GCP_CONFIG.vertexAI.topP,
+
+      // topK: gemini-2.5-proでは固定値64のため設定不可（送信するとINVALID_ARGUMENTエラー）
+
+      responseMimeType: 'application/json',  // JSON形式で出力
+
+      responseSchema: responseSchema  // ✅ responseMimeType使用時は必須（公式ドキュメント確認済み）
+
+    };
+
     const requestBody = {
 
       contents: [{
@@ -88,15 +123,7 @@ function callVertexAIWithPromptInternal(gsUri, mimeType, prompt, recordType = 'n
 
       }],
 
-      generationConfig: {
-
-        temperature: GCP_CONFIG.vertexAI.temperature,
-
-        maxOutputTokens: GCP_CONFIG.vertexAI.maxOutputTokens,
-
-        responseMimeType: 'application/json'
-
-      }
+      generationConfig: generationConfig
 
     };
 
@@ -317,43 +344,150 @@ function callVertexAIWithInlineData(fileData, prompt, recordType = 'normal') {
   incrementApiCallCounter('Vertex_AI', '看護記録生成（1回のみ）');
 
   try {
+    // ========== 超詳細デバッグ開始 ==========
+    Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    Logger.log('🔍 [DEBUG] GCP設定情報');
+    Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    Logger.log(`  projectId: ${GCP_CONFIG.projectId}`);
+    Logger.log(`  location: ${GCP_CONFIG.location}`);
+    Logger.log(`  model: ${GCP_CONFIG.vertexAI.model}`);
+    Logger.log(`  temperature: ${GCP_CONFIG.vertexAI.temperature}`);
+    Logger.log(`  maxOutputTokens: ${GCP_CONFIG.vertexAI.maxOutputTokens}`);
+    Logger.log(`  topP: ${GCP_CONFIG.vertexAI.topP}`);
+    Logger.log(`  topK: 64 (固定値、設定不可)`);
+
     const url = `https://${GCP_CONFIG.location}-aiplatform.googleapis.com/v1/projects/${GCP_CONFIG.projectId}/locations/${GCP_CONFIG.location}/publishers/google/models/${GCP_CONFIG.vertexAI.model}:generateContent`;
+
+    Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    Logger.log('🔍 [DEBUG] エンドポイント情報');
+    Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    Logger.log(`  URL: ${url}`);
 
     const parts = [{ text: prompt }];
 
     // 音声ファイルを追加（インラインデータとして送信）
+    let base64Data = null;
     if (fileData && fileData.blob) {
+      base64Data = Utilities.base64Encode(fileData.blob.getBytes());
       parts.push({
         inlineData: {
           mimeType: fileData.mimeType,
-          data: Utilities.base64Encode(fileData.blob.getBytes())
+          data: base64Data
         }
       });
+
+      Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      Logger.log('🔍 [DEBUG] 音声データ情報');
+      Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      Logger.log(`  mimeType: ${fileData.mimeType}`);
+      Logger.log(`  base64長: ${base64Data.length} 文字`);
+      Logger.log(`  ファイルサイズ: ${(fileData.blob.getBytes().length / (1024 * 1024)).toFixed(2)} MB`);
     }
+
+    // 看護記録のJSONスキーマ定義（responseMimeType: "application/json" 使用時は必須）
+    const responseSchema = {
+      type: 'object',
+      properties: {
+        processedAudioText: { type: 'string' },
+        vitalSigns: { type: 'object' },
+        subjectiveInformation: { type: 'string' },
+        userCondition: { type: 'string' },
+        guidanceAndAdvice: { type: 'string' },
+        nursingAndRehabilitationItems: {
+          type: 'array',
+          items: { type: 'string' }
+        },
+        specialNotes: { type: 'string' },
+        summaryForNextVisit: { type: 'string' }
+      },
+      required: ['processedAudioText', 'vitalSigns', 'subjectiveInformation', 'userCondition', 'guidanceAndAdvice', 'nursingAndRehabilitationItems', 'specialNotes', 'summaryForNextVisit']
+    };
+
+    const generationConfig = {
+      temperature: GCP_CONFIG.vertexAI.temperature,
+      maxOutputTokens: GCP_CONFIG.vertexAI.maxOutputTokens,
+      topP: GCP_CONFIG.vertexAI.topP,
+      // topK: gemini-2.5-proでは固定値64のため設定不可（送信するとINVALID_ARGUMENTエラー）
+      responseMimeType: 'application/json',  // JSON形式で出力
+      responseSchema: responseSchema  // ✅ responseMimeType使用時は必須（公式ドキュメント確認済み）
+    };
+
+    Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    Logger.log('🔍 [DEBUG] generationConfig');
+    Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    Logger.log(`  temperature: ${generationConfig.temperature} (型: ${typeof generationConfig.temperature})`);
+    Logger.log(`  maxOutputTokens: ${generationConfig.maxOutputTokens} (型: ${typeof generationConfig.maxOutputTokens})`);
+    Logger.log(`  topP: ${generationConfig.topP} (型: ${typeof generationConfig.topP})`);
+    Logger.log(`  topK: 64 (固定値、設定不可)`);
+    Logger.log(`  responseMimeType: ${generationConfig.responseMimeType} (型: ${typeof generationConfig.responseMimeType})`);
 
     const requestBody = {
       contents: [{
         role: 'user',
         parts: parts
       }],
-      generationConfig: {
-        temperature: GCP_CONFIG.vertexAI.temperature,
-        maxOutputTokens: GCP_CONFIG.vertexAI.maxOutputTokens,
-        responseMimeType: 'application/json'
-      }
+      generationConfig: generationConfig
     };
 
+    Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    Logger.log('🔍 [DEBUG] リクエストボディ構造');
+    Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    Logger.log(`  contents: 配列型, 長さ: ${requestBody.contents.length}`);
+    Logger.log(`  contents[0].role: ${requestBody.contents[0].role}`);
+    Logger.log(`  contents[0].parts: 配列型, 長さ: ${requestBody.contents[0].parts.length}`);
+    Logger.log(`  parts[0]: ${requestBody.contents[0].parts[0].text ? 'text（プロンプト）' : 'unknown'}`);
+    if (requestBody.contents[0].parts.length > 1) {
+      Logger.log(`  parts[1]: ${requestBody.contents[0].parts[1].inlineData ? 'inlineData（音声）' : 'unknown'}`);
+    }
+
+    // リクエストボディのサンプル（音声データは除外）
+    const requestBodySample = JSON.parse(JSON.stringify(requestBody));
+    if (requestBodySample.contents[0].parts.length > 1 && requestBodySample.contents[0].parts[1].inlineData) {
+      requestBodySample.contents[0].parts[1].inlineData.data = `<base64: ${base64Data.length} chars>`;
+    }
+    Logger.log(`  リクエストサンプル: ${JSON.stringify(requestBodySample, null, 2).substring(0, 1000)}`);
+    Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
     Logger.log(`Vertex AI API呼び出し開始: ${GCP_CONFIG.vertexAI.model}`);
+
+    // リクエストボディをログ出力（音声データは除外）
+    const requestBodyForLog = JSON.parse(JSON.stringify(requestBody));
+    if (requestBodyForLog.contents && requestBodyForLog.contents[0] && requestBodyForLog.contents[0].parts) {
+      requestBodyForLog.contents[0].parts.forEach(part => {
+        if (part.inlineData && part.inlineData.data) {
+          part.inlineData.data = `<base64 data: ${part.inlineData.data.length} chars>`;
+        }
+      });
+    }
+    Logger.log(`リクエストボディ: ${JSON.stringify(requestBodyForLog, null, 2)}`);
+
+    // OAuth トークン取得
+    const authToken = ScriptApp.getOAuthToken();
+
+    Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    Logger.log('🔍 [DEBUG] 認証情報');
+    Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    Logger.log(`  トークン長: ${authToken ? authToken.length : 0} 文字`);
+    Logger.log(`  トークン先頭: ${authToken ? authToken.substring(0, 20) + '...' : 'null'}`);
 
     const options = {
       method: 'post',
       contentType: 'application/json',
       payload: JSON.stringify(requestBody),
       headers: {
-        'Authorization': `Bearer ${ScriptApp.getOAuthToken()}`
+        'Authorization': `Bearer ${authToken}`
       },
       muteHttpExceptions: true
     };
+
+    Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    Logger.log('🔍 [DEBUG] HTTPリクエストオプション');
+    Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    Logger.log(`  method: ${options.method}`);
+    Logger.log(`  contentType: ${options.contentType}`);
+    Logger.log(`  payload長: ${options.payload.length} 文字`);
+    Logger.log(`  muteHttpExceptions: ${options.muteHttpExceptions}`);
+    Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
     const startTime = new Date().getTime();
     const response = UrlFetchApp.fetch(url, options);
@@ -366,6 +500,25 @@ function callVertexAIWithInlineData(fileData, prompt, recordType = 'normal') {
     Logger.log(`Vertex AI API応答: ${responseCode}, 処理時間: ${duration}秒`);
 
     if (responseCode !== 200) {
+      Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      Logger.log('❌ [ERROR] API エラー詳細');
+      Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      Logger.log(`  ステータスコード: ${responseCode}`);
+      Logger.log(`  レスポンステキスト: ${responseText}`);
+
+      // エラーをJSONとしてパース
+      try {
+        const errorJson = JSON.parse(responseText);
+        Logger.log(`  エラーコード: ${errorJson.error?.code}`);
+        Logger.log(`  エラーメッセージ: ${errorJson.error?.message}`);
+        Logger.log(`  エラーステータス: ${errorJson.error?.status}`);
+        if (errorJson.error?.details) {
+          Logger.log(`  詳細: ${JSON.stringify(errorJson.error.details, null, 2)}`);
+        }
+      } catch (parseError) {
+        Logger.log(`  JSONパースエラー: ${parseError.message}`);
+      }
+      Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       throw new Error(`Vertex AI API Error: ${responseCode} - ${responseText}`);
     }
 
