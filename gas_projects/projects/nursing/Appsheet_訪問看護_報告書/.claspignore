@@ -1,0 +1,34 @@
+# Ignore documentation files
+README.md
+FLOW.md
+SPECIFICATIONS.md
+MIGRATION_GUIDE.md
+CLAUDE.md
+
+# Ignore backup files
+*_backup/
+*_backup.gs
+*_v[0-9]*.gs
+*.bak
+
+# Ignore metadata
+project_metadata.json
+spreadsheets/
+
+# Ignore node modules and dependencies
+node_modules/
+package.json
+package-lock.json
+
+# Ignore git files
+.git/
+.gitignore
+
+# Ignore IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Keep only scripts directory
+!scripts/

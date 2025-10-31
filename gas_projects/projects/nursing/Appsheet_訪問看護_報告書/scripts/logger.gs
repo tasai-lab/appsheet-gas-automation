@@ -104,21 +104,51 @@ class GASLogger {
    */
   setUsageMetadata(usageMetadata) {
     if (!this.usageMetadata) {
+      // 初回: 使用量情報を初期化
       this.usageMetadata = {
         model: usageMetadata.model || '',
         inputTokens: usageMetadata.inputTokens || 0,
         outputTokens: usageMetadata.outputTokens || 0,
         inputCostJPY: usageMetadata.inputCostJPY || 0,
         outputCostJPY: usageMetadata.outputCostJPY || 0,
-        totalCostJPY: usageMetadata.totalCostJPY || 0
+        totalCostJPY: usageMetadata.totalCostJPY || 0,
+        // 詳細な内訳を配列で保持（複数モデル対応）
+        details: [
+          {
+            model: usageMetadata.model || '',
+            inputTokens: usageMetadata.inputTokens || 0,
+            outputTokens: usageMetadata.outputTokens || 0,
+            inputCostJPY: usageMetadata.inputCostJPY || 0,
+            outputCostJPY: usageMetadata.outputCostJPY || 0,
+            totalCostJPY: usageMetadata.totalCostJPY || 0
+          }
+        ]
       };
     } else {
-      // 既存のusageMetadataに加算（複数回API呼び出しがある場合）
+      // 2回目以降: 加算 + モデル名連結
+      const newModel = usageMetadata.model || '';
+
+      // モデル名を連結（重複を避ける）
+      if (newModel && !this.usageMetadata.model.includes(newModel)) {
+        this.usageMetadata.model += ' + ' + newModel;
+      }
+
+      // トークン数とコストを加算
       this.usageMetadata.inputTokens += usageMetadata.inputTokens || 0;
       this.usageMetadata.outputTokens += usageMetadata.outputTokens || 0;
       this.usageMetadata.inputCostJPY += usageMetadata.inputCostJPY || 0;
       this.usageMetadata.outputCostJPY += usageMetadata.outputCostJPY || 0;
       this.usageMetadata.totalCostJPY += usageMetadata.totalCostJPY || 0;
+
+      // 詳細情報を配列に追加
+      this.usageMetadata.details.push({
+        model: newModel,
+        inputTokens: usageMetadata.inputTokens || 0,
+        outputTokens: usageMetadata.outputTokens || 0,
+        inputCostJPY: usageMetadata.inputCostJPY || 0,
+        outputCostJPY: usageMetadata.outputCostJPY || 0,
+        totalCostJPY: usageMetadata.totalCostJPY || 0
+      });
     }
   }
 
@@ -310,11 +340,23 @@ class GASLogger {
    * @private
    */
   _getLogSummary() {
-    const summary = this.logs.map(log => {
+    let summary = this.logs.map(log => {
       const time = Utilities.formatDate(log.timestamp, 'Asia/Tokyo', 'HH:mm:ss');
       return `[${time}] ${log.message}`;
     }).join('\n');
-    
+
+    // 複数モデル使用時の詳細コスト内訳を追加
+    if (this.usageMetadata && this.usageMetadata.details && this.usageMetadata.details.length > 1) {
+      summary += '\n\n--- API使用量詳細（モデル別） ---\n';
+      this.usageMetadata.details.forEach((detail, index) => {
+        summary += `[${index + 1}] ${detail.model}:\n`;
+        summary += `  Input: ${detail.inputTokens} tokens (¥${detail.inputCostJPY.toFixed(4)})\n`;
+        summary += `  Output: ${detail.outputTokens} tokens (¥${detail.outputCostJPY.toFixed(4)})\n`;
+        summary += `  合計: ¥${detail.totalCostJPY.toFixed(4)}\n`;
+      });
+      summary += `総合計: ¥${this.usageMetadata.totalCostJPY.toFixed(4)}`;
+    }
+
     // 最大文字数制限（スプレッドシートのセル制限対策）
     return summary.length > 50000 ? summary.substring(0, 50000) + '...(省略)' : summary;
   }
